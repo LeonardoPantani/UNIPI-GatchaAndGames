@@ -1,1 +1,4 @@
 .venv
+server/.env
+client/.env
+__pycache__
