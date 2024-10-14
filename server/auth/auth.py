@@ -4,6 +4,13 @@ from app import db
 
 auth_bp = Blueprint('auth', __name__)
 
+import re
+def emailCheck(email):
+    if(re.fullmatch(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b', email)):
+        return True
+    else:
+        return False
+
 @auth_bp.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
@@ -13,6 +20,9 @@ def register():
 
     if not username or not email or not password:
         return jsonify({"error": "Tutti i campi sono obbligatori"}), 400
+    
+    if not emailCheck(email):
+        return jsonify({"error": "L'email fornita non è valida."}), 400
     
     cursor = db.connection.cursor()
     cursor.execute("INSERT INTO users (username, email, password) VALUES (%s, %s, %s)", (username, email, generate_password_hash(password)))
@@ -41,6 +51,9 @@ def reset_password():
 
     if not email:
         return jsonify({"error": "L'email è obbligatoria"}), 400
+    
+    if not emailCheck(email):
+        return jsonify({"error": "L'email fornita non è valida."}), 400
 
     # Reset password qui
     return jsonify({"message": "Istruzioni per il recupero della password inviate"}), 200
