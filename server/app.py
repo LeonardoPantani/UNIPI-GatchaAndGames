@@ -1,5 +1,5 @@
 import os
-from flask import Flask
+from flask import Flask, session
 from dotenv import dotenv_values
 from flask_mysqldb import MySQL
 import MySQLdb
@@ -18,6 +18,7 @@ app.config["MYSQL_HOST"] = config["MYSQL_HOST"]
 app.config["MYSQL_USER"] = config["MYSQL_USER"]
 app.config["MYSQL_PASSWORD"] = config["MYSQL_PASSWORD"]
 app.config["MYSQL_DB"] = config["MYSQL_DB"]
+app.secret_key = config["SECRET_KEY"]
 
 # Preparo MYSQL
 db = MySQL(app)

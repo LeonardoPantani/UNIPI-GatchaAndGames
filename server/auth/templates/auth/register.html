@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <title>Register</title>
+</head>
+<body>
+    <section class="section full-height">
+        <div class="container">
+            <div class="columns is-centered">
+                <div class="column is-half">
+                    <!-- Logo -->
+                    <div class="has-text-centered">
+                        <img src="{{ url_for('static', filename='logo.jpg') }}" alt="Logo" width="150" height="150">
+                    </div>
+
+                    <!-- Titolo form -->
+                    <h1 class="title has-text-centered">Register Form</h1>
+
+                    <!-- Messaggi di errore -->
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            <div class="notification is-danger">
+                                <ul>
+                                    {% for category, message in messages %}
+                                        <li>{{ message }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endif %}
+                    {% endwith %}
+
+                    <!-- Codice form -->
+                    <form action="{{ url_for('auth.register') }}" method="POST">
+                        <div class="field">
+                            <div class="control has-icons-left has-icons-right">
+                                <input class="input {% if 'Invalid email.' in messages %} is-danger {% endif %}" type="email" placeholder="Email" name="email" id="email" required />
+                                <span class="icon is-small is-left">
+                                <i class="fas fa-envelope"></i>
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="field">
+                            <p class="control has-icons-left has-icons-right">
+                                <input class="input {% if 'Invalid username.' in messages %} is-danger {% endif %}" 
+                                       type="text" placeholder="Username" name="username" id="username" required />
+                                <span class="icon is-small is-left">
+                                    <i class="fas fa-user"></i>
+                                </span>
+                            </p>
+                        </div>
+
+                        <div class="field">
+                            <p class="control has-icons-left">
+                                <input class="input {% if 'Invalid password.' in messages %} is-danger {% endif %}" 
+                                       type="password" placeholder="Password" name="password" id="password" required />
+                                <span class="icon is-small is-left">
+                                    <i class="fas fa-lock"></i>
+                                </span>
+                            </p>
+                        </div>
+
+                        <div class="field">
+                            <p class="control has-icons-left">
+                                <input class="input {% if 'Invalid password.' in messages %} is-danger {% endif %}" 
+                                       type="password" placeholder="Repeat password" name="repeat_password" id="repeat_password" required />
+                                <span class="icon is-small is-left">
+                                    <i class="fas fa-lock"></i>
+                                </span>
+                            </p>
+                        </div>
+
+                        <div class="field is-grouped is-grouped-centered">
+                            <div class="control">
+                                <button class="button is-link" type="submit">Submit</button>
+                            </div>
+                            <div class="control">
+                                <a href="{{ url_for('home.homepage') }}" class="button is-link is-light">Go to Homepage</a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Collegamento al tuo JavaScript -->
+    <script src="{{ url_for('static', filename='generic.js') }}"></script>
+</body>
+</html>

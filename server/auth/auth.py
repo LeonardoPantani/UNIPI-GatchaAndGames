@@ -1,8 +1,8 @@
-from flask import Blueprint, request, jsonify
-from werkzeug.security import generate_password_hash
+from flask import Blueprint, request, jsonify, session, redirect, url_for, flash, render_template
+from werkzeug.security import generate_password_hash, check_password_hash
 from app import db
 
-auth_bp = Blueprint('auth', __name__)
+auth_bp = Blueprint('auth', __name__, template_folder='templates')
 
 import re
 def emailCheck(email):
@@ -13,36 +13,78 @@ def emailCheck(email):
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
-    data = request.get_json()
+    data = request.form
     username = data.get('username')
     email = data.get('email')
     password = data.get('password')
+    repeat_password = data.get('repeat_password')
 
-    if not username or not email or not password:
-        return jsonify({"error": "Tutti i campi sono obbligatori"}), 400
+    if not username or not email or not password or not repeat_password:
+        flash("All fields are mandatory.", "error")
+        return redirect(url_for('auth.register_page'))
     
     if not emailCheck(email):
-        return jsonify({"error": "L'email fornita non è valida."}), 400
+        flash("The email is invalid.", "error")
+        return redirect(url_for('auth.register_page'))
+    
+    if password != repeat_password:
+        flash("The two passwords are not equal.", "error")
+        return redirect(url_for('auth.register_page'))
     
     cursor = db.connection.cursor()
     cursor.execute("INSERT INTO users (username, email, password) VALUES (%s, %s, %s)", (username, email, generate_password_hash(password)))
     db.connection.commit()
     cursor.close()
 
-    # Registrazione qui
-    return jsonify({"message": "Registrazione avvenuta con successo"}), 201
+    # Se tutto è corretto, crea la sessione
+    session['username'] = username
+    flash("Register successful.", "success")
+    return redirect(url_for('home.homepage'))
+
+@auth_bp.route('/register', methods=['GET'])
+def register_page():
+    return render_template('auth/register.html')
 
 @auth_bp.route('/login', methods=['POST'])
 def login():
-    data = request.get_json()
+    data = request.form
     username = data.get('username')
     password = data.get('password')
 
     if not username or not password:
-        return jsonify({"error": "Tutti i campi sono obbligatori"}), 400
+        flash("All fields are mandatory.", "error")
+        return redirect(url_for('auth.login_page'))
 
-    # Autenticazione qui
-    return jsonify({"message": "Login avvenuto con successo"}), 200
+    cursor = db.connection.cursor()
+    cursor.execute("SELECT username, password FROM users WHERE username = %s", (username,))
+    user = cursor.fetchone()
+    cursor.close()
+
+    if user is None:
+        flash("That username was not found.", "error")
+        return redirect(url_for('auth.login_page'))
+
+    stored_username, stored_password_hash = user
+
+    if not check_password_hash(stored_password_hash, password):
+        flash("The password you entered is incorrect.", "error")
+        return redirect(url_for('auth.login_page'))
+
+    # Se tutto è corretto, crea la sessione
+    session['username'] = stored_username
+    flash("Login successful.", "success")
+    return redirect(url_for('home.homepage'))
+
+
+@auth_bp.route('/login', methods=['GET'])
+def login_page():
+    return render_template('auth/login.html')
+
+@auth_bp.route('/logout', methods=['GET'])
+def logout():
+    session.pop('username', None)
+    flash("Logout successful.", "success")
+    return redirect(url_for('home.homepage'))
 
 @auth_bp.route('/reset_password', methods=['POST'])
 def reset_password():
