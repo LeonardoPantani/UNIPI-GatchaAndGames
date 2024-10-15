@@ -32,7 +32,7 @@ mysql -u root -p < server/setup_db.sql
 mysql -u root -p < server/setup_user.sql
 
 ### D'ora in poi per accedere a MySQL fare:
-mysql -u root
+mysql -u root -p
 
 ... e inserire la password impostata prima.
 
