@@ -47,7 +47,6 @@
                         <span class="icon is-small is-left">
                             <i class="fas fa-user"></i>
                         </span>
-                        <p class="help">The username must be at least 5 characters long and can only contain letters, numbers and underscores.</p>
                         {% if messages %}
                             {% if (('error', 'The username must be at least 5 characters long.') in messages) or (('error', 'The username can only contain only letters, numbers and underscores.') in messages) %}
                                 <span class="icon is-small is-right">
@@ -55,12 +54,8 @@
                                 </span>
                             {% endif %}
                         {% endif %}
+                        <p class="help {% if messages %} {% if (('error', 'The username must be at least 5 characters long.') in messages) or (('error', 'The username can only contain only letters, numbers and underscores.') in messages) %} is-danger {% endif %} {% endif %}">The username must be at least 5 characters long and can only contain letters, numbers and underscores.</p>
                     </p>
-                    {% if messages %}
-                        {% if (('error', 'The username must be at least 5 characters long.') in messages) or (('error', 'The username can only contain only letters, numbers and underscores.') in messages) %}
-                            <p class="help is-danger">{% if ('error', 'The username must be at least 5 characters long.') in messages %} The username must be at least 5 characters long. {% else %} The username can only contain only letters, numbers and underscores. {% endif %}</p>
-                        {% endif %}
-                    {% endif %}
                 </div>
             
                 <!-- Input Password -->
