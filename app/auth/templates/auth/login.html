@@ -11,20 +11,20 @@
         </div>
 
         <!-- Titolo form -->
-        <h1 class="title has-text-centered">Login Form</h1>
+        <h1 class="title has-text-centered">Login</h1>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
             <form action="{{ url_for('auth.login') }}" method="POST">
                 <!-- Input Username -->
                 <div class="field">
                     <p class="control has-icons-left has-icons-right">
-                        <input class="input {% if messages %} {% if 'error','That username was not found.' in messages %} is-danger {% endif %} {% endif %}" 
+                        <input class="input {% if messages %} {% if 'error','Invalid credentials.' in messages %} is-danger {% endif %} {% endif %}" 
                                 type="text" name="username" placeholder="Username" required />
                         <span class="icon is-small is-left">
                             <i class="fas fa-user"></i>
                         </span>
                         {% if messages %}
-                            {% if 'error','That username was not found.' in messages %}
+                            {% if 'error','Invalid credentials.' in messages %}
                                 <span class="icon is-small is-right">
                                     <i class="fas fa-exclamation-triangle"></i>
                                 </span>
@@ -32,8 +32,8 @@
                         {% endif %}
                     </p>
                     {% if messages %}
-                        {% if 'error','That username was not found.' in messages %}
-                            <p class="help is-danger">That username was not found.</p>
+                        {% if 'error','Invalid credentials.' in messages %}
+                            <p class="help is-danger">Invalid credentials.</p>
                         {% endif %}
                     {% endif %}
                 </div>
@@ -41,13 +41,13 @@
                 <!-- Input Password -->
                 <div class="field">
                     <p class="control has-icons-left has-icons-right">
-                        <input class="input {% if messages %} {% if 'error','The password you entered is incorrect.' in messages %} is-danger {% endif %} {% endif %}" 
+                        <input class="input {% if messages %} {% if 'error','Invalid credentials.' in messages %} is-danger {% endif %} {% endif %}" 
                                 type="password" name="password" placeholder="Password" required />
                         <span class="icon is-small is-left">
                             <i class="fas fa-lock"></i>
                         </span>
                         {% if messages %}
-                            {% if 'error','The password you entered is incorrect.' in messages %}
+                            {% if 'error','Invalid credentials.' in messages %}
                                 <span class="icon is-small is-right">
                                     <i class="fas fa-exclamation-triangle"></i>
                                 </span>
@@ -55,8 +55,8 @@
                         {% endif %}
                     </p>
                     {% if messages %}
-                        {% if 'error','The password you entered is incorrect.' in messages %}
-                            <p class="help is-danger">The password you entered is incorrect.</p>
+                        {% if 'error','Invalid credentials.' in messages %}
+                            <p class="help is-danger">Invalid credentials.</p>
                         {% endif %}
                     {% endif %}
                 </div>

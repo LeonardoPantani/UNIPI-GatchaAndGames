@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}" /> <!-- css generale: bulma -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='fontawesome/css/all.min.css') }}" /> <!-- css icone: fontawesome -->
     <title>{% block title %}My Site{% endblock %}</title>
 </head>
 <body>
@@ -19,15 +19,42 @@
 
         <div class="navbar-menu">
             <div class="navbar-start">
-                <a class="navbar-item button is-primary" href="{{ url_for('home.homepage') }}">Home</a>
+                <a class="navbar-item button is-primary" href="{{ url_for('home.homepage') }}">
+                    <span class="icon">
+                        <i class="fa-solid fa-house"></i>
+                    </span>
+                    Home
+                </a>
             </div>
 
             <div class="navbar-end">
                 {% if 'username' in session %}
-                    <div class="navbar-item">Hello, <b>{{ session['username'] }}</b></div>
-                    <a href="{{ url_for('auth.logout') }}" class="navbar-item button is-danger">Logout</a>
+                    <div class="navbar-item">
+                        Hello,
+                        <span class="icon">
+                            <i class="fa-solid fa-user"></i>
+                        </span>
+                        <b>{{ session['username'] }}</b>
+                    </div>
+                    <a class="navbar-item button is-danger" href="{{ url_for('auth.logout') }}">
+                        <span class="icon">
+                            <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                        </span>
+                        Logout
+                    </a>
                 {% else %}
-                    <a href="{{ url_for('auth.login_page') }}" class="navbar-item button is-primary">Login</a>
+                    <a class="navbar-item button is-primary" href="{{ url_for('auth.register_page') }}">
+                        <span class="icon">
+                            <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                        </span>
+                        Register
+                    </a>
+                    <a class="navbar-item button is-primary" href="{{ url_for('auth.login_page') }}">
+                        <span class="icon">
+                            <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                        </span>
+                        Login
+                    </a>
                 {% endif %}
             </div>
         </div>
