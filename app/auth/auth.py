@@ -1,53 +1,90 @@
 from flask import Blueprint, request, jsonify, session, redirect, url_for, flash, render_template
 from werkzeug.security import generate_password_hash, check_password_hash
 from app import db
+from utils import emailCheck
+import MySQLdb
 
 auth_bp = Blueprint('auth', __name__, template_folder='templates')
-
-import re
-def emailCheck(email):
-    if(re.fullmatch(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b', email)):
-        return True
-    else:
-        return False
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
     data = request.form
+    if not data:
+        data = request.get_json()
+    
     username = data.get('username')
     email = data.get('email')
     password = data.get('password')
     repeat_password = data.get('repeat_password')
-
-    if not username or not email or not password or not repeat_password:
-        flash("All fields are mandatory.", "error")
-        return redirect(url_for('auth.register_page'))
     
+    if not username or not email or not password or not repeat_password:
+        if request.form: # se la post è dal sito
+            flash("All fields are mandatory.", "error")
+            return redirect(url_for('auth.register_page'))
+        else: # se è una richiesta grezza
+            return jsonify({"message": "All fields are mandatory."}), 400
+
+    if len(username) < 5:
+        if request.form:
+            flash("The username is invalid.", "error")
+            return redirect(url_for('auth.register_page'))
+        else:
+            return jsonify({"message": "The username is invalid."}), 400
+
     if not emailCheck(email):
-        flash("The email is invalid.", "error")
-        return redirect(url_for('auth.register_page'))
+        if request.form:
+            flash("The email is invalid.", "error")
+            return redirect(url_for('auth.register_page'))
+        else:
+            return jsonify({"message": "The email is invalid."}), 400
     
     if password != repeat_password:
-        flash("The two passwords are not equal.", "error")
-        return redirect(url_for('auth.register_page'))
+        if request.form:
+            flash("The two passwords are not equal.", "error")
+            return redirect(url_for('auth.register_page'))
+        else:
+            return jsonify({"message": "The two passwords are not equal."}), 400
     
-    cursor = db.connection.cursor()
-    cursor.execute("INSERT INTO users (username, email, password) VALUES (%s, %s, %s)", (username, email, generate_password_hash(password)))
-    db.connection.commit()
-    cursor.close()
-
-    # Se tutto è corretto, crea la sessione
-    session['username'] = username
-    flash("Register successful.", "success")
-    return redirect(url_for('home.homepage'))
+    try:
+        cursor = db.connection.cursor()
+        cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
+        user = cursor.fetchone()
+        if user:
+            if request.form:
+                flash("That email is already in use.", "error")
+                return redirect(url_for('auth.register_page'))
+            else:
+                return jsonify({"message": "That email is already in use."}), 409
+        
+        cursor.execute("INSERT INTO users (username, email, password) VALUES (%s, %s, %s)", 
+                       (username, email, generate_password_hash(password)))
+        db.connection.commit()
+        cursor.close()
+        
+        if request.form:
+            session['username'] = username
+            flash("Register successful.", "success")
+            return redirect(url_for('home.homepage'))
+        else:
+            return jsonify({"message": "Register successful."}), 200
+    except MySQLdb.Error as e:
+        if request.form:
+            flash("Internal error.", "error")
+            return redirect(url_for('auth.register_page'))
+        else:
+            return jsonify({"message": "Internal error."}), 500
 
 @auth_bp.route('/register', methods=['GET'])
 def register_page():
     return render_template('auth/register.html')
 
+
 @auth_bp.route('/login', methods=['POST'])
 def login():
     data = request.form
+    if not data:
+        data = request.get_json()
+    
     username = data.get('username')
     password = data.get('password')
 
@@ -75,16 +112,17 @@ def login():
     flash("Login successful.", "success")
     return redirect(url_for('home.homepage'))
 
-
 @auth_bp.route('/login', methods=['GET'])
 def login_page():
     return render_template('auth/login.html')
+
 
 @auth_bp.route('/logout', methods=['GET'])
 def logout():
     session.pop('username', None)
     flash("Logout successful.", "success")
     return redirect(url_for('home.homepage'))
+
 
 @auth_bp.route('/reset_password', methods=['POST'])
 def reset_password():
