@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %}Homepage{% endblock %}
+
+{% block content %}
+<div class="columns is-centered">
+    <div class="column is-half">
+        <!-- Logo -->
+        <div class="has-text-centered">
+            <img src="{{ url_for('static', filename='logo_complete.png') }}" alt="Logo">
+        </div>
+
+        <!-- Titolo -->
+        <h1 class="title has-text-centered">Homepage</h1>
+
+        <!-- Messaggi di errore -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div>
+                    <ul>
+                        {% for category, message in messages %}
+                            <li class="notification {% if category == 'error' %} is-danger
+                                                {% elif category == 'success' %} is-success
+                                                {% elif category == 'info' %} is-info {% endif %}">
+                                {{ message }}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+        {% endwith %}
+
+
+        <!-- Dati sessione  -->
+        <div class="box">
+            {% if username %}
+                <p class="has-text-centered">Hello, <b>{{ username }}</b>.</p>
+            {% else %}
+                <p class="has-text-centered">Not logged in.</p>
+            {% endif %}
+
+            <h2 class="subtitle">Session Data:</h2>
+            <pre>{{ session | tojson }}</pre>
+        </div>
+    </div>
+</div>
+{% endblock %}
