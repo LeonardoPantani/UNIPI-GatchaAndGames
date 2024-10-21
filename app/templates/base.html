@@ -11,8 +11,8 @@
 <body>
     <nav class="navbar" role="navigation" aria-label="main navigation">
         <div class="navbar-brand">
-            <a class="navbar-item" href="/">
-                <!--<img src="{{ url_for('static', filename='logo.jpg') }}" alt="Logo" width="50" height="50">-->
+            <a class="navbar-item" href="{{ url_for('home.homepage') }}">
+                <img src="{{ url_for('static', filename='logo_img.png') }}" alt="Logo">
                 <h1 class="subtitle">Gatcha System</h1>
             </a>
         
@@ -25,14 +25,7 @@
         </div>
         
         <div id="test" class="navbar-menu">
-            <div class="navbar-start">
-                <a class="navbar-item" href="{{ url_for('home.homepage') }}">
-                    <span class="icon">
-                        <i class="fa-solid fa-house"></i>
-                    </span>
-                    <span>Home</span>
-                </a>
-            
+            <div class="navbar-start">           
                 <a class="navbar-item">
                     <span class="icon">
                         <i class="fa-solid fa-book"></i>
