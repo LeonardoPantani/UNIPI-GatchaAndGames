@@ -129,7 +129,7 @@ paths:
         '500':
           description: Internal server error
 
-  /auctions/status/{auction_id}:
+  /auctions/status/{auction_uuid}:
     get:
       tags:
         - Game:Auctions
@@ -141,7 +141,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: auction_id
+        - name: auction_uuid
           in: path
           description: The id of the auction to obtain info
           required: true
@@ -196,7 +196,7 @@ paths:
         '500':
           description: Internal server error.
 
-  /auctions/bid/{auction_id}:
+  /auctions/bid/{auction_uuid}:
     post:
       tags:
         - Game:Auctions
@@ -208,7 +208,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: auction_id
+        - name: auction_uuid
           in: path
           description: Id of the auction to bid on.
           required: true
@@ -234,7 +234,7 @@ paths:
         '500':
           description: Internal server error.
 
-  /pvp/sendPvPRequest/{user_id}:
+  /pvp/sendPvPRequest/{user_uuid}:
     post:
       tags:
         - Game:PVP
@@ -246,7 +246,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: user_id
+        - name: user_uuid
           in: path
           description: The player's UUID to send the battle request to.
           required: true
@@ -295,7 +295,7 @@ paths:
         '500':
           description: Internal server error
   
-  /pvp/acceptPvPRequest/{pvp_match_id}:
+  /pvp/acceptPvPRequest/{pvp_match_uuid}:
     post:
       tags:
         - Game:PVP
@@ -307,7 +307,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: pvp_match_id
+        - name: pvp_match_uuid
           in: path
           description: The pending pvp request's match id.
           required: true
@@ -328,7 +328,7 @@ paths:
         '500':
           description: Internal server error.
 
-  /pvp/rejectPvPRequest/{pvp_match_id}:
+  /pvp/rejectPvPRequest/{pvp_match_uuid}:
     post:
       tags:
         - Game:PVP
@@ -340,7 +340,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: pvp_match_id
+        - name: pvp_match_uuid
           in: path
           description: The pending pvp request's match id.
           required: true
@@ -354,7 +354,7 @@ paths:
         '500':
           description: Internal server error.
   
-  /pvp/status/{pvp_match_id}:
+  /pvp/status/{pvp_match_uuid}:
     get:
       tags:
         - Game:PVP
@@ -366,7 +366,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: pvp_match_id
+        - name: pvp_match_uuid
           in: path
           description: The pending pvp request's match id.
           required: true
@@ -440,7 +440,7 @@ paths:
         '500':
           description: Internal server error
 
-  /gacha/pull/{pool_id}:
+  /gacha/pull/{pool_uuid}:
     post:
       tags:
         - Game:Gacha
@@ -452,7 +452,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: pool_id
+        - name: pool_uuid
           in: path
           required: true
           schema:
@@ -485,7 +485,7 @@ paths:
           in: path
           required: true
           schema:
-            $ref: "#/components/schemas/InventoryItemId"
+            $ref: "#/components/schemas/ItemId"
       responses:
         '200':
           description: Successful operation
@@ -498,7 +498,7 @@ paths:
         '500':
           description: Internal server error
 
-  /gacha/{gacha_id}:
+  /gacha/{gacha_uuid}:
     get:
       tags:
         - Game:Gacha
@@ -510,7 +510,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: gacha_id
+        - name: gacha_uuid
           in: path
           required: true
           schema:
@@ -612,7 +612,7 @@ paths:
         '500':
           description: Internal server error.
 
-  /profile/{uuid}:
+  /profile/{uuid}/info:
     get:
       tags:
         - Profile:Actions
@@ -832,7 +832,7 @@ paths:
         '500':
           description: "Internal server error."
   
-  /admin/profile/{user_id}/edit:
+  /admin/profile/{user_uuid}/edit:
     put:
       tags:
         - Admin:Profile
@@ -844,7 +844,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: user_id
+        - name: user_uuid
           in: path
           required: true
           schema:
@@ -871,7 +871,7 @@ paths:
         '500':
           description: "Internal server error."
 
-  /admin/profile/{user_id}/ban:
+  /admin/profile/{user_uuid}/ban:
     delete:
       tags:
         - Admin:Profile
@@ -883,7 +883,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: user_id
+        - name: user_uuid
           in: path
           required: true
           schema:
@@ -900,7 +900,7 @@ paths:
         '500':
           description: "Internal server error."
 
-  /admin/profile/{user_id}/history:
+  /admin/profile/{user_uuid}/history:
     get:
       tags:
         - Admin:Profile
@@ -912,7 +912,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: user_id
+        - name: user_uuid
           in: path
           required: true
           schema:
@@ -979,7 +979,7 @@ paths:
         '500':
           description: "Internal server error."
 
-  /admin/gacha/{gacha_id}/update:
+  /admin/gacha/{gacha_uuid}/update:
     put:
       tags:
         - Admin:Gacha
@@ -991,7 +991,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: gacha_id
+        - name: gacha_uuid
           in: path
           required: true
           schema:
@@ -1014,7 +1014,7 @@ paths:
         '500':
           description: "Internal server error."
   
-  /admin/gacha/{gacha_id}/delete:
+  /admin/gacha/{gacha_uuid}/delete:
     delete:
       tags:
         - Admin:Gacha
@@ -1026,7 +1026,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: gacha_id
+        - name: gacha_uuid
           in: path
           required: true
           schema:
@@ -1073,7 +1073,7 @@ paths:
         '500':
           description: "Internal server error."
   
-  /admin/pool/{pool_id}/update:
+  /admin/pool/{pool_uuid}/update:
     put:
       tags:
         - Admin:Pool
@@ -1085,7 +1085,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: pool_id
+        - name: pool_uuid
           in: path
           required: true
           schema:
@@ -1108,7 +1108,7 @@ paths:
         '500':
           description: "Internal server error."
   
-  /admin/pool/{pool_id}/delete:
+  /admin/pool/{pool_uuid}/delete:
     delete:
       tags:
         - Admin:Pool
@@ -1120,7 +1120,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: pool_id
+        - name: pool_uuid
           in: path
           required: true
           schema:
@@ -1137,7 +1137,7 @@ paths:
         '500':
           description: "Internal server error."
 
-  /admin/auctions/{auction_id}/update:
+  /admin/auctions/{auction_uuid}/update:
     put:
       tags:
         - Admin:Auctions
@@ -1149,7 +1149,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: auction_id
+        - name: auction_uuid
           in: path
           required: true
           schema:
@@ -1346,7 +1346,7 @@ components:
     Auction:
       type: object
       properties:
-        auction_id:
+        auction_uuid:
           $ref: '#/components/schemas/AuctionId'
         status:
           $ref: '#/components/schemas/AuctionStatus'
@@ -1393,7 +1393,7 @@ components:
     Gacha:
       type: object
       properties:
-        gacha_id:
+        gacha_uuid:
           $ref: "#/components/schemas/GachaId"
         name:
           type: string
@@ -1451,7 +1451,7 @@ components:
     PvPRequest:
       type: object
       properties:
-        pvp_match_id:
+        pvp_match_uuid:
           $ref: "#/components/schemas/PvPMatchId"
         sender_id:
           $ref: "#/components/schemas/UserId"
@@ -1491,7 +1491,7 @@ components:
       properties:
         item_id:
           $ref: "#/components/schemas/InventoryItemId"
-        gacha_id:
+        gacha_uuid:
           type: string
           format: uuid
           description: "UUID representing a gacha"
