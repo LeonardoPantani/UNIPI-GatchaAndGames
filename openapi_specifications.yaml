@@ -440,7 +440,7 @@ paths:
         '500':
           description: Internal server error
 
-  /gacha/pull/{pool_uuid}:
+  /gacha/pull/{pool_id}:
     post:
       tags:
         - Game:Gacha
@@ -452,7 +452,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: pool_uuid
+        - name: pool_id
           in: path
           required: true
           schema:
@@ -1073,7 +1073,7 @@ paths:
         '500':
           description: "Internal server error."
   
-  /admin/pool/{pool_uuid}/update:
+  /admin/pool/{pool_id}/update:
     put:
       tags:
         - Admin:Pool
@@ -1085,7 +1085,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: pool_uuid
+        - name: pool_id
           in: path
           required: true
           schema:
@@ -1108,7 +1108,7 @@ paths:
         '500':
           description: "Internal server error."
   
-  /admin/pool/{pool_uuid}/delete:
+  /admin/pool/{pool_id}/delete:
     delete:
       tags:
         - Admin:Pool
@@ -1120,7 +1120,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: pool_uuid
+        - name: pool_id
           in: path
           required: true
           schema:
