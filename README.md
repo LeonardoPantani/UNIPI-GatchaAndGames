@@ -38,3 +38,9 @@ docker build -t openapi_server .
 # avvio del container
 docker run -p 8080:8080 openapi_server
 ```
+
+
+# Links utili
+
+- [Come usare Git](https://nvie.com/posts/a-successful-git-branching-model/)
+- [Convenzione dei commit](https://www.conventionalcommits.org/en/v1.0.0/)
