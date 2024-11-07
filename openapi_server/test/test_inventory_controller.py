@@ -1,0 +1,63 @@
+import unittest
+
+from flask import json
+
+from openapi_server.models.inventory_item import InventoryItem  # noqa: E501
+from openapi_server.models.inventory_item_id import InventoryItemId  # noqa: E501
+from openapi_server.test import BaseTestCase
+
+
+class TestInventoryController(BaseTestCase):
+    """InventoryController integration test stubs"""
+
+    def test_get_inventory(self):
+        """Test case for get_inventory
+
+        Retrieve player's inventory
+        """
+        query_string = [('page_number', 1)]
+        headers = { 
+            'Accept': 'application/json',
+        }
+        response = self.client.open(
+            '/inventory',
+            method='GET',
+            headers=headers,
+            query_string=query_string)
+        self.assert200(response,
+                       'Response body is : ' + response.data.decode('utf-8'))
+
+    def test_get_inventory_item_info(self):
+        """Test case for get_inventory_item_info
+
+        Shows infos on my inventory item.
+        """
+        headers = { 
+            'Accept': 'application/json',
+        }
+        response = self.client.open(
+            '/inventory/{inventory_item_id}'.format(inventory_item_id='inventory_item_id_example'),
+            method='GET',
+            headers=headers)
+        self.assert200(response,
+                       'Response body is : ' + response.data.decode('utf-8'))
+
+    def test_remove_inventory_item(self):
+        """Test case for remove_inventory_item
+
+        Removes an item from player's inventory
+        """
+        query_string = [('item_id', openapi_server.InventoryItemId())]
+        headers = { 
+        }
+        response = self.client.open(
+            '/inventory',
+            method='DELETE',
+            headers=headers,
+            query_string=query_string)
+        self.assert200(response,
+                       'Response body is : ' + response.data.decode('utf-8'))
+
+
+if __name__ == '__main__':
+    unittest.main()
