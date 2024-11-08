@@ -68,3 +68,4 @@ target/
 
 # custom
 database/db
+database/.env
