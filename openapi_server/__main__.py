@@ -30,17 +30,17 @@ def main():
     db = MySQL(connexion_app.app)
 
     # Controllo la connessione al database
-    try:
-        conn = MySQLdb.connect(
-            host=config["MYSQL_HOST"],
-            user=config["MYSQL_USER"],
-            password=config["MYSQL_PASSWORD"],
-            db=config["MYSQL_DB"]
-        )
-        conn.close()
-    except MySQLdb.OperationalError as e:
-        print(f"[!] Errore di connessione al database: {e}")
-        quit()
+    # try:
+    #     conn = MySQLdb.connect(
+    #         host=config["MYSQL_HOST"],
+    #         user=config["MYSQL_USER"],
+    #         password=config["MYSQL_PASSWORD"],
+    #         db=config["MYSQL_DB"]
+    #     )
+    #     conn.close()
+    # except MySQLdb.OperationalError as e:
+    #     print(f"[!] Errore di connessione al database: {e}")
+    #     quit()
 
     connexion_app.run(port=8080, debug=True)
 
