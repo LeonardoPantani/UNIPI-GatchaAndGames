@@ -1,0 +1,44 @@
+
+
+services:
+  api:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - MYSQL_HOST=db
+      - MYSQL_DB=gacha_test_db
+      - MYSQL_USER=gacha_test_user
+      - MYSQL_PASSWORD=gacha_test_password
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - gacha-network
+
+  db:
+    image: mysql:8
+    environment:
+      - MYSQL_DATABASE=gacha_test_db
+      - MYSQL_USER=gacha_test_user
+      - MYSQL_PASSWORD=gacha_test_password
+      - MYSQL_ROOT_PASSWORD=root
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./database:/docker-entrypoint-initdb.d
+    networks:
+      - gacha-network
+
+networks:
+  gacha-network:
+    driver: bridge
+
+volumes:
+  mysql-data:
