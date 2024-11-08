@@ -1,0 +1,16 @@
+services:
+  db:
+    image: mysql:9.1.0
+    container_name: gacha_test_db
+    env_file: ".env"
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: gacha_test_db
+      MYSQL_USER: gacha_test_user
+      MYSQL_PASSWORD: gacha_test_password
+    ports:
+      - "127.0.0.1:3306:3306"
+    network_mode: "host"
+    volumes:
+      - ./db:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql

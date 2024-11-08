@@ -12,3 +12,6 @@ python_dateutil >= 2.6.0
 setuptools >= 21.0.0
 Flask == 2.1.1
 tox == 4.23.2
+python-dotenv == 1.0.1
+mysqlclient
+flask-mysqldb
