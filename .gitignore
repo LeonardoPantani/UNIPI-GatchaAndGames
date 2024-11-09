@@ -67,5 +67,5 @@ target/
 
 
 # custom
-database/db
-database/.env
+database/db.env
+openapi_server/api.env
