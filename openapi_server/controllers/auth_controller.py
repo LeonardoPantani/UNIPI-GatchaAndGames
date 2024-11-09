@@ -7,7 +7,7 @@ from openapi_server.models.register_request import RegisterRequest  # noqa: E501
 from openapi_server import util
 
 from flask import current_app, jsonify
-from flask_mysqldb import MySQL
+from flaskext.mysql import MySQL
 import connexion
 
 def login():
@@ -17,17 +17,15 @@ def login():
         password = login_request.get("password")
 
         try:
-            # Ottieni MySQL dall'app Flask
             mysql = current_app.extensions.get('mysql')
             
             if not mysql:
                 return jsonify({"error": "Database connection not initialized"}), 500
                 
-            cur = mysql.connection.cursor()
-            cur.execute('SELECT * FROM USERS')
-            result = cur.fetchone()
-            cur.close()
-            mysql.connection.commit()
+            cursor = mysql.connect().cursor()
+            cursor.execute('SELECT * FROM USERS')
+            result = cursor.fetchone()
+            cursor.close()
             
             return jsonify({
                 "message": "Database connection successful",

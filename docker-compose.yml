@@ -8,6 +8,11 @@ services:
     env_file: "database/db.env"
     volumes:
       - mysql_gatchaandgames_db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      timeout: 1s
+      interval: 1s
+      retries: 20
 
   api:
     image: api_gachaandgames
@@ -17,7 +22,8 @@ services:
       - "127.0.0.1:8080:8080"
     env_file: "openapi_server/api.env"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     links:
       - db
     tty: true
