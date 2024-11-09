@@ -1,18 +1,13 @@
-import connexion
 from typing import Dict
 from typing import Tuple
 from typing import Union
-
-from flask import current_app, jsonify
-from flask_mysqldb import MySQL
-
 
 from openapi_server.models.login_request import LoginRequest  # noqa: E501
 from openapi_server.models.register_request import RegisterRequest  # noqa: E501
 from openapi_server import util
 
-
 from flask import current_app, jsonify
+from flask_mysqldb import MySQL
 import connexion
 
 def login():
@@ -22,14 +17,14 @@ def login():
         password = login_request.get("password")
 
         try:
-            # Get the MySQL connection from extensions
+            # Ottieni MySQL dall'app Flask
             mysql = current_app.extensions.get('mysql')
             
             if not mysql:
                 return jsonify({"error": "Database connection not initialized"}), 500
                 
             cur = mysql.connection.cursor()
-            cur.execute('SELECT 1')
+            cur.execute('SELECT * FROM USERS')
             result = cur.fetchone()
             cur.close()
             mysql.connection.commit()
@@ -43,7 +38,6 @@ def login():
             return jsonify({"error": str(e)}), 500
 
     return jsonify({"message": "Invalid request"}), 400
-
 
 def logout(session):  # noqa: E501
     """Logs out from an account.

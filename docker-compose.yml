@@ -1,44 +1,26 @@
-
-
 services:
-  api:
-    build: .
-    ports:
-      - "8080:8080"
-    environment:
-      - MYSQL_HOST=db
-      - MYSQL_DB=gacha_test_db
-      - MYSQL_USER=gacha_test_user
-      - MYSQL_PASSWORD=gacha_test_password
-    depends_on:
-      db:
-        condition: service_healthy
-    networks:
-      - gacha-network
-
   db:
-    image: mysql:8
-    environment:
-      - MYSQL_DATABASE=gacha_test_db
-      - MYSQL_USER=gacha_test_user
-      - MYSQL_PASSWORD=gacha_test_password
-      - MYSQL_ROOT_PASSWORD=root
+    image: db_gachaandgames
+    container_name: mysql_db_gachaandgames
+    build: ./database/
     ports:
-      - "3306:3306"
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      - "127.0.0.1:3306:3306"
+    env_file: "database/db.env"
     volumes:
-      - mysql-data:/var/lib/mysql
-      - ./database:/docker-entrypoint-initdb.d
-    networks:
-      - gacha-network
+      - mysql_gatchaandgames_db:/var/lib/mysql
 
-networks:
-  gacha-network:
-    driver: bridge
+  api:
+    image: api_gachaandgames
+    container_name: app_api_gachaandgames
+    build: ./openapi_server/
+    ports:
+      - "127.0.0.1:8080:8080"
+    env_file: "openapi_server/api.env"
+    depends_on:
+      - db
+    links:
+      - db
+    tty: true
 
 volumes:
-  mysql-data:
+  mysql_gatchaandgames_db:
