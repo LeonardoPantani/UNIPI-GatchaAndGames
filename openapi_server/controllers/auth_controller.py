@@ -34,10 +34,10 @@ def login():
             connection = mysql.connect()
             cursor = connection.cursor()
             query = """
-                SELECT u.PASSWORD_HASH, u.UUID 
-                FROM USERS u
-                JOIN PROFILE p ON u.UUID = p.UUID
-                WHERE p.USERNAME = %s
+                SELECT u.password, u.uuid 
+                FROM users u
+                JOIN profiles p ON u.uuid = p.uuid
+                WHERE p.username = %s
             """
             cursor.execute(query, (username,))
             result = cursor.fetchone()
@@ -88,7 +88,7 @@ def register():
         password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         
         # Generate UUID for new user
-        user_uuid = str(uuid.uuid4())
+        user_uuid = uuid.uuid4().bytes
 
         try:
             mysql = current_app.extensions.get('mysql')
@@ -101,13 +101,13 @@ def register():
 
             # Insert user in USERS table
             cursor.execute(
-                'INSERT INTO USERS (EMAIL, PASSWORD_HASH, ROLE, UUID) VALUES (%s, %s, %s, %s)',
-                (email, password_hash, 'USER', user_uuid)
+                'INSERT INTO users (uuid, email, password, role) VALUES (%s, %s, %s, %s)',
+                (user_uuid, email, password_hash, 'USER')
             )
             
             # Insert profile in PROFILE table
             cursor.execute(
-                'INSERT INTO PROFILE (UUID, USERNAME, CURRENCY, PVP_SCORE) VALUES (%s, %s, %s, %s)',
+                'INSERT INTO profiles (uuid, username, currency, pvp_score) VALUES (%s, %s, %s, %s)',
                 (user_uuid, username, 0, 0)
             )
 
