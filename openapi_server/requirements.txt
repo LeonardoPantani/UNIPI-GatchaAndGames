@@ -15,3 +15,5 @@ tox == 4.23.2
 python-dotenv == 1.0.1
 flask-mysql == 1.5.2
 cryptography == 43.0.3
+bcrypt == 4.2.0
+flask-login == 0.6.3
