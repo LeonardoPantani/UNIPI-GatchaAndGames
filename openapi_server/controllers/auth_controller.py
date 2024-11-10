@@ -23,7 +23,7 @@ def login():
                 return jsonify({"error": "Database connection not initialized"}), 500
                 
             cursor = mysql.connect().cursor()
-            cursor.execute('SELECT * FROM USERS')
+            cursor.execute('SELECT * FROM users')
             result = cursor.fetchone()
             cursor.close()
             
