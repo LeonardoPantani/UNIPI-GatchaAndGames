@@ -10,8 +10,6 @@ import connexion
 import uuid
 import bcrypt
 
-# TODO: https://pypi.org/project/Flask-Login/#description
-
 def login():
     if 'username' in session:
         return jsonify({"error": "You are already logged in"}), 409
@@ -48,7 +46,6 @@ def login():
                 if bcrypt.checkpw(password.encode('utf-8'), stored_password_hash.encode('utf-8')):
                     # Create session cookie on successful login
                     response = make_response(jsonify({"message": "Login successful"}), 200)
-                    #response.set_cookie("session", user_uuid, httponly=True, secure=True)
                     session['username'] = username
                     return response
                 else:
