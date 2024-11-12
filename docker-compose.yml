@@ -1,33 +1,56 @@
 services:
+  api_gateway:
+    image: nginx:alpine
+    container_name: api_gateway_gachaandgames
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./api_gateway/api_gateway.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - service_auth
+    restart: always  # Riavvio automatico in caso di errore
+
   db:
     image: db_gachaandgames
     container_name: mysql_db_gachaandgames
     build: ./database/
     ports:
-      - "127.0.0.1:3306:3306"
+      - "3306:3306"
     env_file: "database/db.env"
     volumes:
       - mysql_gatchaandgames_db:/var/lib/mysql
     healthcheck:
       test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
-      timeout: 1s
+      timeout: 10s
       interval: 1s
       retries: 20
 
-  api:
-    image: api_gachaandgames
-    container_name: app_api_gachaandgames
-    build: ./openapi_server/
+  service_auth:
+    image: service_auth
+    container_name: app_service_auth_gachaandgames
+    build: ./services/auth/
     ports:
-      - "127.0.0.1:8080:8080"
-    env_file: "openapi_server/api.env"
+      - "3001:3001"
+    env_file: ./services/auth/.env
     volumes:
-      - ./openapi_server:/usr/src/app/openapi_server
+      - ./services/auth:/usr/src/app/
     depends_on:
       db:
         condition: service_healthy
-    links:
-      - db
+    tty: true
+  
+  service_auctions:
+    image: service_auctions
+    container_name: app_service_auctions_gachaandgames
+    build: ./services/auctions/
+    ports:
+      - "3002:3002"
+    env_file: ./services/auctions/.env
+    volumes:
+      - ./services/auctions:/usr/src/app/
+    depends_on:
+      db:
+        condition: service_healthy
     tty: true
 
 volumes:
