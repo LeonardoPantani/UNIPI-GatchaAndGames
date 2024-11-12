@@ -16,17 +16,6 @@ def get_gacha_info(gacha_uuid):  # noqa: E501
     """Shows infos on a gacha.
 
     Returns infos on a gacha. # noqa: E501
-<<<<<<< HEAD:services/gacha/openapi_server/controllers/gacha_controller.py
-
-    :param gacha_uuid: 
-    :type gacha_uuid: str
-    :type gacha_uuid: str
-    :param session: 
-    :type session: str
-
-    :rtype: Union[Gacha, Tuple[Gacha, int], Tuple[Gacha, int, Dict[str, str]]
-=======
->>>>>>> a2e44eb (feat: finished all functionalities but still missing remove_item (waiting for spec update)):openapi_server/controllers/gacha_controller.py
     """
     cursor = None
     conn = None
