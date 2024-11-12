@@ -1,0 +1,321 @@
+openapi: 3.0.0
+info:
+  contact:
+    email: support@gachaandgames.it
+  description: |-
+    API for managing gacha items, auctions, PVP battles, currency, and user authentication.
+
+    Useful links:
+    - [Project repository](https://github.com/LeonardoPantani/UNIPI-GachaAndGames)
+  license:
+    name: GPL-3.0
+    url: https://www.gnu.org/licenses/gpl-3.0.html#license-text
+  termsOfService: http://localhost:8080/tos
+  title: Gacha System - OpenAPI 3.0
+  version: 1.0.0
+servers:
+- description: Local server
+  url: http://localhost:8080
+paths:
+  /gacha/list:
+    get:
+      description: Returns a list of all gachas.
+      operationId: get_gachas
+      parameters:
+      - explode: true
+        in: query
+        name: not_owned
+        required: false
+        schema:
+          default: false
+          type: boolean
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Pool'
+                type: array
+          description: Successful operation
+        "500":
+          description: Internal server error
+      summary: Lists all gachas.
+      tags:
+      - gacha
+      x-openapi-router-controller: openapi_server.controllers.gacha_controller
+  /gacha/pools:
+    get:
+      description: Returns a list of available gacha pools.
+      operationId: get_pool_info
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Pool'
+                type: array
+          description: Successful operation
+        "500":
+          description: Internal server error
+      summary: Lists available pools.
+      tags:
+      - gacha
+      x-openapi-router-controller: openapi_server.controllers.gacha_controller
+  /gacha/pull/{pool_id}:
+    post:
+      description: Allows a player to pull a random gacha item from a specified pool.
+        Consumes in-game currency.
+      operationId: pull_gacha
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: path
+        name: pool_id
+        required: true
+        schema:
+          $ref: '#/components/schemas/PoolId'
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Gacha'
+          description: Successful pull
+        "403":
+          description: Insufficient funds.
+        "500":
+          description: Internal server error.
+      summary: Pull a random gacha from a specific pool.
+      tags:
+      - gacha
+      x-openapi-router-controller: openapi_server.controllers.gacha_controller
+  /gacha/{gacha_uuid}:
+    get:
+      description: Returns infos on a gacha.
+      operationId: get_gacha_info
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: path
+        name: gacha_uuid
+        required: true
+        schema:
+          $ref: '#/components/schemas/GachaId'
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Gacha'
+          description: Successful operation
+        "500":
+          description: Internal server error
+      summary: Shows infos on a gacha.
+      tags:
+      - gacha
+      x-openapi-router-controller: openapi_server.controllers.gacha_controller
+components:
+  schemas:
+    GachaStat:
+      description: Stat of a gacha.
+      example: A
+      pattern: "^[A-Ea-e]$"
+      type: string
+    PoolId:
+      description: Internal code-name for the pool.
+      example: pool_starter
+      pattern: "^[a-zA-Z0-9_]+$"
+      title: id
+      type: string
+    Pool:
+      example:
+        name: Starter Pool
+        id: pool_starter
+        probabilities:
+          legendaryProbability: 5.962134
+          epicProbability: 1.4658129
+          commonProbability: 0.8008282
+          rareProbability: 6.0274563
+        items:
+        - gacha_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          name: Tower of Gray
+          attributes:
+            durability: A
+            precision: A
+            range: A
+            power: A
+            potential: A
+            speed: A
+          rarity: rare
+        - gacha_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          name: Tower of Gray
+          attributes:
+            durability: A
+            precision: A
+            range: A
+            power: A
+            potential: A
+            speed: A
+          rarity: rare
+      properties:
+        id:
+          description: Internal code-name for the pool.
+          example: pool_starter
+          pattern: "^[a-zA-Z0-9_]+$"
+          title: id
+          type: string
+        name:
+          description: Visible name of the pool.
+          example: Starter Pool
+          title: name
+          type: string
+        probabilities:
+          $ref: '#/components/schemas/RarityProbability'
+        items:
+          description: List of gacha items in the pool.
+          items:
+            $ref: '#/components/schemas/Gacha'
+          title: items
+          type: array
+      title: Pool
+      type: object
+    RarityProbability:
+      example:
+        legendaryProbability: 5.962134
+        epicProbability: 1.4658129
+        commonProbability: 0.8008282
+        rareProbability: 6.0274563
+      properties:
+        commonProbability:
+          default: 0.5
+          format: float
+          title: commonProbability
+          type: number
+        rareProbability:
+          default: 0.3
+          format: float
+          title: rareProbability
+          type: number
+        epicProbability:
+          default: 0.15
+          format: float
+          title: epicProbability
+          type: number
+        legendaryProbability:
+          default: 0.05
+          format: float
+          title: legendaryProbability
+          type: number
+      title: RarityProbability
+      type: object
+    GachaRarity:
+      description: Rarity level of the gacha
+      enum:
+      - common
+      - rare
+      - epic
+      - legendary
+      example: rare
+      title: GachaRarity
+      type: string
+    GachaId:
+      description: UUID of the gacha
+      format: uuid
+      title: GachaId
+      type: string
+    Gacha:
+      example:
+        gacha_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        name: Tower of Gray
+        attributes:
+          durability: A
+          precision: A
+          range: A
+          power: A
+          potential: A
+          speed: A
+        rarity: rare
+      properties:
+        gacha_uuid:
+          description: UUID of the gacha
+          format: uuid
+          title: GachaId
+          type: string
+        name:
+          description: Name of the gacha
+          example: Tower of Gray
+          title: name
+          type: string
+        rarity:
+          $ref: '#/components/schemas/GachaRarity'
+        attributes:
+          $ref: '#/components/schemas/Gacha_attributes'
+      title: Gacha
+      type: object
+    Gacha_attributes:
+      additionalProperties:
+        type: string
+      example:
+        durability: A
+        precision: A
+        range: A
+        power: A
+        potential: A
+        speed: A
+      properties:
+        power:
+          description: Stat of a gacha.
+          example: A
+          pattern: "^[A-Ea-e]$"
+          type: string
+        speed:
+          description: Stat of a gacha.
+          example: A
+          pattern: "^[A-Ea-e]$"
+          type: string
+        durability:
+          description: Stat of a gacha.
+          example: A
+          pattern: "^[A-Ea-e]$"
+          type: string
+        precision:
+          description: Stat of a gacha.
+          example: A
+          pattern: "^[A-Ea-e]$"
+          type: string
+        range:
+          description: Stat of a gacha.
+          example: A
+          pattern: "^[A-Ea-e]$"
+          type: string
+        potential:
+          description: Stat of a gacha.
+          example: A
+          pattern: "^[A-Ea-e]$"
+          type: string
+      required:
+      - durability
+      - potential
+      - power
+      - precision
+      - range
+      - speed
+      title: Gacha_attributes
+      type: object

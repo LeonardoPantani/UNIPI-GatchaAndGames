@@ -52,6 +52,104 @@ services:
       db:
         condition: service_healthy
     tty: true
+  
+  service_currency:
+    image: service_currency
+    container_name: app_service_currency_gachaandgames
+    build: ./services/currency/
+    ports:
+      - "3003:3003"
+    env_file: ./services/currency/.env
+    volumes:
+      - ./services/currency:/usr/src/app/
+    depends_on:
+      db:
+        condition: service_healthy
+    tty: true
+  
+  service_admin:
+    image: service_admin
+    container_name: app_service_admin_gachaandgames
+    build: ./services/admin/
+    ports:
+      - "3004:3004"
+    env_file: ./services/admin/.env
+    volumes:
+      - ./services/admin:/usr/src/app/
+    depends_on:
+      db:
+        condition: service_healthy
+    tty: true
+
+  service_feedback:
+    image: service_feedback
+    container_name: app_service_feedback_gachaandgames
+    build: ./services/feedback/
+    ports:
+      - "3005:3005"
+    env_file: ./services/feedback/.env
+    volumes:
+      - ./services/feedback:/usr/src/app/
+    depends_on:
+      db:
+        condition: service_healthy
+    tty: true
+
+  service_gacha:
+    image: service_gacha
+    container_name: app_service_gacha_gachaandgames
+    build: ./services/gacha/
+    ports:
+      - "3006:3006"
+    env_file: ./services/gacha/.env
+    volumes:
+      - ./services/gacha:/usr/src/app/
+    depends_on:
+      db:
+        condition: service_healthy
+    tty: true
+
+  service_inventory:
+    image: service_inventory
+    container_name: app_service_inventory_gachaandgames
+    build: ./services/inventory/
+    ports:
+      - "3007:3007"
+    env_file: ./services/inventory/.env
+    volumes:
+      - ./services/inventory:/usr/src/app/
+    depends_on:
+      db:
+        condition: service_healthy
+    tty: true
+
+  service_profile:
+    image: service_profile
+    container_name: app_service_profile_gachaandgames
+    build: ./services/profile/
+    ports:
+      - "3008:3008"
+    env_file: ./services/profile/.env
+    volumes:
+      - ./services/profile:/usr/src/app/
+    depends_on:
+      db:
+        condition: service_healthy
+    tty: true
+
+  service_pvp:
+    image: service_pvp
+    container_name: app_service_pvp_gachaandgames
+    build: ./services/pvp/
+    ports:
+      - "3009:3009"
+    env_file: ./services/pvp/.env
+    volumes:
+      - ./services/pvp:/usr/src/app/
+    depends_on:
+      db:
+        condition: service_healthy
+    tty: true
 
 volumes:
   mysql_gatchaandgames_db:

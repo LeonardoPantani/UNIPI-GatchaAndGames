@@ -1,0 +1,485 @@
+openapi: 3.0.0
+info:
+  contact:
+    email: support@gachaandgames.it
+  description: |-
+    API for managing gacha items, auctions, PVP battles, currency, and user authentication.
+
+    Useful links:
+    - [Project repository](https://github.com/LeonardoPantani/UNIPI-GachaAndGames)
+  license:
+    name: GPL-3.0
+    url: https://www.gnu.org/licenses/gpl-3.0.html#license-text
+  termsOfService: http://localhost:8080/tos
+  title: Gacha System - OpenAPI 3.0
+  version: 1.0.0
+servers:
+- description: Local server
+  url: http://localhost:8080
+paths:
+  /pvp/acceptPvPRequest/{pvp_match_uuid}:
+    post:
+      description: Allows a player to accept a PvP battle with another user.
+      operationId: accept_pvp_request
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: The pending pvp request's match id.
+        explode: false
+        in: path
+        name: pvp_match_uuid
+        required: true
+        schema:
+          $ref: '#/components/schemas/PvPMatchId'
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Team'
+        description: Specify the team to battle the player with.
+        required: true
+      responses:
+        "200":
+          description: Battle started successfully.
+        "400":
+          description: Invalid pvp match id or team data.
+        "500":
+          description: Internal server error.
+      summary: Accept a pending PvP request.
+      tags:
+      - pvp
+      x-openapi-router-controller: openapi_server.controllers.pvp_controller
+  /pvp/checkPendingPvPRequests:
+    get:
+      description: "If the current user has one or more pending requests, a list will\
+        \ be returned. The current user's UUID is obtained via session cookie."
+      operationId: check_pending_pvp_requests
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PendingPvPRequests'
+          description: The list containing requests for current user.
+        "400":
+          description: Invalid input data
+        "500":
+          description: Internal server error
+      summary: Returns a list of pending PvP requests.
+      tags:
+      - pvp
+      x-openapi-router-controller: openapi_server.controllers.pvp_controller
+  /pvp/rejectPvPRequest/{pvp_match_uuid}:
+    post:
+      description: Allows a player to reject a PvP battle with another user.
+      operationId: reject_pv_prequest
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: The pending pvp request's match id.
+        explode: false
+        in: path
+        name: pvp_match_uuid
+        required: true
+        schema:
+          $ref: '#/components/schemas/PvPMatchId'
+        style: simple
+      responses:
+        "200":
+          description: Battle rejected successfully.
+        "400":
+          description: Invalid pvp match id.
+        "500":
+          description: Internal server error.
+      summary: Rejects a pending PvP request.
+      tags:
+      - pvp
+      x-openapi-router-controller: openapi_server.controllers.pvp_controller
+  /pvp/sendPvPRequest/{user_uuid}:
+    post:
+      description: Sends a requests to another player to initiate a PvP battle.
+      operationId: send_pvp_request
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: The player's UUID to send the battle request to.
+        explode: false
+        in: path
+        name: user_uuid
+        required: true
+        schema:
+          $ref: '#/components/schemas/UserId'
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Team'
+        description: Specify the team to battle the player with.
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PvPRequest'
+          description: Request to fight sent successfully.
+        "400":
+          description: Player's UUID not found.
+        "500":
+          description: Internal server error.
+      summary: Sends a PvP match request.
+      tags:
+      - pvp
+      x-openapi-router-controller: openapi_server.controllers.pvp_controller
+  /pvp/status/{pvp_match_uuid}:
+    get:
+      description: Allows a player to view the results of the match.
+      operationId: get_pvp_status
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: The pending pvp request's match id.
+        explode: false
+        in: path
+        name: pvp_match_uuid
+        required: true
+        schema:
+          $ref: '#/components/schemas/PvPMatchId'
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PvPRequest'
+          description: Match results found.
+        "400":
+          description: Invalid match id.
+        "500":
+          description: Internal server error.
+      summary: Returns the results of a PvP match.
+      tags:
+      - pvp
+      x-openapi-router-controller: openapi_server.controllers.pvp_controller
+components:
+  schemas:
+    GachaStat:
+      description: Stat of a gacha.
+      example: A
+      pattern: "^[A-Ea-e]$"
+      type: string
+    GachaRarity:
+      description: Rarity level of the gacha
+      enum:
+      - common
+      - rare
+      - epic
+      - legendary
+      example: rare
+      title: GachaRarity
+      type: string
+    UserId:
+      description: UUID of user.
+      format: uuid
+      title: sender_id
+      type: string
+    GachaId:
+      description: UUID of the gacha
+      format: uuid
+      title: gacha_uuid
+      type: string
+    Gacha:
+      example:
+        gacha_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        name: Tower of Gray
+        attributes:
+          durability: A
+          precision: A
+          range: A
+          power: A
+          potential: A
+          speed: A
+        rarity: rare
+      properties:
+        gacha_uuid:
+          description: UUID of the gacha
+          format: uuid
+          title: gacha_uuid
+          type: string
+        name:
+          description: Name of the gacha
+          example: Tower of Gray
+          title: name
+          type: string
+        rarity:
+          $ref: '#/components/schemas/GachaRarity'
+        attributes:
+          $ref: '#/components/schemas/Gacha_attributes'
+      title: Gacha
+      type: object
+    Team:
+      description: Team used by players to battle each others.
+      example:
+        gachas:
+        - gacha_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          name: Tower of Gray
+          attributes:
+            durability: A
+            precision: A
+            range: A
+            power: A
+            potential: A
+            speed: A
+          rarity: rare
+        - gacha_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          name: Tower of Gray
+          attributes:
+            durability: A
+            precision: A
+            range: A
+            power: A
+            potential: A
+            speed: A
+          rarity: rare
+        - gacha_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          name: Tower of Gray
+          attributes:
+            durability: A
+            precision: A
+            range: A
+            power: A
+            potential: A
+            speed: A
+          rarity: rare
+        - gacha_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          name: Tower of Gray
+          attributes:
+            durability: A
+            precision: A
+            range: A
+            power: A
+            potential: A
+            speed: A
+          rarity: rare
+        - gacha_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          name: Tower of Gray
+          attributes:
+            durability: A
+            precision: A
+            range: A
+            power: A
+            potential: A
+            speed: A
+          rarity: rare
+      properties:
+        gachas:
+          items:
+            $ref: '#/components/schemas/Gacha'
+          maxItems: 7
+          minItems: 7
+          title: gachas
+          type: array
+      title: Team
+      type: object
+    PvPMatchId:
+      description: UUID of the PvP match.
+      format: uuid
+      title: pvp_match_uuid
+      type: string
+    MatchLog:
+      example:
+      - Battle between Player A and Player B starts NOW.
+      - x uses Quick Attack!
+      - Player A has won the match.
+      items:
+        type: string
+      title: match_log
+      type: array
+    PvPRequest:
+      description: Request of a PvP match sent by a player.
+      example:
+        match_log:
+        - Battle between Player A and Player B starts NOW.
+        - x uses Quick Attack!
+        - Player A has won the match.
+        receiver_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        pvp_match_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        winner_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        sent_timestamp: 2000-01-23T04:56:07.000+00:00
+        sender_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+      properties:
+        pvp_match_uuid:
+          description: UUID of the PvP match.
+          format: uuid
+          title: pvp_match_uuid
+          type: string
+        sender_id:
+          description: UUID of user.
+          format: uuid
+          title: sender_id
+          type: string
+        receiver_id:
+          description: UUID of user.
+          format: uuid
+          title: sender_id
+          type: string
+        winner_id:
+          description: UUID of user.
+          format: uuid
+          title: sender_id
+          type: string
+        match_log:
+          example:
+          - Battle between Player A and Player B starts NOW.
+          - x uses Quick Attack!
+          - Player A has won the match.
+          items:
+            type: string
+          title: match_log
+          type: array
+        sent_timestamp:
+          description: Request sent timestamp.
+          format: date-time
+          title: sent_timestamp
+          type: string
+      title: PvPRequest
+      type: object
+    PendingPvPRequests:
+      description: List of pending pvp requests.
+      example:
+        requests:
+        - match_log:
+          - Battle between Player A and Player B starts NOW.
+          - x uses Quick Attack!
+          - Player A has won the match.
+          receiver_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          pvp_match_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          winner_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          sent_timestamp: 2000-01-23T04:56:07.000+00:00
+          sender_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        - match_log:
+          - Battle between Player A and Player B starts NOW.
+          - x uses Quick Attack!
+          - Player A has won the match.
+          receiver_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          pvp_match_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          winner_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          sent_timestamp: 2000-01-23T04:56:07.000+00:00
+          sender_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        - match_log:
+          - Battle between Player A and Player B starts NOW.
+          - x uses Quick Attack!
+          - Player A has won the match.
+          receiver_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          pvp_match_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          winner_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          sent_timestamp: 2000-01-23T04:56:07.000+00:00
+          sender_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        - match_log:
+          - Battle between Player A and Player B starts NOW.
+          - x uses Quick Attack!
+          - Player A has won the match.
+          receiver_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          pvp_match_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          winner_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          sent_timestamp: 2000-01-23T04:56:07.000+00:00
+          sender_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        - match_log:
+          - Battle between Player A and Player B starts NOW.
+          - x uses Quick Attack!
+          - Player A has won the match.
+          receiver_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          pvp_match_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          winner_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          sent_timestamp: 2000-01-23T04:56:07.000+00:00
+          sender_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+      properties:
+        requests:
+          items:
+            $ref: '#/components/schemas/PvPRequest'
+          maxItems: 100
+          minItems: 0
+          title: requests
+          type: array
+      title: PendingPvPRequests
+      type: object
+    Gacha_attributes:
+      additionalProperties:
+        type: string
+      example:
+        durability: A
+        precision: A
+        range: A
+        power: A
+        potential: A
+        speed: A
+      properties:
+        power:
+          description: Stat of a gacha.
+          example: A
+          pattern: "^[A-Ea-e]$"
+          type: string
+        speed:
+          description: Stat of a gacha.
+          example: A
+          pattern: "^[A-Ea-e]$"
+          type: string
+        durability:
+          description: Stat of a gacha.
+          example: A
+          pattern: "^[A-Ea-e]$"
+          type: string
+        precision:
+          description: Stat of a gacha.
+          example: A
+          pattern: "^[A-Ea-e]$"
+          type: string
+        range:
+          description: Stat of a gacha.
+          example: A
+          pattern: "^[A-Ea-e]$"
+          type: string
+        potential:
+          description: Stat of a gacha.
+          example: A
+          pattern: "^[A-Ea-e]$"
+          type: string
+      required:
+      - durability
+      - potential
+      - power
+      - precision
+      - range
+      - speed
+      title: Gacha_attributes
+      type: object

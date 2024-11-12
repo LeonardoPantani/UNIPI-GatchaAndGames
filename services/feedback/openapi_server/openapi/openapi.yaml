@@ -1,0 +1,51 @@
+openapi: 3.0.0
+info:
+  contact:
+    email: support@gachaandgames.it
+  description: |-
+    API for managing gacha items, auctions, PVP battles, currency, and user authentication.
+
+    Useful links:
+    - [Project repository](https://github.com/LeonardoPantani/UNIPI-GachaAndGames)
+  license:
+    name: GPL-3.0
+    url: https://www.gnu.org/licenses/gpl-3.0.html#license-text
+  termsOfService: http://localhost:8080/tos
+  title: Gacha System - OpenAPI 3.0
+  version: 1.0.0
+servers:
+- description: Local server
+  url: http://localhost:8080
+paths:
+  /feedback:
+    post:
+      description: Creates a feedback to the admins.
+      operationId: post_feedback
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: string
+        required: true
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          description: Feedback created successfully.
+        "400":
+          description: Invalid query parameters.
+        "500":
+          description: Internal server error.
+      summary: Sends a feedback.
+      tags:
+      - feedback
+      x-openapi-router-controller: openapi_server.controllers.feedback_controller
+components:
+  schemas: {}

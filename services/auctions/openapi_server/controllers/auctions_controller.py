@@ -5,7 +5,6 @@ from typing import Union
 
 from openapi_server.models.auction import Auction  # noqa: E501
 from openapi_server.models.gacha_rarity import GachaRarity  # noqa: E501
-from openapi_server.models.inventory_item_id import InventoryItemId  # noqa: E501
 from openapi_server import util
 
 from flask import jsonify, request, session, current_app

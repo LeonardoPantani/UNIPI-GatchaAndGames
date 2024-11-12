@@ -21,13 +21,13 @@ python3 -m openapi_server
 and open your browser to here:
 
 ```
-http://localhost:8080/ui/
+http://localhost:3002/ui/
 ```
 
 Your OpenAPI definition lives here:
 
 ```
-http://localhost:8080/openapi.json
+http://localhost:3002/openapi.json
 ```
 
 To launch the integration tests, use tox:
@@ -45,5 +45,5 @@ To run the server on a Docker container, please execute the following from the r
 docker build -t openapi_server .
 
 # starting up a container
-docker run -p 8080:8080 openapi_server
+docker run -p 3002:3002 openapi_server
 ```
