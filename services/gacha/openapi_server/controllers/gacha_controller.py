@@ -8,7 +8,7 @@ from openapi_server.models.pool import Pool  # noqa: E501
 from openapi_server import util
 
 
-def get_gacha_info(gacha_uuid, session=None):  # noqa: E501
+def get_gacha_info(gacha_uuid):  # noqa: E501
     """Shows infos on a gacha.
 
     Returns infos on a gacha. # noqa: E501
