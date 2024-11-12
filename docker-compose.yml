@@ -7,7 +7,15 @@ services:
     volumes:
       - ./api_gateway/api_gateway.conf:/etc/nginx/nginx.conf:ro
     depends_on:
+      - service_admin
+      - service_auctions
       - service_auth
+      - service_currency
+      - service_feedback
+      - service_gacha
+      - service_inventory
+      - service_profile
+      - service_pvp
     restart: always  # Riavvio automatico in caso di errore
 
   db:
