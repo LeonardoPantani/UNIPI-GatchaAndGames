@@ -281,22 +281,14 @@ def get_pool_info():  # noqa: E501
             conn.close()
 
 
-<<<<<<< HEAD:services/gacha/openapi_server/controllers/gacha_controller.py
-def pull_gacha(pool_id, session=None):  # noqa: E501
-=======
 def pull_gacha(pool_id):  # noqa: E501
->>>>>>> a2e44eb (feat: finished all functionalities but still missing remove_item (waiting for spec update)):openapi_server/controllers/gacha_controller.py
     """Pull a random gacha from a specific pool.
     
     Allows a player to pull a random gacha item from a specified pool. Consumes in-game currency. # noqa: E501
 
-<<<<<<< HEAD:services/gacha/openapi_server/controllers/gacha_controller.py
-    :param pool_id: 
-=======
     :param session: Session cookie for authentication
     :type session: str
     :param pool_id: Pool to pull from 
->>>>>>> a2e44eb (feat: finished all functionalities but still missing remove_item (waiting for spec update)):openapi_server/controllers/gacha_controller.py
     :type pool_id: str
     :param session: 
     :type session: str
