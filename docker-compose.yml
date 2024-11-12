@@ -6,6 +6,7 @@ services:
       - "8080:8080"
     volumes:
       - ./api_gateway/api_gateway.conf:/etc/nginx/nginx.conf:ro
+      - ./favicon.ico:/usr/share/nginx/html/favicon.ico:ro
     depends_on:
       - service_admin
       - service_auctions
@@ -16,7 +17,7 @@ services:
       - service_inventory
       - service_profile
       - service_pvp
-    restart: always  # Riavvio automatico in caso di errore
+    restart: always
 
   db:
     image: db_gachaandgames
