@@ -29,6 +29,9 @@ accounts = {
     }
 }
 
+def health_check():  # noqa: E501
+    return jsonify({"message": "Service operational."}), 200
+
 def buy_currency(bundle_id):  # noqa: E501
     # Check if the user is logged in by checking the session
     if 'username' not in session:
