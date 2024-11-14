@@ -15,43 +15,28 @@ from datetime import datetime, timedelta
 def health_check():  # noqa: E501
     return jsonify({"message": "Service operational."}), 200
 
-def bid_on_auction(auction_uuid):  # noqa: E501
-    """Bids on an active auction
-
-    Sends a bid to an active auction, if the user has enough currency. # noqa: E501
-
-    :param session: 
-    :type session: str
-    :param auction_uuid: Id of the auction to bid on.
-    :type auction_uuid: str
-    :type auction_uuid: str
-    :param bid: Bid value.
-    :type bid: int
-
-    :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
-    """
-
-    #if 'username' not in session:
-    #    return jsonify({"error": "Not logged in"}), 403 #se non va cambiare a 400 per rispettare specs
-
+def bid_on_auction(auction_uuid): 
+    #check if user is logged in
+    if 'username' not in session:
+        return jsonify({"error": "Not logged in"}), 403
+    #get args
     increment = request.args.get('bid', type=int)
-    auction_uuid = request.args.get('auction_id')
-
+    
     if increment < 1:
         return jsonify({"error": "Invalid bid value."}), 400
 
     try:
-
+        #connect to database
         mysql = current_app.extensions.get('mysql')
         if not mysql:
             return jsonify({"error": "Database connection not initialized"}), 500
         
         connection = mysql.connect()
         cursor = connection.cursor()
-
+        #get auction from database
         cursor.execute(
-            'SELECT current_bid, current_bidder, end_time FROM auctions WHERE uuid = %s',
-            (auction_uuid)
+            'SELECT item_uuid, starting_price, current_bid, current_bidder, end_time FROM auctions WHERE BIN_TO_UUID(uuid) = %s',
+            (auction_uuid,)
         )
 
         auction = cursor.fetchone()
@@ -59,41 +44,67 @@ def bid_on_auction(auction_uuid):  # noqa: E501
         if not auction:
             return jsonify({"error": "Auction not found."}), 404
         
-        current_bid, current_bidder, end_time = auction
-
-        new_bid = current_bid + increment
+        item_uuid, starting_price, current_bid, current_bidder, end_time = auction
+        
+        #prepare new data to insert
+        if not current_bid:
+            new_bid = starting_price
+        else:    
+            new_bid = current_bid + increment
 
         if datetime.now() > end_time:
             return jsonify({"error":"Auction is closed"}), 403
         
-        user_uuid = session['username']
+        username = session['username']
+        cursor.execute(
+            'SELECT uuid FROM profiles WHERE username = %s',
+            (username,)
+        )
+        user_uuid = cursor.fetchone()[0]
+
+        cursor.execute(
+            'SELECT * FROM inventories WHERE owner_uuid = %s AND item_uuid = %s',
+            (user_uuid, item_uuid)
+        )
+
+        item_found = cursor.fetchone()
+        if item_found:
+            return jsonify({"error":"Cannot bid on your own auctions"}), 400
+        
+        if user_uuid == current_bidder:
+            return jsonify({"message":"Already the highest bidder"}), 200
 
         cursor.execute(
             'SELECT currency FROM profiles WHERE uuid = %s',
-            (user_uuid)
+            (user_uuid,)
         )
-
         user_profile = cursor.fetchone()
-
+        
         if not user_profile:
             return jsonify({"error": "User profile not found."}), 404
-        
+        #check if user has enough funds
         user_currency = user_profile[0]
         if user_currency < new_bid:
             return jsonify({"error": "Insufficient funds."}), 406
-        
+        #updates auction
         cursor.execute(
-            'UPDATE auctions SET current_bid = %s, current_bidder = %s WHERE uuid = %s',
+            'UPDATE auctions SET current_bid = %s, current_bidder = UUID_TO_BIN(%s) WHERE uuid = %s',
             (new_bid, user_uuid, auction_uuid)
         )
-
+        #updates user funds
         cursor.execute(
             'UPDATE profiles SET currency = currency - %s WHERE uuid = %s',
             (new_bid, user_uuid)
         )
-
+        #gives old bidder his funds back
+        if current_bidder is not None:
+            cursor.execute(
+                'UPDATE profiles SET currency = currency + %s WHERE BIN_TO_UUID(uuid) = %s',
+                (current_bid, current_bidder)
+            )
+        
         connection.commit()
-
+        #close connection
         cursor.close()
         connection.close()
 
@@ -103,58 +114,27 @@ def bid_on_auction(auction_uuid):  # noqa: E501
         # Rollback transaction on error
         connection.rollback()
         return jsonify({"error": str(e)}), 500
+    
+    finally:
+        # Close the database connection
+        cursor.close()
+        connection.close()
 
-    return 'do some magic!'
-
-
-def create_auction():  # noqa: E501  NOT WORKING
-    """Creates an auction.
-
-    Creates an auction for an item in player&#39;s inventory. # noqa: E501
-
-    :param session: 
-    :type session: str
-    :param gacha_item: The item to sell in the auction.
-    :type gacha_item: dict | bytes
-    :param starting_price: The starting price of the auction.
-    :type starting_price: int
-
-    :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
-    """
-    try:
-        if not isinstance(gacha_item, dict) or 'gacha_item' not in gacha_item:
-            return jsonify({"error":"invalid gacha_item format"}), 400
-
-        owner_id = gacha_item.get("owner_id")
-        item_id = gacha_item.get("item_id")
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+def create_auction(): 
 
     if 'username' not in session:
-        return jsonify({"error": "Not logged in"}), 403 #se non va cambiare a 400 per rispettare specs
+        return jsonify({"error": "Not logged in"}), 403 
 
     starting_price = request.args.get('starting_price', default=10, type=int)
 
     if starting_price < 1:
         return jsonify({"error": "Invalid query parameters."}), 400
-    
-    #if connexion.request.is_json:
-    #    gacha_item =  InventoryItemId.from_dict(connexion.request.get_json()) 
-     #   owner_id = gacha_item.get("owner_id")
-      #  item_id = gacha_item.get("item_id")
 
-    #if connexion.request.is_json:
-     #   gacha_item = connexion.request.get_json()
-      #  owner_id = gacha_item.get("owner_id")
-       # item_id = gacha_item.get("item_id")
-    #else:
-    # Handle case where parameters are passed in query string
-     #   owner_id = request.args.get('owner_id')
-      #  item_id = request.args.get('item_id')
+    owner_id = request.args.get('inventory_item_owner_id')
+    item_id = request.args.get('inventory_item_id')
 
     if not owner_id or not item_id:
-        return jsonify({"error": "Invalid query parameters."}), 400
+        return jsonify({"error": "Invalid query parameters ciao."}), 400
         
     try:
         mysql = current_app.extensions.get('mysql')
@@ -165,7 +145,7 @@ def create_auction():  # noqa: E501  NOT WORKING
         cursor = connection.cursor()
 
         cursor.execute(
-            'SELECT owner_uuid FROM inventories WHERE owner_uuid = %s AND item_uuid = %s',
+            'SELECT owner_uuid FROM inventories WHERE BIN_TO_UUID(owner_uuid) = %s AND BIN_TO_UUID(item_uuid) = %s',
             (owner_id, item_id)
         )
 
@@ -173,13 +153,14 @@ def create_auction():  # noqa: E501  NOT WORKING
         if not searched_item:
             return jsonify({"error": "Item in player's inventory not found."}), 404
         
-        auction_id = uuid.uuid4().bytes
+        auction_id = uuid.uuid4()
         end_time = datetime.now() + timedelta(minutes=10)
 
         cursor.execute(
-            'INSERT INTO auctions (uuid, item_uuid, starting_price, current_bid, current_bidder, end_time) VALUES (%s, %s, %s, %s, %s)',
+            'INSERT INTO auctions (uuid, item_uuid, starting_price, current_bid, current_bidder, end_time) VALUES (UUID_TO_BIN(%s), UUID_TO_BIN(%s), %s, %s, %s, %s)',
             (auction_id, item_id, starting_price, None, None, end_time)
         )
+
 
         connection.commit()
 
@@ -192,57 +173,232 @@ def create_auction():  # noqa: E501  NOT WORKING
         # Rollback transaction on error
         connection.rollback()
         return jsonify({"error": str(e)}), 500
+    
+    finally:
+        # Close the database connection
+        cursor.close()
+        connection.close()
 
-    #return jsonify({"error": "Invalid request."}), 400
+def get_auction_status(auction_uuid): 
+    
+    if 'username' not in session:
+        return jsonify({"error":"Not logged in"}), 403
+    
+    try:
 
+        mysql = current_app.extensions.get('mysql')
+        if not mysql:
+            return jsonify({"error":"Database not initialized"}), 500
+        
+        connection = mysql.connect()
+        cursor = connection.cursor()
 
-def get_auction_status(session, auction_uuid):  # noqa: E501
-    """Retrieve info on specific auction.
+        cursor.execute(
+            "SELECT BIN_TO_UUID(uuid), BIN_TO_UUID(item_uuid), starting_price, current_bid, BIN_TO_UUID(current_bidder), end_time FROM auctions WHERE uuid = UUID_TO_BIN(%s)",
+            (auction_uuid,)
+        )
 
-    Returns info on the auction with a specific id. # noqa: E501
+        auction_data = cursor.fetchone()
 
-    :param session: 
-    :type session: str
-    :param auction_uuid: The id of the auction to obtain info
-    :type auction_uuid: str
-    :type auction_uuid: str
+        if not auction_data:
+            return jsonify({"error": "Auction not found"}), 404
+    
+        ( _ , item_uuid, starting_price, current_bid, current_bidder, end_time) = auction_data
 
-    :rtype: Union[Auction, Tuple[Auction, int], Tuple[Auction, int, Dict[str, str]]
-    """
-    return 'do some magic!'
+        status = "closed" if datetime.now() > end_time else "active"
 
+        response = {
+            "auction_uuid": auction_uuid,
+            "inventory_item_id": item_uuid,
+            "starting_price": starting_price,
+            "current_bid": current_bid,
+            "current_bidder": current_bidder,
+            "end_time": end_time,
+            "status": status
+        }
+        
+        if status == 'closed':
+            username = session['username']
 
-def get_auctions_history(session, page_number=None):  # noqa: E501
-    """Retrieve history of my auctions.
+            cursor.execute(
+                'SELECT owner_uuid FROM inventories WHERE item_uuid = UUID_TO_BIN(%s)',
+                (item_uuid,)
+            )
+            old_owner_uuid = cursor.fetchone()[0]
 
-    Returns a list of all my auctions for gacha items. # noqa: E501
+            cursor.execute(
+                'SELECT BIN_TO_UUID(uuid) FROM profiles WHERE username = %s',
+                (username,)
+            )
 
-    :param session: 
-    :type session: str
-    :param page_number: Page number of the list.
-    :type page_number: int
+            user_uuid = cursor.fetchone()[0] #extracts only the string from the tuple returned by fetchone
+            if not user_uuid:
+                return jsonify({"error": "User not found"}), 404
+            
+            if current_bidder == user_uuid:
+                cursor.execute(
+                    'UPDATE profiles SET currency = currency + %s WHERE uuid = %s',
+                    (current_bid, old_owner_uuid)
+                )
+                cursor.execute(
+                    'INSERT INTO ingame_transactions (user_uuid, credits, transaction_type) VALUES (UUID_TO_BIN(%s), %s, "sold_market")',
+                    (old_owner_uuid,current_bid)
+                )
+                cursor.execute(
+                    'UPDATE inventories SET owner_uuid = UUID_TO_BIN(%s) WHERE item_uuid = UUID_TO_BIN(%s)',
+                    (user_uuid, item_uuid)
+                )
+                cursor.execute(
+                    'INSERT INTO ingame_transactions (user_uuid, credits, transaction_type) VALUES (UUID_TO_BIN(%s), %s, "bought_market")',
+                    (user_uuid,current_bid*(-1))
+                )
+            #not removed from auctions for history
 
-    :rtype: Union[List[str], Tuple[List[str], int], Tuple[List[str], int, Dict[str, str]]
-    """
-    return 'do some magic!'
+        return jsonify(response), 200
 
+    except Exception as e:
+        # Handle errors and rollback if any database operation failed
+        if connection:
+            connection.rollback()
+        return jsonify({"error": str(e)}), 500
 
-def get_auctions_list(status=None, rarity=None, page_number=None):  # noqa: E501
-    """Retrieve the list of auctions.
+    finally:
+        # Close the database connection
+        cursor.close()
+        connection.close()
 
-    Returns a list of all active auctions for gacha items. # noqa: E501
+def get_auctions_history(page_number=None):  
+    
+    if 'username' not in session:
+        return jsonify({"error": "Not logged in"}), 403
+    
+    page_number = int(request.args.get('page_number', 1))
 
-    :param session: 
-    :type session: str
-    :param status: Filter auctions by status.
-    :type status: str
-    :param rarity: Filter auctions by type of gacha item.
-    :type rarity: dict | bytes
-    :param page_number: Page number of the list.
-    :type page_number: int
+    items_per_page = 10
+    offset = (page_number - 1) * items_per_page
 
-    :rtype: Union[List[str], Tuple[List[str], int], Tuple[List[str], int, Dict[str, str]]
-    """
-    if connexion.request.is_json:
-        rarity =  GachaRarity.from_dict(connexion.request.get_json())  # noqa: E501
-    return 'do some magic!'
+    mysql = current_app.extensions.get('mysql')
+    if not mysql:
+        return jsonify({"error": "Database not initialized"}), 500
+    
+    try:
+
+        connection = mysql.connect()
+        cursor = connection.cursor()
+
+        username = session['username']
+
+        cursor.execute(
+            'SELECT uuid FROM profiles WHERE username = %s',
+            (username,)
+        )
+
+        user_uuid = cursor.fetchone()
+
+        cursor.execute(
+            'SELECT BIN_TO_UUID(a.uuid), BIN_TO_UUID(a.item_uuid), a.starting_price, a.current_bid, BIN_TO_UUID(a.current_bidder), end_time FROM auctions a JOIN inventories i ON a.item_uuid = i.item_uuid WHERE i.owner_uuid = %s OR a.current_bidder = %s LIMIT %s OFFSET %s',
+            (user_uuid, user_uuid, items_per_page, offset)
+        )
+
+        auction_data = cursor.fetchall()
+
+        if not auction_data:
+            return jsonify({"error": "No auctions found"}), 404
+        
+        # Prepare the response data
+        auctions = []
+        now = datetime.now()
+        for auction in auction_data:
+            auction_uuid, item_id, starting_price, current_bid, current_bidder, end_time = auction
+            
+            # Determine auction status based on the end time
+            status = "closed" if end_time < now else "active"
+            
+            auctions.append({
+                "auction_uuid": auction_uuid,
+                "inventory_item_id": item_id,
+                "starting_price": starting_price,
+                "current_bid": current_bid,
+                "current_bidder": current_bidder, #if this is the user it's an auction he has bid on, otherwise the user is the owner of the item or the auction hasn't been claimed yet
+                "end_time": end_time,
+                "status": status
+            })
+
+        return jsonify(auctions), 200
+
+    except Exception as e:
+        # Handle database connection errors or any exceptions
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        # Close database connection
+        cursor.close()
+        connection.close()
+
+def get_auctions_list(status=None, rarity=None, page_number=None): 
+    
+    if 'username' not in session:
+        return jsonify({"error": "Not logged in"}), 403
+    
+    status = request.args.get('status','active')
+    rarity = request.args.get('rarity')
+    page_number = int(request.args.get('page_number',1))
+
+    items_per_page = 10
+    offset = (page_number - 1) * items_per_page
+
+    now = datetime.now()
+
+    mysql = current_app.extensions.get('mysql')
+    if not mysql:
+        return jsonify({"error": "Database not initialized"}), 500
+    
+    try:
+
+        connection = mysql.connect()
+        cursor = connection.cursor()
+
+        query = 'SELECT BIN_TO_UUID(uuid), end_time FROM auctions WHERE end_time '
+        params = [now]
+        if status == 'closed':
+            query += '< %s'
+        else:
+            query += '> %s'
+
+        if rarity:
+          query += 'AND rarity = %s'
+          params.append(rarity)
+        
+        query += "LIMIT %s OFFSET %s"
+        params.append(items_per_page)
+        params.append(offset)
+
+        cursor.execute(query, tuple(params))
+
+        auction_data = cursor.fetchall()
+
+        if not auction_data:
+            return jsonify({"error": "No auctions found"}), 404
+        
+        auctions = []
+        for auction in auction_data:
+            auction_uuid, end_time = auction
+            # Determine the auction status
+            status = "closed" if end_time < now else "active"
+
+            auctions.append({
+                "auction_uuid": auction_uuid,
+                "status": status,
+                "end_time": end_time
+            })
+
+        return jsonify(auctions), 200
+
+    except Exception as e:
+        # Handle database connection errors or any exceptions
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        # Close database connection
+        cursor.close()
+        connection.close()
