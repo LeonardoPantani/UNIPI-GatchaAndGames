@@ -30,6 +30,8 @@ def post_feedback():  # noqa: E501
         return jsonify({"error": "The 'string' field is required in the JSON body."}), 400
 
     string = data['string']
+    user_uuid = session['uuid']  # Get UUID directly from session
+
     mysql = current_app.extensions.get('mysql')
     if not mysql:
         return jsonify({"error": "Database connection not initialized"}), 500
@@ -38,17 +40,7 @@ def post_feedback():  # noqa: E501
         connection = mysql.connect()
         cursor = connection.cursor()
         cursor.execute(
-            'SELECT uuid FROM profiles WHERE username = %s',
-            (session['username'],)
-        )
-        result = cursor.fetchone()
-        if not result:
-            return jsonify({"error": "User not found"}), 404
-            
-        user_uuid = result[0]
-        
-        cursor.execute(
-            'INSERT INTO feedbacks (user_uuid, content) VALUES (%s, %s)',
+            'INSERT INTO feedbacks (user_uuid, content) VALUES (UUID_TO_BIN(%s), %s)',
             (user_uuid, string)
         )
         connection.commit()
