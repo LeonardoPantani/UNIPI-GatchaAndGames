@@ -48,8 +48,8 @@ def login():
             cursor.close()
 
             if result:
-                user_uuid, user_email, user_name, user_password = result
-                if bcrypt.checkpw(user_password.encode('utf-8'), user_password.encode('utf-8')):
+                user_uuid, user_email, user_name, user_role, user_password = result
+                if bcrypt.checkpw(password.encode('utf-8'), user_password.encode('utf-8')):
                     # Create session cookie on successful login
                     response = make_response(jsonify({"message": "Login successful"}), 200)
                     session['uuid'] = user_uuid
@@ -59,7 +59,7 @@ def login():
                     return response
                 else:
                     return jsonify({"error": "Invalid credentials"}), 401
-            else:
+            else: 
                 return jsonify({"error": "Invalid credentials"}), 401
 
         except Exception as e:
@@ -134,7 +134,7 @@ def register():
         except mysql.connect().IntegrityError:
             # Duplicate email error
             connection.rollback()
-            return jsonify({"error": "The provided email address is already in use"}), 409
+            return jsonify({"error": "The provided email or username are already in use."}), 409
         except Exception as e:
             # Rollback transaction on error
             connection.rollback()
