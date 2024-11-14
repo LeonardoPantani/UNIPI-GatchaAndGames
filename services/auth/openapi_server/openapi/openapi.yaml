@@ -27,7 +27,7 @@ paths:
       tags:
       - auth
       x-openapi-router-controller: openapi_server.controllers.auth_controller
-  /login:
+  /auth/login:
     post:
       description: Logs a user into the game. Accepts username and password.
       operationId: login
@@ -50,7 +50,7 @@ paths:
       tags:
       - auth
       x-openapi-router-controller: openapi_server.controllers.auth_controller
-  /logout:
+  /auth/logout:
     delete:
       description: Allows an account to log out.
       operationId: logout
@@ -73,7 +73,7 @@ paths:
       tags:
       - auth
       x-openapi-router-controller: openapi_server.controllers.auth_controller
-  /register:
+  /auth/register:
     post:
       description: "Registers a new user account with username, email, and password."
       operationId: register
