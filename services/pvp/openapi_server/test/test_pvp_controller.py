@@ -11,6 +11,19 @@ from openapi_server.test import BaseTestCase
 class TestPvpController(BaseTestCase):
     """PvpController integration test stubs"""
 
+    def test_health_check(self):
+        """Test case for health_check
+
+        Gives information on service status.
+        """
+        response = self.client.open(
+            '/pvp/health_check',
+            method='GET',
+            headers=headers,
+            content_type='application/json')
+        self.assert200(response,
+                       'Response body is : ' + response.data.decode('utf-8'))
+
     def test_accept_pvp_request(self):
         """Test case for accept_pvp_request
 

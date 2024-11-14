@@ -50,7 +50,7 @@ def main():
     )
 
     # Starting Connexion Flask app
-    connexion_app.run(host='0.0.0.0', port=3008, debug=True)
+    connexion_app.run(host='0.0.0.0', port=8080, debug=True)
 
 
 if __name__ == '__main__':

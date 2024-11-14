@@ -14,8 +14,19 @@ info:
   version: 1.0.0
 servers:
 - description: Local server
-  url: http://localhost:3001/
+  url: http://localhost:8080/
 paths:
+  /auth/health_check:
+    get:
+      description: Returns 200 if service is healthy.
+      operationId: health_check
+      responses:
+        "200":
+          description: Service OK
+      summary: Gives information on service status.
+      tags:
+      - auth
+      x-openapi-router-controller: openapi_server.controllers.auth_controller
   /login:
     post:
       description: Logs a user into the game. Accepts username and password.

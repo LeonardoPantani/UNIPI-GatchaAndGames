@@ -9,6 +9,8 @@ import logging
 from openapi_server.models.inventory_item import InventoryItem  # noqa: E501
 from openapi_server import util
 
+def health_check():  # noqa: E501
+    return jsonify({"message": "Service operational."}), 200
 
 def get_inventory():  # noqa: E501
     """Retrieve player's inventory"""

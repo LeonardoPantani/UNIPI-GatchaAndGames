@@ -12,6 +12,9 @@ from werkzeug.exceptions import BadRequest, NotFound, InternalServerError
 import uuid
 from datetime import datetime, timedelta
 
+def health_check():  # noqa: E501
+    return jsonify({"message": "Service operational."}), 200
+
 def bid_on_auction(auction_uuid):  # noqa: E501
     """Bids on an active auction
 

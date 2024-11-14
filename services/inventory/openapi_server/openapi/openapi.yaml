@@ -10,13 +10,23 @@ info:
   license:
     name: GPL-3.0
     url: https://www.gnu.org/licenses/gpl-3.0.html#license-text
-  termsOfService: http://localhost:8080/tos
   title: Gacha System - OpenAPI 3.0
   version: 1.0.0
 servers:
 - description: Local server
   url: http://localhost:8080
 paths:
+  /inventory/health_check:
+    get:
+      description: Returns 200 if service is healthy.
+      operationId: health_check
+      responses:
+        "200":
+          description: Service OK
+      summary: Gives information on service status.
+      tags:
+      - inventory
+      x-openapi-router-controller: openapi_server.controllers.inventory_controller
   /inventory:
     delete:
       description: Returns a list of gacha items currently owned by the player.

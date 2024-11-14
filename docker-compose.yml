@@ -18,6 +18,8 @@ services:
       - service_profile
       - service_pvp
     restart: always
+    networks:
+        - backend_gachaandgames_network
 
   db:
     image: db_gachaandgames
@@ -30,58 +32,18 @@ services:
       - mysql_gatchaandgames_db:/var/lib/mysql
     healthcheck:
       test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
-      timeout: 10s
-      interval: 1s
+      timeout: 5s
+      interval: 3s
       retries: 20
+      start_period: 5s
+    networks:
+      - backend_gachaandgames_network
 
-  service_auth:
-    image: service_auth
-    container_name: app_service_auth_gachaandgames
-    build: ./services/auth/
-    ports:
-      - "3001:3001"
-    env_file: ./services/auth/.env
-    volumes:
-      - ./services/auth:/usr/src/app/
-    depends_on:
-      db:
-        condition: service_healthy
-    tty: true
-  
-  service_auctions:
-    image: service_auctions
-    container_name: app_service_auctions_gachaandgames
-    build: ./services/auctions/
-    ports:
-      - "3002:3002"
-    env_file: ./services/auctions/.env
-    volumes:
-      - ./services/auctions:/usr/src/app/
-    depends_on:
-      db:
-        condition: service_healthy
-    tty: true
-  
-  service_currency:
-    image: service_currency
-    container_name: app_service_currency_gachaandgames
-    build: ./services/currency/
-    ports:
-      - "3003:3003"
-    env_file: ./services/currency/.env
-    volumes:
-      - ./services/currency:/usr/src/app/
-    depends_on:
-      db:
-        condition: service_healthy
-    tty: true
-  
   service_admin:
     image: service_admin
-    container_name: app_service_admin_gachaandgames
     build: ./services/admin/
     ports:
-      - "3004:3004"
+      - "8080"
     env_file: ./services/admin/.env
     volumes:
       - ./services/admin:/usr/src/app/
@@ -89,13 +51,91 @@ services:
       db:
         condition: service_healthy
     tty: true
+    networks:
+      - backend_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/admin/health_check"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    deploy:
+      replicas: 2
+
+  service_auth:
+    image: service_auth
+    build: ./services/auth/
+    ports:
+      - "8080"
+    env_file: ./services/auth/.env
+    volumes:
+      - ./services/auth:/usr/src/app/
+    depends_on:
+      db:
+        condition: service_healthy
+    tty: true
+    networks:
+      - backend_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/auth/health_check"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    deploy:
+      replicas: 2
+  
+  service_auctions:
+    image: service_auctions
+    build: ./services/auctions/
+    ports:
+      - "8080"
+    env_file: ./services/auctions/.env
+    volumes:
+      - ./services/auctions:/usr/src/app/
+    depends_on:
+      db:
+        condition: service_healthy
+    tty: true
+    networks:
+      - backend_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/auctions/health_check"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    deploy:
+      replicas: 2
+  
+  service_currency:
+    image: service_currency
+    build: ./services/currency/
+    ports:
+      - "8080"
+    env_file: ./services/currency/.env
+    volumes:
+      - ./services/currency:/usr/src/app/
+    depends_on:
+      db:
+        condition: service_healthy
+    tty: true
+    networks:
+      - backend_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/currency/health_check"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    deploy:
+      replicas: 2
 
   service_feedback:
     image: service_feedback
-    container_name: app_service_feedback_gachaandgames
     build: ./services/feedback/
     ports:
-      - "3005:3005"
+      - "8080"
     env_file: ./services/feedback/.env
     volumes:
       - ./services/feedback:/usr/src/app/
@@ -103,13 +143,22 @@ services:
       db:
         condition: service_healthy
     tty: true
+    networks:
+      - backend_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/feedback/health_check"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    deploy:
+      replicas: 2
 
   service_gacha:
     image: service_gacha
-    container_name: app_service_gacha_gachaandgames
     build: ./services/gacha/
     ports:
-      - "3006:3006"
+      - "8080"
     env_file: ./services/gacha/.env
     volumes:
       - ./services/gacha:/usr/src/app/
@@ -117,13 +166,22 @@ services:
       db:
         condition: service_healthy
     tty: true
+    networks:
+      - backend_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/gacha/health_check"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    deploy:
+      replicas: 2
 
   service_inventory:
     image: service_inventory
-    container_name: app_service_inventory_gachaandgames
     build: ./services/inventory/
     ports:
-      - "3007:3007"
+      - "8080"
     env_file: ./services/inventory/.env
     volumes:
       - ./services/inventory:/usr/src/app/
@@ -131,13 +189,22 @@ services:
       db:
         condition: service_healthy
     tty: true
+    networks:
+      - backend_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/inventory/health_check"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    deploy:
+      replicas: 2
 
   service_profile:
     image: service_profile
-    container_name: app_service_profile_gachaandgames
     build: ./services/profile/
     ports:
-      - "3008:3008"
+      - "8080"
     env_file: ./services/profile/.env
     volumes:
       - ./services/profile:/usr/src/app/
@@ -145,13 +212,22 @@ services:
       db:
         condition: service_healthy
     tty: true
+    networks:
+      - backend_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/profile/health_check"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    deploy:
+      replicas: 2
 
   service_pvp:
     image: service_pvp
-    container_name: app_service_pvp_gachaandgames
     build: ./services/pvp/
     ports:
-      - "3009:3009"
+      - "8080"
     env_file: ./services/pvp/.env
     volumes:
       - ./services/pvp:/usr/src/app/
@@ -159,6 +235,19 @@ services:
       db:
         condition: service_healthy
     tty: true
+    networks:
+      - backend_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/pvp/health_check"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    deploy:
+      replicas: 2
+
+networks:
+  backend_gachaandgames_network:
 
 volumes:
   mysql_gatchaandgames_db:

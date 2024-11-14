@@ -11,6 +11,8 @@ from openapi_server import util
 from flask import session,current_app,jsonify
 import logging
 
+def health_check():  # noqa: E501
+    return jsonify({"message": "Service operational."}), 200
 
 def delete_profile():  # noqa: E501
     """Deletes this account."""

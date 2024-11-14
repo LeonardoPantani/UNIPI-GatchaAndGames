@@ -1,16 +1,23 @@
 import connexion
+import uuid
+import bcrypt
+import random
+
 from typing import Dict
 from typing import Tuple
 from typing import Union
-from flask import current_app,session
 
 from openapi_server.models.gacha import Gacha  # noqa: E501
 from openapi_server.models.pool import Pool  # noqa: E501
 from openapi_server import util
 from openapi_server.models.rarity_probability import RarityProbability  # noqa: E501
-import json
-import random
 
+from flask import current_app, jsonify, request, make_response, session
+from flaskext.mysql import MySQL
+
+
+def health_check():  # noqa: E501
+    return jsonify({"message": "Service operational."}), 200
 
 def get_gacha_info(gacha_uuid):  # noqa: E501
     """Shows infos on a gacha.

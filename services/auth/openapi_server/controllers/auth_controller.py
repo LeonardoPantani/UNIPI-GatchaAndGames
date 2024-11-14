@@ -13,6 +13,8 @@ from openapi_server import util
 from flask import current_app, jsonify, request, make_response, session
 from flaskext.mysql import MySQL
 
+def health_check():  # noqa: E501
+    return jsonify({"message": "Service operational."}), 200
 
 def login():
     if 'username' in session:

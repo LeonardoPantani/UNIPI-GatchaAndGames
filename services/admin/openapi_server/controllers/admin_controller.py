@@ -1,4 +1,7 @@
 import connexion
+import uuid
+import bcrypt
+
 from typing import Dict
 from typing import Tuple
 from typing import Union
@@ -10,6 +13,12 @@ from openapi_server.models.pool import Pool  # noqa: E501
 from openapi_server.models.user import User  # noqa: E501
 from openapi_server import util
 
+from flask import current_app, jsonify, request, make_response, session
+from flaskext.mysql import MySQL
+
+
+def health_check():  # noqa: E501
+    return jsonify({"message": "Service operational."}), 200
 
 def ban_profile(user_uuid, session=None):  # noqa: E501
     """Deletes a profile.

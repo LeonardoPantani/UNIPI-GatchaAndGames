@@ -10,13 +10,23 @@ info:
   license:
     name: GPL-3.0
     url: https://www.gnu.org/licenses/gpl-3.0.html#license-text
-  termsOfService: http://localhost:3002/tos
   title: Gacha System - OpenAPI 3.0
   version: 1.0.0
 servers:
 - description: Local server
-  url: http://localhost:3002
+  url: http://localhost:8080
 paths:
+  /auctions/health_check:
+    get:
+      description: Returns 200 if service is healthy.
+      operationId: health_check
+      responses:
+        "200":
+          description: Service OK
+      summary: Gives information on service status.
+      tags:
+      - auctions
+      x-openapi-router-controller: openapi_server.controllers.auctions_controller
   /auctions/bid/{auction_uuid}:
     post:
       description: "Sends a bid to an active auction, if the user has enough currency."
