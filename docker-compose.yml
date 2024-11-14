@@ -55,12 +55,12 @@ services:
       - backend_gachaandgames_network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/admin/health_check"]
-      interval: 30s
+      interval: 1m
       timeout: 5s
       retries: 3
       start_period: 5s
     deploy:
-      replicas: 2
+      replicas: 1
 
   service_auth:
     image: service_auth
@@ -78,12 +78,12 @@ services:
       - backend_gachaandgames_network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/auth/health_check"]
-      interval: 30s
+      interval: 1m
       timeout: 5s
       retries: 3
       start_period: 5s
     deploy:
-      replicas: 2
+      replicas: 1
   
   service_auctions:
     image: service_auctions
@@ -101,12 +101,12 @@ services:
       - backend_gachaandgames_network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/auctions/health_check"]
-      interval: 30s
+      interval: 1m
       timeout: 5s
       retries: 3
       start_period: 5s
     deploy:
-      replicas: 2
+      replicas: 1
   
   service_currency:
     image: service_currency
@@ -124,12 +124,12 @@ services:
       - backend_gachaandgames_network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/currency/health_check"]
-      interval: 30s
+      interval: 1m
       timeout: 5s
       retries: 3
       start_period: 5s
     deploy:
-      replicas: 2
+      replicas: 1
 
   service_feedback:
     image: service_feedback
@@ -147,12 +147,12 @@ services:
       - backend_gachaandgames_network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/feedback/health_check"]
-      interval: 30s
+      interval: 1m
       timeout: 5s
       retries: 3
       start_period: 5s
     deploy:
-      replicas: 2
+      replicas: 1
 
   service_gacha:
     image: service_gacha
@@ -170,12 +170,12 @@ services:
       - backend_gachaandgames_network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/gacha/health_check"]
-      interval: 30s
+      interval: 1m
       timeout: 5s
       retries: 3
       start_period: 5s
     deploy:
-      replicas: 2
+      replicas: 1
 
   service_inventory:
     image: service_inventory
@@ -193,12 +193,12 @@ services:
       - backend_gachaandgames_network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/inventory/health_check"]
-      interval: 30s
+      interval: 1m
       timeout: 5s
       retries: 3
       start_period: 5s
     deploy:
-      replicas: 2
+      replicas: 1
 
   service_profile:
     image: service_profile
@@ -216,12 +216,12 @@ services:
       - backend_gachaandgames_network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/profile/health_check"]
-      interval: 30s
+      interval: 1m
       timeout: 5s
       retries: 3
       start_period: 5s
     deploy:
-      replicas: 2
+      replicas: 1
 
   service_pvp:
     image: service_pvp
@@ -239,12 +239,12 @@ services:
       - backend_gachaandgames_network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/pvp/health_check"]
-      interval: 30s
+      interval: 1m
       timeout: 5s
       retries: 3
       start_period: 5s
     deploy:
-      replicas: 2
+      replicas: 1
 
 networks:
   backend_gachaandgames_network:
