@@ -27,35 +27,38 @@ paths:
       tags:
       - feedback
       x-openapi-router-controller: openapi_server.controllers.feedback_controller
-  /feedback:
+  /feedback/:
     post:
-      description: Creates a feedback to the admins.
+      description: Crea un feedback per gli amministratori.
       operationId: post_feedback
       parameters:
-      - explode: true
-        in: cookie
+      - in: cookie
         name: session
         required: false
         schema:
           type: string
-        style: form
-      - explode: true
-        in: query
-        name: string
+      requestBody:
         required: true
-        schema:
-          type: string
-        style: form
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                string:
+                  type: string
+                  description: Il contenuto del feedback.
+              required:
+                - string
       responses:
         "200":
-          description: Feedback created successfully.
+          description: Feedback creato con successo.
         "400":
-          description: Invalid query parameters.
+          description: Input non valido.
         "500":
-          description: Internal server error.
-      summary: Sends a feedback.
+          description: Errore interno del server.
+      summary: Invia un feedback.
       tags:
-      - feedback
+        - feedback
       x-openapi-router-controller: openapi_server.controllers.feedback_controller
 components:
   schemas: {}
