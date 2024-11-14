@@ -253,6 +253,8 @@ def get_auction_status(auction_uuid):
                     (user_uuid,current_bid*(-1))
                 )
             #not removed from auctions for history
+                full_response = {**response, "message": "Item redeemed successfully"}
+                return jsonify(full_response), 200
 
         return jsonify(response), 200
 
