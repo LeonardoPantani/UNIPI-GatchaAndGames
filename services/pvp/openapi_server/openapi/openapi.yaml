@@ -203,21 +203,6 @@ paths:
       x-openapi-router-controller: openapi_server.controllers.pvp_controller
 components:
   schemas:
-    GachaStat:
-      description: Stat of a gacha.
-      example: A
-      pattern: "^[A-Ea-e]$"
-      type: string
-    GachaRarity:
-      description: Rarity level of the gacha
-      enum:
-      - common
-      - rare
-      - epic
-      - legendary
-      example: rare
-      title: GachaRarity
-      type: string
     UserId:
       description: UUID of user.
       format: uuid
@@ -226,95 +211,23 @@ components:
     GachaId:
       description: UUID of the gacha
       format: uuid
-      title: gacha_uuid
+      title: GachaId
       type: string
-    Gacha:
-      example:
-        gacha_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
-        name: Tower of Gray
-        attributes:
-          durability: A
-          precision: A
-          range: A
-          power: A
-          potential: A
-          speed: A
-        rarity: rare
-      properties:
-        gacha_uuid:
-          description: UUID of the gacha
-          format: uuid
-          title: gacha_uuid
-          type: string
-        name:
-          description: Name of the gacha
-          example: Tower of Gray
-          title: name
-          type: string
-        rarity:
-          $ref: '#/components/schemas/GachaRarity'
-        attributes:
-          $ref: '#/components/schemas/Gacha_attributes'
-      title: Gacha
-      type: object
     Team:
       description: Team used by players to battle each others.
       example:
         gachas:
-        - gacha_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
-          name: Tower of Gray
-          attributes:
-            durability: A
-            precision: A
-            range: A
-            power: A
-            potential: A
-            speed: A
-          rarity: rare
-        - gacha_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
-          name: Tower of Gray
-          attributes:
-            durability: A
-            precision: A
-            range: A
-            power: A
-            potential: A
-            speed: A
-          rarity: rare
-        - gacha_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
-          name: Tower of Gray
-          attributes:
-            durability: A
-            precision: A
-            range: A
-            power: A
-            potential: A
-            speed: A
-          rarity: rare
-        - gacha_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
-          name: Tower of Gray
-          attributes:
-            durability: A
-            precision: A
-            range: A
-            power: A
-            potential: A
-            speed: A
-          rarity: rare
-        - gacha_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
-          name: Tower of Gray
-          attributes:
-            durability: A
-            precision: A
-            range: A
-            power: A
-            potential: A
-            speed: A
-          rarity: rare
+        - gacha_uuid1: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        - gacha_uuid2: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        - gacha_uuid3: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        - gacha_uuid4: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        - gacha_uuid5: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        - gacha_uuid6: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        - gacha_uuid7: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
       properties:
         gachas:
           items:
-            $ref: '#/components/schemas/Gacha'
+            $ref: '#/components/schemas/GachaId'
           maxItems: 7
           minItems: 7
           title: gachas
@@ -442,54 +355,4 @@ components:
           title: requests
           type: array
       title: PendingPvPRequests
-      type: object
-    Gacha_attributes:
-      additionalProperties:
-        type: string
-      example:
-        durability: A
-        precision: A
-        range: A
-        power: A
-        potential: A
-        speed: A
-      properties:
-        power:
-          description: Stat of a gacha.
-          example: A
-          pattern: "^[A-Ea-e]$"
-          type: string
-        speed:
-          description: Stat of a gacha.
-          example: A
-          pattern: "^[A-Ea-e]$"
-          type: string
-        durability:
-          description: Stat of a gacha.
-          example: A
-          pattern: "^[A-Ea-e]$"
-          type: string
-        precision:
-          description: Stat of a gacha.
-          example: A
-          pattern: "^[A-Ea-e]$"
-          type: string
-        range:
-          description: Stat of a gacha.
-          example: A
-          pattern: "^[A-Ea-e]$"
-          type: string
-        potential:
-          description: Stat of a gacha.
-          example: A
-          pattern: "^[A-Ea-e]$"
-          type: string
-      required:
-      - durability
-      - potential
-      - power
-      - precision
-      - range
-      - speed
-      title: Gacha_attributes
       type: object
