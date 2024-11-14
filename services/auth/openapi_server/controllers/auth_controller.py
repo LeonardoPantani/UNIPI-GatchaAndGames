@@ -38,7 +38,7 @@ def login():
             connection = mysql.connect()
             cursor = connection.cursor()
             query = """
-                SELECT u.password, u.uuid 
+                SELECT u.uuid, u.email, p.username, u.role, u.password 
                 FROM users u
                 JOIN profiles p ON u.uuid = p.uuid
                 WHERE p.username = %s
@@ -48,11 +48,14 @@ def login():
             cursor.close()
 
             if result:
-                stored_password_hash, user_uuid = result
-                if bcrypt.checkpw(password.encode('utf-8'), stored_password_hash.encode('utf-8')):
+                user_uuid, user_email, user_name, user_password = result
+                if bcrypt.checkpw(user_password.encode('utf-8'), user_password.encode('utf-8')):
                     # Create session cookie on successful login
                     response = make_response(jsonify({"message": "Login successful"}), 200)
-                    session['username'] = username
+                    session['uuid'] = user_uuid
+                    session['email'] = user_email
+                    session['username'] = user_name
+                    session['role'] = user_role
                     return response
                 else:
                     return jsonify({"error": "Invalid credentials"}), 401
@@ -121,7 +124,10 @@ def register():
             connection.close()
 
             # adding username to session
+            session['uuid'] = user_uuid
+            session['email'] = email
             session['username'] = username
+            session['role'] = "USER"
 
             return jsonify({"message": "Registration successful"}), 201
 
