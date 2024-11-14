@@ -80,7 +80,6 @@ CREATE TABLE gachas_types (
     release_date DATE NOT NULL,
     PRIMARY KEY (uuid)
 );
-BIN_TO_UUID(uuid),
 
 CREATE TABLE auctions (
     uuid BINARY(16),
