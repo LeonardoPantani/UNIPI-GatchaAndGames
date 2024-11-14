@@ -135,7 +135,7 @@ def create_auction():
 
     if not owner_id or not item_id:
         return jsonify({"error": "Invalid query parameters ciao."}), 400
-        
+    #add check if owner is different from user_uuid 
     try:
         mysql = current_app.extensions.get('mysql')
         if not mysql:
