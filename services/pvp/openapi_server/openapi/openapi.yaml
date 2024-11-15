@@ -10,6 +10,7 @@ info:
   license:
     name: GPL-3.0
     url: https://www.gnu.org/licenses/gpl-3.0.html#license-text
+  termsOfService: http://localhost:8080/tos
   title: Gacha System - OpenAPI 3.0
   version: 1.0.0
 servers:
@@ -35,7 +36,7 @@ paths:
       - explode: true
         in: cookie
         name: session
-        required: false
+        required: true
         schema:
           type: string
         style: form
@@ -74,7 +75,7 @@ paths:
       - explode: true
         in: cookie
         name: session
-        required: false
+        required: true
         schema:
           type: string
         style: form
@@ -101,7 +102,7 @@ paths:
       - explode: true
         in: cookie
         name: session
-        required: false
+        required: true
         schema:
           type: string
         style: form
@@ -132,7 +133,7 @@ paths:
       - explode: true
         in: cookie
         name: session
-        required: false
+        required: true
         schema:
           type: string
         style: form
@@ -174,7 +175,7 @@ paths:
       - explode: true
         in: cookie
         name: session
-        required: false
+        required: true
         schema:
           type: string
         style: form
@@ -208,26 +209,24 @@ components:
       format: uuid
       title: sender_id
       type: string
-    GachaId:
-      description: UUID of the gacha
+    ItemId:
+      description: UUID of single item.
       format: uuid
-      title: GachaId
+      title: ItemId
       type: string
     Team:
       description: Team used by players to battle each others.
       example:
         gachas:
-        - gacha_uuid1: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
-        - gacha_uuid2: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
-        - gacha_uuid3: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
-        - gacha_uuid4: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
-        - gacha_uuid5: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
-        - gacha_uuid6: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
-        - gacha_uuid7: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        - null
+        - null
+        - null
+        - null
+        - null
       properties:
         gachas:
           items:
-            $ref: '#/components/schemas/GachaId'
+            $ref: '#/components/schemas/ItemId'
           maxItems: 7
           minItems: 7
           title: gachas
