@@ -34,7 +34,7 @@ def ban_profile(user_uuid):  # noqa: E501
     :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
     """
     if 'username' not in session or session.get('role') != 'ADMIN':
-        return jsonify({"error": "Unauthorized"}), 403
+        return jsonify({"error": "This account is not authorized to perform this action"}), 403
     
 
     if session.get('uuid') == user_uuid:
@@ -86,7 +86,7 @@ def create_gacha():  # noqa: E501
     :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
     """
     if 'username' not in session or session.get('role') != 'ADMIN':
-        return jsonify({"error": "Unauthorized"}), 403
+        return jsonify({"error": "This account is not authorized to perform this action"}), 403
     
     if connexion.request.is_json:
         gacha = Gacha.from_dict(connexion.request.get_json())  # noqa: E501
@@ -127,7 +127,7 @@ def create_gacha():  # noqa: E501
     return jsonify({"message": "Invalid request."}), 400
 
 
-def create_pool(pool, session=None):  # noqa: E501
+def create_pool(pool):  # noqa: E501
     """Creates a pool.
 
     Allows the creation of a pool. # noqa: E501
@@ -140,7 +140,7 @@ def create_pool(pool, session=None):  # noqa: E501
     :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
     """
     if 'username' not in session or session.get('role') != 'ADMIN':
-        return jsonify({"error": "Unauthorized"}), 403
+        return jsonify({"error": "This account is not authorized to perform this action"}), 403
     if connexion.request.is_json:
         pool = Pool.from_dict(connexion.request.get_json())  # noqa: E501
         try:
@@ -162,7 +162,7 @@ def create_pool(pool, session=None):  # noqa: E501
     return jsonify({"message": "Invalid request."}), 400
 
 
-def delete_gacha(gacha_uuid, session=None):  # noqa: E501
+def delete_gacha(gacha_uuid):  # noqa: E501
     """Deletes a gacha.
 
     Allows the deletion of a gacha. # noqa: E501
@@ -175,7 +175,8 @@ def delete_gacha(gacha_uuid, session=None):  # noqa: E501
     :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
     """
     if 'username' not in session or session.get('role') != 'ADMIN':
-        return jsonify({"error": "Unauthorized"}), 403
+        return jsonify({"error": "This account is not authorized to perform this action"}), 403
+    
     try:
         mysql = current_app.extensions.get('mysql')
         if not mysql:
@@ -183,8 +184,17 @@ def delete_gacha(gacha_uuid, session=None):  # noqa: E501
 
         connection = mysql.connect()
         cursor = connection.cursor()
-        query = "DELETE FROM gachas WHERE uuid = %s"
-        cursor.execute(query, (gacha_uuid,))
+
+        check_query = "SELECT 1 FROM gachas_types WHERE uuid = %s"
+        cursor.execute(check_query, (gacha_uuid,))
+        result = cursor.fetchone()
+
+        if not result:
+            cursor.close()
+            return jsonify({"error": "Gacha not found"}), 404
+
+        delete_query = "DELETE FROM gachas_types WHERE uuid = %s"
+        cursor.execute(delete_query, (gacha_uuid,))
         connection.commit()
         cursor.close()
 
@@ -193,7 +203,7 @@ def delete_gacha(gacha_uuid, session=None):  # noqa: E501
         return jsonify({"error": str(e)}), 500
 
 
-def delete_pool(pool_id, session=None):  # noqa: E501
+def delete_pool(pool_id):  # noqa: E501
     """Deletes a pool.
 
     Allows the deletion of a pool. # noqa: E501
@@ -206,7 +216,7 @@ def delete_pool(pool_id, session=None):  # noqa: E501
     :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
     """
     if 'username' not in session or session.get('role') != 'ADMIN':
-        return jsonify({"error": "Unauthorized"}), 403
+        return jsonify({"error": "This account is not authorized to perform this action"}), 403
     try:
         mysql = current_app.extensions.get('mysql')
         if not mysql:
@@ -224,7 +234,7 @@ def delete_pool(pool_id, session=None):  # noqa: E501
         return jsonify({"error": str(e)}), 500
 
 
-def edit_user_profile(user_uuid, session=None, email=None, username=None):  # noqa: E501
+def edit_user_profile(user_uuid, email=None, username=None):  # noqa: E501
     """Edits properties of a profile.
 
     Allows an admin to edit a user&#39;s profile. # noqa: E501
@@ -274,7 +284,7 @@ def get_all_profiles(session=None, page_number=None):  # noqa: E501
     return 'do some magic!'
 
 
-def get_feedback(feedback_id, session=None):  # noqa: E501
+def get_feedback(feedback_id):  # noqa: E501
     """Returns a feedback by id.
 
     Allows to read a specific feedback. # noqa: E501
@@ -302,7 +312,7 @@ def get_system_logs(session=None):  # noqa: E501
     return 'do some magic!'
 
 
-def get_user_history(user_uuid, type, session=None, page_number=None):  # noqa: E501
+def get_user_history(user_uuid, type, page_number=None):  # noqa: E501
     """Returns history of a user.
 
     Allows to retrieve history of a user. # noqa: E501
@@ -322,7 +332,7 @@ def get_user_history(user_uuid, type, session=None, page_number=None):  # noqa: 
     return 'do some magic!'
 
 
-def update_auction(auction_uuid, auction, session=None):  # noqa: E501
+def update_auction(auction_uuid, auction):  # noqa: E501
     """Updates an auction.
 
     Allows the update of an auction. # noqa: E501
@@ -342,7 +352,7 @@ def update_auction(auction_uuid, auction, session=None):  # noqa: E501
     return 'do some magic!'
 
 
-def update_gacha(gacha_uuid, gacha, session=None):  # noqa: E501
+def update_gacha(gacha_uuid, gacha):  # noqa: E501
     """Updates a gacha.
 
     Allows the update of a gacha. # noqa: E501
@@ -362,7 +372,7 @@ def update_gacha(gacha_uuid, gacha, session=None):  # noqa: E501
     return 'do some magic!'
 
 
-def update_pool(pool_id, pool, session=None):  # noqa: E501
+def update_pool(pool_id, pool):  # noqa: E501
     """Updates a pool.
 
     Allows the update of a pool. # noqa: E501
