@@ -1,6 +1,7 @@
 import connexion
 import uuid
 import bcrypt
+from datetime import datetime
 
 from typing import Dict
 from typing import Tuple
@@ -38,7 +39,7 @@ def login():
             connection = mysql.connect()
             cursor = connection.cursor()
             query = """
-                SELECT BIN_TO_UUID(u.uuid), u.email, p.username, u.role, u.password 
+                SELECT BIN_TO_UUID(u.uuid), u.uuid, u.email, p.username, u.role, u.password 
                 FROM users u
                 JOIN profiles p ON u.uuid = p.uuid
                 WHERE p.username = %s
@@ -48,14 +49,16 @@ def login():
             cursor.close()
 
             if result:
-                user_uuid, user_email, user_name, user_role, user_password = result
+                user_uuid_str, user_uuid_hex, user_email, user_name, user_role, user_password = result
                 if bcrypt.checkpw(password.encode('utf-8'), user_password.encode('utf-8')):
                     # Create session cookie on successful login
                     response = make_response(jsonify({"message": "Login successful"}), 200)
-                    session['uuid'] = user_uuid
+                    session['uuid'] = user_uuid_str
+                    session['uuid_hex'] = user_uuid_hex
                     session['email'] = user_email
                     session['username'] = user_name
                     session['role'] = user_role
+                    session['login_date'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     return response
                 else:
                     return jsonify({"error": "Invalid credentials"}), 401
@@ -94,7 +97,8 @@ def register():
         password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         
         # Generate UUID for new user
-        user_uuid = uuid.uuid4().bytes
+        user_uuid_hex = uuid.uuid4().bytes
+        user_uuid_str = str(uuid.UUID(bytes=user_uuid_hex))
 
         try:
             mysql = current_app.extensions.get('mysql')
@@ -108,13 +112,13 @@ def register():
             # Insert user in USERS table
             cursor.execute(
                 'INSERT INTO users (uuid, email, password, role) VALUES (%s, %s, %s, %s)',
-                (user_uuid, email, password_hash, 'USER')
+                (user_uuid_hex, email, password_hash, 'USER')
             )
             
             # Insert profile in PROFILE table
             cursor.execute(
                 'INSERT INTO profiles (uuid, username, currency, pvp_score) VALUES (%s, %s, %s, %s)',
-                (user_uuid, username, 0, 0)
+                (user_uuid_hex, username, 0, 0)
             )
 
             # Commit transaction
@@ -124,10 +128,12 @@ def register():
             connection.close()
 
             # adding username to session
-            session['uuid'] = user_uuid
+            session['uuid'] = user_uuid_str
+            session['uuid_hex'] = user_uuid_hex
             session['email'] = email
             session['username'] = username
             session['role'] = "USER"
+            session['login_date'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
             return jsonify({"message": "Registration successful"}), 201
 
