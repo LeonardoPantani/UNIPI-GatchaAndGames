@@ -38,7 +38,7 @@ def login():
             connection = mysql.connect()
             cursor = connection.cursor()
             query = """
-                SELECT u.uuid, u.email, p.username, u.role, u.password 
+                SELECT BIN_TO_UUID(u.uuid), u.email, p.username, u.role, u.password 
                 FROM users u
                 JOIN profiles p ON u.uuid = p.uuid
                 WHERE p.username = %s
