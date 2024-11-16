@@ -25,6 +25,8 @@ def bid_on_auction(auction_uuid):
     #check if user is logged in
     if 'username' not in session:
         return jsonify({"error": "Not logged in"}), 403
+    
+    user_uuid = session['uuid']
     #get args
     increment = request.args.get('bid', type=int)
     
@@ -60,16 +62,9 @@ def bid_on_auction(auction_uuid):
 
         if datetime.now() > end_time:
             return jsonify({"error":"Auction is closed"}), 403
-        
-        username = session['username']
-        cursor.execute(
-            'SELECT uuid FROM profiles WHERE username = %s',
-            (username,)
-        )
-        user_uuid = cursor.fetchone()[0]
 
         cursor.execute(
-            'SELECT * FROM inventories WHERE owner_uuid = %s AND item_uuid = %s',
+            'SELECT * FROM inventories WHERE owner_uuid = UUID_TO_BIN(%s) AND item_uuid = %s',
             (user_uuid, item_uuid)
         )
 
@@ -81,7 +76,7 @@ def bid_on_auction(auction_uuid):
             return jsonify({"message":"Already the highest bidder"}), 200
 
         cursor.execute(
-            'SELECT currency FROM profiles WHERE uuid = %s',
+            'SELECT currency FROM profiles WHERE uuid = UUID_TO_BIN(%s)',
             (user_uuid,)
         )
         user_profile = cursor.fetchone()
@@ -99,7 +94,7 @@ def bid_on_auction(auction_uuid):
         )
         #updates user funds
         cursor.execute(
-            'UPDATE profiles SET currency = currency - %s WHERE uuid = %s',
+            'UPDATE profiles SET currency = currency - %s WHERE uuid = UUID_TO_BIN(%s)',
             (new_bid, user_uuid)
         )
         #gives old bidder his funds back
@@ -164,7 +159,7 @@ def create_auction():
 
         searched_item = cursor.fetchone()
         if not searched_item:
-            return jsonify({"error": "Item in player's inventory not found."}), 404
+            return jsonify({"error": "Item not found in player's inventory."}), 404
         
         auction_id = uuid.uuid4()
         end_time = datetime.now() + timedelta(minutes=10)
@@ -272,6 +267,8 @@ def get_auction_status(auction_uuid):
                     (user_uuid,current_bid*(-1))
                 )
             #not removed from auctions for history
+                full_response = {**response, "message": "Item redeemed successfully"}
+                return jsonify(full_response), 200
 
         return jsonify(response), 200
 
@@ -298,6 +295,8 @@ def get_auctions_history(page_number=None):
     if 'username' not in session:
         return jsonify({"error": "Not logged in"}), 403
     
+    user_uuid=session['uuid']
+    
     page_number = int(request.args.get('page_number', 1))
 
     items_per_page = 10
@@ -311,15 +310,6 @@ def get_auctions_history(page_number=None):
 
         connection = mysql.connect()
         cursor = connection.cursor()
-
-        username = session['username']
-
-        cursor.execute(
-            'SELECT uuid FROM profiles WHERE username = %s',
-            (username,)
-        )
-
-        user_uuid = cursor.fetchone()
 
         cursor.execute(
             'SELECT BIN_TO_UUID(a.uuid), BIN_TO_UUID(a.item_uuid), a.starting_price, a.current_bid, BIN_TO_UUID(a.current_bidder), end_time FROM auctions a JOIN inventories i ON a.item_uuid = i.item_uuid WHERE i.owner_uuid = %s OR a.current_bidder = %s LIMIT %s OFFSET %s',

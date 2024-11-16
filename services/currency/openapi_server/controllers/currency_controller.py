@@ -44,7 +44,7 @@ def buy_currency(bundle_id):  # noqa: E501
     if 'username' not in session:
         return jsonify({"error": "Not logged in"}), 403
     
-    username = session['username']
+    user_uuid = session['uuid']
 
     mysql = current_app.extensions.get('mysql')
     if not mysql:
@@ -53,15 +53,6 @@ def buy_currency(bundle_id):  # noqa: E501
     try:
         connection = mysql.connect()
         cursor = connection.cursor()
-
-        cursor.execute(
-            'SELECT BIN_TO_UUID(uuid) FROM profiles WHERE username = %s',
-            (username,)
-        )
-        user_uuid = cursor.fetchone()[0]
-
-        if not user_uuid:
-            return jsonify({"error": "User not found"}), 404
         
         # Get the bundle details from the database
         cursor.execute(
