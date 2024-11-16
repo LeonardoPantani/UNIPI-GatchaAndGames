@@ -12,6 +12,7 @@ from flask import current_app, jsonify, request, make_response, session
 from flaskext.mysql import MySQL
 import uuid
 import random
+import json
 
 def health_check():  # noqa: E501
     return jsonify({"message": "Service operational."}), 200
@@ -20,7 +21,7 @@ def accept_pvp_request(pvp_match_uuid):  # noqa: E501
     
     if 'username' not in session:
         return jsonify({"error": "Not logged in"}), 403
-    
+
     user_uuid = session['uuid']
 
     try:
@@ -35,38 +36,43 @@ def accept_pvp_request(pvp_match_uuid):  # noqa: E501
             'SELECT BIN_TO_UUID(match_uuid), BIN_TO_UUID(player_1_uuid), BIN_TO_UUID(player_2_uuid), winner, timestamp, gachas_types_used FROM pvp_matches WHERE BIN_TO_UUID(match_uuid) = %s',
             (pvp_match_uuid,)
         )
-        _ , player1_uuid, player2_uuid, winner, _, teams = cursor.fetchone() #teams initially contains team of player 1
+        _, player1_uuid, player2_uuid, winner, _, teams = cursor.fetchone()  # teams initially contains team of player 1
 
         if player2_uuid != user_uuid:
             return jsonify({"error": "This request is not for you"}), 403
-        
-        if winner != None:
+
+        if winner is not None:
             return jsonify({"error": "Match already ended"}), 403
-        
+
         if connexion.request.is_json:
             body_request = connexion.request.get_json()
             team = body_request.get("gachas")
 
         if len(team) != 7:
             return jsonify({"error": "Exactly 7 gacha items required"}), 400
-        
+
         # Construct query with placeholders for the 7 UUIDs
         placeholders = ', '.join(['%s'] * len(team))
         query = f'SELECT BIN_TO_UUID(owner_uuid) FROM inventories WHERE BIN_TO_UUID(item_uuid) IN ({placeholders})'
-        
+
         # Execute query with the gacha UUIDs
         cursor.execute(query, tuple(team))
-        owner_uuids = cursor.fetchall()[0]
-        
-        if len(owner_uuids) != 1:
+        owner_uuids = cursor.fetchall()
+
+        # FIX: Correctly check that all items belong to the user
+        owner_uuids = [uuid[0] for uuid in owner_uuids]  # Extract UUIDs from fetched results
+        if any(owner_uuid != user_uuid for owner_uuid in owner_uuids):
             return jsonify({"error": "Gacha items do not belong to you"}), 400
-        
-        player1_team = teams.get("gachas",[])
-        player2_team = team.get("gachas",[])
 
-        teams['team1'] = teams.pop('gachas')
-        teams['team2'] = team
+        # Deserialize `teams` if it was stored as a JSON string in the database
+        if isinstance(teams, str):
+            teams = json.loads(teams)
 
+        # Extract `player1_team` and `player2_team`
+        player1_team = teams if isinstance(teams, list) else teams.get("gachas", [])# Extract player 1's team
+        player2_team = team  # `team` is already a list
+
+        # Shuffle player 2's team
         random.shuffle(player2_team)
 
         stats = ["stat_power", "stat_speed", "stat_durability", "stat_precision", "stat_range"]
@@ -76,13 +82,14 @@ def accept_pvp_request(pvp_match_uuid):  # noqa: E501
         }
 
         for i in range(7):
-            extracted_stat = stats[random.randint(0,4)]
+            extracted_stat = random.choice(stats)  # FIX: Use random.choice instead of random.randint to get a random stat
 
             cursor.execute(
-                'SELECT gt.name, gt.%s, gt.stat_potential FROM inventories i JOIN gachas_types gt ON i.stand_uuid = gt.uuid WHERE i.item_uuid IN (UUID_TO_BIN(%s), UUID_TO_BIN(%s))',
-                (extracted_stat, player1_team[i], player2_team[i])
+                f'SELECT gt.name, gt.{extracted_stat}, gt.stat_potential FROM inventories i JOIN gachas_types gt ON i.stand_uuid = gt.uuid WHERE i.item_uuid IN (UUID_TO_BIN(%s), UUID_TO_BIN(%s))',
+                (player1_team[i], player2_team[i])
             )
             result = cursor.fetchall()
+            print (result)
             # Store data in variables for comparison
             player1_stand_name, player1_stand_stat, player1_stand_potential = result[0]
             player2_stand_name, player2_stand_stat, player2_stand_potential = result[1]
@@ -99,16 +106,16 @@ def accept_pvp_request(pvp_match_uuid):  # noqa: E501
             })
 
             if player1_stand_stat > player2_stand_stat:
-                points+=1
+                points += 1
             elif player1_stand_stat < player2_stand_stat:
-                points-=1
+                points -= 1
             else:
                 if player1_stand_potential > player2_stand_potential:
-                    points+=1
+                    points += 1
                 elif player1_stand_potential < player2_stand_potential:
-                    points-=1
+                    points -= 1
                 else:
-                    points+=random.choice([1, -1])
+                    points += random.choice([1, -1])
 
         if points > 0:
             winner = 0
@@ -117,14 +124,13 @@ def accept_pvp_request(pvp_match_uuid):  # noqa: E501
             winner = 1
             log["winner"] = user_uuid
 
-        log_json = jsonify(log)
-        print(log_json.get_data(as_text=True))
+        log_json = json.dumps(log)
 
         cursor.execute(
             'UPDATE pvp_matches SET winner = %s, match_log = %s, timestamp = CURRENT_TIMESTAMP, gachas_types_used = %s WHERE match_uuid = UUID_TO_BIN(%s)',
-            (winner, log_json, jsonify(teams), pvp_match_uuid)
+            (winner, log_json, json.dumps(teams), pvp_match_uuid)  # FIX: Use json.dumps directly for teams
         )
-        
+
         # Update pvp_score for the winner in the database
         if winner == 0:
             cursor.execute(
@@ -137,28 +143,58 @@ def accept_pvp_request(pvp_match_uuid):  # noqa: E501
                 (points, user_uuid)
             )
 
-        return jsonify({"message":"Match accepted and performed successfully."}), 200
+        connection.commit()
+
+        return jsonify({"message": "Match accepted and performed successfully."}), 200
 
     except Exception as e:
-        return jsonify({"error":str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
     finally:
         cursor.close()
         connection.close()
 
+def check_pending_pvp_requests():  # noqa: E501
+        # Step 1: Ensure user is logged in
+    if 'username' not in session:
+        return jsonify({"error": "Not logged in"}), 403
 
-def check_pending_pvp_requests(session):  # noqa: E501
-    """Returns a list of pending PvP requests.
+    try:
+        # Step 2: Get the MySQL connection from the application context
+        mysql = current_app.extensions.get('mysql')
+        if not mysql:
+            return jsonify({"error": "Database not initialized"}), 500
 
-    If the current user has one or more pending requests, a list will be returned. The current user&#39;s UUID is obtained via session cookie. # noqa: E501
+        connection = mysql.connect()
+        cursor = connection.cursor()
 
-    :param session: 
-    :type session: str
+        # Step 3: Fetch pending PvP requests for the logged-in user
+        logged_in_user_uuid = session['uuid']
+        check_query = '''
+            SELECT BIN_TO_UUID(match_uuid), BIN_TO_UUID(player_1_uuid), BIN_TO_UUID(player_2_uuid)
+            FROM pvp_matches
+            WHERE BIN_TO_UUID(player_2_uuid) = %s AND winner IS NULL;
+        '''
+        cursor.execute(check_query, (logged_in_user_uuid,))
+        pending_requests = cursor.fetchall()
 
-    :rtype: Union[PendingPvPRequests, Tuple[PendingPvPRequests, int], Tuple[PendingPvPRequests, int, Dict[str, str]]
-    """
-    return 'do some magic!'
+        # Step 4: Construct the response with pending requests
+        requests_list = []
+        for request in pending_requests:
+            match_uuid, sender_id, _ = request
+            requests_list.append({
+                "pvp_match_uuid": match_uuid,
+                "from": sender_id
+            })
 
+        return jsonify({"requests": requests_list}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cursor.close()
+        connection.close()
 
 def get_pvp_status(session, pvp_match_uuid):  # noqa: E501
     if 'username' not in session:
@@ -203,23 +239,55 @@ def get_pvp_status(session, pvp_match_uuid):  # noqa: E501
         cursor.close()
         connection.close()
 
+def reject_pv_prequest(pvp_match_uuid):  # noqa: E501
+        # Step 1: Ensure user is logged in
+    if 'username' not in session:
+        return jsonify({"error": "Not logged in"}), 403
 
+    try:
+        # Step 2: Get the MySQL connection from the application context
+        mysql = current_app.extensions.get('mysql')
+        if not mysql:
+            return jsonify({"error": "Database not initialized"}), 500
 
-def reject_pv_prequest(session, pvp_match_uuid):  # noqa: E501
-    """Rejects a pending PvP request.
+        connection = mysql.connect()
+        cursor = connection.cursor()
 
-    Allows a player to reject a PvP battle with another user. # noqa: E501
+        # Step 3: Check if the given PvP match UUID exists and is pending
+        check_query = '''
+            SELECT BIN_TO_UUID(player_2_uuid) 
+            FROM pvp_matches
+            WHERE BIN_TO_UUID(match_uuid) = %s AND winner IS NULL;
+        '''
+        cursor.execute(check_query, (pvp_match_uuid,))
+        match_data = cursor.fetchone()
 
-    :param session: 
-    :type session: str
-    :param pvp_match_uuid: The pending pvp request&#39;s match id.
-    :type pvp_match_uuid: str
-    :type pvp_match_uuid: str
+        if not match_data:
+            return jsonify({"error": "Invalid PvP match ID or match already concluded"}), 400
 
-    :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
-    """
-    return 'do some magic!'
+        player_2_uuid = match_data
 
+        # Step 4: Verify if the logged-in user is part of the match
+        logged_in_user_uuid = session['uuid']
+        if logged_in_user_uuid != player_2_uuid:
+            return jsonify({"error": "You are not a participant of this match"}), 403
+
+        # Step 5: Delete the pending match request from the database
+        delete_query = '''
+            DELETE FROM pvp_matches 
+            WHERE BIN_TO_UUID(match_uuid) = %s;
+        '''
+        cursor.execute(delete_query, (pvp_match_uuid,))
+        connection.commit()
+
+        return jsonify({"message": "Battle rejected successfully."}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cursor.close()
+        connection.close()
 
 def send_pvp_request(user_uuid):  # noqa: E501
     
@@ -250,12 +318,12 @@ def send_pvp_request(user_uuid):  # noqa: E501
         # Execute query with the gacha UUIDs
         cursor.execute(query, tuple(team))
         owner_uuids = cursor.fetchall()[0]
-        print(owner_uuids)
+        
         if len(owner_uuids) != 1:
             return jsonify({"error": "Gacha items do not belong to you"}), 400
         
         player1_uuid=owner_uuids[0]
-        print(session['uuid'])
+        
         if player1_uuid != session['uuid']:
             return jsonify({"error": "Gacha items do not belong to you"}), 400
 
@@ -275,7 +343,10 @@ def send_pvp_request(user_uuid):  # noqa: E501
             INSERT INTO pvp_matches (match_uuid, player_1_uuid, player_2_uuid, winner, match_log, gachas_types_used)
             VALUES (UUID_TO_BIN(%s), UUID_TO_BIN(%s), UUID_TO_BIN(%s), %s, %s, %s);
         '''
+        print(insert_query)
         cursor.execute(insert_query, (uuid.uuid4(), player1_uuid, user_uuid, None, None, jsonify(team).get_data(as_text=True)))
+
+        connection.commit()
 
         return jsonify({"message":"Match request sent successfully."}), 200
 
