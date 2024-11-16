@@ -1,0 +1,590 @@
+openapi: 3.0.0
+info:
+  title: Gacha System - OpenAPI 3.0
+  description: >-
+    API for managing gacha items, auctions, PVP battles, currency, and user
+    authentication.
+
+
+    Useful links:
+
+    - [Project
+    repository](https://github.com/LeonardoPantani/UNIPI-GachaAndGames)
+  version: 1.0.0
+  license:
+    name: GPL-3.0
+    url: https://www.gnu.org/licenses/gpl-3.0.html#license-text
+  contact:
+    email: support@gachaandgames.it
+servers:
+  - url: http://localhost:8080
+    description: Local server
+paths:
+  /admin/profile/list/:
+    get:
+      tags:
+        - admin
+      summary: Returns all profiles.
+      description: Allows to retrieve all profiles, paginated.
+      operationId: getAllProfiles
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: page_number
+          in: query
+          description: Page number of the list.
+          required: false
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+      responses:
+        '200':
+          description: User profile.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid username.
+        '401':
+          description: This account is not authorized to perform this action.
+        '404':
+          description: Username not found.
+        '500':
+          description: Internal server error.
+  /admin/profile/{user_uuid}/edit:
+    put:
+      tags:
+        - admin
+      summary: Edits properties of a profile.
+      description: Allows an admin to edit a user's profile.
+      operationId: editUserProfile
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: user_uuid
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UserId'
+        - name: email
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Email'
+        - name: username
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Username'
+      responses:
+        '200':
+          description: Profile updated.
+        '400':
+          description: Invalid fields.
+        '401':
+          description: This account is not authorized to perform this action.
+        '403':
+          description: Not logged in.
+        '500':
+          description: Internal server error.
+  /admin/profile/{user_uuid}/ban:
+    delete:
+      tags:
+        - admin
+      summary: Deletes a profile.
+      description: Allows an admin to delete a user's profile.
+      operationId: banProfile
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: user_uuid
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UserId'
+      responses:
+        '200':
+          description: Profile deleted.
+        '400':
+          description: Invalid fields.
+        '401':
+          description: This account is not authorized to perform this action.
+        '403':
+          description: Not logged in.
+        '500':
+          description: Internal server error.
+  /admin/profile/{user_uuid}/history:
+    get:
+      tags:
+        - admin
+      summary: Returns history of a user.
+      description: Allows to retrieve history of a user.
+      operationId: getUserHistory
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: user_uuid
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UserId'
+        - name: type
+          in: query
+          description: Type of history to show.
+          required: true
+          schema:
+            enum:
+              - bundle
+              - auction
+        - name: page_number
+          in: query
+          description: Page number of the list.
+          required: false
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+      responses:
+        '200':
+          description: User profile.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid username.
+        '401':
+          description: This account is not authorized to perform this action.
+        '404':
+          description: Username not found.
+        '500':
+          description: Internal server error.
+  /admin/gacha/create:
+    post:
+      tags:
+        - admin
+      summary: Creates a gacha.
+      description: Allows the creation of a gacha.
+      operationId: createGacha
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Gacha'
+      responses:
+        '200':
+          description: Gacha created.
+        '400':
+          description: Invalid fields.
+        '401':
+          description: This account is not authorized to perform this action.
+        '403':
+          description: Not logged in.
+        '500':
+          description: Internal server error.
+  /admin/gacha/{gacha_uuid}/update:
+    put:
+      tags:
+        - admin
+      summary: Updates a gacha.
+      description: Allows the update of a gacha.
+      operationId: updateGacha
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: gacha_uuid
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/GachaId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Gacha'
+      responses:
+        '200':
+          description: Gacha updated.
+        '400':
+          description: Invalid fields.
+        '401':
+          description: This account is not authorized to perform this action.
+        '403':
+          description: Not logged in.
+        '500':
+          description: Internal server error.
+  /admin/gacha/{gacha_uuid}/delete:
+    delete:
+      tags:
+        - admin
+      summary: Deletes a gacha.
+      description: Allows the deletion of a gacha.
+      operationId: deleteGacha
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: gacha_uuid
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/GachaId'
+      responses:
+        '200':
+          description: Gacha deleted.
+        '400':
+          description: Invalid fields.
+        '401':
+          description: This account is not authorized to perform this action.
+        '403':
+          description: Not logged in.
+        '500':
+          description: Internal server error.
+  /admin/pool/create:
+    post:
+      tags:
+        - admin
+      summary: Creates a pool.
+      description: Allows the creation of a pool.
+      operationId: createPool
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Pool'
+      responses:
+        '200':
+          description: Pool created.
+        '400':
+          description: Invalid fields.
+        '401':
+          description: This account is not authorized to perform this action.
+        '403':
+          description: Not logged in.
+        '500':
+          description: Internal server error.
+  /admin/pool/{pool_id}/update:
+    put:
+      tags:
+        - admin
+      summary: Updates a pool.
+      description: Allows the update of a pool.
+      operationId: updatePool
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: pool_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/PoolId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Pool'
+      responses:
+        '200':
+          description: Pool updated.
+        '400':
+          description: Invalid fields.
+        '401':
+          description: This account is not authorized to perform this action.
+        '403':
+          description: Not logged in.
+        '500':
+          description: Internal server error.
+  /admin/pool/{pool_id}/delete:
+    delete:
+      tags:
+        - admin
+      summary: Deletes a pool.
+      description: Allows the deletion of a pool.
+      operationId: deletePool
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: pool_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/PoolId'
+      responses:
+        '200':
+          description: Pool deleted.
+        '400':
+          description: Invalid fields.
+        '401':
+          description: This account is not authorized to perform this action.
+        '403':
+          description: Not logged in.
+        '500':
+          description: Internal server error.
+  /admin/auctions/{auction_uuid}/update:
+    put:
+      tags:
+        - admin
+      summary: Updates an auction.
+      description: Allows the update of an auction.
+      operationId: updateAuction
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: auction_uuid
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/AuctionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Auction'
+      responses:
+        '200':
+          description: Auction updated.
+        '400':
+          description: Invalid fields.
+        '401':
+          description: This account is not authorized to perform this action.
+        '403':
+          description: Not logged in.
+        '500':
+          description: Internal server error.
+  /admin/logs/:
+    get:
+      tags:
+        - admin
+      summary: Returns the system logs.
+      description: Allows to retrieve logs of the system.
+      operationId: getSystemLogs
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Latest system logs.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+        '401':
+          description: This account is not authorized to perform this action.
+        '500':
+          description: Internal server error.
+components:
+  schemas:
+    GachaStat:
+      type: string
+      example: A
+      pattern: ^[A-Ea-e]$
+      description: Stat of a gacha.
+    PoolId:
+      type: string
+      example: pool_starter
+      pattern: ^[a-zA-Z0-9_]+$
+      description: Internal code-name for the pool.
+    Pool:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/PoolId'
+        name:
+          type: string
+          example: Starter Pool
+          description: Visible name of the pool.
+        probabilities:
+          $ref: '#/components/schemas/RarityProbability'
+        items:
+          type: array
+          description: List of gacha items in the pool.
+          items:
+            $ref: '#/components/schemas/GachaId'
+    RarityProbability:
+      type: object
+      properties:
+        commonProbability:
+          type: number
+          format: float
+          default: 0.5
+        rareProbability:
+          type: number
+          format: float
+          default: 0.3
+        epicProbability:
+          type: number
+          format: float
+          default: 0.15
+        legendaryProbability:
+          type: number
+          format: float
+          default: 0.05
+    GachaRarity:
+      type: string
+      enum:
+        - common
+        - rare
+        - epic
+        - legendary
+      example: rare
+      description: Rarity level of the gacha
+    UserId:
+      type: string
+      format: uuid
+      description: UUID of user.
+    Username:
+      type: string
+      minLength: 5
+      pattern: ^[a-zA-Z0-9_]+$
+      example: LeoPanta01_
+      description: The username of the user
+    Email:
+      type: string
+      format: email
+      description: The user's email.
+      example: l.pantani5@studenti.unipi.it/
+    AuctionStatus:
+      type: string
+      default: active
+      enum:
+        - active
+        - closed
+    ItemId:
+      type: string
+      format: uuid
+      description: UUID of single item.
+    AuctionId:
+      type: string
+      format: uuid
+      description: UUID of the auction.
+    Auction:
+      type: object
+      properties:
+        auction_uuid:
+          $ref: '#/components/schemas/AuctionId'
+        status:
+          $ref: '#/components/schemas/AuctionStatus'
+        inventory_item_owner_id:
+          $ref: '#/components/schemas/UserId'
+        inventory_item_id:
+          $ref: '#/components/schemas/ItemId'
+        starting_price:
+          type: number
+          format: float
+          description: Initial price set for the auction
+        current_bid:
+          type: number
+          format: float
+          description: Current highest bid
+        current_bidder:
+          $ref: '#/components/schemas/UserId'
+        end_time:
+          type: string
+          format: date-time
+          description: When the auction ends, in UTC timestamp
+    User:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/UserId'
+        username:
+          $ref: '#/components/schemas/Username'
+        email:
+          $ref: '#/components/schemas/Email'
+        joindate:
+          type: string
+          format: date-time
+          description: Timestamp when user created their account
+    GachaId:
+      type: string
+      format: uuid
+      description: UUID of the gacha
+    Gacha:
+      type: object
+      properties:
+        gacha_uuid:
+          $ref: '#/components/schemas/GachaId'
+        name:
+          type: string
+          description: Name of the gacha
+          example: Tower of Gray
+        rarity:
+          $ref: '#/components/schemas/GachaRarity'
+        attributes:
+          type: object
+          properties:
+            power:
+              $ref: '#/components/schemas/GachaStat'
+            speed:
+              $ref: '#/components/schemas/GachaStat'
+            durability:
+              $ref: '#/components/schemas/GachaStat'
+            precision:
+              $ref: '#/components/schemas/GachaStat'
+            range:
+              $ref: '#/components/schemas/GachaStat'
+            potential:
+              $ref: '#/components/schemas/GachaStat'
+          required:
+            - power
+            - speed
+            - durability
+            - precision
+            - range
+            - potential
+          additionalProperties:
+            type: string
