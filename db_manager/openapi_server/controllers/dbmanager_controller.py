@@ -79,7 +79,6 @@ def register(register_request=None):  # noqa: E501
     username = login_request.get("username")
     email = login_request.get("email")
     password_hash = login_request.get("password")
-    print(password_hash)
 
     try:
         mysql = current_app.extensions.get('mysql')
