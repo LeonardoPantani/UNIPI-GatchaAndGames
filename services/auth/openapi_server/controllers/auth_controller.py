@@ -1,6 +1,8 @@
 import connexion
 import uuid
 import bcrypt
+import requests
+import json
 from datetime import datetime
 
 from typing import Dict
@@ -27,65 +29,36 @@ def login():
     if 'username' in session:
         return jsonify({"error": "You are already logged in"}), 409
     
-    if connexion.request.is_json:
-        login_request = connexion.request.get_json()
-        username = login_request.get("username")
-        password = login_request.get("password")
+    if not connexion.request.is_json:
+        return jsonify({"message": "Invalid request"}), 400
+    
+    # richiesta json valida
+    login_request = connexion.request.get_json()
+    username_to_login = login_request.get("username")
+    password_to_login = login_request.get("password")
 
-        # Check for missing fields
-        if not username or not password:
-            return jsonify({"error": "Missing username or password"}), 400
+    try:
+        payload = { "username": username_to_login }
+        url = "http://db_manager:8080/db_manager/auth/login"
+        data = requests.post(url, json=payload).json()
 
-        try:
-            mysql = current_app.extensions.get('mysql')
-            if not mysql:
-                return jsonify({"error": "Database connection not initialized"}), 500
+        if bcrypt.checkpw(password_to_login.encode('utf-8'), data["password"].encode('utf-8')):
+            session['uuid'] = data["uuid"]
+            session['uuid_hex'] = data["uuid_hex"]
+            session['email'] = data["email"]
+            session['username'] = data["username"]
+            session['role'] = data["role"]
+            session['login_date'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-            # Query the database for user based on username in PROFILE and hash in USERS
-            connection = mysql.connect()
-            cursor = connection.cursor()
-            query = """
-                SELECT BIN_TO_UUID(u.uuid), u.uuid, u.email, p.username, u.role, u.password 
-                FROM users u
-                JOIN profiles p ON u.uuid = p.uuid
-                WHERE p.username = %s
-            """
-            cursor.execute(query, (username,))
-            result = cursor.fetchone()
-
-            if result:
-                user_uuid_str, user_uuid_hex, user_email, user_name, user_role, user_password = result
-                if bcrypt.checkpw(password.encode('utf-8'), user_password.encode('utf-8')):
-                    # Create session cookie on successful login
-                    response = make_response(jsonify({"message": "Login successful"}), 200)
-                    session['uuid'] = user_uuid_str
-                    session['uuid_hex'] = user_uuid_hex
-                    session['email'] = user_email
-                    session['username'] = user_name
-                    session['role'] = user_role
-                    session['login_date'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    return response
-                else:
-                    return jsonify({"error": "Invalid credentials"}), 401
-            else: 
-                return jsonify({"error": "Invalid credentials"}), 401
-
-        except CircuitBreakerError:
-            logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
-            return jsonify({"error": "Service unavailable. Please try again later."}), 503
-
-        except Exception as e:
-            logging.error(f"Unexpected error during login: {str(e)}")
-            return jsonify({"error": str(e)}), 500
-
-        finally:
-            # Close the cursor and connection if they exist
-            if cursor:
-                cursor.close()
-            if connection:
-                connection.close()
-
-    return jsonify({"message": "Invalid request"}), 400
+            return jsonify({"message": "Login successful"}), 200
+        else:
+            return jsonify({"error": "Invalid credentials"}), 401
+    except CircuitBreakerError:
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return jsonify({"error": "Service unavailable. Please try again later."}), 503
+    except ValueError:
+        return jsonify({"error": "Service unavailable."}), 503
+    
 
 @auth_circuit_breaker
 def logout():   
@@ -100,76 +73,42 @@ def logout():
 
 @auth_circuit_breaker
 def register():
-    if connexion.request.is_json:
-        register_request = connexion.request.get_json()
-        username = register_request.get("username")
-        email = register_request.get("email")
-        password = register_request.get("password")
+    if 'username' in session:
+        return jsonify({"error": "You are already logged in"}), 409
+    
+    if not connexion.request.is_json:
+        return jsonify({"message": "Invalid request"}), 400
+    
+    # richiesta json valida
+    register_request = connexion.request.get_json()
+    username_to_register = register_request.get("username")
+    email_to_register = register_request.get("email")
+    password_to_hash = register_request.get("password")
 
-        # Check for missing fields
-        if not username or not email or not password:
-            return jsonify({"error": "Missing required fields"}), 400
+    if not username_to_register or not email_to_register or not password_to_hash:
+        return jsonify({"error": "Missing required fields"}), 400
 
-        # Hash the password using bcrypt
-        password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-        
-        # Generate UUID for new user
-        user_uuid_hex = uuid.uuid4().bytes
-        user_uuid_str = str(uuid.UUID(bytes=user_uuid_hex))
+    # hashing
+    password_hashed = bcrypt.hashpw(password_to_hash.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    
+    # generating UUID
+    uuid_hex_to_register = uuid.uuid4().bytes
+    uuid_to_register = str(uuid.UUID(bytes=uuid_hex_to_register))
 
-        try:
-            mysql = current_app.extensions.get('mysql')
-            if not mysql:
-                return jsonify({"error": "Database connection not initialized"}), 500
+    try:
+        payload = { "uuid": uuid_to_register, "username": username_to_register, "email": email_to_register, "password": password_hashed }
+        url = "http://db_manager:8080/db_manager/auth/register"
+        response = requests.post(url, json=payload)
 
-            # Begin transaction
-            connection = mysql.connect()
-            cursor = connection.cursor()
-
-            # Insert user in USERS table
-            cursor.execute(
-                'INSERT INTO users (uuid, email, password, role) VALUES (%s, %s, %s, %s)',
-                (user_uuid_hex, email, password_hash, 'USER')
-            )
-            
-            # Insert profile in PROFILE table
-            cursor.execute(
-                'INSERT INTO profiles (uuid, username, currency, pvp_score) VALUES (%s, %s, %s, %s)',
-                (user_uuid_hex, username, 0, 0)
-            )
-
-            # Commit transaction
-            connection.commit()
-
-            # adding username to session
-            session['uuid'] = user_uuid_str
-            session['uuid_hex'] = user_uuid_hex
-            session['email'] = email
-            session['username'] = username
+        if response.status_code == 201: # visto che vogliamo che l'utente si auto-logghi quando si registra controlliamo che la registrazione abbia successo qui
+            session['uuid'] = uuid_to_register
+            session['uuid_hex'] = uuid_hex_to_register
+            session['email'] = email_to_register
+            session['username'] = username_to_register
             session['role'] = "USER"
             session['login_date'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-            return jsonify({"message": "Registration successful"}), 201
-
-        except CircuitBreakerError:
-            logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
-            return jsonify({"error": "Service unavailable. Please try again later."}), 503
-
-        except mysql.connect().IntegrityError:
-            # Duplicate email error
-            connection.rollback()
-            return jsonify({"error": "The provided email or username are already in use."}), 409
-        except Exception as e:
-            # Rollback transaction on error
-            logging.error(f"Unexpected error during registration: {str(e)}")
-            connection.rollback()
-            return jsonify({"error": str(e)}), 500
-
-        finally:
-            # Close the cursor and connection if they exist
-            if cursor:
-                cursor.close()
-            if connection:
-                connection.close()
-
-    return jsonify({"message": "Invalid request"}), 400
+        
+        return jsonify(response.json()), response.status_code
+    except CircuitBreakerError:
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return jsonify({"error": "Service unavailable. Please try again later."}), 503

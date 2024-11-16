@@ -97,7 +97,7 @@ def buy_currency(bundle_id):  # noqa: E501
         return jsonify({"message": "Bundle " + public_name + " successfully bought" }), 200
 
     except CircuitBreakerError:
-        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        #logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return jsonify({"error": "Service unavailable. Please try again later."}), 503
 
     except Exception as e:
@@ -118,7 +118,6 @@ def buy_currency(bundle_id):  # noqa: E501
 
 @currency_circuit_breaker
 def get_bundles():  # noqa: E501
-    
     try:
         # Establish database connection
         mysql = current_app.extensions.get('mysql')
@@ -156,14 +155,14 @@ def get_bundles():  # noqa: E501
         return jsonify(bundles), 200
 
     except CircuitBreakerError:
-        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        #logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return jsonify({"error": "Service unavailable. Please try again later."}), 503
 
     except Exception as e:
         # Handle errors and rollback if any database operation failed
         if connection:
             connection.rollback()
-        logging.error(f"Unexpected error during get_bundles: {str(e)}")
+       # logging.error(f"Unexpected error during get_bundles: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
     finally:

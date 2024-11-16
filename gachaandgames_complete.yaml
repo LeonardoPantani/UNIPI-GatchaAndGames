@@ -21,7 +21,7 @@ servers:
   - url: http://localhost:8080
     description: Local server
 paths:
-  /feedback:
+  /feedback/:
     post:
       tags:
         - feedback
