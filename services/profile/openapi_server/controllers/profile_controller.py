@@ -8,23 +8,41 @@ from openapi_server.models.delete_profile_request import DeleteProfileRequest  #
 from openapi_server.models.edit_profile_request import EditProfileRequest  # noqa: E501
 from openapi_server.models.user import User  # noqa: E501
 from openapi_server import util
-from flask import session,current_app,jsonify
+from flask import session, current_app, jsonify
 import logging
+from pybreaker import CircuitBreaker, CircuitBreakerError
+
+# Initialize Circuit Breaker
+profile_circuit_breaker = CircuitBreaker(fail_max=3, reset_timeout=30)
 
 def health_check():  # noqa: E501
     return jsonify({"message": "Service operational."}), 200
+
+@profile_circuit_breaker
+def get_database_connection():
+    """
+    Function to get a database connection with circuit breaker protection.
+    """
+    mysql = current_app.extensions.get('mysql')
+    if not mysql:
+        raise ConnectionError("Database connection not initialized")
+    return mysql.connect()
 
 def delete_profile():  # noqa: E501
     """Deletes this account."""
     conn = None
     cursor = None
     try:
-        # Get database connection 
-        mysql = current_app.extensions.get('mysql')
-        if not mysql:
+        # Get database connection with circuit breaker protection
+        try:
+            conn = get_database_connection()
+        except CircuitBreakerError as cbe:
+            logging.error(f"Circuit Breaker Open: {str(cbe)}")
+            return jsonify({"error": "Service unavailable. Please try again later."}), 503
+        except ConnectionError as ce:
+            logging.error(f"Database connection error: {str(ce)}")
             return jsonify({"error": "Database connection not initialized"}), 500
-            
-        conn = mysql.connect()
+        
         cursor = conn.cursor()
 
         # Get username from flask session
@@ -84,18 +102,21 @@ def delete_profile():  # noqa: E501
         if conn:
             conn.close()
 
-
 def edit_profile():  # noqa: E501
     """Edits properties of the profile."""
     conn = None
     cursor = None
     try:
-        # Get database connection
-        mysql = current_app.extensions.get('mysql')
-        if not mysql:
+        # Get database connection with circuit breaker protection
+        try:
+            conn = get_database_connection()
+        except CircuitBreakerError as cbe:
+            logging.error(f"Circuit Breaker Open: {str(cbe)}")
+            return jsonify({"error": "Service unavailable. Please try again later."}), 503
+        except ConnectionError as ce:
+            logging.error(f"Database connection error: {str(ce)}")
             return jsonify({"error": "Database connection not initialized"}), 500
             
-        conn = mysql.connect()
         cursor = conn.cursor()
 
         # Get username from session
@@ -166,13 +187,19 @@ def edit_profile():  # noqa: E501
 
 def get_user_info(uuid):  # noqa: E501
     """Returns infos about a UUID."""
+    conn = None
+    cursor = None
     try:
-        # Get database connection
-        mysql = current_app.extensions.get('mysql')
-        if not mysql:
+        # Get database connection with circuit breaker protection
+        try:
+            conn = get_database_connection()
+        except CircuitBreakerError as cbe:
+            logging.error(f"Circuit Breaker Open: {str(cbe)}")
+            return jsonify({"error": "Service unavailable. Please try again later."}), 503
+        except ConnectionError as ce:
+            logging.error(f"Database connection error: {str(ce)}")
             return jsonify({"error": "Database connection not initialized"}), 500
             
-        conn = mysql.connect()
         cursor = conn.cursor()
         
         # Get user info from database
@@ -187,8 +214,6 @@ def get_user_info(uuid):  # noqa: E501
         logging.info(f"DB result: {result}")
         
         if not result:
-            cursor.close()
-            conn.close()
             return jsonify({"error": "User not found"}), 404
 
         # Create User object with results
@@ -199,15 +224,14 @@ def get_user_info(uuid):  # noqa: E501
             joindate=result[3]
         )
 
-        cursor.close()
-        conn.close()
-
         return jsonify(user.to_dict()), 200
 
     except Exception as e:
         logging.error(f"Unexpected error: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({"error": "Internal server error"}), 500
+
+    finally:
         if cursor:
             cursor.close()
         if conn:
             conn.close()
-        return jsonify({"error": "Internal server error"}), 500

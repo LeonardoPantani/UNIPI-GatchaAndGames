@@ -12,10 +12,16 @@ from openapi_server import util
 
 from flask import current_app, jsonify, request, make_response, session
 from flaskext.mysql import MySQL
+import logging
+from pybreaker import CircuitBreaker, CircuitBreakerError
+
+# Circuit breaker instance
+auth_circuit_breaker = CircuitBreaker(fail_max=3, reset_timeout=30)
 
 def health_check():  # noqa: E501
     return jsonify({"message": "Service operational."}), 200
 
+@auth_circuit_breaker
 def login():
     if 'username' in session:
         return jsonify({"error": "You are already logged in"}), 409
@@ -45,7 +51,6 @@ def login():
             """
             cursor.execute(query, (username,))
             result = cursor.fetchone()
-            cursor.close()
 
             if result:
                 user_uuid, user_email, user_name, user_role, user_password = result
@@ -62,12 +67,24 @@ def login():
             else: 
                 return jsonify({"error": "Invalid credentials"}), 401
 
+        except CircuitBreakerError:
+            logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+            return jsonify({"error": "Service unavailable. Please try again later."}), 503
+
         except Exception as e:
+            logging.error(f"Unexpected error during login: {str(e)}")
             return jsonify({"error": str(e)}), 500
+
+        finally:
+            # Close the cursor and connection if they exist
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
 
     return jsonify({"message": "Invalid request"}), 400
 
-
+@auth_circuit_breaker
 def logout():   
     # Check if user is logged in
     if 'username' not in session:
@@ -78,7 +95,7 @@ def logout():
     session.clear()
     return response
 
-
+@auth_circuit_breaker
 def register():
     if connexion.request.is_json:
         register_request = connexion.request.get_json()
@@ -120,9 +137,6 @@ def register():
             # Commit transaction
             connection.commit()
 
-            cursor.close()
-            connection.close()
-
             # adding username to session
             session['uuid'] = user_uuid
             session['email'] = email
@@ -131,13 +145,25 @@ def register():
 
             return jsonify({"message": "Registration successful"}), 201
 
+        except CircuitBreakerError:
+            logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+            return jsonify({"error": "Service unavailable. Please try again later."}), 503
+
         except mysql.connect().IntegrityError:
             # Duplicate email error
             connection.rollback()
             return jsonify({"error": "The provided email or username are already in use."}), 409
         except Exception as e:
             # Rollback transaction on error
+            logging.error(f"Unexpected error during registration: {str(e)}")
             connection.rollback()
             return jsonify({"error": str(e)}), 500
+
+        finally:
+            # Close the cursor and connection if they exist
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
 
     return jsonify({"message": "Invalid request"}), 400
