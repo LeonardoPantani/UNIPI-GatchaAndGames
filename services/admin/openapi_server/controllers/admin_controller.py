@@ -1,3 +1,4 @@
+import logging
 import connexion
 import uuid
 import bcrypt
@@ -17,11 +18,16 @@ from openapi_server import util
 
 from flask import current_app, jsonify, request, make_response, session
 from flaskext.mysql import MySQL
+from pybreaker import CircuitBreaker, CircuitBreakerError
 
+# Initialize Circuit Breaker
+profile_circuit_breaker = CircuitBreaker(fail_max=3, reset_timeout=30)
+
+@profile_circuit_breaker
 def admin_health_check_get():  # noqa: E501
     return jsonify({"message": "Service operational."}), 200
 
-
+@profile_circuit_breaker
 def ban_profile(user_uuid):  # noqa: E501
     if 'username' not in session or session.get('role') != 'ADMIN':
         return jsonify({"error": "This account is not authorized to perform this action"}), 403
@@ -61,8 +67,11 @@ def ban_profile(user_uuid):  # noqa: E501
     except Exception as e:
         connection.rollback()
         return jsonify({"error": str(e)}), 500
+    except CircuitBreakerError:
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return jsonify({"error": "Service unavailable. Please try again later."}), 503
 
-
+@profile_circuit_breaker
 def create_gacha():  # noqa: E501
     if 'username' not in session or session.get('role') != 'ADMIN':
         return jsonify({"error": "This account is not authorized to perform this action"}), 403
@@ -106,8 +115,11 @@ def create_gacha():  # noqa: E501
         return jsonify({"message": "Gacha successfully created.", "gacha_uuid": gacha_uuid}), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    except CircuitBreakerError:
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return jsonify({"error": "Service unavailable. Please try again later."}), 503
 
-
+@profile_circuit_breaker
 def delete_gacha(gacha_uuid):  # noqa: E501
     if 'username' not in session or session.get('role') != 'ADMIN':
         return jsonify({"error": "This account is not authorized to perform this action"}), 403
@@ -133,8 +145,11 @@ def delete_gacha(gacha_uuid):  # noqa: E501
         return jsonify({"message": "Gacha successfully deleted."}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    except CircuitBreakerError:
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return jsonify({"error": "Service unavailable. Please try again later."}), 503
 
-
+@profile_circuit_breaker
 def create_pool():  # noqa: E501
     if 'username' not in session or session.get('role') != 'ADMIN':
         return jsonify({"error": "This account is not authorized to perform this action"}), 403
@@ -189,8 +204,11 @@ def create_pool():  # noqa: E501
         return jsonify({"message": "Pool successfully created."}), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    except CircuitBreakerError:
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return jsonify({"error": "Service unavailable. Please try again later."}), 503
     
-
+@profile_circuit_breaker
 def delete_pool(pool_id):  # noqa: E501
     if 'username' not in session or session.get('role') != 'ADMIN':
         return jsonify({"error": "This account is not authorized to perform this action"}), 403
@@ -215,8 +233,11 @@ def delete_pool(pool_id):  # noqa: E501
         return jsonify({"message": "Pool successfully deleted."}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    except CircuitBreakerError:
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return jsonify({"error": "Service unavailable. Please try again later."}), 503
 
-
+@profile_circuit_breaker
 def edit_user_profile(user_uuid, email=None, username=None):  # noqa: E501
     if 'username' not in session or session.get('role') != 'ADMIN':
         return jsonify({"error": "This account is not authorized to perform this action"}), 403
@@ -259,8 +280,11 @@ def edit_user_profile(user_uuid, email=None, username=None):  # noqa: E501
     except Exception as e:
         connection.rollback()
         return jsonify({"error": str(e)}), 500
+    except CircuitBreakerError:
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return jsonify({"error": "Service unavailable. Please try again later."}), 503
 
-
+@profile_circuit_breaker
 def get_all_feedbacks(page_number=None):  # noqa: E501
     if 'username' not in session or session.get('role') != 'ADMIN':
         return jsonify({"error": "This account is not authorized to perform this action"}), 403
@@ -286,8 +310,11 @@ def get_all_feedbacks(page_number=None):  # noqa: E501
         return jsonify(feedback_list), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    except CircuitBreakerError:
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return jsonify({"error": "Service unavailable. Please try again later."}), 503
 
-
+@profile_circuit_breaker
 def get_all_profiles(page_number=None):  # noqa: E501
     if 'username' not in session or session.get('role') != 'ADMIN':
         return jsonify({"error": "This account is not authorized to perform this action"}), 403
@@ -313,8 +340,11 @@ def get_all_profiles(page_number=None):  # noqa: E501
         return jsonify(profile_list), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    except CircuitBreakerError:
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return jsonify({"error": "Service unavailable. Please try again later."}), 503
 
-
+@profile_circuit_breaker
 def get_feedback_info(feedback_id):  # noqa: E501
     if 'username' not in session or session.get('role') != 'ADMIN':
         return jsonify({"error": "This account is not authorized to perform this action"}), 403
@@ -339,12 +369,15 @@ def get_feedback_info(feedback_id):  # noqa: E501
             return jsonify({"error": "Feedback not found"}), 404
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    except CircuitBreakerError:
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return jsonify({"error": "Service unavailable. Please try again later."}), 503
 
 
 def get_system_logs():  # noqa: E501 TODO
     return 'do some magic!'
 
-
+@profile_circuit_breaker
 def get_user_history(user_uuid, history_type, page_number=None):  # noqa: E501
     if 'username' not in session or session.get('role') != 'ADMIN':
         return jsonify({"error": "This account is not authorized to perform this action"}), 403
@@ -392,8 +425,11 @@ def get_user_history(user_uuid, history_type, page_number=None):  # noqa: E501
         return jsonify(history_list), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    except CircuitBreakerError:
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return jsonify({"error": "Service unavailable. Please try again later."}), 503
 
-
+@profile_circuit_breaker
 def update_auction(auction_uuid):  # noqa: E501
     if 'username' not in session or session.get('role') != 'ADMIN':
         return jsonify({"error": "This account is not authorized to perform this action"}), 403
@@ -460,8 +496,11 @@ def update_auction(auction_uuid):  # noqa: E501
     except Exception as e:
         connection.rollback()
         return jsonify({"error": str(e)}), 500
+    except CircuitBreakerError:
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return jsonify({"error": "Service unavailable. Please try again later."}), 503
 
-
+@profile_circuit_breaker
 def update_gacha(gacha_uuid):  # noqa: E501
     if 'username' not in session or session.get('role') != 'ADMIN':
         return jsonify({"error": "This account is not authorized to perform this action"}), 403
@@ -520,8 +559,11 @@ def update_gacha(gacha_uuid):  # noqa: E501
     except Exception as e:
         connection.rollback()
         return jsonify({"error": str(e)}), 500
+    except CircuitBreakerError:
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return jsonify({"error": "Service unavailable. Please try again later."}), 503
 
-
+@profile_circuit_breaker
 def update_pool(pool_id):  # noqa: E501
     if 'username' not in session or session.get('role') != 'ADMIN':
         return jsonify({"error": "This account is not authorized to perform this action"}), 403
@@ -574,3 +616,6 @@ def update_pool(pool_id):  # noqa: E501
     except Exception as e:
         connection.rollback()
         return jsonify({"error": str(e)}), 500
+    except CircuitBreakerError:
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return jsonify({"error": "Service unavailable. Please try again later."}), 503

@@ -12,6 +12,7 @@ from typing import Union
 from openapi_server.models.login_request import LoginRequest  # noqa: E501
 from openapi_server.models.register_request import RegisterRequest  # noqa: E501
 from openapi_server import util
+import logging
 
 from flask import current_app, jsonify, request, make_response, session
 from flaskext.mysql import MySQL
@@ -70,14 +71,17 @@ def login():
 
 @auth_circuit_breaker
 def logout():   
-    # Check if user is logged in
-    if 'username' not in session:
-        return jsonify({"error": "Not logged in"}), 403
+    try:    # Check if user is logged in
+        if 'username' not in session:
+            return jsonify({"error": "Not logged in"}), 403
 
-    # Remove session cookie to log out
-    response = make_response(jsonify({"message": "Logout successful"}), 200)
-    session.clear()
-    return response
+        # Remove session cookie to log out
+        response = make_response(jsonify({"message": "Logout successful"}), 200)
+        session.clear()
+        return response
+    except CircuitBreakerError: 
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return jsonify({"error": "Service unavailable. Please try again later."}), 503
 
 
 @auth_circuit_breaker

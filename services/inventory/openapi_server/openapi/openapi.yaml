@@ -27,7 +27,7 @@ paths:
       tags:
       - inventory
       x-openapi-router-controller: openapi_server.controllers.inventory_controller
-  /inventory:
+  /inventory/:
     delete:
       description: Returns a list of gacha items currently owned by the player.
       operationId: remove_inventory_item
