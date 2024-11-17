@@ -60,7 +60,7 @@ def login():
 
             return jsonify({"message": "Login successful"}), 200
         else:
-            return jsonify({"error": "Invalid credentials"}), 401
+            return jsonify({"error": "Invalid credentials."}), 401
     except CircuitBreakerError:
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return jsonify({"error": "Service unavailable. Please try again later."}), 503
