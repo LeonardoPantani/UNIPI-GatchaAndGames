@@ -94,8 +94,6 @@ def buy_currency(bundle_id):  # noqa: E501
 
         connection.commit()
 
-        connection.commit()
-
         return jsonify({"message": "Bundle " + public_name + " successfully bought" }), 200
 
     except CircuitBreakerError:
