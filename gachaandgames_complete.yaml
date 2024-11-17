@@ -21,7 +21,16 @@ servers:
   - url: http://localhost:8080
     description: Local server
 paths:
-  /feedback:
+  /feedback/health_check:
+    get:
+      tags:
+      - feedback
+      description: Returns 200 if service is healthy.
+      responses:
+        "200":
+          description: Service OK
+      summary: Gives information on service status.
+  /feedback/:
     post:
       tags:
         - feedback
@@ -46,6 +55,21 @@ paths:
           description: Invalid query parameters.
         '500':
           description: Internal server error.
+
+
+
+  ############################################
+  ################ AUCTIONS ##################
+  ############################################
+  /auctions/health_check:
+    get:
+      tags:
+      - auctions
+      description: Returns 200 if service is healthy.
+      responses:
+        "200":
+          description: Service OK
+      summary: Gives information on service status.
   /auctions/history:
     get:
       tags:
@@ -241,6 +265,21 @@ paths:
           description: Insufficient funds.
         '500':
           description: Internal server error.
+
+
+
+  ############################################
+  #################### PVP ###################
+  ############################################
+  /pvp/health_check:
+    get:
+      tags:
+      - pvp
+      description: Returns 200 if service is healthy.
+      responses:
+        "200":
+          description: Service OK
+      summary: Gives information on service status.
   /pvp/sendPvPRequest/{user_uuid}:
     post:
       tags:
@@ -393,6 +432,21 @@ paths:
           description: Invalid match id.
         '500':
           description: Internal server error.
+
+
+
+  ############################################
+  ################ INVENTORY #################
+  ############################################
+  /inventory/health_check:
+    get:
+      tags:
+      - inventory
+      description: Returns 200 if service is healthy.
+      responses:
+        "200":
+          description: Service OK
+      summary: Gives information on service status.
   /inventory:
     get:
       tags:
@@ -454,6 +508,50 @@ paths:
           description: Item not found.
         '500':
           description: Internal server error
+  /inventory/{inventory_item_id}:
+    get:
+      tags:
+        - inventory
+      summary: Shows infos on my inventory item.
+      description: Returns infos on my inventory item.
+      operationId: getInventoryItemInfo
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: inventory_item_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ItemId'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InventoryItem'
+        '500':
+          description: Internal server error
+
+
+
+  ############################################
+  ################## GACHA ###################
+  ############################################
+  /gacha/health_check:
+    get:
+      tags:
+      - gacha
+      description: Returns 200 if service is healthy.
+      responses:
+        "200":
+          description: Service OK
+      summary: Gives information on service status.
   /gacha/pull/{pool_id}:
     post:
       tags:
@@ -485,35 +583,6 @@ paths:
           description: Insufficient funds.
         '500':
           description: Internal server error.
-  /inventory/{inventory_item_id}:
-    get:
-      tags:
-        - inventory
-      summary: Shows infos on my inventory item.
-      description: Returns infos on my inventory item.
-      operationId: getInventoryItemInfo
-      parameters:
-        - name: session
-          in: cookie
-          required: true
-          schema:
-            type: string
-        - name: inventory_item_id
-          in: path
-          required: true
-          schema:
-            $ref: '#/components/schemas/ItemId'
-      responses:
-        '200':
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/InventoryItem'
-        '500':
-          description: Internal server error
   /gacha/{gacha_uuid}:
     get:
       tags:
@@ -584,6 +653,21 @@ paths:
                   $ref: '#/components/schemas/Pool'
         '500':
           description: Internal server error
+
+
+
+  ############################################
+  ################# CURRENCY #################
+  ############################################
+  /currency/health_check:
+    get:
+      tags:
+      - currency
+      description: Returns 200 if service is healthy.
+      responses:
+        "200":
+          description: Service OK
+      summary: Gives information on service status.
   /currency/bundles:
     get:
       tags:
@@ -627,6 +711,21 @@ paths:
           description: Purchase failed.
         '500':
           description: Internal server error.
+
+
+
+  ############################################
+  ################# PROFILE ##################
+  ############################################
+  /profile/health_check:
+    get:
+      tags:
+      - profile
+      description: Returns 200 if service is healthy.
+      responses:
+        "200":
+          description: Service OK
+      summary: Gives information on service status.
   /profile/{uuid}/info:
     get:
       tags:
@@ -718,6 +817,21 @@ paths:
           description: Not logged in.
         '500':
           description: Internal server error.
+
+
+
+  ############################################
+  ################### AUTH ###################
+  ############################################
+  /auth/health_check:
+    get:
+      tags:
+      - auth
+      description: Returns 200 if service is healthy.
+      responses:
+        "200":
+          description: Service OK
+      summary: Gives information on service status.
   /auth/login:
     post:
       tags:
@@ -809,7 +923,22 @@ paths:
           description: The provided email address is already in use.
         '500':
           description: Internal server error.
-  /admin/profile/list/:
+
+
+
+  ############################################
+  ################### ADMIN ##################
+  ############################################
+  /admin/health_check:
+    get:
+      tags:
+      - admin
+      description: Returns 200 if service is healthy.
+      responses:
+        "200":
+          description: Service OK
+      summary: Gives information on service status.
+  /admin/profile/list:
     get:
       tags:
         - admin
@@ -933,14 +1062,14 @@ paths:
           required: true
           schema:
             $ref: '#/components/schemas/UserId'
-        - name: type
+        - name: history_type
           in: query
           description: Type of history to show.
           required: true
           schema:
             enum:
+              - ingame
               - bundle
-              - auction
         - name: page_number
           in: query
           description: Page number of the list.
@@ -1215,8 +1344,99 @@ paths:
           description: This account is not authorized to perform this action.
         '500':
           description: Internal server error.
+  /admin/feedback/list:
+    get:
+      tags:
+      - admin
+      summary: Returns all feedbacks.
+      description: Allows to retrieve all feedbacks, paginated.
+      operationId: get_all_feedbacks
+      parameters:
+      - name: session
+        in: cookie
+        required: true
+        schema:
+          type: string
+      - name: page_number
+        in: query
+        description: Page number of the list.
+        required: false
+        schema:
+          default: 1
+          minimum: 1
+          type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Feedback'
+                type: array
+          description: Feedback.
+        "400":
+          description: Invalid username.
+        "401":
+          description: This account is not authorized to perform this action.
+        "404":
+          description: Feedbacks not found.
+        "500":
+          description: Internal server error.
+  /admin/feedback/{feedback_id}:
+    get:
+      tags:
+      - admin
+      summary: Shows infos on a feedback.
+      description: Returns infos on a feedback.
+      operationId: get_feedback_info
+      parameters:
+      - name: session
+        in: cookie
+        required: true
+        schema:
+          type: string
+      - name: feedback_id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/FeedbackId'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Feedback'
+          description: Successful operation
+        "404":
+          description: Feedback not found
+        "500":
+          description: Internal server error
+
 components:
   schemas:
+    FeedbackId:
+      description: Id of feedback.
+      format: integer
+      title: id
+      type: number
+    Feedback:
+      properties:
+        id:
+          $ref: "#/components/schemas/FeedbackId"
+        user_uuid:
+          $ref: "#/components/schemas/UserId"
+        content:
+          description: Actual feedback content.
+          example: I love this game11!
+          title: content
+          type: string
+        timestamp:
+          description: Timestamp when user created feedback
+          format: date-time
+          title: timestamp
+          type: string
+      title: Feedback
+      type: object
     GachaStat:
       type: string
       example: A
@@ -1282,7 +1502,7 @@ components:
           type: array
           description: List of gacha items in the pool.
           items:
-            $ref: '#/components/schemas/Gacha'
+            $ref: '#/components/schemas/GachaId'
     RarityProbability:
       type: object
       properties:

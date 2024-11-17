@@ -1,14 +1,16 @@
 import connexion
 import uuid
 import bcrypt
+import json
+from datetime import date
 
 from typing import Dict
 from typing import Tuple
 from typing import Union
 
 from openapi_server.models.auction import Auction  # noqa: E501
+from openapi_server.models.feedback import Feedback  # noqa: E501
 from openapi_server.models.gacha import Gacha  # noqa: E501
-from openapi_server.models.get_all_feedbacks200_response_inner import GetAllFeedbacks200ResponseInner  # noqa: E501
 from openapi_server.models.pool import Pool  # noqa: E501
 from openapi_server.models.user import User  # noqa: E501
 from openapi_server import util
@@ -16,243 +18,559 @@ from openapi_server import util
 from flask import current_app, jsonify, request, make_response, session
 from flaskext.mysql import MySQL
 
-
-def health_check():  # noqa: E501
+def admin_health_check_get():  # noqa: E501
     return jsonify({"message": "Service operational."}), 200
 
-def ban_profile(user_uuid, session=None):  # noqa: E501
-    """Deletes a profile.
 
-    Allows an admin to delete a user&#39;s profile. # noqa: E501
+def ban_profile(user_uuid):  # noqa: E501
+    if 'username' not in session or session.get('role') != 'ADMIN':
+        return jsonify({"error": "This account is not authorized to perform this action"}), 403
+    
+    if session.get('uuid') == user_uuid:
+        return jsonify({"error": "You cannot delete your account like this"}), 400
+    
+    # valid request from now on
+    try:
+        mysql = current_app.extensions.get('mysql')
+        if not mysql:
+            return jsonify({"error": "Database connection not initialized"}), 500
 
-    :param user_uuid: 
-    :type user_uuid: str
-    :type user_uuid: str
-    :param session: 
-    :type session: str
+        connection = mysql.connect()
+        cursor = connection.cursor()
 
-    :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
-    """
+        query = "SELECT role FROM users WHERE uuid = UUID_TO_BIN(%s) LIMIT 1"
+        cursor.execute(query, (user_uuid,))
+        result = cursor.fetchone()
+        if result:
+            user_to_ban_role = result[0]
+            if user_to_ban_role == "ADMIN":
+                return jsonify({"error": "Cannot ban a user with the ADMIN role"}), 409
+        else:
+            return jsonify({"error": "User not found"}), 404
+
+        query = "DELETE FROM profiles WHERE uuid = UUID_TO_BIN(%s)"
+        cursor.execute(query, (user_uuid,))
+
+        query = "DELETE FROM users WHERE uuid = UUID_TO_BIN(%s)"
+        cursor.execute(query, (user_uuid,))
+
+        connection.commit()
+        cursor.close()
+
+        return jsonify({"message": "Profile successfully banned."}), 200
+    except Exception as e:
+        connection.rollback()
+        return jsonify({"error": str(e)}), 500
+
+
+def create_gacha():  # noqa: E501
+    if 'username' not in session or session.get('role') != 'ADMIN':
+        return jsonify({"error": "This account is not authorized to perform this action"}), 403
+    
+    if not connexion.request.is_json:
+        return jsonify({"message": "Invalid request."}), 400
+    
+    # valid request from now on
+    gacha = Gacha.from_dict(connexion.request.get_json())  # noqa: E501
+    try:
+        mysql = current_app.extensions.get('mysql')
+        if not mysql:
+            return jsonify({"error": "Database connection not initialized"}), 500
+
+        # converting letters to numbers for storage
+        letters_map = {
+            'A': 5,
+            'B': 4,
+            'C': 3,
+            'D': 2,
+            'E': 1
+        }
+        attributes = ['power', 'speed', 'durability', 'precision', 'range', 'potential']
+        converted = {}
+        for attr in attributes:
+            letter = getattr(gacha.attributes, attr)
+            if letter in letters_map:
+                converted[attr] = letters_map[letter]
+            else:
+                converted[attr] = None
+        # converted is a map with for each key (stat) a value (numeric of the stat)
+
+        connection = mysql.connect()
+        cursor = connection.cursor()
+        query = "INSERT INTO gachas_types (uuid, name, stat_power, stat_speed, stat_durability, stat_precision, stat_range, stat_potential, rarity, release_date) VALUES (UUID_TO_BIN(%s), %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+        gacha_uuid = uuid.uuid4()
+        cursor.execute(query, (gacha_uuid, gacha.name, converted["power"], converted["speed"], converted["durability"], converted["precision"], converted["range"], converted["potential"], gacha.rarity, date.today()))
+        connection.commit()
+        cursor.close()
+
+        return jsonify({"message": "Gacha successfully created.", "gacha_uuid": gacha_uuid}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+def delete_gacha(gacha_uuid):  # noqa: E501
+    if 'username' not in session or session.get('role') != 'ADMIN':
+        return jsonify({"error": "This account is not authorized to perform this action"}), 403
+    
+    # valid request from now on
+    try:
+        mysql = current_app.extensions.get('mysql')
+        if not mysql:
+            return jsonify({"error": "Database connection not initialized"}), 500
+
+        connection = mysql.connect()
+        cursor = connection.cursor()
+
+        delete_query = "DELETE FROM gachas_types WHERE uuid = %s"
+        cursor.execute(delete_query, (gacha_uuid,))
+        connection.commit()
+
+        if cursor.rowcount == 0:
+            return jsonify({"error": "Gacha not found."}), 404
+
+        cursor.close()
+
+        return jsonify({"message": "Gacha successfully deleted."}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+def create_pool():  # noqa: E501
+    if 'username' not in session or session.get('role') != 'ADMIN':
+        return jsonify({"error": "This account is not authorized to perform this action"}), 403
+    
+    if not connexion.request.is_json:
+        return jsonify({"message": "Invalid request."}), 400
+    
+    pool = Pool.from_dict(connexion.request.get_json())  # noqa: E501
+
+    # check if probabilities are inside the probabilities fields and are floats
+    if not isinstance(pool.probabilities.legendary_probability, float) or not isinstance(pool.probabilities.rare_probability, float) or not isinstance(pool.probabilities.epic_probability, float) or not isinstance(pool.probabilities.common_probability, float):
+        return jsonify({"error": "Invalid probabilities field."}), 400
+    
+    # check if sum of probabilities is 1
+    if pool.probabilities.legendary_probability + pool.probabilities.epic_probability + pool.probabilities.rare_probability + pool.probabilities.common_probability != 1:
+        return jsonify({"error": "Sum of probabilities is not 1."}), 400
+    
+    # valid request from now on
+    try:
+        mysql = current_app.extensions.get('mysql')
+        if not mysql:
+            return jsonify({"error": "Database connection not initialized"}), 500   
+
+        connection = mysql.connect()
+        cursor = connection.cursor()
+
+        # check if items really exists
+        for item in pool.items:
+            query = "SELECT uuid FROM gachas_types WHERE uuid = UUID_TO_BIN(%s)"
+            cursor.execute(query, (item))
+            connection.commit()
+            if cursor.fetchone() is None:
+                return jsonify({"error": "Item UUID not found in database: " + item}), 400
+        
+        # checks ok, inserting
+        try:
+            probabilities = {
+                "common_probability": pool.probabilities.common_probability,
+                "rare_probability": pool.probabilities.rare_probability,
+                "epic_probability": pool.probabilities.epic_probability,
+                "legendary_probability":  pool.probabilities.legendary_probability,
+            }
+            query = "INSERT INTO gacha_pools (codename, public_name, probabilities, items) VALUES (%s, %s, %s, %s)"
+            cursor.execute(query, (pool.id, pool.name, json.dumps(probabilities), json.dumps(pool.items)))
+            connection.commit()
+            cursor.close()
+        except mysql.connect().IntegrityError:
+            # Duplicate email error
+            connection.rollback()
+            return jsonify({"error": "The provided pool id is already in use."}), 409
+
+        return jsonify({"message": "Pool successfully created."}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+
+def delete_pool(pool_id):  # noqa: E501
+    if 'username' not in session or session.get('role') != 'ADMIN':
+        return jsonify({"error": "This account is not authorized to perform this action"}), 403
+    
+    # valid request from now on
+    try:
+        mysql = current_app.extensions.get('mysql')
+        if not mysql:
+            return jsonify({"error": "Database connection not initialized"}), 500
+
+        connection = mysql.connect()
+        cursor = connection.cursor()
+        query = "DELETE FROM gacha_pools WHERE codename = %s"
+        cursor.execute(query, (pool_id,))
+        connection.commit()
+
+        if cursor.rowcount == 0:
+            return jsonify({"error": "Pool not found."}), 404
+
+        cursor.close()
+
+        return jsonify({"message": "Pool successfully deleted."}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+def edit_user_profile(user_uuid, email=None, username=None):  # noqa: E501
+    if 'username' not in session or session.get('role') != 'ADMIN':
+        return jsonify({"error": "This account is not authorized to perform this action"}), 403
+    
+    try:
+        mysql = current_app.extensions.get('mysql')
+        if not mysql:
+            return jsonify({"error": "Database connection not initialized"}), 500
+
+        connection = mysql.connect()
+        cursor = connection.cursor()
+
+        # check if profile with that uuid exists
+        query = "SELECT uuid FROM users WHERE uuid = UUID_TO_BIN(%s) LIMIT 1"
+        cursor.execute(query, (user_uuid,))
+        result = cursor.fetchone()
+        if not result:
+            return jsonify({"error": "User not found"}), 404
+
+        # user exists, continue
+        updates = 0
+
+        if email:
+            query = "UPDATE users SET email = %s WHERE uuid = UUID_TO_BIN(%s)"
+            cursor.execute(query, (email, user_uuid))
+            updates += cursor.rowcount
+        if username:
+            query = "UPDATE profiles SET username = %s WHERE uuid = UUID_TO_BIN(%s)"
+            cursor.execute(query, (username, user_uuid))
+            updates += cursor.rowcount
+        connection.commit()
+
+        if updates == 0:
+            cursor.close()
+            return jsonify({"error": "No changes to profile applied."}), 404
+        
+        cursor.close()
+
+        return jsonify({"message": "User profile successfully updated."}), 200
+    except Exception as e:
+        connection.rollback()
+        return jsonify({"error": str(e)}), 500
+
+
+def get_all_feedbacks(page_number=None):  # noqa: E501
+    if 'username' not in session or session.get('role') != 'ADMIN':
+        return jsonify({"error": "This account is not authorized to perform this action"}), 403
+    
+    # valid request from now on
+    try:
+        mysql = current_app.extensions.get('mysql')
+        if not mysql:
+            return jsonify({"error": "Database connection not initialized"}), 500
+
+        connection = mysql.connect()
+        cursor = connection.cursor()
+        offset = (page_number - 1) * 10 if page_number else 0
+        query = "SELECT f.id, BIN_TO_UUID(f.user_uuid), f.content, f.timestamp FROM feedbacks f LIMIT 10 OFFSET %s"
+        cursor.execute(query, (offset,))
+        feedbacks = cursor.fetchall()
+        cursor.close()
+
+        feedback_list = [
+            {"id": feedback[0], "user_uuid": feedback[1], "content": feedback[2], "timestamp": str(feedback[3])}
+            for feedback in feedbacks
+        ]
+        return jsonify(feedback_list), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+def get_all_profiles(page_number=None):  # noqa: E501
+    if 'username' not in session or session.get('role') != 'ADMIN':
+        return jsonify({"error": "This account is not authorized to perform this action"}), 403
+    
+    # valid request from now on
+    try:
+        mysql = current_app.extensions.get('mysql')
+        if not mysql:
+            return jsonify({"error": "Database connection not initialized"}), 500
+
+        connection = mysql.connect()
+        cursor = connection.cursor()
+        offset = (page_number - 1) * 10 if page_number else 0
+        query = "SELECT BIN_TO_UUID(p.uuid) as uuid, u.email, p.username, p.currency, p.pvp_score, p.created_at, u.role FROM profiles p JOIN users u ON p.uuid = u.uuid LIMIT 10 OFFSET %s"
+        cursor.execute(query, (offset,))
+        profiles = cursor.fetchall()
+        cursor.close()
+
+        profile_list = [
+            {"id": profile[0], "email": profile[1], "username": profile[2], "currency": profile[3], "pvp_score": profile[4], "joindate": str(profile[5]), "role": profile[6]}
+            for profile in profiles
+        ]
+        return jsonify(profile_list), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+def get_feedback_info(feedback_id):  # noqa: E501
+    if 'username' not in session or session.get('role') != 'ADMIN':
+        return jsonify({"error": "This account is not authorized to perform this action"}), 403
+    
+    # valid request from now on
+    try:
+        mysql = current_app.extensions.get('mysql')
+        if not mysql:
+            return jsonify({"error": "Database connection not initialized"}), 500
+
+        connection = mysql.connect()
+        cursor = connection.cursor()
+        query = "SELECT f.id, BIN_TO_UUID(f.user_uuid) as uuid, f.content, f.timestamp, p.username FROM feedbacks f JOIN profiles p ON f.user_uuid = p.uuid WHERE id = %s"
+        cursor.execute(query, (feedback_id,))
+        feedback = cursor.fetchone()
+        cursor.close()
+
+        if feedback:
+            feedback_info = {"id": feedback[0], "user_uuid": feedback[1], "content": feedback[2], "timestamp": feedback[3], "username": feedback[4]}
+            return jsonify(feedback_info), 200
+        else:
+            return jsonify({"error": "Feedback not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+def get_system_logs():  # noqa: E501 TODO
     return 'do some magic!'
 
 
-def create_gacha(gacha, session=None):  # noqa: E501
-    """Creates a gacha.
+def get_user_history(user_uuid, history_type, page_number=None):  # noqa: E501
+    if 'username' not in session or session.get('role') != 'ADMIN':
+        return jsonify({"error": "This account is not authorized to perform this action"}), 403
+    
+    # valid request from now on
+    try:
+        mysql = current_app.extensions.get('mysql')
+        if not mysql:
+            return jsonify({"error": "Database connection not initialized"}), 500
 
-    Allows the creation of a gacha. # noqa: E501
+        connection = mysql.connect()
+        cursor = connection.cursor()
 
-    :param gacha: 
-    :type gacha: dict | bytes
-    :param session: 
-    :type session: str
+        # check if profile with that uuid exists
+        query = "SELECT uuid FROM users WHERE uuid = UUID_TO_BIN(%s) LIMIT 1"
+        cursor.execute(query, (user_uuid,))
+        result = cursor.fetchone()
+        if not result:
+            return jsonify({"error": "User not found"}), 404
 
-    :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
-    """
-    if connexion.request.is_json:
-        gacha = Gacha.from_dict(connexion.request.get_json())  # noqa: E501
-    return 'do some magic!'
+        # user exists, continue
+        offset = (page_number - 1) * 10 if page_number else 0
 
+        if history_type == 'ingame':
+            query = "SELECT BIN_TO_UUID(t.user_uuid) as user_uuid, t.credits, t.transaction_type, t.timestamp, p.username FROM ingame_transactions t JOIN profiles p ON t.user_uuid = p.uuid WHERE t.user_uuid = UUID_TO_BIN(%s) LIMIT 10 OFFSET %s"
+        elif history_type == 'bundle':
+            query = "SELECT BIN_TO_UUID(t.user_uuid) as user_uuid, t.bundle_codename, t.bundle_currency_name, t.timestamp, p.username FROM bundles_transactions t JOIN profiles p ON t.user_uuid = p.uuid WHERE t.user_uuid = UUID_TO_BIN(%s) LIMIT 10 OFFSET %s"
+        else:
+            return jsonify({"error": "Invalid history type"}), 400
+        
+        cursor.execute(query, (user_uuid, offset))
+        history = cursor.fetchall()
+        cursor.close()
 
-def create_pool(pool, session=None):  # noqa: E501
-    """Creates a pool.
-
-    Allows the creation of a pool. # noqa: E501
-
-    :param pool: 
-    :type pool: dict | bytes
-    :param session: 
-    :type session: str
-
-    :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
-    """
-    if connexion.request.is_json:
-        pool = Pool.from_dict(connexion.request.get_json())  # noqa: E501
-    return 'do some magic!'
-
-
-def delete_gacha(gacha_uuid, session=None):  # noqa: E501
-    """Deletes a gacha.
-
-    Allows the deletion of a gacha. # noqa: E501
-
-    :param gacha_uuid: 
-    :type gacha_uuid: str
-    :type gacha_uuid: str
-    :param session: 
-    :type session: str
-
-    :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
-    """
-    return 'do some magic!'
-
-
-def delete_pool(pool_id, session=None):  # noqa: E501
-    """Deletes a pool.
-
-    Allows the deletion of a pool. # noqa: E501
-
-    :param pool_id: 
-    :type pool_id: str
-    :param session: 
-    :type session: str
-
-    :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
-    """
-    return 'do some magic!'
+        if history_type == "ingame":
+            history_list = [
+                {"user_uuid": entry[0], "credits": entry[1], "transaction_type": entry[2], "timestamp": str(entry[3]), "username": entry[4]}
+                for entry in history
+            ]
+        else: # history_type == bundle
+            history_list = [
+                {"user_uuid": entry[0], "codename": entry[1], "currency_name": entry[2], "timestamp": str(entry[3]), "username": entry[4]}
+                for entry in history
+            ]
+        return jsonify(history_list), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
-def edit_user_profile(user_uuid, session=None, email=None, username=None):  # noqa: E501
-    """Edits properties of a profile.
+def update_auction(auction_uuid):  # noqa: E501
+    if 'username' not in session or session.get('role') != 'ADMIN':
+        return jsonify({"error": "This account is not authorized to perform this action"}), 403
+    
+    if not connexion.request.is_json:
+        return jsonify({"message": "Invalid request."}), 400
 
-    Allows an admin to edit a user&#39;s profile. # noqa: E501
+    
+    auction = Auction.from_dict(connexion.request.get_json())  # noqa: E501
+    
+    if auction.auction_uuid != auction_uuid:
+        return jsonify({"message": "Invalid request."}), 400
+    
+    # starting price check
+    if auction.starting_price <= 0:
+        return jsonify({"error": "Starting price cannot be lower or equal to 0"}), 400
+    
+    # starting price check
+    if auction.current_bid < 0:
+        return jsonify({"error": "Starting price cannot be lower than 0"}), 400
+    
+    # Current bid cannot be lower than starting price
+    if auction.current_bid < auction.starting_price:
+        return jsonify({"error": "Current bid cannot be lower than starting price"}), 400
+    
 
-    :param user_uuid: 
-    :type user_uuid: str
-    :type user_uuid: str
-    :param session: 
-    :type session: str
-    :param email: 
-    :type email: str
-    :param username: 
-    :type username: str
+    # valid request from now on
+    try:
+        mysql = current_app.extensions.get('mysql')
+        if not mysql:
+            return jsonify({"error": "Database connection not initialized"}), 500
 
-    :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
-    """
-    return 'do some magic!'
+        connection = mysql.connect()
+        cursor = connection.cursor()
 
+        # check if auction with that uuid exists
+        query = "SELECT uuid FROM auctions WHERE uuid = UUID_TO_BIN(%s) LIMIT 1"
+        cursor.execute(query, (auction_uuid,))
+        result = cursor.fetchone()
+        if not result:
+            return jsonify({"error": "Auction not found"}), 404
 
-def get_all_feedbacks(session=None, page_number=None):  # noqa: E501
-    """Returns all feedbacks.
+        # check if item with that uuid exists
+        query = "SELECT item_uuid FROM inventories WHERE item_uuid = UUID_TO_BIN(%s) LIMIT 1"
+        cursor.execute(query, (auction.inventory_item_id,))
+        result = cursor.fetchone()
+        if not result:
+            return jsonify({"error": "Item ID not found in any inventory"}), 404
 
-    Allows to retrieve all feedbacks, paginated. # noqa: E501
+        # check if current bidder is a valid user uuid
+        query = "SELECT uuid FROM users WHERE uuid = UUID_TO_BIN(%s) LIMIT 1"
+        cursor.execute(query, (auction.current_bidder,))
+        result = cursor.fetchone()
+        if not result:
+            return jsonify({"error": "Current bidder user profile not found"}), 404
 
-    :param session: 
-    :type session: str
-    :param page_number: Page number of the list.
-    :type page_number: int
+        # auction exists, continue
+        query = "UPDATE auctions SET item_uuid = UUID_TO_BIN(%s), starting_price = %s, current_bid = %s, current_bidder = UUID_TO_BIN(%s), end_time = %s WHERE uuid = UUID_TO_BIN(%s)"
+        cursor.execute(query, (auction.inventory_item_id, auction.starting_price, auction.current_bid, auction.current_bidder, auction.end_time, auction_uuid))
+        connection.commit()
+        cursor.close()
 
-    :rtype: Union[List[GetAllFeedbacks200ResponseInner], Tuple[List[GetAllFeedbacks200ResponseInner], int], Tuple[List[GetAllFeedbacks200ResponseInner], int, Dict[str, str]]
-    """
-    return 'do some magic!'
-
-
-def get_all_profiles(session=None, page_number=None):  # noqa: E501
-    """Returns all profiles.
-
-    Allows to retrieve all profiles, paginated. # noqa: E501
-
-    :param session: 
-    :type session: str
-    :param page_number: Page number of the list.
-    :type page_number: int
-
-    :rtype: Union[List[User], Tuple[List[User], int], Tuple[List[User], int, Dict[str, str]]
-    """
-    return 'do some magic!'
-
-
-def get_feedback(feedback_id, session=None):  # noqa: E501
-    """Returns a feedback by id.
-
-    Allows to read a specific feedback. # noqa: E501
-
-    :param feedback_id: Id of feedback.
-    :type feedback_id: int
-    :param session: 
-    :type session: str
-
-    :rtype: Union[str, Tuple[str, int], Tuple[str, int, Dict[str, str]]
-    """
-    return 'do some magic!'
-
-
-def get_system_logs(session=None):  # noqa: E501
-    """Returns the system logs.
-
-    Allows to retrieve logs of the system. # noqa: E501
-
-    :param session: 
-    :type session: str
-
-    :rtype: Union[List[str], Tuple[List[str], int], Tuple[List[str], int, Dict[str, str]]
-    """
-    return 'do some magic!'
+        return jsonify({"message": "Auction successfully updated."}), 200
+    except Exception as e:
+        connection.rollback()
+        return jsonify({"error": str(e)}), 500
 
 
-def get_user_history(user_uuid, type, session=None, page_number=None):  # noqa: E501
-    """Returns history of a user.
-
-    Allows to retrieve history of a user. # noqa: E501
-
-    :param user_uuid: 
-    :type user_uuid: str
-    :type user_uuid: str
-    :param type: Type of history to show.
-    :type type: str
-    :param session: 
-    :type session: str
-    :param page_number: Page number of the list.
-    :type page_number: int
-
-    :rtype: Union[List[User], Tuple[List[User], int], Tuple[List[User], int, Dict[str, str]]
-    """
-    return 'do some magic!'
+def update_gacha(gacha_uuid):  # noqa: E501
+    if 'username' not in session or session.get('role') != 'ADMIN':
+        return jsonify({"error": "This account is not authorized to perform this action"}), 403
+    
+    if not connexion.request.is_json:
+        return jsonify({"message": "Invalid request."}), 400
 
 
-def update_auction(auction_uuid, auction, session=None):  # noqa: E501
-    """Updates an auction.
+    gacha = Gacha.from_dict(connexion.request.get_json())  # noqa: E501
 
-    Allows the update of an auction. # noqa: E501
-
-    :param auction_uuid: 
-    :type auction_uuid: str
-    :type auction_uuid: str
-    :param auction: 
-    :type auction: dict | bytes
-    :param session: 
-    :type session: str
-
-    :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
-    """
-    if connexion.request.is_json:
-        auction = Auction.from_dict(connexion.request.get_json())  # noqa: E501
-    return 'do some magic!'
-
-
-def update_gacha(gacha_uuid, gacha, session=None):  # noqa: E501
-    """Updates a gacha.
-
-    Allows the update of a gacha. # noqa: E501
-
-    :param gacha_uuid: 
-    :type gacha_uuid: str
-    :type gacha_uuid: str
-    :param gacha: 
-    :type gacha: dict | bytes
-    :param session: 
-    :type session: str
-
-    :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
-    """
-    if connexion.request.is_json:
-        gacha = Gacha.from_dict(connexion.request.get_json())  # noqa: E501
-    return 'do some magic!'
+    if gacha.gacha_uuid != gacha_uuid:
+        return jsonify({"message": "Invalid request."}), 400
+    
+    # check if stats have correct rating and create a map with converted letters to number ratings
+    letters_map = {
+        'A': 5,
+        'B': 4,
+        'C': 3,
+        'D': 2,
+        'E': 1
+    }
+    attributes = ['power', 'speed', 'durability', 'precision', 'range', 'potential']
+    converted = {}
+    for attr in attributes:
+        letter = getattr(gacha.attributes, attr)
+        if letter in letters_map:
+            converted[attr] = letters_map[letter]
+        else: # no valid letter found, throwing error
+            return jsonify({"error": "Gacha stat " + attr + " does not have a valid rating. Valid ratings: A, B, C, D, E"}), 400
+    # converted is a map with for each key (stat) a value (numeric of the stat)
 
 
-def update_pool(pool_id, pool, session=None):  # noqa: E501
-    """Updates a pool.
+    # valid request from now on
+    try:
+        mysql = current_app.extensions.get('mysql')
+        if not mysql:
+            return jsonify({"error": "Database connection not initialized"}), 500
 
-    Allows the update of a pool. # noqa: E501
+        connection = mysql.connect()
+        cursor = connection.cursor()
 
-    :param pool_id: 
-    :type pool_id: str
-    :param pool: 
-    :type pool: dict | bytes
-    :param session: 
-    :type session: str
+        # check if gacha with that uuid exists
+        query = "SELECT uuid FROM gachas_types WHERE uuid = UUID_TO_BIN(%s) LIMIT 1"
+        cursor.execute(query, (gacha_uuid,))
+        result = cursor.fetchone()
+        if not result:
+            return jsonify({"error": "Gacha not found"}), 404
+        
 
-    :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
-    """
-    if connexion.request.is_json:
-        pool = Pool.from_dict(connexion.request.get_json())  # noqa: E501
-    return 'do some magic!'
+        query = "UPDATE gachas_types SET name = %s, stat_power = %s, stat_speed = %s, stat_durability = %s, stat_precision = %s, stat_range = %s, stat_potential = %s, rarity = %s WHERE uuid = UUID_TO_BIN(%s)"
+        cursor.execute(query, (gacha.name, converted["power"], converted["speed"], converted["durability"], converted["precision"], converted["range"], converted["potential"], gacha.rarity, gacha.gacha_uuid))
+        connection.commit()
+        cursor.close()
+
+        return jsonify({"message": "Gacha successfully updated."}), 200
+    except Exception as e:
+        connection.rollback()
+        return jsonify({"error": str(e)}), 500
+
+
+def update_pool(pool_id):  # noqa: E501
+    if 'username' not in session or session.get('role') != 'ADMIN':
+        return jsonify({"error": "This account is not authorized to perform this action"}), 403
+    
+    if not connexion.request.is_json:
+        return jsonify({"message": "Invalid request."}), 400
+    
+    pool = Pool.from_dict(connexion.request.get_json())  # noqa: E501
+
+    if pool.id != pool_id:
+        return jsonify({"message": "Invalid request."}), 400
+
+    # check if probabilities are inside the probabilities fields and are floats
+    if not isinstance(pool.probabilities.legendary_probability, float) or not isinstance(pool.probabilities.rare_probability, float) or not isinstance(pool.probabilities.epic_probability, float) or not isinstance(pool.probabilities.common_probability, float):
+        return jsonify({"error": "Invalid probabilities field."}), 400
+    
+    # check if sum of probabilities is 1
+    if pool.probabilities.legendary_probability + pool.probabilities.epic_probability + pool.probabilities.rare_probability + pool.probabilities.common_probability != 1:
+        return jsonify({"error": "Sum of probabilities is not 1."}), 400
+
+    # valid request from now on
+    try:
+        mysql = current_app.extensions.get('mysql')
+        if not mysql:
+            return jsonify({"error": "Database connection not initialized"}), 500
+        
+        connection = mysql.connect()
+        cursor = connection.cursor()
+
+        # check if items really exists
+        for item in pool.items:
+            query = "SELECT uuid FROM gachas_types WHERE uuid = UUID_TO_BIN(%s)"
+            cursor.execute(query, (item))
+            connection.commit()
+            if cursor.fetchone() is None:
+                return jsonify({"error": "Item UUID not found in database: " + item}), 400
+
+        probabilities = {
+            "common_probability": pool.probabilities.common_probability,
+            "rare_probability": pool.probabilities.rare_probability,
+            "epic_probability": pool.probabilities.epic_probability,
+            "legendary_probability":  pool.probabilities.legendary_probability,
+        }
+        query = "UPDATE gacha_pools SET public_name = %s, probabilities = %s, items = %s WHERE codename = %s"
+        cursor.execute(query, (pool.name, json.dumps(probabilities), json.dumps(pool.items), pool_id))
+        connection.commit()
+        cursor.close()
+
+        return jsonify({"message": "Pool successfully updated."}), 200
+    except Exception as e:
+        connection.rollback()
+        return jsonify({"error": str(e)}), 500

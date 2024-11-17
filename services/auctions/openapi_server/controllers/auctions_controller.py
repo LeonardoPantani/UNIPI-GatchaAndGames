@@ -11,10 +11,16 @@ from flask import jsonify, request, session, current_app
 from werkzeug.exceptions import BadRequest, NotFound, InternalServerError
 import uuid
 from datetime import datetime, timedelta
+import logging
+from pybreaker import CircuitBreaker, CircuitBreakerError
+
+# Circuit breaker instance
+auction_circuit_breaker = CircuitBreaker(fail_max=3, reset_timeout=30)
 
 def health_check():  # noqa: E501
     return jsonify({"message": "Service operational."}), 200
 
+@auction_circuit_breaker
 def bid_on_auction(auction_uuid): 
     #check if user is logged in
     if 'username' not in session:
@@ -105,6 +111,10 @@ def bid_on_auction(auction_uuid):
 
         return jsonify({"message": "Bid placed successfully."}), 200
 
+    except CircuitBreakerError:
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return jsonify({"error": "Service unavailable. Please try again later."}), 503
+
     except Exception as e:
         # Rollback transaction on error
         connection.rollback()
@@ -112,9 +122,12 @@ def bid_on_auction(auction_uuid):
     
     finally:
         # Close the database connection
-        cursor.close()
-        connection.close()
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
 
+@auction_circuit_breaker
 def create_auction(): 
 
     if 'username' not in session:
@@ -129,8 +142,8 @@ def create_auction():
     item_id = request.args.get('inventory_item_id')
 
     if not owner_id or not item_id:
-        return jsonify({"error": "Invalid query parameters ciao."}), 400
-    #add check if owner is different from user_uuid 
+        return jsonify({"error": "Invalid query parameters."}), 400
+        
     try:
         mysql = current_app.extensions.get('mysql')
         if not mysql:
@@ -156,7 +169,6 @@ def create_auction():
             (auction_id, item_id, starting_price, None, None, end_time)
         )
 
-
         connection.commit()
 
         cursor.close()
@@ -164,6 +176,10 @@ def create_auction():
 
         return jsonify({"message":"Auction created successfully."}), 200
     
+    except CircuitBreakerError:
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return jsonify({"error": "Service unavailable. Please try again later."}), 503
+
     except Exception as e:
         # Rollback transaction on error
         connection.rollback()
@@ -171,9 +187,12 @@ def create_auction():
     
     finally:
         # Close the database connection
-        cursor.close()
-        connection.close()
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
 
+@auction_circuit_breaker
 def get_auction_status(auction_uuid): 
     
     if 'username' not in session:
@@ -253,6 +272,10 @@ def get_auction_status(auction_uuid):
 
         return jsonify(response), 200
 
+    except CircuitBreakerError:
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return jsonify({"error": "Service unavailable. Please try again later."}), 503
+
     except Exception as e:
         # Handle errors and rollback if any database operation failed
         if connection:
@@ -261,9 +284,12 @@ def get_auction_status(auction_uuid):
 
     finally:
         # Close the database connection
-        cursor.close()
-        connection.close()
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
 
+@auction_circuit_breaker
 def get_auctions_history(page_number=None):  
     
     if 'username' not in session:
@@ -316,15 +342,22 @@ def get_auctions_history(page_number=None):
 
         return jsonify(auctions), 200
 
+    except CircuitBreakerError:
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return jsonify({"error": "Service unavailable. Please try again later."}), 503
+
     except Exception as e:
         # Handle database connection errors or any exceptions
         return jsonify({"error": str(e)}), 500
 
     finally:
         # Close database connection
-        cursor.close()
-        connection.close()
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
 
+@auction_circuit_breaker
 def get_auctions_list(status=None, rarity=None, page_number=None): 
     
     if 'username' not in session:
@@ -383,6 +416,10 @@ def get_auctions_list(status=None, rarity=None, page_number=None):
             })
 
         return jsonify(auctions), 200
+    
+    except CircuitBreakerError:
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return jsonify({"error": "Service unavailable. Please try again later."}), 503
 
     except Exception as e:
         # Handle database connection errors or any exceptions

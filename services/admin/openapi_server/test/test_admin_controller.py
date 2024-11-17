@@ -3,8 +3,8 @@ import unittest
 from flask import json
 
 from openapi_server.models.auction import Auction  # noqa: E501
+from openapi_server.models.feedback import Feedback  # noqa: E501
 from openapi_server.models.gacha import Gacha  # noqa: E501
-from openapi_server.models.get_all_feedbacks200_response_inner import GetAllFeedbacks200ResponseInner  # noqa: E501
 from openapi_server.models.pool import Pool  # noqa: E501
 from openapi_server.models.user import User  # noqa: E501
 from openapi_server.test import BaseTestCase
@@ -13,16 +13,17 @@ from openapi_server.test import BaseTestCase
 class TestAdminController(BaseTestCase):
     """AdminController integration test stubs"""
 
-    def test_health_check(self):
-        """Test case for health_check
+    def test_admin_health_check_get(self):
+        """Test case for admin_health_check_get
 
         Gives information on service status.
         """
+        headers = { 
+        }
         response = self.client.open(
             '/admin/health_check',
             method='GET',
-            headers=headers,
-            content_type='application/json')
+            headers=headers)
         self.assert200(response,
                        'Response body is : ' + response.data.decode('utf-8'))
 
@@ -63,7 +64,7 @@ class TestAdminController(BaseTestCase):
 
         Creates a pool.
         """
-        pool = {"name":"Starter Pool","id":"pool_starter","probabilities":{"legendaryProbability":5.962134,"epicProbability":1.4658129,"commonProbability":0.8008282,"rareProbability":6.0274563},"items":[{"gacha_uuid":"046b6c7f-0b8a-43b9-b35d-6489e6daee91","name":"Tower of Gray","attributes":{"durability":"A","precision":"A","range":"A","power":"A","potential":"A","speed":"A"},"rarity":"rare"},{"gacha_uuid":"046b6c7f-0b8a-43b9-b35d-6489e6daee91","name":"Tower of Gray","attributes":{"durability":"A","precision":"A","range":"A","power":"A","potential":"A","speed":"A"},"rarity":"rare"}]}
+        pool = {"name":"Starter Pool","id":"pool_starter","probabilities":{"legendaryProbability":5.962134,"epicProbability":1.4658129,"commonProbability":0.8008282,"rareProbability":6.0274563},"items":[null,null]}
         headers = { 
             'Content-Type': 'application/json',
         }
@@ -131,7 +132,7 @@ class TestAdminController(BaseTestCase):
             'Accept': 'application/json',
         }
         response = self.client.open(
-            '/admin/feedback/list/',
+            '/admin/feedback/list',
             method='GET',
             headers=headers,
             query_string=query_string)
@@ -148,23 +149,23 @@ class TestAdminController(BaseTestCase):
             'Accept': 'application/json',
         }
         response = self.client.open(
-            '/admin/profile/list/',
+            '/admin/profile/list',
             method='GET',
             headers=headers,
             query_string=query_string)
         self.assert200(response,
                        'Response body is : ' + response.data.decode('utf-8'))
 
-    def test_get_feedback(self):
-        """Test case for get_feedback
+    def test_get_feedback_info(self):
+        """Test case for get_feedback_info
 
-        Returns a feedback by id.
+        Shows infos on a feedback.
         """
         headers = { 
             'Accept': 'application/json',
         }
         response = self.client.open(
-            '/admin/feedback/{feedback_id}'.format(feedback_id=0),
+            '/admin/feedback/{feedback_id}'.format(feedback_id=3.4),
             method='GET',
             headers=headers)
         self.assert200(response,
@@ -179,7 +180,7 @@ class TestAdminController(BaseTestCase):
             'Accept': 'application/json',
         }
         response = self.client.open(
-            '/admin/logs/',
+            '/admin/logs',
             method='GET',
             headers=headers)
         self.assert200(response,
@@ -244,7 +245,7 @@ class TestAdminController(BaseTestCase):
 
         Updates a pool.
         """
-        pool = {"name":"Starter Pool","id":"pool_starter","probabilities":{"legendaryProbability":5.962134,"epicProbability":1.4658129,"commonProbability":0.8008282,"rareProbability":6.0274563},"items":[{"gacha_uuid":"046b6c7f-0b8a-43b9-b35d-6489e6daee91","name":"Tower of Gray","attributes":{"durability":"A","precision":"A","range":"A","power":"A","potential":"A","speed":"A"},"rarity":"rare"},{"gacha_uuid":"046b6c7f-0b8a-43b9-b35d-6489e6daee91","name":"Tower of Gray","attributes":{"durability":"A","precision":"A","range":"A","power":"A","potential":"A","speed":"A"},"rarity":"rare"}]}
+        pool = {"name":"Starter Pool","id":"pool_starter","probabilities":{"legendaryProbability":5.962134,"epicProbability":1.4658129,"commonProbability":0.8008282,"rareProbability":6.0274563},"items":[null,null]}
         headers = { 
             'Content-Type': 'application/json',
         }

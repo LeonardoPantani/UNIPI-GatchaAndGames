@@ -3,12 +3,10 @@ from datetime import date, datetime  # noqa: F401
 from typing import List, Dict  # noqa: F401
 
 from openapi_server.models.base_model import Model
-from openapi_server.models.gacha import Gacha
 from openapi_server.models.rarity_probability import RarityProbability
 import re
 from openapi_server import util
 
-from openapi_server.models.gacha import Gacha  # noqa: E501
 from openapi_server.models.rarity_probability import RarityProbability  # noqa: E501
 import re  # noqa: E501
 
@@ -28,13 +26,13 @@ class Pool(Model):
         :param probabilities: The probabilities of this Pool.  # noqa: E501
         :type probabilities: RarityProbability
         :param items: The items of this Pool.  # noqa: E501
-        :type items: List[Gacha]
+        :type items: List[str]
         """
         self.openapi_types = {
             'id': str,
             'name': str,
             'probabilities': RarityProbability,
-            'items': List[Gacha]
+            'items': List[str]
         }
 
         self.attribute_map = {
@@ -130,24 +128,24 @@ class Pool(Model):
         self._probabilities = probabilities
 
     @property
-    def items(self) -> List[Gacha]:
+    def items(self) -> List[str]:
         """Gets the items of this Pool.
 
         List of gacha items in the pool.  # noqa: E501
 
         :return: The items of this Pool.
-        :rtype: List[Gacha]
+        :rtype: List[str]
         """
         return self._items
 
     @items.setter
-    def items(self, items: List[Gacha]):
+    def items(self, items: List[str]):
         """Sets the items of this Pool.
 
         List of gacha items in the pool.  # noqa: E501
 
         :param items: The items of this Pool.
-        :type items: List[Gacha]
+        :type items: List[str]
         """
 
         self._items = items

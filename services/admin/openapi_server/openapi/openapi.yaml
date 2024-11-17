@@ -16,17 +16,6 @@ servers:
 - description: Local server
   url: http://localhost:8080
 paths:
-  /admin/health_check:
-    get:
-      description: Returns 200 if service is healthy.
-      operationId: health_check
-      responses:
-        "200":
-          description: Service OK
-      summary: Gives information on service status.
-      tags:
-      - admin
-      x-openapi-router-controller: openapi_server.controllers.admin_controller
   /admin/auctions/{auction_uuid}/update:
     put:
       description: Allows the update of an auction.
@@ -35,7 +24,7 @@ paths:
       - explode: true
         in: cookie
         name: session
-        required: false
+        required: true
         schema:
           type: string
         style: form
@@ -67,7 +56,7 @@ paths:
       tags:
       - admin
       x-openapi-router-controller: openapi_server.controllers.admin_controller
-  /admin/feedback/list/:
+  /admin/feedback/list:
     get:
       description: "Allows to retrieve all feedbacks, paginated."
       operationId: get_all_feedbacks
@@ -75,7 +64,7 @@ paths:
       - explode: true
         in: cookie
         name: session
-        required: false
+        required: true
         schema:
           type: string
         style: form
@@ -95,13 +84,15 @@ paths:
             application/json:
               schema:
                 items:
-                  $ref: '#/components/schemas/getAllFeedbacks_200_response_inner'
+                  $ref: '#/components/schemas/Feedback'
                 type: array
-          description: Feedback list.
+          description: Feedback.
         "400":
-          description: Invalid page number.
+          description: Invalid username.
         "401":
           description: This account is not authorized to perform this action.
+        "404":
+          description: Feedbacks not found.
         "500":
           description: Internal server error.
       summary: Returns all feedbacks.
@@ -110,43 +101,35 @@ paths:
       x-openapi-router-controller: openapi_server.controllers.admin_controller
   /admin/feedback/{feedback_id}:
     get:
-      description: Allows to read a specific feedback.
-      operationId: get_feedback
+      description: Returns infos on a feedback.
+      operationId: get_feedback_info
       parameters:
       - explode: true
         in: cookie
         name: session
-        required: false
+        required: true
         schema:
           type: string
         style: form
-      - description: Id of feedback.
-        explode: false
+      - explode: false
         in: path
         name: feedback_id
         required: true
         schema:
-          default: 0
-          minimum: 0
-          type: integer
+          $ref: '#/components/schemas/FeedbackId'
         style: simple
       responses:
         "200":
           content:
             application/json:
               schema:
-                example: I like this game very much.
-                type: string
-          description: Feedback structure.
-        "400":
-          description: Invalid username.
-        "401":
-          description: This account is not authorized to perform this action.
+                $ref: '#/components/schemas/Feedback'
+          description: Successful operation
         "404":
-          description: Username not found.
+          description: Feedback not found
         "500":
-          description: Internal server error.
-      summary: Returns a feedback by id.
+          description: Internal server error
+      summary: Shows infos on a feedback.
       tags:
       - admin
       x-openapi-router-controller: openapi_server.controllers.admin_controller
@@ -158,7 +141,7 @@ paths:
       - explode: true
         in: cookie
         name: session
-        required: false
+        required: true
         schema:
           type: string
         style: form
@@ -191,7 +174,7 @@ paths:
       - explode: true
         in: cookie
         name: session
-        required: false
+        required: true
         schema:
           type: string
         style: form
@@ -225,7 +208,7 @@ paths:
       - explode: true
         in: cookie
         name: session
-        required: false
+        required: true
         schema:
           type: string
         style: form
@@ -257,7 +240,18 @@ paths:
       tags:
       - admin
       x-openapi-router-controller: openapi_server.controllers.admin_controller
-  /admin/logs/:
+  /admin/health_check:
+    get:
+      description: Returns 200 if service is healthy.
+      operationId: admin_health_check_get
+      responses:
+        "200":
+          description: Service OK
+      summary: Gives information on service status.
+      tags:
+      - admin
+      x-openapi-router-controller: openapi_server.controllers.admin_controller
+  /admin/logs:
     get:
       description: Allows to retrieve logs of the system.
       operationId: get_system_logs
@@ -265,7 +259,7 @@ paths:
       - explode: true
         in: cookie
         name: session
-        required: false
+        required: true
         schema:
           type: string
         style: form
@@ -294,7 +288,7 @@ paths:
       - explode: true
         in: cookie
         name: session
-        required: false
+        required: true
         schema:
           type: string
         style: form
@@ -327,7 +321,7 @@ paths:
       - explode: true
         in: cookie
         name: session
-        required: false
+        required: true
         schema:
           type: string
         style: form
@@ -361,7 +355,7 @@ paths:
       - explode: true
         in: cookie
         name: session
-        required: false
+        required: true
         schema:
           type: string
         style: form
@@ -393,7 +387,7 @@ paths:
       tags:
       - admin
       x-openapi-router-controller: openapi_server.controllers.admin_controller
-  /admin/profile/list/:
+  /admin/profile/list:
     get:
       description: "Allows to retrieve all profiles, paginated."
       operationId: get_all_profiles
@@ -401,7 +395,7 @@ paths:
       - explode: true
         in: cookie
         name: session
-        required: false
+        required: true
         schema:
           type: string
         style: form
@@ -444,7 +438,7 @@ paths:
       - explode: true
         in: cookie
         name: session
-        required: false
+        required: true
         schema:
           type: string
         style: form
@@ -478,7 +472,7 @@ paths:
       - explode: true
         in: cookie
         name: session
-        required: false
+        required: true
         schema:
           type: string
         style: form
@@ -526,7 +520,7 @@ paths:
       - explode: true
         in: cookie
         name: session
-        required: false
+        required: true
         schema:
           type: string
         style: form
@@ -540,12 +534,12 @@ paths:
       - description: Type of history to show.
         explode: true
         in: query
-        name: type
+        name: history_type
         required: true
         schema:
           enum:
+          - ingame
           - bundle
-          - auction
           type: string
         style: form
       - description: Page number of the list.
@@ -581,6 +575,40 @@ paths:
       x-openapi-router-controller: openapi_server.controllers.admin_controller
 components:
   schemas:
+    FeedbackId:
+      description: Id of feedback.
+      format: integer
+      title: id
+      type: number
+    Feedback:
+      example:
+        user_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        id: 0.8008281904610115
+        content: I love this game11!
+        timestamp: 2000-01-23T04:56:07.000+00:00
+      properties:
+        id:
+          description: Id of feedback.
+          format: integer
+          title: id
+          type: number
+        user_uuid:
+          description: UUID of user.
+          format: uuid
+          title: inventory_item_owner_id
+          type: string
+        content:
+          description: Actual feedback content.
+          example: I love this game11!
+          title: content
+          type: string
+        timestamp:
+          description: Timestamp when user created feedback
+          format: date-time
+          title: timestamp
+          type: string
+      title: Feedback
+      type: object
     GachaStat:
       description: Stat of a gacha.
       example: A
@@ -602,26 +630,8 @@ components:
           commonProbability: 0.8008282
           rareProbability: 6.0274563
         items:
-        - gacha_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
-          name: Tower of Gray
-          attributes:
-            durability: A
-            precision: A
-            range: A
-            power: A
-            potential: A
-            speed: A
-          rarity: rare
-        - gacha_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
-          name: Tower of Gray
-          attributes:
-            durability: A
-            precision: A
-            range: A
-            power: A
-            potential: A
-            speed: A
-          rarity: rare
+        - null
+        - null
       properties:
         id:
           description: Internal code-name for the pool.
@@ -639,7 +649,7 @@ components:
         items:
           description: List of gacha items in the pool.
           items:
-            $ref: '#/components/schemas/Gacha'
+            $ref: '#/components/schemas/GachaId'
           title: items
           type: array
       title: Pool
@@ -833,27 +843,6 @@ components:
         attributes:
           $ref: '#/components/schemas/Gacha_attributes'
       title: Gacha
-      type: object
-    getAllFeedbacks_200_response_inner:
-      example:
-        feedback_id: 0
-        content: content
-        timestamp: 2000-01-23T04:56:07.000+00:00
-      properties:
-        content:
-          description: Feedback content.
-          title: content
-          type: string
-        feedback_id:
-          description: Unique identifier of the feedback.
-          title: feedback_id
-          type: integer
-        timestamp:
-          description: Date and time when the feedback was created.
-          format: date-time
-          title: timestamp
-          type: string
-      title: getAllFeedbacks_200_response_inner
       type: object
     Gacha_attributes:
       additionalProperties:

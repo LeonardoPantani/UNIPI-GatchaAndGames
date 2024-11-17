@@ -14,10 +14,10 @@ INSERT INTO profiles (uuid, username, currency, pvp_score) VALUES
 
 -- Insert into `gachas_types` table
 INSERT INTO gachas_types (uuid, name, stat_power, stat_speed, stat_durability, stat_precision, stat_range, stat_potential, rarity, release_date) VALUES
-(UNHEX(REPLACE('1b2f7b4e-5e1f-4112-a7c5-b7559dbb8c76', '-', '')), 'GachaType1', 10, 15, 20, 12, 8, 25, 'RARE', '2024-01-01'),
-(UNHEX(REPLACE('9d4b9fa9-6c72-44f5-9ac6-e6b548cfc632', '-', '')), 'GachaType2', 12, 14, 18, 10, 7, 22, 'EPIC', '2024-01-02'),
-(UNHEX(REPLACE('b6e7f8c9-7f28-4b4f-8fbe-523f6c8b0c85', '-', '')), 'GachaType3', 8, 10, 15, 18, 5, 10, 'COMMON', '2024-01-03'),
-(UNHEX(REPLACE('8f2b9d4e-3b3e-4c5d-a1c6-b7e3a5d6c1c7', '-', '')), 'GachaType4', 25, 20, 30, 22, 15, 35, 'LEGENDARY', '2024-01-04');
+(UNHEX(REPLACE('1b2f7b4e-5e1f-4112-a7c5-b7559dbb8c76', '-', '')), 'GachaType1', 5, 4, 3, 2, 1, 1, 'RARE', '2024-01-01'),
+(UNHEX(REPLACE('9d4b9fa9-6c72-44f5-9ac6-e6b548cfc632', '-', '')), 'GachaType2', 2, 4, 1, 5, 3, 2, 'EPIC', '2024-01-02'),
+(UNHEX(REPLACE('b6e7f8c9-7f28-4b4f-8fbe-523f6c8b0c85', '-', '')), 'GachaType3', 5, 1, 5, 1, 4, 3, 'COMMON', '2024-01-03'),
+(UNHEX(REPLACE('8f2b9d4e-3b3e-4c5d-a1c6-b7e3a5d6c1c7', '-', '')), 'GachaType4', 5, 5, 3, 2, 1, 3, 'LEGENDARY', '2024-01-04');
 
 -- Insert into `inventories` table
 INSERT INTO inventories (item_uuid, owner_uuid, stand_uuid, owners_no, currency_spent) VALUES
@@ -67,5 +67,5 @@ INSERT INTO feedbacks (user_uuid, content) VALUES
 
 -- Insert into `gacha_pools` table
 INSERT INTO gacha_pools (codename, public_name, probabilities, items) VALUES
-('novice_pool', 'Novice Gacha Pool', '{"common": 0.7, "rare": 0.2, "epic": 0.1}', '{"item1": 10, "item2": 5}'),
-('pro_pool', 'Pro Gacha Pool', '{"common": 0.5, "rare": 0.3, "epic": 0.15, "legendary": 0.05}', '{"item3": 15, "item4": 3}');
+('novice_pool', 'Novice Gacha Pool', '{"common": 0.7, "rare": 0.2, "epic": 0.1}', '["1b2f7b4e-5e1f-4112-a7c5-b7559dbb8c76"]'),
+('pro_pool', 'Pro Gacha Pool', '{"common": 0.5, "rare": 0.3, "epic": 0.15, "legendary": 0.05}', '["b6e7f8c9-7f28-4b4f-8fbe-523f6c8b0c85", "1b2f7b4e-5e1f-4112-a7c5-b7559dbb8c76"]');
