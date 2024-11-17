@@ -13,6 +13,20 @@ from openapi_server.test import BaseTestCase
 class TestAdminController(BaseTestCase):
     """AdminController integration test stubs"""
 
+    def test_admin_health_check_get(self):
+        """Test case for admin_health_check_get
+
+        Gives information on service status.
+        """
+        headers = { 
+        }
+        response = self.client.open(
+            '/admin/health_check',
+            method='GET',
+            headers=headers)
+        self.assert200(response,
+                       'Response body is : ' + response.data.decode('utf-8'))
+
     def test_ban_profile(self):
         """Test case for ban_profile
 
@@ -135,7 +149,7 @@ class TestAdminController(BaseTestCase):
             'Accept': 'application/json',
         }
         response = self.client.open(
-            '/admin/profile/list/',
+            '/admin/profile/list',
             method='GET',
             headers=headers,
             query_string=query_string)
@@ -151,7 +165,7 @@ class TestAdminController(BaseTestCase):
             'Accept': 'application/json',
         }
         response = self.client.open(
-            '/admin/feedback/{feedback_uuid}'.format(feedback_uuid='feedback_uuid_example'),
+            '/admin/feedback/{feedback_id}'.format(feedback_id=3.4),
             method='GET',
             headers=headers)
         self.assert200(response,
@@ -166,7 +180,7 @@ class TestAdminController(BaseTestCase):
             'Accept': 'application/json',
         }
         response = self.client.open(
-            '/admin/logs/',
+            '/admin/logs',
             method='GET',
             headers=headers)
         self.assert200(response,
@@ -187,20 +201,6 @@ class TestAdminController(BaseTestCase):
             method='GET',
             headers=headers,
             query_string=query_string)
-        self.assert200(response,
-                       'Response body is : ' + response.data.decode('utf-8'))
-
-    def test_health_check(self):
-        """Test case for health_check
-
-        Gives information on service status.
-        """
-        headers = { 
-        }
-        response = self.client.open(
-            '/admin/health_check',
-            method='GET',
-            headers=headers)
         self.assert200(response,
                        'Response body is : ' + response.data.decode('utf-8'))
 

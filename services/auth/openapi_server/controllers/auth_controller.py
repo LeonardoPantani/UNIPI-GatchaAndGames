@@ -24,6 +24,7 @@ auth_circuit_breaker = CircuitBreaker(fail_max=3, reset_timeout=30)
 def health_check():  # noqa: E501
     return jsonify({"message": "Service operational."}), 200
 
+
 @auth_circuit_breaker
 def login():
     if 'username' in session:
@@ -40,7 +41,14 @@ def login():
     try:
         payload = { "username": username_to_login }
         url = "http://db_manager:8080/db_manager/auth/login"
-        data = requests.post(url, json=payload).json()
+        response = requests.post(url, json=payload)
+        data = response.json()
+
+        if response.status_code == 404: # user not found (we do not show that to the user)
+            return jsonify({"error": "Invalid credentials."}), 201
+        
+        if response.status_code != 200: # for other error codes we return 500
+            return jsonify({"error": "Service unavailable."}), 503
 
         if bcrypt.checkpw(password_to_login.encode('utf-8'), data["password"].encode('utf-8')):
             session['uuid'] = data["uuid"]
@@ -58,7 +66,7 @@ def login():
         return jsonify({"error": "Service unavailable. Please try again later."}), 503
     except ValueError:
         return jsonify({"error": "Service unavailable."}), 503
-    
+ 
 
 @auth_circuit_breaker
 def logout():   
@@ -70,6 +78,7 @@ def logout():
     response = make_response(jsonify({"message": "Logout successful"}), 200)
     session.clear()
     return response
+
 
 @auth_circuit_breaker
 def register():
@@ -100,15 +109,21 @@ def register():
         url = "http://db_manager:8080/db_manager/auth/register"
         response = requests.post(url, json=payload)
 
-        if response.status_code == 201: # visto che vogliamo che l'utente si auto-logghi quando si registra controlliamo che la registrazione abbia successo qui
-            session['uuid'] = uuid_to_register
-            session['uuid_hex'] = uuid_hex_to_register
-            session['email'] = email_to_register
-            session['username'] = username_to_register
-            session['role'] = "USER"
-            session['login_date'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        if response.status_code == 409: # email provided already in use
+            return jsonify(response.json()), response.status_code
         
-        return jsonify(response.json()), response.status_code
+        if response.status_code != 201: # for other error codes we return 503
+            return jsonify({"error": "Service unavailable."}), 503
+
+        # visto che vogliamo che l'utente si auto-logghi quando si registra controlliamo che la registrazione abbia successo qui
+        session['uuid'] = uuid_to_register
+        session['uuid_hex'] = uuid_hex_to_register
+        session['email'] = email_to_register
+        session['username'] = username_to_register
+        session['role'] = "USER"
+        session['login_date'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        return jsonify({"message": "Registration successful."}), 201
     except CircuitBreakerError:
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return jsonify({"error": "Service unavailable. Please try again later."}), 503

@@ -20,7 +20,16 @@ servers:
   - url: http://localhost:8080
     description: Local server
 paths:
-  /admin/profile/list/:
+  /admin/health_check:
+    get:
+      tags:
+      - admin
+      description: Returns 200 if service is healthy.
+      responses:
+        "200":
+          description: Service OK
+      summary: Gives information on service status.
+  /admin/profile/list:
     get:
       tags:
         - admin
@@ -144,14 +153,14 @@ paths:
           required: true
           schema:
             $ref: '#/components/schemas/UserId'
-        - name: type
+        - name: history_type
           in: query
           description: Type of history to show.
           required: true
           schema:
             enum:
+              - ingame
               - bundle
-              - auction
         - name: page_number
           in: query
           description: Page number of the list.
@@ -400,7 +409,7 @@ paths:
           description: Not logged in.
         '500':
           description: Internal server error.
-  /admin/logs/:
+  /admin/logs:
     get:
       tags:
         - admin
@@ -426,8 +435,99 @@ paths:
           description: This account is not authorized to perform this action.
         '500':
           description: Internal server error.
+  /admin/feedback/list:
+    get:
+      tags:
+      - admin
+      summary: Returns all feedbacks.
+      description: Allows to retrieve all feedbacks, paginated.
+      operationId: get_all_feedbacks
+      parameters:
+      - name: session
+        in: cookie
+        required: true
+        schema:
+          type: string
+      - name: page_number
+        in: query
+        description: Page number of the list.
+        required: false
+        schema:
+          default: 1
+          minimum: 1
+          type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Feedback'
+                type: array
+          description: Feedback.
+        "400":
+          description: Invalid username.
+        "401":
+          description: This account is not authorized to perform this action.
+        "404":
+          description: Feedbacks not found.
+        "500":
+          description: Internal server error.
+  /admin/feedback/{feedback_id}:
+    get:
+      tags:
+      - admin
+      summary: Shows infos on a feedback.
+      description: Returns infos on a feedback.
+      operationId: get_feedback_info
+      parameters:
+      - name: session
+        in: cookie
+        required: true
+        schema:
+          type: string
+      - name: feedback_id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/FeedbackId'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Feedback'
+          description: Successful operation
+        "404":
+          description: Feedback not found
+        "500":
+          description: Internal server error
+
 components:
   schemas:
+    FeedbackId:
+      description: Id of feedback.
+      format: integer
+      title: id
+      type: number
+    Feedback:
+      properties:
+        id:
+          $ref: "#/components/schemas/FeedbackId"
+        user_uuid:
+          $ref: "#/components/schemas/UserId"
+        content:
+          description: Actual feedback content.
+          example: I love this game11!
+          title: content
+          type: string
+        timestamp:
+          description: Timestamp when user created feedback
+          format: date-time
+          title: timestamp
+          type: string
+      title: Feedback
+      type: object
     GachaStat:
       type: string
       example: A

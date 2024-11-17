@@ -99,7 +99,7 @@ paths:
       tags:
       - admin
       x-openapi-router-controller: openapi_server.controllers.admin_controller
-  /admin/feedback/{feedback_uuid}:
+  /admin/feedback/{feedback_id}:
     get:
       description: Returns infos on a feedback.
       operationId: get_feedback_info
@@ -113,7 +113,7 @@ paths:
         style: form
       - explode: false
         in: path
-        name: feedback_uuid
+        name: feedback_id
         required: true
         schema:
           $ref: '#/components/schemas/FeedbackId'
@@ -125,6 +125,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Feedback'
           description: Successful operation
+        "404":
+          description: Feedback not found
         "500":
           description: Internal server error
       summary: Shows infos on a feedback.
@@ -241,7 +243,7 @@ paths:
   /admin/health_check:
     get:
       description: Returns 200 if service is healthy.
-      operationId: health_check
+      operationId: admin_health_check_get
       responses:
         "200":
           description: Service OK
@@ -249,7 +251,7 @@ paths:
       tags:
       - admin
       x-openapi-router-controller: openapi_server.controllers.admin_controller
-  /admin/logs/:
+  /admin/logs:
     get:
       description: Allows to retrieve logs of the system.
       operationId: get_system_logs
@@ -385,7 +387,7 @@ paths:
       tags:
       - admin
       x-openapi-router-controller: openapi_server.controllers.admin_controller
-  /admin/profile/list/:
+  /admin/profile/list:
     get:
       description: "Allows to retrieve all profiles, paginated."
       operationId: get_all_profiles
@@ -532,12 +534,12 @@ paths:
       - description: Type of history to show.
         explode: true
         in: query
-        name: type
+        name: history_type
         required: true
         schema:
           enum:
+          - ingame
           - bundle
-          - auction
           type: string
         style: form
       - description: Page number of the list.
@@ -573,6 +575,40 @@ paths:
       x-openapi-router-controller: openapi_server.controllers.admin_controller
 components:
   schemas:
+    FeedbackId:
+      description: Id of feedback.
+      format: integer
+      title: id
+      type: number
+    Feedback:
+      example:
+        user_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        id: 0.8008281904610115
+        content: I love this game11!
+        timestamp: 2000-01-23T04:56:07.000+00:00
+      properties:
+        id:
+          description: Id of feedback.
+          format: integer
+          title: id
+          type: number
+        user_uuid:
+          description: UUID of user.
+          format: uuid
+          title: inventory_item_owner_id
+          type: string
+        content:
+          description: Actual feedback content.
+          example: I love this game11!
+          title: content
+          type: string
+        timestamp:
+          description: Timestamp when user created feedback
+          format: date-time
+          title: timestamp
+          type: string
+      title: Feedback
+      type: object
     GachaStat:
       description: Stat of a gacha.
       example: A
@@ -682,11 +718,6 @@ components:
       - closed
       title: AuctionStatus
       type: string
-    FeedbackId:
-      description: UUID of feedback.
-      format: uuid
-      title: id
-      type: string
     ItemId:
       description: UUID of single item.
       format: uuid
@@ -778,35 +809,6 @@ components:
           title: joindate
           type: string
       title: User
-      type: object
-    Feedback:
-      example:
-        user_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
-        id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
-        content: I love this game11!
-        timestamp: 2000-01-23T04:56:07.000+00:00
-      properties:
-        id:
-          description: UUID of feedback.
-          format: uuid
-          title: id
-          type: string
-        user_uuid:
-          description: UUID of user.
-          format: uuid
-          title: inventory_item_owner_id
-          type: string
-        content:
-          description: Actual feedback content.
-          example: I love this game11!
-          title: content
-          type: string
-        timestamp:
-          description: Timestamp when user created feedback
-          format: date-time
-          title: timestamp
-          type: string
-      title: Feedback
       type: object
     GachaId:
       description: UUID of the gacha
