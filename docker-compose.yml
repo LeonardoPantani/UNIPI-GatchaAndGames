@@ -26,7 +26,7 @@ services:
     container_name: mysql_db_gachaandgames
     build: ./database/
     ports:
-      - "3306:3306"
+      - "3306:3306" # TODO rimuovere
     env_file: "database/db.env"
     volumes:
       - mysql_gatchaandgames_db:/var/lib/mysql
@@ -40,6 +40,29 @@ services:
     networks:
       - backend_gachaandgames_network
 
+  db_manager:
+    image: db_manager_gachaandgames
+    build: ./db_manager/
+    ports:
+      - "8080"
+    env_file: ./db_manager/.env
+    volumes:
+      - ./db_manager:/usr/src/app/
+    depends_on:
+      db:
+        condition: service_healthy
+    tty: true
+    restart: always
+    networks:
+      - backend_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/db_manager/health_check"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+    deploy:
+      replicas: 1
+
   service_admin:
     image: service_admin
     build: ./services/admin/
@@ -49,7 +72,7 @@ services:
     volumes:
       - ./services/admin:/usr/src/app/
     depends_on:
-      db:
+      db_manager:
         condition: service_healthy
     tty: true
     restart: always
@@ -73,7 +96,7 @@ services:
     volumes:
       - ./services/auth:/usr/src/app/
     depends_on:
-      db:
+      db_manager:
         condition: service_healthy
     tty: true
     restart: always
@@ -97,7 +120,7 @@ services:
     volumes:
       - ./services/auctions:/usr/src/app/
     depends_on:
-      db:
+      db_manager:
         condition: service_healthy
     tty: true
     restart: always
@@ -121,7 +144,7 @@ services:
     volumes:
       - ./services/currency:/usr/src/app/
     depends_on:
-      db:
+      db_manager:
         condition: service_healthy
     tty: true
     restart: always
@@ -145,7 +168,7 @@ services:
     volumes:
       - ./services/feedback:/usr/src/app/
     depends_on:
-      db:
+      db_manager:
         condition: service_healthy
     tty: true
     restart: always
@@ -169,7 +192,7 @@ services:
     volumes:
       - ./services/gacha:/usr/src/app/
     depends_on:
-      db:
+      db_manager:
         condition: service_healthy
     tty: true
     restart: always
@@ -193,7 +216,7 @@ services:
     volumes:
       - ./services/inventory:/usr/src/app/
     depends_on:
-      db:
+      db_manager:
         condition: service_healthy
     tty: true
     restart: always
@@ -217,7 +240,7 @@ services:
     volumes:
       - ./services/profile:/usr/src/app/
     depends_on:
-      db:
+      db_manager:
         condition: service_healthy
     tty: true
     restart: always
@@ -241,7 +264,7 @@ services:
     volumes:
       - ./services/pvp:/usr/src/app/
     depends_on:
-      db:
+      db_manager:
         condition: service_healthy
     tty: true
     restart: always

@@ -1,0 +1,181 @@
+openapi: 3.0.0
+info:
+  contact:
+    email: support@gachaandgames.it
+  description: |-
+    Internal API for Database Manager.
+
+    Useful links:
+    - [Project repository](https://github.com/LeonardoPantani/UNIPI-GachaAndGames)
+  license:
+    name: GPL-3.0
+    url: https://www.gnu.org/licenses/gpl-3.0.html#license-text
+  title: Gacha System - OpenAPI 3.0
+  version: 1.0.0
+servers:
+- description: Local server
+  url: http://localhost:8080
+paths:
+  /db_manager/health_check:
+    get:
+      description: Returns 200 if service is healthy.
+      operationId: health_check
+      responses:
+        "200":
+          description: Service OK
+      summary: Gives information on service status.
+      tags:
+      - dbmanager
+      x-openapi-router-controller: openapi_server.controllers.dbmanager_controller
+  /db_manager/auth/login:
+    post:
+      description: Returns user if correct credentials are provided.
+      operationId: login
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/login_request'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/login_200_response'
+          description: Successful login with user details.
+        "400":
+          description: Invalid request format.
+        "401":
+          description: Invalid credentials.
+        "404":
+          description: Invalid username.
+        "500":
+          description: Internal server error.
+      tags:
+      - dbmanager
+      x-openapi-router-controller: openapi_server.controllers.dbmanager_controller
+  /db_manager/auth/register:
+    post:
+      description: Registers a user on db.
+      operationId: register
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/register_request'
+      responses:
+        "201":
+          description: Successful registration.
+        "400":
+          description: Invalid request format.
+        "409":
+          description: The provided email or username are already in use.
+        "500":
+          description: Internal server error.
+      tags:
+      - dbmanager
+      x-openapi-router-controller: openapi_server.controllers.dbmanager_controller
+components:
+  schemas:
+    UserId:
+      description: UUID of user.
+      format: uuid
+      title: uuid
+      type: string
+    UserIdHex:
+      description: UUID of user in hex format.
+      format: uuid
+      title: uuid_hex
+      type: string
+    Username:
+      description: The username of the user
+      example: LeoPanta01_
+      minLength: 5
+      pattern: "^[a-zA-Z0-9_]+$"
+      title: username
+      type: string
+    Email:
+      description: The user's email.
+      example: l.pantani5@studenti.unipi.it
+      format: email
+      title: email
+      type: string
+    login_request:
+      properties:
+        username:
+          description: The username of the user
+          example: LeoPanta01_
+          minLength: 5
+          pattern: "^[a-zA-Z0-9_]+$"
+          title: username
+          type: string
+      title: login_request
+      type: object
+    login_200_response:
+      example:
+        password: password
+        role: role
+        uuid_hex: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        email: l.pantani5@studenti.unipi.it
+        username: LeoPanta01_
+      properties:
+        uuid:
+          description: UUID of user.
+          format: uuid
+          title: uuid
+          type: string
+        uuid_hex:
+          description: UUID of user in hex format.
+          format: uuid
+          title: uuid_hex
+          type: string
+        email:
+          description: The user's email.
+          example: l.pantani5@studenti.unipi.it
+          format: email
+          title: email
+          type: string
+        username:
+          description: The username of the user
+          example: LeoPanta01_
+          minLength: 5
+          pattern: "^[a-zA-Z0-9_]+$"
+          title: username
+          type: string
+        role:
+          description: User's role in the system.
+          title: role
+          type: string
+        password:
+          description: User's password.
+          title: password
+          type: string
+      title: login_200_response
+      type: object
+    register_request:
+      properties:
+        uuid:
+          description: UUID of user.
+          format: uuid
+          title: uuid
+          type: string
+        email:
+          description: The user's email.
+          example: l.pantani5@studenti.unipi.it
+          format: email
+          title: email
+          type: string
+        password:
+          description: User's password.
+          title: password
+          type: string
+        username:
+          description: The username of the user
+          example: LeoPanta01_
+          minLength: 5
+          pattern: "^[a-zA-Z0-9_]+$"
+          title: username
+          type: string
+      title: register_request
+      type: object

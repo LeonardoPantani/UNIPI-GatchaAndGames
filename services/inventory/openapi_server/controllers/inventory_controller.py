@@ -8,10 +8,15 @@ import logging
 
 from openapi_server.models.inventory_item import InventoryItem  # noqa: E501
 from openapi_server import util
+from pybreaker import CircuitBreaker, CircuitBreakerError
+
+# Circuit breaker instance for inventory operations
+inventory_circuit_breaker = CircuitBreaker(fail_max=3, reset_timeout=30)
 
 def health_check():  # noqa: E501
     return jsonify({"message": "Service operational."}), 200
 
+@inventory_circuit_breaker
 def get_inventory():  # noqa: E501
     """Retrieve player's inventory with pagination"""
     try:
@@ -60,7 +65,7 @@ def get_inventory():  # noqa: E501
                     item_id=row[0],
                     owner_id=row[1],
                     gacha_uuid=row[2],
-                    obtained_date=row[3]  # Changed from obtained_at to obtained_date
+                    obtained_date=row[3]
                 )
                 inventory_items.append(item)
 
@@ -87,11 +92,14 @@ def get_inventory():  # noqa: E501
             if conn:
                 conn.close()
 
+    except CircuitBreakerError:
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return jsonify({"error": "Service unavailable. Please try again later."}), 503
     except Exception as e:
         logging.error(f"Server error: {str(e)}")
         return jsonify({"error": "Internal server error"}), 500
 
-
+@inventory_circuit_breaker
 def get_inventory_item_info(inventory_item_id):  # noqa: E501
     """Shows infos on my inventory item.
 
@@ -140,7 +148,8 @@ def get_inventory_item_info(inventory_item_id):  # noqa: E501
 
         # Create InventoryItem object with the fetched data
         item = InventoryItem(
-            item_id=InventoryItemId(owner_id=row[1], item_id=row[0]),
+            item_id=row[0],
+            owner_id=row[1],
             gacha_uuid=row[2],
             obtained_date=row[3],
             owners_no=row[4],
@@ -153,6 +162,9 @@ def get_inventory_item_info(inventory_item_id):  # noqa: E501
         # Return single item wrapped in a list as per API spec
         return jsonify([item.to_dict()]), 200
 
+    except CircuitBreakerError:
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return jsonify({"error": "Service unavailable. Please try again later."}), 503
     except Exception as e:
         logging.error(f"Error in get_inventory_item_info: {str(e)}\n{traceback.format_exc()}")
         if cursor:
@@ -161,7 +173,7 @@ def get_inventory_item_info(inventory_item_id):  # noqa: E501
             conn.close()
         return jsonify({"error": f"Internal server error: {str(e)}"}), 500
 
-
+@inventory_circuit_breaker
 def remove_inventory_item():
     """Removes an item from player's inventory
     
@@ -226,6 +238,9 @@ def remove_inventory_item():
         conn.commit()
         return jsonify({"message": "Item successfully removed"}), 200
 
+    except CircuitBreakerError:
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return jsonify({"error": "Service unavailable. Please try again later."}), 503
     except Exception as e:
         if conn:
             conn.rollback()

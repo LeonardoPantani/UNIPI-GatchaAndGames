@@ -1,0 +1,118 @@
+openapi: 3.0.0
+info:
+  contact:
+    email: support@gachaandgames.it
+  description: |-
+    Internal API for Database Manager.
+
+    Useful links:
+    - [Project repository](https://github.com/LeonardoPantani/UNIPI-GachaAndGames)
+  license:
+    name: GPL-3.0
+    url: https://www.gnu.org/licenses/gpl-3.0.html#license-text
+  title: Gacha System - OpenAPI 3.0
+  version: 1.0.0
+servers:
+- description: Local server
+  url: http://localhost:8080
+paths:
+  /db_manager/auth/login:
+    post:
+      tags:
+      - db_manager
+      description: "Returns user if correct credentials are provided."
+      operationId: login
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  $ref: "#/components/schemas/Username" 
+      responses:
+        "200":
+          description: Successful login with user details.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  uuid:
+                    $ref: "#/components/schemas/UserId"
+                  uuid_hex:
+                    $ref: "#/components/schemas/UserIdHex"
+                  email:
+                    $ref: "#/components/schemas/Email"
+                  username:
+                    $ref: "#/components/schemas/Username"
+                  role:
+                    type: string
+                    description: "User's role in the system."
+                  password:
+                    type: string
+                    description: "User's password."
+        "400":
+          description: Invalid request format.
+        "401":
+          description: Invalid credentials.
+        "404":
+          description: Invalid username.
+        "500":
+          description: Internal server error.
+
+  /db_manager/auth/register:
+    post:
+      tags:
+      - db_manager
+      description: "Registers a user on db."
+      operationId: register
+      requestBody:
+        content:
+          application/json:
+            schema:
+                type: object
+                properties:
+                  uuid:
+                    $ref: "#/components/schemas/UserId"
+                  email:
+                    $ref: "#/components/schemas/Email"
+                  password:
+                    type: string
+                    description: "User's password."
+                  username:
+                    $ref: "#/components/schemas/Username"
+      responses:
+        "201":
+          description: Successful registration.
+        "400":
+          description: Invalid request format.
+        "409":
+          description: The provided email or username are already in use.
+        "500":
+          description: Internal server error.
+
+components:
+  schemas:
+    UserId:
+      type: string
+      format: uuid
+      description: UUID of user.
+    UserIdHex:
+      type: string
+      format: uuid
+      description: UUID of user in hex format.
+      example: "3fa85f6457174562b3fc2c963f66afa6"
+    Username:
+      description: The username of the user
+      example: LeoPanta01_
+      minLength: 5
+      pattern: "^[a-zA-Z0-9_]+$"
+      title: username
+      type: string
+    Email:
+      description: The user's email.
+      example: l.pantani5@studenti.unipi.it
+      format: email
+      title: email
+      type: string

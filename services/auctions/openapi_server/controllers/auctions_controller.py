@@ -11,14 +11,22 @@ from flask import jsonify, request, session, current_app
 from werkzeug.exceptions import BadRequest, NotFound, InternalServerError
 import uuid
 from datetime import datetime, timedelta
+import logging
+from pybreaker import CircuitBreaker, CircuitBreakerError
+
+# Circuit breaker instance
+auction_circuit_breaker = CircuitBreaker(fail_max=3, reset_timeout=30)
 
 def health_check():  # noqa: E501
     return jsonify({"message": "Service operational."}), 200
 
+@auction_circuit_breaker
 def bid_on_auction(auction_uuid): 
     #check if user is logged in
     if 'username' not in session:
         return jsonify({"error": "Not logged in"}), 403
+    
+    user_uuid = session['uuid']
     #get args
     increment = request.args.get('bid', type=int)
     
@@ -54,16 +62,9 @@ def bid_on_auction(auction_uuid):
 
         if datetime.now() > end_time:
             return jsonify({"error":"Auction is closed"}), 403
-        
-        username = session['username']
-        cursor.execute(
-            'SELECT uuid FROM profiles WHERE username = %s',
-            (username,)
-        )
-        user_uuid = cursor.fetchone()[0]
 
         cursor.execute(
-            'SELECT * FROM inventories WHERE owner_uuid = %s AND item_uuid = %s',
+            'SELECT * FROM inventories WHERE owner_uuid = UUID_TO_BIN(%s) AND item_uuid = %s',
             (user_uuid, item_uuid)
         )
 
@@ -75,7 +76,7 @@ def bid_on_auction(auction_uuid):
             return jsonify({"message":"Already the highest bidder"}), 200
 
         cursor.execute(
-            'SELECT currency FROM profiles WHERE uuid = %s',
+            'SELECT currency FROM profiles WHERE uuid = UUID_TO_BIN(%s)',
             (user_uuid,)
         )
         user_profile = cursor.fetchone()
@@ -93,7 +94,7 @@ def bid_on_auction(auction_uuid):
         )
         #updates user funds
         cursor.execute(
-            'UPDATE profiles SET currency = currency - %s WHERE uuid = %s',
+            'UPDATE profiles SET currency = currency - %s WHERE uuid = UUID_TO_BIN(%s)',
             (new_bid, user_uuid)
         )
         #gives old bidder his funds back
@@ -110,6 +111,10 @@ def bid_on_auction(auction_uuid):
 
         return jsonify({"message": "Bid placed successfully."}), 200
 
+    except CircuitBreakerError:
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return jsonify({"error": "Service unavailable. Please try again later."}), 503
+
     except Exception as e:
         # Rollback transaction on error
         connection.rollback()
@@ -117,9 +122,12 @@ def bid_on_auction(auction_uuid):
     
     finally:
         # Close the database connection
-        cursor.close()
-        connection.close()
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
 
+@auction_circuit_breaker
 def create_auction(): 
 
     if 'username' not in session:
@@ -134,7 +142,7 @@ def create_auction():
     item_id = request.args.get('inventory_item_id')
 
     if not owner_id or not item_id:
-        return jsonify({"error": "Invalid query parameters ciao."}), 400
+        return jsonify({"error": "Invalid query parameters."}), 400
         
     try:
         mysql = current_app.extensions.get('mysql')
@@ -151,7 +159,7 @@ def create_auction():
 
         searched_item = cursor.fetchone()
         if not searched_item:
-            return jsonify({"error": "Item in player's inventory not found."}), 404
+            return jsonify({"error": "Item not found in player's inventory."}), 404
         
         auction_id = uuid.uuid4()
         end_time = datetime.now() + timedelta(minutes=10)
@@ -161,7 +169,6 @@ def create_auction():
             (auction_id, item_id, starting_price, None, None, end_time)
         )
 
-
         connection.commit()
 
         cursor.close()
@@ -169,6 +176,10 @@ def create_auction():
 
         return jsonify({"message":"Auction created successfully."}), 200
     
+    except CircuitBreakerError:
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return jsonify({"error": "Service unavailable. Please try again later."}), 503
+
     except Exception as e:
         # Rollback transaction on error
         connection.rollback()
@@ -176,9 +187,12 @@ def create_auction():
     
     finally:
         # Close the database connection
-        cursor.close()
-        connection.close()
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
 
+@auction_circuit_breaker
 def get_auction_status(auction_uuid): 
     
     if 'username' not in session:
@@ -253,8 +267,14 @@ def get_auction_status(auction_uuid):
                     (user_uuid,current_bid*(-1))
                 )
             #not removed from auctions for history
+                full_response = {**response, "message": "Item redeemed successfully"}
+                return jsonify(full_response), 200
 
         return jsonify(response), 200
+
+    except CircuitBreakerError:
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return jsonify({"error": "Service unavailable. Please try again later."}), 503
 
     except Exception as e:
         # Handle errors and rollback if any database operation failed
@@ -264,13 +284,18 @@ def get_auction_status(auction_uuid):
 
     finally:
         # Close the database connection
-        cursor.close()
-        connection.close()
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
 
+@auction_circuit_breaker
 def get_auctions_history(page_number=None):  
     
     if 'username' not in session:
         return jsonify({"error": "Not logged in"}), 403
+    
+    user_uuid=session['uuid']
     
     page_number = int(request.args.get('page_number', 1))
 
@@ -285,15 +310,6 @@ def get_auctions_history(page_number=None):
 
         connection = mysql.connect()
         cursor = connection.cursor()
-
-        username = session['username']
-
-        cursor.execute(
-            'SELECT uuid FROM profiles WHERE username = %s',
-            (username,)
-        )
-
-        user_uuid = cursor.fetchone()
 
         cursor.execute(
             'SELECT BIN_TO_UUID(a.uuid), BIN_TO_UUID(a.item_uuid), a.starting_price, a.current_bid, BIN_TO_UUID(a.current_bidder), end_time FROM auctions a JOIN inventories i ON a.item_uuid = i.item_uuid WHERE i.owner_uuid = %s OR a.current_bidder = %s LIMIT %s OFFSET %s',
@@ -326,15 +342,22 @@ def get_auctions_history(page_number=None):
 
         return jsonify(auctions), 200
 
+    except CircuitBreakerError:
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return jsonify({"error": "Service unavailable. Please try again later."}), 503
+
     except Exception as e:
         # Handle database connection errors or any exceptions
         return jsonify({"error": str(e)}), 500
 
     finally:
         # Close database connection
-        cursor.close()
-        connection.close()
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
 
+@auction_circuit_breaker
 def get_auctions_list(status=None, rarity=None, page_number=None): 
     
     if 'username' not in session:
@@ -393,6 +416,10 @@ def get_auctions_list(status=None, rarity=None, page_number=None):
             })
 
         return jsonify(auctions), 200
+    
+    except CircuitBreakerError:
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return jsonify({"error": "Service unavailable. Please try again later."}), 503
 
     except Exception as e:
         # Handle database connection errors or any exceptions
