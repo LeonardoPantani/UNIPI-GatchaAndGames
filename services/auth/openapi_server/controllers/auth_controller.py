@@ -13,6 +13,7 @@ from typing import Union
 from openapi_server.models.login_request import LoginRequest
 from openapi_server.models.register_request import RegisterRequest
 from openapi_server import util
+import logging
 
 from flask import current_app, jsonify, request, session
 from flaskext.mysql import MySQL

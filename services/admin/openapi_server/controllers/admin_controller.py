@@ -1,3 +1,4 @@
+import logging
 import connexion
 import uuid
 import bcrypt
@@ -17,6 +18,9 @@ from openapi_server import util
 
 from flask import current_app, jsonify, request, session
 from flaskext.mysql import MySQL
+from pybreaker import CircuitBreaker, CircuitBreakerError
+
+
 
 def admin_health_check_get():  # noqa: E501
     return jsonify({"message": "Service operational."}), 200
@@ -134,7 +138,6 @@ def delete_gacha(gacha_uuid):  # noqa: E501
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
 def create_pool():  # noqa: E501
     if 'username' not in session or session.get('role') != 'ADMIN':
         return jsonify({"error": "This account is not authorized to perform this action"}), 403
@@ -216,7 +219,6 @@ def delete_pool(pool_id):  # noqa: E501
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
 def edit_user_profile(user_uuid, email=None, username=None):  # noqa: E501
     if 'username' not in session or session.get('role') != 'ADMIN':
         return jsonify({"error": "This account is not authorized to perform this action"}), 403
@@ -287,7 +289,6 @@ def get_all_feedbacks(page_number=None):  # noqa: E501
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
 def get_all_profiles(page_number=None):  # noqa: E501
     if 'username' not in session or session.get('role') != 'ADMIN':
         return jsonify({"error": "This account is not authorized to perform this action"}), 403
@@ -341,9 +342,9 @@ def get_feedback_info(feedback_id):  # noqa: E501
         return jsonify({"error": str(e)}), 500
 
 
+
 def get_system_logs():  # noqa: E501 TODO
     return 'do some magic!'
-
 
 def get_user_history(user_uuid, history_type, page_number=None):  # noqa: E501
     if 'username' not in session or session.get('role') != 'ADMIN':
@@ -392,7 +393,7 @@ def get_user_history(user_uuid, history_type, page_number=None):  # noqa: E501
         return jsonify(history_list), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
+ 
 
 def update_auction(auction_uuid):  # noqa: E501
     if 'username' not in session or session.get('role') != 'ADMIN':
@@ -520,7 +521,6 @@ def update_gacha(gacha_uuid):  # noqa: E501
     except Exception as e:
         connection.rollback()
         return jsonify({"error": str(e)}), 500
-
 
 def update_pool(pool_id):  # noqa: E501
     if 'username' not in session or session.get('role') != 'ADMIN':

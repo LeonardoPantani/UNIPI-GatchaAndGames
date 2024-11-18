@@ -3,6 +3,7 @@ import uuid
 import bcrypt
 import random
 import logging
+import json
 
 from typing import Dict
 from typing import Tuple
@@ -17,14 +18,12 @@ from flask import current_app, jsonify, request, session
 from flaskext.mysql import MySQL
 from pybreaker import CircuitBreaker, CircuitBreakerError
 
-# Circuit breaker instance
-gacha_circuit_breaker = CircuitBreaker(fail_max=3, reset_timeout=30)
 
 def health_check():  # noqa: E501
     return jsonify({"message": "Service operational."}), 200
 
 
-@gacha_circuit_breaker
+
 def get_gacha_info(gacha_uuid):  # noqa: E501
     cursor = None
     conn = None
@@ -73,9 +72,7 @@ def get_gacha_info(gacha_uuid):  # noqa: E501
         )
         return gacha
 
-    except CircuitBreakerError:
-        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
-        return {"error": "Service unavailable. Please try again later."}, 503
+  
     except Exception as e:
         return {"error": str(e)}, 500
         
@@ -85,64 +82,106 @@ def get_gacha_info(gacha_uuid):  # noqa: E501
         if conn:
             conn.close()
 
-
-@gacha_circuit_breaker
-def pull_gacha():  # noqa: E501
+def pull_gacha(pool_id):
     if 'username' not in session:
         return jsonify({"error": "Not logged in"}), 403
 
-    user_uuid = session['uuid']
-
-    mysql = current_app.extensions.get('mysql')
-    if not mysql:
-        return jsonify({"error": "Database connection not initialized"}), 500
-
     try:
+        mysql = current_app.extensions.get('mysql')
+        if not mysql:
+            return jsonify({"error": "Database connection not initialized"}), 500
+
         connection = mysql.connect()
         cursor = connection.cursor()
 
-        # Check if user has enough credits for a gacha roll
+        # Check if user has enough credits (10)
         cursor.execute(
             'SELECT currency FROM profiles WHERE uuid = UUID_TO_BIN(%s)',
-            (user_uuid,)
+            (session['uuid'],)
         )
         result = cursor.fetchone()
+        if not result or result[0] < 10:
+            return jsonify({"error": "Not enough credits"}), 403
 
-        if not result or result[0] < 10:  # Assuming 10 credits are needed for a roll
-            return jsonify({"error": "Not enough credits for a gacha roll."}), 400
+        # Get pool probabilities and items
+        cursor.execute(
+            'SELECT probabilities, items FROM gacha_pools WHERE codename = %s',
+            (pool_id,)
+        )
+        pool_result = cursor.fetchone()
+        if not pool_result:
+            return jsonify({"error": "Pool not found"}), 404
 
-        # Deduct credits for the gacha roll
+        probabilities = json.loads(pool_result[0])
+        pool_items = json.loads(pool_result[1])
+
+        # Determine rarity based on probabilities
+        rarity_roll = random.random()
+        selected_rarity = None
+        cumulative_prob = 0
+        
+        for rarity, prob in probabilities.items():
+            cumulative_prob += prob
+            if rarity_roll <= cumulative_prob:
+                selected_rarity = rarity.upper()
+                break
+
+        # Get random item of selected rarity
+        query = '''
+        SELECT BIN_TO_UUID(uuid), name, stat_power, stat_speed, 
+               stat_durability, stat_precision, stat_range, stat_potential
+        FROM gachas_types 
+        WHERE uuid IN ({}) AND rarity = %s
+        '''.format(','.join(['UUID_TO_BIN(%s)' for _ in pool_items]))
+        
+        cursor.execute(query, (*pool_items, selected_rarity))
+        
+        items = cursor.fetchall()
+        if not items:
+            return jsonify({"error": "No items found in pool"}), 500
+            
+        selected_item = random.choice(items)
+        
+        # Deduct credits
         cursor.execute(
             'UPDATE profiles SET currency = currency - 10 WHERE uuid = UUID_TO_BIN(%s)',
-            (user_uuid,)
+            (session['uuid'],)
         )
 
-        # Simulate gacha roll (for simplicity, just generate a random UUID as the prize)
-        prize_uuid = str(uuid.uuid4())
+        # Add to inventory
+        # Add to inventory with new UUID
+        new_item_uuid = str(uuid.uuid4())  
 
-        # Insert the prize into the user's inventory
         cursor.execute(
-            'INSERT INTO inventories (owner_uuid, item_uuid) VALUES (UUID_TO_BIN(%s), UUID_TO_BIN(%s))',
-            (user_uuid, prize_uuid)
+        'INSERT INTO inventories (item_uuid, owner_uuid, stand_uuid, owners_no, currency_spent) VALUES (UUID_TO_BIN(%s), UUID_TO_BIN(%s), UUID_TO_BIN(%s), %s, %s)',
+        (new_item_uuid, session['uuid'], selected_item[0], 0, 10)
         )
 
         connection.commit()
 
-        return jsonify({"message": "Gacha roll successful", "prize": prize_uuid}), 200
-    except CircuitBreakerError:
-        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
-        return jsonify({"error": "Service unavailable. Please try again later."}), 503
+        # Return complete Gacha object
+        gacha = Gacha(
+            gacha_uuid=selected_item[0],
+            name=selected_item[1],
+            rarity=selected_rarity.lower(),
+            attributes={
+                "power": chr(ord('A') + 5 - max(1, min(5, selected_item[2] // 20))),
+                "speed": chr(ord('A') + 5 - max(1, min(5, selected_item[3] // 20))),
+                "durability": chr(ord('A') + 5 - max(1, min(5, selected_item[4] // 20))),
+                "precision": chr(ord('A') + 5 - max(1, min(5, selected_item[5] // 20))),
+                "range": chr(ord('A') + 5 - max(1, min(5, selected_item[6] // 20))),
+                "potential": chr(ord('A') + 5 - max(1, min(5, selected_item[7] // 20)))
+            }
+        )
+
+        return gacha
     except Exception as e:
-        logging.error(f"Error while performing gacha roll: {str(e)}")
-        return jsonify({"error": "Internal server error"}), 500
+        connection.rollback()
+        return jsonify({"error": str(e)}), 500
     finally:
-        if cursor:
-            cursor.close()
-        if connection:
-            connection.close()
+        cursor.close()
+        connection.close()
 
-
-@gacha_circuit_breaker
 def get_pool_info():  # noqa: E501
     cursor = None
     conn = None
@@ -166,6 +205,9 @@ def get_pool_info():  # noqa: E501
         
         results = cursor.fetchall()
         pools = []
+
+        if not results:
+            return jsonify({"error": "No pools found"}), 404
         
         for result in results:
             # Parse JSON strings from database
@@ -232,8 +274,6 @@ def get_pool_info():  # noqa: E501
         if conn:
             conn.close()
 
-
-@gacha_circuit_breaker
 def get_gachas(not_owned=None):  # noqa: E501
     """Lists all gachas.
     
@@ -336,6 +376,8 @@ def get_gachas(not_owned=None):  # noqa: E501
             )
             gachas.append(gacha)
         return gachas
+        
+
     except Exception as e:
         return {"error": str(e)}, 500
     finally:

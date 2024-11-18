@@ -117,9 +117,6 @@ def buy_currency(bundle_id):  # noqa: E501
 
         return jsonify({"message": "Bundle " + public_name + " successfully bought" }), 200
 
-    except CircuitBreakerError:
-        #logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
-        return jsonify({"error": "Service unavailable. Please try again later."}), 503
 
     except Exception as e:
         # Rollback the transaction in case of an error
@@ -172,10 +169,6 @@ def get_bundles():  # noqa: E501
             })
 
         return jsonify(bundles), 200
-
-    except CircuitBreakerError:
-        #logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
-        return jsonify({"error": "Service unavailable. Please try again later."}), 503
 
     except Exception as e:
         # Handle errors and rollback if any database operation failed

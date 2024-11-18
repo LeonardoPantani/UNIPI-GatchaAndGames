@@ -91,9 +91,6 @@ def get_inventory():  # noqa: E501
             if conn:
                 conn.close()
 
-    except CircuitBreakerError:
-        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
-        return jsonify({"error": "Service unavailable. Please try again later."}), 503
     except Exception as e:
         logging.error(f"Server error: {str(e)}")
         return jsonify({"error": "Internal server error"}), 500
@@ -161,9 +158,6 @@ def get_inventory_item_info(inventory_item_id):  # noqa: E501
         # Return single item wrapped in a list as per API spec
         return jsonify([item.to_dict()]), 200
 
-    except CircuitBreakerError:
-        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
-        return jsonify({"error": "Service unavailable. Please try again later."}), 503
     except Exception as e:
         logging.error(f"Error in get_inventory_item_info: {str(e)}\n{traceback.format_exc()}")
         if cursor:
@@ -236,10 +230,7 @@ def remove_inventory_item():
 
         conn.commit()
         return jsonify({"message": "Item successfully removed"}), 200
-
-    except CircuitBreakerError:
-        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
-        return jsonify({"error": "Service unavailable. Please try again later."}), 503
+    
     except Exception as e:
         if conn:
             conn.rollback()
