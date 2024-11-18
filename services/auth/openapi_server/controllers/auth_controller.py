@@ -10,8 +10,8 @@ from typing import Dict
 from typing import Tuple
 from typing import Union
 
-from openapi_server.models.login_request import LoginRequest  # noqa: E501
-from openapi_server.models.register_request import RegisterRequest  # noqa: E501
+from openapi_server.models.login_request import LoginRequest
+from openapi_server.models.register_request import RegisterRequest
 from openapi_server import util
 
 from flask import current_app, jsonify, request, session
@@ -23,7 +23,7 @@ from pybreaker import CircuitBreaker, CircuitBreakerListener, CircuitBreakerErro
 circuit_breaker = CircuitBreaker(fail_max=5, reset_timeout=5, exclude=[requests.HTTPError])
 
 
-def health_check():  # noqa: E501
+def health_check():
     return jsonify({"message": "Service operational."}), 200
 
 
@@ -75,17 +75,16 @@ def login():
         return jsonify({"error": "Service temporarily unavailable."}), 503
  
 
-@circuit_breaker
 def logout():   
     # check if user is logged in
     if 'username' not in session:
-        return jsonify({"error": "Not logged in"}), 403
+        return jsonify({"error": "Not logged in."}), 403
 
     # remove session cookie to log out
     session.clear()
 
     # send response to user
-    return jsonify({"message": "Logout successful"}), 200
+    return jsonify({"message": "Logout successful."}), 200
 
 
 def register():

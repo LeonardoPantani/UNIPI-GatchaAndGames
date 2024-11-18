@@ -11,31 +11,29 @@ from openapi_server import util
 
 from flask import current_app, jsonify, request, session
 from flaskext.mysql import MySQL
+
 from pybreaker import CircuitBreaker, CircuitBreakerError
 
 # Circuit breaker instance
 feedback_circuit_breaker = CircuitBreaker(fail_max=3, reset_timeout=30)
 
+
 def health_check():  # noqa: E501
     return jsonify({"message": "Service operational."}), 200
 
+
 @feedback_circuit_breaker
 def post_feedback():  # noqa: E501
-    """Invia un feedback.
-
-    Crea un feedback per gli amministratori. # noqa: E501
-
-    :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]]
-    """
     if 'username' not in session:
-        return jsonify({"error": "Not logged in"}), 403
+        return jsonify({"error": "Not logged in."}), 403
 
-    data = request.get_json()
-    if not data or 'string' not in data:
-        return jsonify({"error": "The 'string' field is required in the JSON body."}), 400
+    if not connexion.request.is_json:
+        return jsonify({"message": "Invalid request."}), 400
 
-    string = data['string']
-    user_uuid = session['uuid']  # Get UUID directly from session
+    # valid json request
+    feedback_request = connexion.request.get_json()["string"]
+    if len(feedback_request) == 0:
+        return jsonify({"message": "Invalid request."}), 400
 
     mysql = current_app.extensions.get('mysql')
     if not mysql:
@@ -46,7 +44,7 @@ def post_feedback():  # noqa: E501
         cursor = connection.cursor()
         cursor.execute(
             'INSERT INTO feedbacks (user_uuid, content) VALUES (UUID_TO_BIN(%s), %s)',
-            (user_uuid, string)
+            (session['uuid'], feedback_request)
         )
         connection.commit()
         return jsonify({"message": "Feedback created successfully"}), 200

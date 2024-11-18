@@ -538,8 +538,10 @@ paths:
         required: true
         schema:
           enum:
-          - ingame
-          - bundle
+          - bought_bundle
+          - sold_market
+          - bought_market
+          - gacha_pull
           type: string
         style: form
       - description: Page number of the list.

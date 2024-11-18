@@ -11,22 +11,21 @@ from openapi_server import util
 from pybreaker import CircuitBreaker, CircuitBreakerError
 
 # Circuit breaker instance for inventory operations
-inventory_circuit_breaker = CircuitBreaker(fail_max=3, reset_timeout=30)
+circuit_breaker = CircuitBreaker(fail_max=3, reset_timeout=30)
 
 def health_check():  # noqa: E501
     return jsonify({"message": "Service operational."}), 200
 
-@inventory_circuit_breaker
+@circuit_breaker
 def get_inventory():  # noqa: E501
-    """Retrieve player's inventory with pagination"""
+    if not username:
+        return jsonify({"error": "Not logged in"}), 403
+    
     try:
         mysql = current_app.extensions.get('mysql')
-        if not mysql:
-            return jsonify({"error": "Database connection not initialized"}), 500
             
         username = session.get('username')
-        if not username:
-            return jsonify({"error": "Not logged in"}), 403
+
 
         # Pagination parameters
         items_per_page = 10
@@ -99,7 +98,7 @@ def get_inventory():  # noqa: E501
         logging.error(f"Server error: {str(e)}")
         return jsonify({"error": "Internal server error"}), 500
 
-@inventory_circuit_breaker
+@circuit_breaker
 def get_inventory_item_info(inventory_item_id):  # noqa: E501
     """Shows infos on my inventory item.
 
@@ -173,7 +172,7 @@ def get_inventory_item_info(inventory_item_id):  # noqa: E501
             conn.close()
         return jsonify({"error": f"Internal server error: {str(e)}"}), 500
 
-@inventory_circuit_breaker
+@circuit_breaker
 def remove_inventory_item():
     """Removes an item from player's inventory
     
