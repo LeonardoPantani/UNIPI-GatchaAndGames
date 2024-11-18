@@ -3,6 +3,7 @@ import uuid
 import bcrypt
 import requests
 import json
+import logging
 from datetime import datetime
 
 from typing import Dict
@@ -15,11 +16,12 @@ from openapi_server import util
 
 from flask import current_app, jsonify, request, session
 from flaskext.mysql import MySQL
-import logging
+
 from pybreaker import CircuitBreaker, CircuitBreakerListener, CircuitBreakerError
 
 # circuit breaker to stop requests when dbmanager fails
-circuit_breaker = CircuitBreaker(fail_max=3, reset_timeout=30, throw_new_error_on_trip=True, exclude=[CircuitBreakerError])
+circuit_breaker = CircuitBreaker(fail_max=5, reset_timeout=5, exclude=[requests.HTTPError])
+
 
 def health_check():  # noqa: E501
     return jsonify({"message": "Service operational."}), 200
@@ -27,10 +29,10 @@ def health_check():  # noqa: E501
 
 def login():
     if 'username' in session:
-        return jsonify({"error": "You are already logged in"}), 409
+        return jsonify({"error": "You are already logged in."}), 409
     
     if not connexion.request.is_json:
-        return jsonify({"message": "Invalid request"}), 400
+        return jsonify({"message": "Invalid request."}), 400
     
     # valid json request
     login_request = connexion.request.get_json()
@@ -56,13 +58,17 @@ def login():
             session['role'] = response_data["role"]
             session['login_date'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-            return jsonify({"message": "Login successful"}), 200
+            return jsonify({"message": "Login successful."}), 200
         else:
             return jsonify({"error": "Invalid credentials."}), 401
 
     except requests.HTTPError as e: # if request is sent to dbmanager correctly and it answers an application error (to be managed here) [error expected by us]
         if e.response.status_code == 404: # 404: username not found
             return jsonify({"error": "Invalid credentials."}), 401
+        elif e.response.status_code == 400: # programming error, we mask as invalid credentials to users
+            return jsonify({"error": "Service temporarily unavailable."}), 401
+        else: # other errors
+            return jsonify({"error": "Service temporarily unavailable."}), 503
     except requests.RequestException as e: # if request is NOT sent to dbmanager correctly (is down) [error not expected]
         return jsonify({"error": "Service unavailable. Please try again later."}), 503
     except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
