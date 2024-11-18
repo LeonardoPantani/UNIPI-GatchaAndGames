@@ -42,7 +42,7 @@ def bid_on_auction(auction_uuid):
         connection = mysql.connect()
         cursor = connection.cursor()
         #get auction from database
-        cursor.execute(
+        cursor.execute( #/db_manager/auctions/get_auction_status
             'SELECT item_uuid, starting_price, current_bid, current_bidder, end_time FROM auctions WHERE BIN_TO_UUID(uuid) = %s',
             (auction_uuid,)
         )
@@ -63,7 +63,7 @@ def bid_on_auction(auction_uuid):
         if datetime.now() > end_time:
             return jsonify({"error":"Auction is closed"}), 403
 
-        cursor.execute(
+        cursor.execute( #/db_manager/auctions/get_item_with_owner
             'SELECT * FROM inventories WHERE owner_uuid = UUID_TO_BIN(%s) AND item_uuid = %s',
             (user_uuid, item_uuid)
         )
@@ -75,7 +75,7 @@ def bid_on_auction(auction_uuid):
         if user_uuid == current_bidder:
             return jsonify({"message":"Already the highest bidder"}), 200
 
-        cursor.execute(
+        cursor.execute( #/db_manager/auctions/get_currency
             'SELECT currency FROM profiles WHERE uuid = UUID_TO_BIN(%s)',
             (user_uuid,)
         )
@@ -88,7 +88,7 @@ def bid_on_auction(auction_uuid):
         if user_currency < new_bid:
             return jsonify({"error": "Insufficient funds."}), 406
         #updates auction
-        cursor.execute(
+        cursor.execute( #/db_manager/auctions/place_bid
             'UPDATE auctions SET current_bid = %s, current_bidder = UUID_TO_BIN(%s) WHERE uuid = %s',
             (new_bid, user_uuid, auction_uuid)
         )
@@ -99,7 +99,7 @@ def bid_on_auction(auction_uuid):
         )
         #gives old bidder his funds back
         if current_bidder is not None:
-            cursor.execute(
+            cursor.execute( #/db_manager/auctions/refund_previous_bidder
                 'UPDATE profiles SET currency = currency + %s WHERE BIN_TO_UUID(uuid) = %s',
                 (current_bid, current_bidder)
             )
@@ -152,7 +152,7 @@ def create_auction():
         connection = mysql.connect()
         cursor = connection.cursor()
 
-        cursor.execute(
+        cursor.execute( #/db_manager/auctions/get_item_with_owner (si prendono poi solo i dati necessari per non creare ulteriori endpoint)
             'SELECT owner_uuid FROM inventories WHERE BIN_TO_UUID(owner_uuid) = %s AND BIN_TO_UUID(item_uuid) = %s',
             (owner_id, item_id)
         )
@@ -164,7 +164,7 @@ def create_auction():
         auction_id = uuid.uuid4()
         end_time = datetime.now() + timedelta(minutes=10)
 
-        cursor.execute(
+        cursor.execute( #/db_manager/auctions/create
             'INSERT INTO auctions (uuid, item_uuid, starting_price, current_bid, current_bidder, end_time) VALUES (UUID_TO_BIN(%s), UUID_TO_BIN(%s), %s, %s, %s, %s)',
             (auction_id, item_id, starting_price, None, None, end_time)
         )
@@ -207,7 +207,7 @@ def get_auction_status(auction_uuid):
         connection = mysql.connect()
         cursor = connection.cursor()
 
-        cursor.execute(
+        cursor.execute( #/db_manager/auctions/get_auction_status
             "SELECT BIN_TO_UUID(uuid), BIN_TO_UUID(item_uuid), starting_price, current_bid, BIN_TO_UUID(current_bidder), end_time FROM auctions WHERE uuid = UUID_TO_BIN(%s)",
             (auction_uuid,)
         )
@@ -311,7 +311,7 @@ def get_auctions_history(page_number=None):
         connection = mysql.connect()
         cursor = connection.cursor()
 
-        cursor.execute(
+        cursor.execute( #/db_manager/auctions/get_user_involved_auctions
             'SELECT BIN_TO_UUID(a.uuid), BIN_TO_UUID(a.item_uuid), a.starting_price, a.current_bid, BIN_TO_UUID(a.current_bidder), end_time FROM auctions a JOIN inventories i ON a.item_uuid = i.item_uuid WHERE i.owner_uuid = %s OR a.current_bidder = %s LIMIT %s OFFSET %s',
             (user_uuid, user_uuid, items_per_page, offset)
         )
@@ -396,7 +396,7 @@ def get_auctions_list(status=None, rarity=None, page_number=None):
         params.append(items_per_page)
         params.append(offset)
 
-        cursor.execute(query, tuple(params))
+        cursor.execute(query, tuple(params)) #/db_manager/auctions/list
 
         auction_data = cursor.fetchall()
 

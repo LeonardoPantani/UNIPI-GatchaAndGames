@@ -55,7 +55,7 @@ def buy_currency(bundle_id):  # noqa: E501
         cursor = connection.cursor()
         
         # Get the bundle details from the database
-        cursor.execute(
+        cursor.execute( #/db_manager/currency/get_bundle_info
             'SELECT * FROM bundles WHERE codename = %s',
             (bundle_id,)
         )
@@ -77,7 +77,7 @@ def buy_currency(bundle_id):  # noqa: E501
         
         user_account['amount'] -= price
 
-        cursor.execute(
+        cursor.execute( #/db_manager/currency/purchase_bundle (credits obtained to send or to leave to the db manager?)
             'UPDATE profiles SET currency = currency + %s WHERE uuid = UUID_TO_BIN(%s)',
             (credits_obtained, user_uuid)
         )
@@ -128,10 +128,10 @@ def get_bundles():  # noqa: E501
         cursor = connection.cursor()
 
         # Query to fetch available bundles
-        cursor.execute("""
+        cursor.execute(""" 
             SELECT codename, currency_name, public_name, credits_obtained, price
             FROM bundles
-        """)
+        """) #/db_manager/currency/list_bundles
 
         # Fetch all rows from the query
         bundle_data = cursor.fetchall()
