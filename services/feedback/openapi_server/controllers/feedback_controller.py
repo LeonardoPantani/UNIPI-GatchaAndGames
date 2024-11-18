@@ -9,7 +9,7 @@ from typing import Union
 
 from openapi_server import util
 
-from flask import current_app, jsonify, request, make_response, session
+from flask import current_app, jsonify, request, session
 from flaskext.mysql import MySQL
 from pybreaker import CircuitBreaker, CircuitBreakerError
 

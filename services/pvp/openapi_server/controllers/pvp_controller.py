@@ -8,7 +8,7 @@ from openapi_server.models.pv_p_request import PvPRequest  # noqa: E501
 from openapi_server.models.team import Team  # noqa: E501
 from openapi_server import util
 
-from flask import current_app, jsonify, request, make_response, session
+from flask import current_app, jsonify, request, session
 from flaskext.mysql import MySQL
 import uuid
 import random

@@ -15,7 +15,7 @@ from openapi_server.models.pool import Pool  # noqa: E501
 from openapi_server.models.user import User  # noqa: E501
 from openapi_server import util
 
-from flask import current_app, jsonify, request, make_response, session
+from flask import current_app, jsonify, request, session
 from flaskext.mysql import MySQL
 
 def admin_health_check_get():  # noqa: E501

@@ -13,7 +13,7 @@ from openapi_server.models.pool import Pool  # noqa: E501
 from openapi_server import util
 from openapi_server.models.rarity_probability import RarityProbability  # noqa: E501
 
-from flask import current_app, jsonify, request, make_response, session
+from flask import current_app, jsonify, request, session
 from flaskext.mysql import MySQL
 from pybreaker import CircuitBreaker, CircuitBreakerError
 

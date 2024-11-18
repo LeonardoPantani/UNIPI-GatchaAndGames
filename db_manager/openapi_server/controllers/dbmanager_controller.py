@@ -14,7 +14,7 @@ from openapi_server.models.login_request import LoginRequest  # noqa: E501
 from openapi_server.models.register_request import RegisterRequest  # noqa: E501
 from openapi_server import util
 
-from flask import current_app, jsonify, request, make_response, session
+from flask import current_app, jsonify, request, session
 from flaskext.mysql import MySQL
 import logging
 from pybreaker import CircuitBreaker, CircuitBreakerError
@@ -60,14 +60,8 @@ def login():  # noqa: E501
         else:
             return jsonify({"error": "Invalid username"}), 404
     except Exception as e:
-            return jsonify({"error": str(e)}), 500
-    finally:
-        # Close the cursor and connection if they exist
-        if cursor:
-            cursor.close()
-        if connection:
-            connection.close()
-    return jsonify({"error": "Service unavailable."}), 500
+        print(str(e))
+        return jsonify({"error": "Service unavailable."}), 500
 
 
 def register(register_request=None):  # noqa: E501

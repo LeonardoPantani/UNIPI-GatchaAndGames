@@ -13,19 +13,18 @@ from openapi_server.models.login_request import LoginRequest  # noqa: E501
 from openapi_server.models.register_request import RegisterRequest  # noqa: E501
 from openapi_server import util
 
-from flask import current_app, jsonify, request, make_response, session
+from flask import current_app, jsonify, request, session
 from flaskext.mysql import MySQL
 import logging
-from pybreaker import CircuitBreaker, CircuitBreakerError
+from pybreaker import CircuitBreaker, CircuitBreakerListener, CircuitBreakerError
 
-# Circuit breaker instance
-auth_circuit_breaker = CircuitBreaker(fail_max=3, reset_timeout=30)
+# circuit breaker to stop requests when dbmanager fails
+circuit_breaker = CircuitBreaker(fail_max=3, reset_timeout=30, throw_new_error_on_trip=True, exclude=[CircuitBreakerError])
 
 def health_check():  # noqa: E501
     return jsonify({"message": "Service operational."}), 200
 
 
-@auth_circuit_breaker
 def login():
     if 'username' in session:
         return jsonify({"error": "You are already logged in"}), 409
@@ -33,54 +32,57 @@ def login():
     if not connexion.request.is_json:
         return jsonify({"message": "Invalid request"}), 400
     
-    # richiesta json valida
+    # valid json request
     login_request = connexion.request.get_json()
     username_to_login = login_request.get("username")
     password_to_login = login_request.get("password")
 
     try:
-        payload = { "username": username_to_login }
-        url = "http://db_manager:8080/db_manager/auth/login"
-        response = requests.post(url, json=payload)
-        data = response.json()
+        @circuit_breaker
+        def make_request_to_dbmanager():
+            payload = { "username": username_to_login }
+            url = "http://db_manager:8080/db_manager/auth/login"
+            response = requests.post(url, json=payload)
+            response.raise_for_status() # if response is obtained correctly 
+            return response.json()
 
-        if response.status_code == 404: # user not found (we do not show that to the user)
-            return jsonify({"error": "Invalid credentials."}), 201
-        
-        if response.status_code != 200: # for other error codes we return 500
-            return jsonify({"error": "Service unavailable."}), 503
+        response_data = make_request_to_dbmanager()
 
-        if bcrypt.checkpw(password_to_login.encode('utf-8'), data["password"].encode('utf-8')):
-            session['uuid'] = data["uuid"]
-            session['uuid_hex'] = data["uuid_hex"]
-            session['email'] = data["email"]
-            session['username'] = data["username"]
-            session['role'] = data["role"]
+        if bcrypt.checkpw(password_to_login.encode('utf-8'), response_data["password"].encode('utf-8')): # wrong password
+            session['uuid'] = response_data["uuid"]
+            session['uuid_hex'] = response_data["uuid_hex"]
+            session['email'] = response_data["email"]
+            session['username'] = response_data["username"]
+            session['role'] = response_data["role"]
             session['login_date'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
             return jsonify({"message": "Login successful"}), 200
         else:
             return jsonify({"error": "Invalid credentials."}), 401
-    except CircuitBreakerError:
-        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+
+    except requests.HTTPError as e: # if request is sent to dbmanager correctly and it answers an application error (to be managed here) [error expected by us]
+        if e.response.status_code == 404: # 404: username not found
+            return jsonify({"error": "Invalid credentials."}), 401
+    except requests.RequestException as e: # if request is NOT sent to dbmanager correctly (is down) [error not expected]
         return jsonify({"error": "Service unavailable. Please try again later."}), 503
-    except ValueError:
-        return jsonify({"error": "Service unavailable."}), 503
+    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+        return jsonify({"error": "Service temporarily unavailable."}), 503
  
 
-@auth_circuit_breaker
+@circuit_breaker
 def logout():   
-    # Check if user is logged in
+    # check if user is logged in
     if 'username' not in session:
         return jsonify({"error": "Not logged in"}), 403
 
-    # Remove session cookie to log out
-    response = make_response(jsonify({"message": "Logout successful"}), 200)
+    # remove session cookie to log out
     session.clear()
-    return response
+
+    # send response to user
+    return jsonify({"message": "Logout successful"}), 200
 
 
-@auth_circuit_breaker
+@circuit_breaker
 def register():
     if 'username' in session:
         return jsonify({"error": "You are already logged in"}), 409
