@@ -443,6 +443,80 @@ paths:
           description: Invalid request format.
         "500":
           description: Internal server error.
+  /db_manager/inventories/get_user_inventory_items:
+    post:
+      tags:
+        - db_manager
+      description: "Returns the inventory items of a specific user by username, including pagination support."
+      operationId: get_user_inventory_items
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  $ref: "#/components/schemas/Username"
+                items_per_page:
+                  type: integer
+                  description: "Number of items per page for pagination."
+                  example: 10
+                offset:
+                  type: integer
+                  description: "Offset for pagination, number of items to skip."
+                  example: 0
+      responses:
+        "200":
+          description: Paginated list of inventory items for the given user.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_items:
+                    type: integer
+                    description: "Total number of items owned by the user."
+                    example: 25
+                  items:
+                    type: array
+                    description: "List of inventory items."
+                    items:
+                      $ref: "#/components/schemas/InventoryItem"
+        "400":
+          description: Invalid request format.
+        "404":
+          description: User not found.
+        "500":
+          description: Internal server error.
+  /db_manager/inventories/get_item:
+    post:
+      tags:
+        - db_manager
+      description: "Returns detailed information of a specific inventory item for a given user by username and inventory item UUID."
+      operationId: get_inventory_item
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  $ref: "#/components/schemas/Username"
+                inventory_item_id:
+                  $ref: "#/components/schemas/ItemId"
+      responses:
+        "200":
+          description: Detailed information of the specified inventory item.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventoryItem"
+        "400":
+          description: Invalid request format.
+        "404":
+          description: Item not found for the given user and item UUID.
+        "500":
+          description: Internal server error.
 
 
 components:
