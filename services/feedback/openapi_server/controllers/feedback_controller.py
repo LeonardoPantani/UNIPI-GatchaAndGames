@@ -13,13 +13,12 @@ from flask import current_app, jsonify, request, make_response, session
 from flaskext.mysql import MySQL
 from pybreaker import CircuitBreaker, CircuitBreakerError
 
-# Circuit breaker instance
-feedback_circuit_breaker = CircuitBreaker(fail_max=3, reset_timeout=30)
+
 
 def health_check():  # noqa: E501
     return jsonify({"message": "Service operational."}), 200
 
-@feedback_circuit_breaker
+
 def post_feedback():  # noqa: E501
     """Invia un feedback.
 
@@ -50,9 +49,6 @@ def post_feedback():  # noqa: E501
         )
         connection.commit()
         return jsonify({"message": "Feedback created successfully"}), 200
-    except CircuitBreakerError:
-        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
-        return jsonify({"error": "Service unavailable. Please try again later."}), 503
     except Exception as e:
         logging.error(f"Error while posting feedback: {str(e)}")
         return jsonify({"error": "Internal server error"}), 500

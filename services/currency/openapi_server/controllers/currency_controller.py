@@ -14,8 +14,7 @@ from flaskext.mysql import MySQL
 import logging
 from pybreaker import CircuitBreaker, CircuitBreakerError
 
-# Circuit breaker instance
-currency_circuit_breaker = CircuitBreaker(fail_max=3, reset_timeout=30)
+
 
 accounts = {
     "87f3b5d1-5e8e-4fa4-909b-3cd29f4b1f09": {
@@ -38,7 +37,6 @@ accounts = {
 def health_check():  # noqa: E501
     return jsonify({"message": "Service operational."}), 200
 
-@currency_circuit_breaker
 def buy_currency(bundle_id):  # noqa: E501
     # Check if the user is logged in by checking the session
     if 'username' not in session:
@@ -96,9 +94,6 @@ def buy_currency(bundle_id):  # noqa: E501
 
         return jsonify({"message": "Bundle " + public_name + " successfully bought" }), 200
 
-    except CircuitBreakerError:
-        #logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
-        return jsonify({"error": "Service unavailable. Please try again later."}), 503
 
     except Exception as e:
         # Rollback the transaction in case of an error
@@ -116,7 +111,7 @@ def buy_currency(bundle_id):  # noqa: E501
         if connection:
             connection.close()
 
-@currency_circuit_breaker
+
 def get_bundles():  # noqa: E501
     try:
         # Establish database connection
@@ -153,10 +148,6 @@ def get_bundles():  # noqa: E501
             })
 
         return jsonify(bundles), 200
-
-    except CircuitBreakerError:
-        #logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
-        return jsonify({"error": "Service unavailable. Please try again later."}), 503
 
     except Exception as e:
         # Handle errors and rollback if any database operation failed

@@ -18,14 +18,12 @@ from flask import current_app, jsonify, request, make_response, session
 from flaskext.mysql import MySQL
 from pybreaker import CircuitBreaker, CircuitBreakerError
 
-# Circuit breaker instance
-gacha_circuit_breaker = CircuitBreaker(fail_max=3, reset_timeout=30)
 
 def health_check():  # noqa: E501
     return jsonify({"message": "Service operational."}), 200
 
 
-@gacha_circuit_breaker
+
 def get_gacha_info(gacha_uuid):  # noqa: E501
     cursor = None
     conn = None
@@ -74,9 +72,7 @@ def get_gacha_info(gacha_uuid):  # noqa: E501
         )
         return gacha
 
-    except CircuitBreakerError:
-        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
-        return {"error": "Service unavailable. Please try again later."}, 503
+  
     except Exception as e:
         return {"error": str(e)}, 500
         
@@ -86,8 +82,6 @@ def get_gacha_info(gacha_uuid):  # noqa: E501
         if conn:
             conn.close()
 
-
-@gacha_circuit_breaker
 def pull_gacha(pool_id):
     if 'username' not in session:
         return jsonify({"error": "Not logged in"}), 403
@@ -181,9 +175,6 @@ def pull_gacha(pool_id):
         )
 
         return gacha
-
-    except CircuitBreakerError:
-        return jsonify({"error": "Service unavailable"}), 503
     except Exception as e:
         connection.rollback()
         return jsonify({"error": str(e)}), 500
@@ -191,8 +182,6 @@ def pull_gacha(pool_id):
         cursor.close()
         connection.close()
 
-
-@gacha_circuit_breaker
 def get_pool_info():  # noqa: E501
     cursor = None
     conn = None
@@ -276,10 +265,6 @@ def get_pool_info():  # noqa: E501
             
         return pools
 
-    except CircuitBreakerError:
-        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
-        return {"error": "Service unavailable. Please try again later."}, 503
-
     except Exception as e:
         return {"error": str(e)}, 500
         
@@ -289,8 +274,6 @@ def get_pool_info():  # noqa: E501
         if conn:
             conn.close()
 
-
-@gacha_circuit_breaker
 def get_gachas(not_owned=None):  # noqa: E501
     """Lists all gachas.
     
@@ -393,11 +376,7 @@ def get_gachas(not_owned=None):  # noqa: E501
             )
             gachas.append(gacha)
         return gachas
-    
-    except CircuitBreakerError:
-        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
-        return {"error": "Service unavailable. Please try again later."}, 503
-    
+        
 
     except Exception as e:
         return {"error": str(e)}, 500

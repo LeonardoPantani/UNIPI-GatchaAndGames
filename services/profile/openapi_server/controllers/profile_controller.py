@@ -12,15 +12,14 @@ from flask import session, current_app, jsonify
 import logging
 from pybreaker import CircuitBreaker, CircuitBreakerError
 import bcrypt
+import pymysql
 
-# Initialize Circuit Breaker
-profile_circuit_breaker = CircuitBreaker(fail_max=3, reset_timeout=30)
 
 def health_check():  # noqa: E501
     return jsonify({"message": "Service operational."}), 200
 
 
-@profile_circuit_breaker
+
 def get_database_connection():
     """
     Function to get a database connection 
@@ -33,7 +32,7 @@ def get_database_connection():
         raise CircuitBreakerError("Failed to establish database connection")
     return conn
 
-@profile_circuit_breaker
+
 def delete_profile():  # noqa: E501
     """Deletes this account."""
     conn = None
@@ -90,11 +89,7 @@ def delete_profile():  # noqa: E501
             return jsonify({"message": "Profile deleted successfully"}), 200
 
         return jsonify({"error": "Invalid request"}), 400
-    
-    except CircuitBreakerError:
-        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
-        return jsonify({"error": "Service unavailable"}), 503
-    
+        
     except Exception as e:
         logging.error(f"Error: {str(e)}")
         return jsonify({"error": "Internal server error"}), 500
@@ -105,7 +100,7 @@ def delete_profile():  # noqa: E501
         if conn:
             conn.close()
 
-@profile_circuit_breaker
+
 def edit_profile():  # noqa: E501
     """Edits properties of the profile."""
     conn = None 
@@ -177,13 +172,12 @@ def edit_profile():  # noqa: E501
             
             return jsonify({"error": "No fields to update"}), 400
 
-    except CircuitBreakerError as e:
-        logging.error(f"Circuit Breaker Open: {str(e)}")
-        return jsonify({"error": "Service unavailable"}), 503
+   
 
     except Exception as e:
-        logging.error(f"Error: {str(e)}")
-        return jsonify({"error": "Internal server error"}), 500
+        
+        return jsonify({"error": "Error occurred"}), 500
+    
 
     finally:
         if cursor:
@@ -191,7 +185,7 @@ def edit_profile():  # noqa: E501
         if conn:
             conn.close()
 
-@profile_circuit_breaker
+
 def get_user_info(uuid):  # noqa: E501
     """Returns infos about a UUID."""
     conn = None
@@ -232,10 +226,6 @@ def get_user_info(uuid):  # noqa: E501
         )
 
         return jsonify(user.to_dict()), 200
-
-    except CircuitBreakerError:
-        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
-        return jsonify({"error": "Service unavailable. Please try again later."}), 503
 
     except Exception as e:
         logging.error(f"Unexpected error: {str(e)}\n{traceback.format_exc()}")
