@@ -120,15 +120,24 @@ def register(register_request=None):
         connection.commit()
 
         return jsonify({"message": "Successful registration."}), 201
-    except CircuitBreakerError:
-        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
-        return jsonify({"error": "Service unavailable. Please try again later."}), 503
+
     except mysql.connect().IntegrityError:
         # Duplicate email error
         connection.rollback()
         return jsonify({"error": "The provided email or username are already in use."}), 409
-    except Exception as e:
-        # Rollback transaction on error
-        logging.error(f"Unexpected error during registration: {str(e)}")
-        connection.rollback()
-        return jsonify({"error": str(e)}), 500
+    except OperationalError as e: # if connect to db fails means there is an error in the db
+        return "", 500
+    except ProgrammingError as e: # for example when you have a syntax error in your SQL or a table was not found
+        return "", 400
+    except IntegrityError as e: # for constraint violations such as duplicate entries or foreign key constraints
+        return "", 409
+    except DataError as e: # if data format is invalid or out of range or size
+        return "", 400
+    except InternalError as e: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+        return "", 500
+    except InterfaceError as e: # errors originating from Connector/Python itself, not related to the MySQL server
+        return "", 500
+    except DatabaseError as e: # default for any MySQL error which does not fit the other exceptions
+        return "", 500
+    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+        return "", 503

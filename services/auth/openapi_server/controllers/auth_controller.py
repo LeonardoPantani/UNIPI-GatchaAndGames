@@ -66,7 +66,7 @@ def login():
         if e.response.status_code == 404: # 404: username not found
             return jsonify({"error": "Invalid credentials."}), 401
         elif e.response.status_code == 400: # programming error, we mask as invalid credentials to users
-            return jsonify({"error": "Service temporarily unavailable."}), 401
+            return jsonify({"error": "Invalid credentials."}), 401
         else: # other errors
             return jsonify({"error": "Service temporarily unavailable."}), 503
     except requests.RequestException as e: # if request is NOT sent to dbmanager correctly (is down) [error not expected]
@@ -88,7 +88,6 @@ def logout():
     return jsonify({"message": "Logout successful"}), 200
 
 
-@circuit_breaker
 def register():
     if 'username' in session:
         return jsonify({"error": "You are already logged in"}), 409
@@ -113,15 +112,16 @@ def register():
     uuid_to_register = str(uuid.UUID(bytes=uuid_hex_to_register))
 
     try:
-        payload = { "uuid": uuid_to_register, "username": username_to_register, "email": email_to_register, "password": password_hashed }
-        url = "http://db_manager:8080/db_manager/auth/register"
-        response = requests.post(url, json=payload)
 
-        if response.status_code == 409: # email provided already in use
-            return jsonify(response.json()), response.status_code
+        @circuit_breaker
+        def make_request_to_dbmanager():
+            payload = { "uuid": uuid_to_register, "username": username_to_register, "email": email_to_register, "password": password_hashed }
+            url = "http://db_manager:8080/db_manager/auth/register"
+            response = requests.post(url, json=payload)
+            response.raise_for_status() # if response is obtained correctly 
+            return response.json()
         
-        if response.status_code != 201: # for other error codes we return 503
-            return jsonify({"error": "Service unavailable."}), 503
+        response_data = make_request_to_dbmanager()
 
         # visto che vogliamo che l'utente si auto-logghi quando si registra controlliamo che la registrazione abbia successo qui
         session['uuid'] = uuid_to_register
@@ -132,6 +132,15 @@ def register():
         session['login_date'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
         return jsonify({"message": "Registration successful."}), 201
+    except requests.HTTPError as e:
+        if e.response.status_code == 409: # user already registered
+            return jsonify({"error": "The provided email are already in use."}), 409
+        elif e.response.status_code == 400: # programming error, we mask as invalid provided data to users
+            return jsonify({"error": "The provided username are already in use."}), 401
+        else: #other errors
+            return jsonify({"error": "Service temporarily unavailable."}), 503
+    except requests.RequestException as e: # if request is NOT sent to dbmanager correctly (is down) [error not expected]
+        return jsonify({"error": "Service unavailable. Please try again later."}), 503
     except CircuitBreakerError:
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return jsonify({"error": "Service unavailable. Please try again later."}), 503
