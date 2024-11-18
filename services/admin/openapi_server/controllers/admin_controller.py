@@ -138,6 +138,7 @@ def delete_gacha(gacha_uuid):  # noqa: E501
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 def create_pool():  # noqa: E501
     if 'username' not in session or session.get('role') != 'ADMIN':
         return jsonify({"error": "This account is not authorized to perform this action"}), 403
@@ -218,6 +219,7 @@ def delete_pool(pool_id):  # noqa: E501
         return jsonify({"message": "Pool successfully deleted."}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 def edit_user_profile(user_uuid, email=None, username=None):  # noqa: E501
     if 'username' not in session or session.get('role') != 'ADMIN':

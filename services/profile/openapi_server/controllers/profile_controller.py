@@ -1,5 +1,9 @@
 import traceback
 import connexion
+import bcrypt
+import pymysql
+import logging
+
 from typing import Dict
 from typing import Tuple
 from typing import Union
@@ -8,43 +12,25 @@ from openapi_server.models.delete_profile_request import DeleteProfileRequest  #
 from openapi_server.models.edit_profile_request import EditProfileRequest  # noqa: E501
 from openapi_server.models.user import User  # noqa: E501
 from openapi_server import util
+
 from flask import session, current_app, jsonify
-import logging
+
 from pybreaker import CircuitBreaker, CircuitBreakerError
-import bcrypt
-import pymysql
 
 
 def health_check():  # noqa: E501
     return jsonify({"message": "Service operational."}), 200
 
 
-
-def get_database_connection():
-    """
-    Function to get a database connection 
-    """
-    mysql = current_app.extensions.get('mysql')
-    if not mysql:
-        raise CircuitBreakerError("Database connection not initialized")
-    conn = mysql.connect() 
-    if not conn:
-        raise CircuitBreakerError("Failed to establish database connection")
-    return conn
-
-
 def delete_profile():  # noqa: E501
-    """Deletes this account."""
-    conn = None
-    cursor = None
     try:
         # Get database connection with circuit breaker protection
-        conn = get_database_connection()
+        mysql = current_app.extensions.get('mysql')
+
+        conn = mysql.connect()
         cursor = conn.cursor()
 
-        # Get username from flask session
-        username = session.get('username')
-        logging.info(f"Username from session: {username}")
+        user_uuid = session.get('uuid')
 
         if not username:
             return jsonify({"error": "Not logged in"}), 403
@@ -52,17 +38,13 @@ def delete_profile():  # noqa: E501
         if connexion.request.is_json:
             try:
                 delete_profile_request = DeleteProfileRequest.from_dict(connexion.request.get_json())
-                logging.info(f"Request data: {delete_profile_request}")
             except Exception as e:
-                logging.error(f"Error parsing request: {str(e)}")
                 return jsonify({"error": "Invalid request format"}), 400
 
             try:
-                cursor.execute('SELECT BIN_TO_UUID(u.uuid) as uuid, u.password FROM users u JOIN profiles p ON u.uuid = p.uuid WHERE p.username = %s', (username,))
+                cursor.execute('SELECT BIN_TO_UUID(uuid), password FROM users WHERE uuid = UUID_TO_BIN(%s)', (user_uuid,))
                 result = cursor.fetchone()
-                logging.info(f"DB result: {result}")
             except Exception as e:
-                logging.error(f"Database error: {str(e)}")
                 return jsonify({"error": "Database error"}), 500
 
             if not result:
@@ -107,7 +89,9 @@ def edit_profile():  # noqa: E501
     cursor = None
     try:
         # Get database connection with circuit breaker protection
-        conn = get_database_connection()
+        mysql = current_app.extensions.get('mysql')
+
+        conn = mysql.connect()
         cursor = conn.cursor()
 
         # Get username from session
@@ -193,7 +177,9 @@ def get_user_info(uuid):  # noqa: E501
     try:
         # Get database connection with circuit breaker protection
         try:
-            conn = get_database_connection()
+            mysql = current_app.extensions.get('mysql')
+
+            conn = mysql.connect()
         except CircuitBreakerError as cbe:
             logging.error(f"Circuit Breaker Open: {str(cbe)}")
             return jsonify({"error": "Service unavailable. Please try again later."}), 503
