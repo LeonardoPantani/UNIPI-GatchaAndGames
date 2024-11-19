@@ -160,8 +160,8 @@ def pull_gacha(pool_id):
         
         # Deduct credits
         cursor.execute(
-            'UPDATE profiles SET currency = currency - 10 WHERE uuid = UUID_TO_BIN(%s)',
-            (session['uuid'],)
+            'UPDATE profiles SET currency = currency - %s WHERE uuid = UUID_TO_BIN(%s)',
+            (price, session['uuid'])
         )
 
         # Add to inventory
@@ -170,7 +170,7 @@ def pull_gacha(pool_id):
 
         cursor.execute(
         'INSERT INTO inventories (item_uuid, owner_uuid, stand_uuid, owners_no, currency_spent) VALUES (UUID_TO_BIN(%s), UUID_TO_BIN(%s), UUID_TO_BIN(%s), %s, %s)',
-        (new_item_uuid, session['uuid'], selected_item[0], 0, 10)
+        (new_item_uuid, session['uuid'], selected_item[0], 0, price)
         )
 
         connection.commit()
