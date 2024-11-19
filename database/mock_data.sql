@@ -65,7 +65,12 @@ INSERT INTO feedbacks (user_uuid, content) VALUES
 (UNHEX(REPLACE('87f3b5d1-5e8e-4fa4-909b-3cd29f4b1f09', '-', '')), 'Could be better, but overall good experience.'),
 (UNHEX(REPLACE('a4f0c592-12af-4bde-aacd-94cd0f27c57e', '-', '')), 'Awesome events!');
 
--- Insert into `gacha_pools` table
-INSERT INTO gacha_pools (codename, public_name, probabilities, items) VALUES
-('novice_pool', 'Novice Gacha Pool', '{"common": 0.7, "rare": 0.2, "epic": 0.1}', '["1b2f7b4e-5e1f-4112-a7c5-b7559dbb8c76"]'),
-('pro_pool', 'Pro Gacha Pool', '{"common": 0.5, "rare": 0.3, "epic": 0.15, "legendary": 0.05}', '["b6e7f8c9-7f28-4b4f-8fbe-523f6c8b0c85", "1b2f7b4e-5e1f-4112-a7c5-b7559dbb8c76"]');
+INSERT INTO gacha_pools (codename, public_name, probabilities, price) VALUES
+('novice_pool', 'Novice Gacha Pool', '{"common": 0.7, "rare": 0.2, "epic": 0.1}', 100),
+('pro_pool', 'Pro Gacha Pool', '{"common": 0.5, "rare": 0.3, "epic": 0.15, "legendary": 0.05}', 300);
+
+-- Insert into `gacha_pools_items` table
+INSERT INTO gacha_pools_items (codename, gacha_uuid) VALUES
+('novice_pool', UNHEX(REPLACE('1b2f7b4e-5e1f-4112-a7c5-b7559dbb8c76', '-', ''))),
+('pro_pool', UNHEX(REPLACE('9d4b9fa9-6c72-44f5-9ac6-e6b548cfc632', '-', ''))),
+('pro_pool', UNHEX(REPLACE('b6e7f8c9-7f28-4b4f-8fbe-523f6c8b0c85', '-', '')));

@@ -94,27 +94,35 @@ def pull_gacha(pool_id):
         connection = mysql.connect()
         cursor = connection.cursor()
 
+        # Get pool probabilities and items
+        cursor.execute(
+            'SELECT probabilities, price FROM gacha_pools WHERE codename = %s',
+            (pool_id,)
+        )
+        pool_result = cursor.fetchone()
+        
+        if not pool_result:
+            return jsonify({"error": "Pool not found"}), 404
+
+        probabilities = json.loads(pool_result[0])
+        price = pool_result[1]
+
         # Check if user has enough credits (10)
         cursor.execute(
             'SELECT currency FROM profiles WHERE uuid = UUID_TO_BIN(%s)',
             (session['uuid'],)
         )
         result = cursor.fetchone()
-        if not result or result[0] < 10:
+        if not result or result[0] < price:
             return jsonify({"error": "Not enough credits"}), 403
-
-        # Get pool probabilities and items
-        cursor.execute(
-            'SELECT probabilities, items FROM gacha_pools WHERE codename = %s',
+        
+        cursor.execute (
+            'SELECT gacha_uuid FROM gacha_pools_items WHERE codename = %s',
             (pool_id,)
         )
-        pool_result = cursor.fetchone()
-        if not pool_result:
-            return jsonify({"error": "Pool not found"}), 404
-
-        probabilities = json.loads(pool_result[0])
-        pool_items = json.loads(pool_result[1])
-
+        
+        pullable_gachas = cursor.fetchall()
+        
         # Determine rarity based on probabilities
         rarity_roll = random.random()
         selected_rarity = None
@@ -127,16 +135,24 @@ def pull_gacha(pool_id):
                 break
 
         # Get random item of selected rarity
-        query = '''
+        # Generate placeholders for UUIDs dynamically
+        placeholders = ','.join(['%s' for _ in pullable_gachas])
+
+        # Define the query with the dynamically generated placeholders
+        query = f'''
         SELECT BIN_TO_UUID(uuid), name, stat_power, stat_speed, 
-               stat_durability, stat_precision, stat_range, stat_potential
+            stat_durability, stat_precision, stat_range, stat_potential
         FROM gachas_types 
-        WHERE uuid IN ({}) AND rarity = %s
-        '''.format(','.join(['UUID_TO_BIN(%s)' for _ in pool_items]))
-        
-        cursor.execute(query, (*pool_items, selected_rarity))
-        
+        WHERE uuid IN ({placeholders}) AND rarity = %s
+        '''
+        print(selected_rarity)
+        # Extract only the first elements of each tuple from pullable_gachas for the UUIDs
+        uuid_values = [item[0] for item in pullable_gachas]
+        print(query)
+        # Execute the query, passing UUID values and selected_rarity
+        cursor.execute(query, uuid_values + [selected_rarity])
         items = cursor.fetchall()
+        print(items)
         if not items:
             return jsonify({"error": "No items found in pool"}), 500
             

@@ -125,6 +125,14 @@ CREATE TABLE gacha_pools (
     codename VARCHAR(100),
     public_name VARCHAR(200) NOT NULL,
     probabilities JSON NOT NULL,
-    items JSON NOT NULL,
+    price INT NOT NULL,
     PRIMARY KEY (codename)
+);
+
+CREATE TABLE gacha_pools_items (
+    codename VARCHAR(100),
+    gacha_uuid BINARY(16),
+    PRIMARY KEY (codename, gacha_uuid),
+    FOREIGN KEY (codename) REFERENCES gacha_pools(codename),
+    FOREIGN KEY (gacha_uuid) REFERENCES gachas_types(uuid)
 );
