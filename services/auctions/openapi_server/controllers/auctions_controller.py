@@ -229,8 +229,7 @@ def get_auction_status(auction_uuid):
         }
         
         if status == 'closed':
-            username = session['username']
-
+            #/db_manager/auctions/complete_sale
             cursor.execute(
                 'SELECT owner_uuid FROM inventories WHERE item_uuid = UUID_TO_BIN(%s)',
                 (item_uuid,)
@@ -238,34 +237,24 @@ def get_auction_status(auction_uuid):
             old_owner_uuid = cursor.fetchone()[0]
 
             cursor.execute(
-                'SELECT BIN_TO_UUID(uuid) FROM profiles WHERE username = %s',
-                (username,)
+                'UPDATE profiles SET currency = currency + %s WHERE uuid = %s',
+                (current_bid, old_owner_uuid)
             )
-
-            user_uuid = cursor.fetchone()[0] #extracts only the string from the tuple returned by fetchone
-            if not user_uuid:
-                return jsonify({"error": "User not found"}), 404
-            
-            if current_bidder == user_uuid:
-                cursor.execute(
-                    'UPDATE profiles SET currency = currency + %s WHERE uuid = %s',
-                    (current_bid, old_owner_uuid)
-                )
-                cursor.execute(
-                    'INSERT INTO ingame_transactions (user_uuid, credits, transaction_type) VALUES (UUID_TO_BIN(%s), %s, "sold_market")',
-                    (old_owner_uuid,current_bid)
-                )
-                cursor.execute(
-                    'UPDATE inventories SET owner_uuid = UUID_TO_BIN(%s) WHERE item_uuid = UUID_TO_BIN(%s)',
-                    (user_uuid, item_uuid)
-                )
-                cursor.execute(
-                    'INSERT INTO ingame_transactions (user_uuid, credits, transaction_type) VALUES (UUID_TO_BIN(%s), %s, "bought_market")',
-                    (user_uuid,current_bid*(-1))
-                )
+            cursor.execute(
+                'INSERT INTO ingame_transactions (user_uuid, credits, transaction_type) VALUES (UUID_TO_BIN(%s), %s, "sold_market")',
+                (old_owner_uuid,current_bid)
+            )
+            cursor.execute(
+                'UPDATE inventories SET owner_uuid = UUID_TO_BIN(%s) WHERE item_uuid = UUID_TO_BIN(%s)',
+                (session['uuid'], item_uuid)
+            )
+            cursor.execute(
+                'INSERT INTO ingame_transactions (user_uuid, credits, transaction_type) VALUES (UUID_TO_BIN(%s), %s, "bought_market")',
+                (session['uuid'],current_bid*(-1))
+            )
             #not removed from auctions for history
-                full_response = {**response, "message": "Item redeemed successfully"}
-                return jsonify(full_response), 200
+            full_response = {**response, "message": "Item redeemed successfully"}
+            return jsonify(full_response), 200
 
         return jsonify(response), 200
 
