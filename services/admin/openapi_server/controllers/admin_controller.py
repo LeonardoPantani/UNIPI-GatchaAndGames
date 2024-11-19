@@ -309,7 +309,7 @@ def get_all_feedbacks(page_number=None):  # noqa: E501
         feedbacks = cursor.fetchall()
         cursor.close()
 
-        feedback_list = [ # TODO tolto content, verificare
+        feedback_list = [
             {"id": feedback[0], "user_uuid": feedback[1], "timestamp": str(feedback[2])}
             for feedback in feedbacks
         ]

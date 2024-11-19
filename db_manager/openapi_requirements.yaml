@@ -181,7 +181,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/FeedbackId"
+                  $ref: "#/components/schemas/FeedbackPreview"
         "400":
           description: Invalid request format.
         "500":
@@ -233,7 +233,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Feedback"
+                $ref: "#/components/schemas/FeedbackWithUsername"
         "400":
           description: Invalid request format.
         "500":
@@ -917,18 +917,33 @@ paths:
   # todo
 components:
   schemas:
+    FeedbackPreview:
+      properties:
+        id:
+          $ref: "#/components/schemas/FeedbackId"
+        user_uuid:
+          $ref: "#/components/schemas/UserId"
+        timestamp:
+          description: Timestamp when user created feedback
+          format: date-time
+          title: timestamp
+          type: string
+      title: Feedback preview, without content
+      type: object
     FeedbackId:
       description: Id of feedback.
       format: integer
       title: id
       type: number
       example: 7
-    Feedback:
+    FeedbackWithUsername:
       properties:
         id:
           $ref: "#/components/schemas/FeedbackId"
         user_uuid:
           $ref: "#/components/schemas/UserId"
+        username:
+          $ref: "#/components/schemas/Username"
         content:
           description: Actual feedback content.
           example: I love this game11!
@@ -939,7 +954,7 @@ components:
           format: date-time
           title: timestamp
           type: string
-      title: Feedback
+      title: Feedback preview, without content
       type: object
     PageNumber:
       type: integer
