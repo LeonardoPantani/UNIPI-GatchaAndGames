@@ -32,7 +32,7 @@ def delete_profile():  # noqa: E501
 
         user_uuid = session.get('uuid')
 
-        if not username:
+        if not user_uuid:
             return jsonify({"error": "Not logged in"}), 403
 
         if connexion.request.is_json:
@@ -60,6 +60,29 @@ def delete_profile():  # noqa: E501
             cursor.execute('DELETE FROM feedbacks WHERE user_uuid = UUID_TO_BIN(%s)', (user_uuid,))
             cursor.execute('DELETE FROM ingame_transactions WHERE user_uuid = UUID_TO_BIN(%s)', (user_uuid,)) 
             cursor.execute('DELETE FROM bundles_transactions WHERE user_uuid = UUID_TO_BIN(%s)', (user_uuid,))
+
+            cursor.execute('''
+                           UPDATE profiles SET currency = currency + (
+                                SELECT current_bid
+                                FROM auctions
+                                WHERE item_uuid IN (
+                                    SELECT item_uuid FROM inventories WHERE owner_uuid = UUID_TO_BIN(%s)
+                                )
+                            )
+                           WHERE uuid IN (
+                                SELECT current_bidder
+                                FROM auctions
+                                WHERE item_uuid IN (
+                                    SELECT item_uuid FROM inventories WHERE owner_uuid = UUID_TO_BIN(%s)
+                                )
+                           )
+                           ''',
+                           (user_uuid, user_uuid)
+            )
+            
+            cursor.execute('DELETE FROM auctions WHERE item_uuid IN (SELECT item_uuid FROM inventories WHERE owner_uuid = UUID_TP_BIN(%s)', (user_uuid,))
+            cursor.execute('DELETE FROM inventory WHERE owner_uuid = UUID_TO_BIN(%s)', (user_uuid,))
+
             cursor.execute('DELETE FROM profiles WHERE uuid = UUID_TO_BIN(%s)', (user_uuid,))
             cursor.execute('DELETE FROM users WHERE uuid = UUID_TO_BIN(%s)', (user_uuid,))
 
