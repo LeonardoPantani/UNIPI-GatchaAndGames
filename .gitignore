@@ -68,5 +68,5 @@ target/
 
 # custom
 cookies.txt
-apigateway/security/selfsigned.crt
-apigateway/security/selfsigned.key
+api_gateway/security/selfsigned.key
+api_gateway/security/selfsigned.crt
