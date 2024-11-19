@@ -54,7 +54,7 @@ def get_gacha_info(gacha_uuid):  # noqa: E501
         
         result = cursor.fetchone()
         if not result:
-            return {"error": "Gacha not found"}, 404
+            return {"error": "Gacha type not found."}, 404
 
         # Create a Gacha object with the retrieved data
         gacha = Gacha(
@@ -70,7 +70,7 @@ def get_gacha_info(gacha_uuid):  # noqa: E501
                 "potential": chr(ord('A') + 5 - max(1, min(5, result[8] // 20)))
             }
         )
-        return gacha
+        return gacha, 200
 
   
     except Exception as e:

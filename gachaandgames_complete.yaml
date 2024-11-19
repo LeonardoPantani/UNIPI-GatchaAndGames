@@ -611,6 +611,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Gacha'
+        '404':
+          description: Gacha type not found.
         '500':
           description: Internal server error
   /gacha/pools:
