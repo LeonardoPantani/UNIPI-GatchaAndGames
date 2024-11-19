@@ -147,7 +147,7 @@ def edit_profile():  # noqa: E501
                 edit_request.password.encode('utf-8'), 
                 result[1].encode('utf-8')
             ):
-                return jsonify({"error": "Invalid password"}), 400
+                return jsonify({"error": "Invalid password"}), 403
 
             # If password verified, proceed with updates
             updates = []
