@@ -601,7 +601,7 @@ paths:
   /db_manager/auctions/complete_sale:
     post:
       tags:
-        - db_manager
+        - db_manager_auctions
       description: "Completes the sale of an auctioned item by transferring ownership, updating balances, and logging transactions for the buyer and the seller."
       operationId: complete_auction_sale
       requestBody:
@@ -1226,11 +1226,226 @@ paths:
   ############################################
   ################### PVP ####################
   ############################################
-  
-  
+  /db_manager/pvp/get_pvp_status:
+    post:
+      tags:
+        - db_manager_pvp
+      description: "Obtains information regarding a pvp match."
+      operationId: get_pvp_status
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pvp_match_uuid:
+                  $ref: "#/components/schemas/PvPMatchId"
+      responses:
+        "200":
+          description: PvP Match.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PvPRequest"
+        "400":
+          description: Invalid request.
+        "404":
+          description: Match not found.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+  /db_manager/pvp/check_pending_pvp_requests:
+    post:
+      tags:
+        - db_manager_pvp
+      description: "Returns a list of pending pvp requests."
+      operationId: check_pending_pvp_requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_uuid:
+                  $ref: "#/components/schemas/UserId"
+      responses:
+        "200":
+          description: List of pending pvp requests.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MatchRequests"
+        "400":
+          description: Invalid request.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+  /db_manager/pvp/reject_pvp_request:
+    post:
+      tags:
+        - db_manager_pvp
+      description: "Rejects a pending pvp request."
+      operationId: reject_pvp_prequest
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pvp_match_uuid:
+                  $ref: "#/components/schemas/PvPMatchId"
+                user_uuid:
+                  $ref: "#/components/schemas/UserId"
+      responses:
+        "200":
+          description: Battle rejected successfully.
+        "400":
+          description: Invalid request.
+        "404":
+          description: Cannot reject this PvP request.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+  /db_manager/pvp/verify_gacha_item_ownership:
+    post:
+      tags:
+        - db_manager_pvp
+      description: "Verifies that a list of gachas separated by a comma is entirely contained in player's inventory, before letting them send a pvp request."
+      operationId: verify_gacha_item_ownership
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                team:
+                  type: string
+                  pattern: ^\(\s*[a-zA-Z]+\s*(,\s*[a-zA-Z]+\s*){6}\)$
+                  example: "(3fa85f64-5717-4562-b3fc-2c963f66afa6, 3fa85f64-5717-4562-b3fc-2c963f66afa6, 3fa85f64-5717-4562-b3fc-2c963f66afa6, 3fa85f64-5717-4562-b3fc-2c963f66afa6, 3fa85f64-5717-4562-b3fc-2c963f66afa6, 3fa85f64-5717-4562-b3fc-2c963f66afa6, 3fa85f64-5717-4562-b3fc-2c963f66afa6)"
+                  description: "List (surrounded by round brackets) of gacha uuids separated by a comma"
+      responses:
+        "200":
+          description: Battle rejected successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserId"
+        "400":
+          description: Invalid request.
+        "403":
+          description: Gacha items do not belong to you.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+  /db_manager/pvp/finalize_pvp_request_sending:
+    post:
+      tags:
+        - db_manager_pvp
+      description: "Verifies that a list of gachas separated by a comma is entirely contained in player's inventory, before letting them send a pvp request."
+      operationId: finalize_pvp_request_sending
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PvPRequestFull" # TODO CONTINUARE DA QUI
+      responses:
+        "200":
+          description: Battle rejected successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserId"
+        "400":
+          description: Invalid request.
+        "403":
+          description: Gacha items do not belong to you.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
   
 components:
   schemas:
+    PvPRequestFull:
+      type: object
+      properties:
+        pvp_match_uuid:
+          $ref: '#/components/schemas/PvPMatchId'
+        sender_id:
+          $ref: '#/components/schemas/UserId'
+        receiver_id:
+          $ref: '#/components/schemas/UserId'
+        TODO:
+          type: string
+        
+      description: Request of a PvP match sent by a player.
+    MatchRequests:
+      type: array
+      items:
+        type: object
+        properties:
+          pvp_match_uuid:
+            $ref: "#/components/schemas/PvPMatchId"
+          from:
+            $ref: "#/components/schemas/UserId"
+    MatchPairing:
+      type: object
+      properties:
+        pair:
+          type: string
+          example: player1 StarPlatinum vs player2 GoldenExperience
+        extracted_stat:
+          $ref: "#/components/schemas/GachaStat"
+        player1:
+          type: object
+          properties:
+            stand_stat:
+              type: integer
+              minimum: 1
+              maximum: 5
+              example: 4
+              description: Value of extracted_stat
+        player2:
+          type: object
+          properties:
+            stand_stat:
+              type: integer
+              minimum: 1
+              maximum: 5
+              example: 3
+              description: Value of extracted_stat
+    MatchLog:
+      type: object
+      description: Infos on a specific match
+      properties:
+        pairings:
+          type: array
+          minimum: 7
+          maximum: 7
+          items:
+            $ref: "#/components/schemas/MatchPairing"
+    PvPRequest:
+      type: object
+      properties:
+        pvp_match_uuid:
+          $ref: '#/components/schemas/PvPMatchId'
+        sender_id:
+          $ref: '#/components/schemas/UserId'
+        receiver_id:
+          $ref: '#/components/schemas/UserId'
+        winner_id:
+          $ref: '#/components/schemas/UserId'
+        match_log:
+          $ref: '#/components/schemas/MatchLog'
+        match_timestamp:
+          type: string
+          format: date-time
+          description: Match timestamp.
+      description: Request of a PvP match sent by a player.
     FeedbackPreview:
       properties:
         id:
@@ -1247,7 +1462,7 @@ components:
     FeedbackId:
       description: Id of feedback.
       format: integer
-      title: id
+      title: FeedbackId
       type: number
       example: 7
     FeedbackWithUsername:
@@ -1295,7 +1510,7 @@ components:
       description: The user's email.
       example: l.pantani5@studenti.unipi.it
       format: email
-      title: email
+      title: Email
       type: string
     User:
       type: object
@@ -1510,3 +1725,7 @@ components:
           type: number
           format: float
           default: 0.05
+    PvPMatchId:
+      type: string
+      format: uuid
+      description: UUID of the PvP match.

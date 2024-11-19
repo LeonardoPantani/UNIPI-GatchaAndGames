@@ -1658,14 +1658,42 @@ components:
       type: string
       format: uuid
       description: UUID of the PvP match.
+    MatchPairing:
+      type: object
+      properties:
+        pair:
+          type: string
+          example: player1 StarPlatinum vs player2 GoldenExperience
+        extracted_stat:
+          $ref: "#/components/schemas/GachaStat"
+        player1:
+          type: object
+          properties:
+            stand_stat:
+              type: integer
+              minimum: 1
+              maximum: 5
+              example: 4
+              description: Value of extracted_stat
+        player2:
+          type: object
+          properties:
+            stand_stat:
+              type: integer
+              minimum: 1
+              maximum: 5
+              example: 3
+              description: Value of extracted_stat
     MatchLog:
-      type: array
-      items:
-        type: string
-      example:
-        - Battle between Player A and Player B starts NOW.
-        - x uses Quick Attack!
-        - Player A has won the match.
+      type: object
+      description: Infos on a specific match
+      properties:
+        pairings:
+          type: array
+          minimum: 7
+          maximum: 7
+          items:
+            $ref: "#/components/schemas/MatchPairing"
     PvPRequest:
       type: object
       properties:
@@ -1679,10 +1707,10 @@ components:
           $ref: '#/components/schemas/UserId'
         match_log:
           $ref: '#/components/schemas/MatchLog'
-        sent_timestamp:
+        match_timestamp:
           type: string
           format: date-time
-          description: Request sent timestamp.
+          description: Match timestamp.
       description: Request of a PvP match sent by a player.
     PendingPvPRequests:
       type: object
