@@ -18,17 +18,16 @@ def health_check():  # noqa: E501
 
 @circuit_breaker
 def get_inventory():  # noqa: E501
-    if not username:
+    user_uuid = session.get("uuid")
+    if not user_uuid:
         return jsonify({"error": "Not logged in"}), 403
     
     try:
         mysql = current_app.extensions.get('mysql')
-            
-        username = session.get('username')
 
         # Pagination parameters
         items_per_page = 10
-        page = connexion.request.args.get('page', default=1, type=int)
+        page = connexion.request.args.get('page_number', default=1, type=int)
         offset = (page - 1) * items_per_page
 
         try:
@@ -38,15 +37,14 @@ def get_inventory():  # noqa: E501
             # Get paginated results
             cursor.execute('''
                 SELECT 
-                    BIN_TO_UUID(i.item_uuid) as item_id,
-                    BIN_TO_UUID(i.owner_uuid) as owner_id,
-                    BIN_TO_UUID(i.stand_uuid) as gacha_uuid,
-                    i.obtained_at
-                FROM inventories i
-                JOIN profiles p ON i.owner_uuid = p.uuid 
-                WHERE p.username = %s
+                    BIN_TO_UUID(item_uuid),
+                    BIN_TO_UUID(owner_uuid),
+                    BIN_TO_UUID(stand_uuid),
+                    obtained_at
+                FROM inventories
+                WHERE owner_uuid = UUID_TO_BIN(%s)
                 LIMIT %s OFFSET %s
-            ''', (username, items_per_page, offset))
+            ''', (user_uuid, items_per_page, offset))
             
             inventory_items = []
             for row in cursor.fetchall():
@@ -57,13 +55,8 @@ def get_inventory():  # noqa: E501
                     obtained_date=row[3]
                 )
                 inventory_items.append(item)
-
-            # Prepare pagination metadata
-            total_pages = (total_items + items_per_page - 1) // items_per_page
             
-            return jsonify({
-                "items": [item.to_dict() for item in inventory_items]
-            })
+            return jsonify(inventory_items), 200
 
         except Exception as e:
             logging.error(f"Database error: {str(e)}")
