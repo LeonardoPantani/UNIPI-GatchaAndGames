@@ -105,9 +105,6 @@ def bid_on_auction(auction_uuid):
             )
         
         connection.commit()
-        #close connection
-        cursor.close()
-        connection.close()
 
         return jsonify({"message": "Bid placed successfully."}), 200
 
