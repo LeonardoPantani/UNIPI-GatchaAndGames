@@ -209,14 +209,17 @@ def get_pool_info():  # noqa: E501
         conn = mysql.connect()
         cursor = conn.cursor()
 
-        # Query all pools from gacha_pools table
+        # Query pools and their items
         cursor.execute('''
             SELECT 
-                codename,
-                public_name,
-                probabilities,
-                items
-            FROM gacha_pools
+                gp.codename,
+                gp.public_name,
+                gp.probabilities,
+                gp.price,
+                GROUP_CONCAT(BIN_TO_UUID(gpi.gacha_uuid)) as gacha_uuids
+            FROM gacha_pools gp
+            LEFT JOIN gacha_pools_items gpi ON gp.codename = gpi.codename
+            GROUP BY gp.codename
         ''')
         
         results = cursor.fetchall()
@@ -228,7 +231,7 @@ def get_pool_info():  # noqa: E501
         for result in results:
             # Parse JSON strings from database
             probabilities = json.loads(result[2])
-            items_list = json.loads(result[3])
+            gacha_uuids = result[4].split(',') if result[4] else []
             
             # Create RarityProbability object
             rarity_prob = RarityProbability(
@@ -237,38 +240,42 @@ def get_pool_info():  # noqa: E501
                 epic_probability=probabilities.get('epic', 0.15),
                 legendary_probability=probabilities.get('legendary', 0.05)
             )
-            
-            # Get gacha items for this pool
-            cursor.execute('''
-                SELECT 
-                    BIN_TO_UUID(uuid) as gacha_uuid,
-                    name,
-                    LOWER(rarity) as rarity,
-                    stat_power,
-                    stat_speed,
-                    stat_durability,
-                    stat_precision,
-                    stat_range,
-                    stat_potential
-                FROM gachas_types 
-                WHERE name IN %s
-            ''', (tuple(items_list),))
-            
-            items = []
-            for item in cursor.fetchall():
-                items.append(Gacha(
-                    gacha_uuid=item[0],
-                    name=item[1],
-                    rarity=item[2],
-                    attributes={
-                        "power": chr(ord('A') + 5 - max(1, min(5, item[3] // 20))),
-                        "speed": chr(ord('A') + 5 - max(1, min(5, item[4] // 20))),
-                        "durability": chr(ord('A') + 5 - max(1, min(5, item[5] // 20))),
-                        "precision": chr(ord('A') + 5 - max(1, min(5, item[6] // 20))),
-                        "range": chr(ord('A') + 5 - max(1, min(5, item[7] // 20))),
-                        "potential": chr(ord('A') + 5 - max(1, min(5, item[8] // 20)))
-                    }
-                ))
+
+            # Query gacha details
+            if gacha_uuids:
+                placeholders = ','.join(['UUID_TO_BIN(%s)' for _ in gacha_uuids])
+                cursor.execute(f'''
+                    SELECT 
+                        BIN_TO_UUID(uuid) as gacha_uuid,
+                        name,
+                        LOWER(rarity) as rarity,
+                        stat_power,
+                        stat_speed,
+                        stat_durability,
+                        stat_precision,
+                        stat_range,
+                        stat_potential
+                    FROM gachas_types 
+                    WHERE uuid IN ({placeholders})
+                ''', gacha_uuids)
+                
+                items = []
+                for item in cursor.fetchall():
+                    items.append(Gacha(
+                        gacha_uuid=item[0],
+                        name=item[1],
+                        rarity=item[2],
+                        attributes={
+                            "power": chr(ord('A') + 5 - max(1, min(5, item[3] // 20))),
+                            "speed": chr(ord('A') + 5 - max(1, min(5, item[4] // 20))),
+                            "durability": chr(ord('A') + 5 - max(1, min(5, item[5] // 20))),
+                            "precision": chr(ord('A') + 5 - max(1, min(5, item[6] // 20))),
+                            "range": chr(ord('A') + 5 - max(1, min(5, item[7] // 20))),
+                            "potential": chr(ord('A') + 5 - max(1, min(5, item[8] // 20)))
+                        }
+                    ))
+            else:
+                items = []
             
             # Create Pool object
             pool = Pool(
@@ -279,10 +286,10 @@ def get_pool_info():  # noqa: E501
             )
             pools.append(pool)
             
-        return pools
+        return jsonify(pools), 200
 
     except Exception as e:
-        return {"error": str(e)}, 500
+        return jsonify({"error": str(e)}), 500
         
     finally:
         if cursor:
