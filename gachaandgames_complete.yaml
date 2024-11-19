@@ -1495,6 +1495,10 @@ components:
           type: string
           example: Starter Pool
           description: Visible name of the pool.
+        price:
+          type: integer
+          example: 15
+          description: In-game price to pull a gacha from this pool
         probabilities:
           $ref: '#/components/schemas/RarityProbability'
         items:

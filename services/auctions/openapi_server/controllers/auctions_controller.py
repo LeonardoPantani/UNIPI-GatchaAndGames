@@ -378,22 +378,26 @@ def get_auctions_list(status=None, rarity=None, page_number=None):
         connection = mysql.connect()
         cursor = connection.cursor()
 
-        query = 'SELECT BIN_TO_UUID(uuid), end_time FROM auctions WHERE end_time '
+        query = '''
+        SELECT BIN_TO_UUID(a.uuid) AS auction_id, a.end_time
+        FROM auctions a
+        JOIN inventories i ON a.item_uuid = i.item_uuid
+        JOIN gachas_types g ON i.stand_uuid = g.uuid
+        WHERE a.end_time {}
+        '''.format('< %s' if status == 'closed' else '> %s')
+
+        # Parameters for the query
         params = [now]
-        if status == 'closed':
-            query += '< %s'
-        else:
-            query += '> %s'
 
         if rarity:
-          query += 'AND rarity = %s'
-          params.append(rarity)
-        
-        query += "LIMIT %s OFFSET %s"
-        params.append(items_per_page)
-        params.append(offset)
+            query += 'AND g.rarity = %s '
+            params.append(rarity)
 
-        cursor.execute(query, tuple(params)) #/db_manager/auctions/list
+        query += 'LIMIT %s OFFSET %s'
+        params.extend([items_per_page, offset])
+
+        # Execute the query
+        cursor.execute(query, tuple(params))
 
         auction_data = cursor.fetchall()
 
