@@ -51,6 +51,32 @@ def ban_profile(user_uuid):  # noqa: E501
                 return jsonify({"error": "Cannot ban a user with the ADMIN role."}), 409
         else:
             return jsonify({"error": "User not found"}), 404
+        
+        cursor.execute('DELETE FROM feedbacks WHERE user_uuid = UUID_TO_BIN(%s)', (user_uuid,))
+        cursor.execute('DELETE FROM ingame_transactions WHERE user_uuid = UUID_TO_BIN(%s)', (user_uuid,)) 
+        cursor.execute('DELETE FROM bundles_transactions WHERE user_uuid = UUID_TO_BIN(%s)', (user_uuid,))
+
+        cursor.execute('''
+                        UPDATE profiles SET currency = currency + (
+                            SELECT current_bid
+                            FROM auctions
+                            WHERE item_uuid IN (
+                                SELECT item_uuid FROM inventories WHERE owner_uuid = UUID_TO_BIN(%s)
+                            )
+                        )
+                        WHERE uuid IN (
+                            SELECT current_bidder
+                            FROM auctions
+                            WHERE item_uuid IN (
+                                SELECT item_uuid FROM inventories WHERE owner_uuid = UUID_TO_BIN(%s)
+                            )
+                        )
+                        ''',
+                        (user_uuid, user_uuid)
+        )
+        
+        cursor.execute('DELETE FROM auctions WHERE item_uuid IN (SELECT item_uuid FROM inventories WHERE owner_uuid = UUID_TP_BIN(%s)', (user_uuid,))
+        cursor.execute('DELETE FROM inventory WHERE owner_uuid = UUID_TO_BIN(%s)', (user_uuid,))
 
         query = "DELETE FROM profiles WHERE uuid = UUID_TO_BIN(%s)"
         cursor.execute(query, (user_uuid,))
