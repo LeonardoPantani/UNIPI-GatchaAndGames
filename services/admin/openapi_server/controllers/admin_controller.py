@@ -31,7 +31,7 @@ def ban_profile(user_uuid):  # noqa: E501
         return jsonify({"error": "This account is not authorized to perform this action"}), 403
     
     if session.get('uuid') == user_uuid:
-        return jsonify({"error": "You cannot delete your account like this"}), 400
+        return jsonify({"error": "You cannot delete your account like this"}), 406
     
     # valid request from now on
     try:
@@ -48,7 +48,7 @@ def ban_profile(user_uuid):  # noqa: E501
         if result:
             user_to_ban_role = result[0]
             if user_to_ban_role == "ADMIN":
-                return jsonify({"error": "Cannot ban a user with the ADMIN role"}), 409
+                return jsonify({"error": "Cannot ban a user with the ADMIN role."}), 409
         else:
             return jsonify({"error": "User not found"}), 404
 
@@ -150,11 +150,11 @@ def create_pool():  # noqa: E501
 
     # check if probabilities are inside the probabilities fields and are floats
     if not isinstance(pool.probabilities.legendary_probability, float) or not isinstance(pool.probabilities.rare_probability, float) or not isinstance(pool.probabilities.epic_probability, float) or not isinstance(pool.probabilities.common_probability, float):
-        return jsonify({"error": "Invalid probabilities field."}), 400
+        return jsonify({"error": "Invalid probabilities field."}), 412
     
     # check if sum of probabilities is 1
     if pool.probabilities.legendary_probability + pool.probabilities.epic_probability + pool.probabilities.rare_probability + pool.probabilities.common_probability != 1:
-        return jsonify({"error": "Sum of probabilities is not 1."}), 400
+        return jsonify({"error": "Sum of probabilities is not 1."}), 416
     
     # valid request from now on
     try:
@@ -171,7 +171,7 @@ def create_pool():  # noqa: E501
             cursor.execute(query, (item))
             connection.commit()
             if cursor.fetchone() is None:
-                return jsonify({"error": "Item UUID not found in database: " + item}), 400
+                return jsonify({"error": "Item UUID not found in database: " + item}), 404
         
         # checks ok, inserting
         try:
@@ -186,7 +186,7 @@ def create_pool():  # noqa: E501
             connection.commit()
             cursor.close()
         except mysql.connect().IntegrityError:
-            # Duplicate email error
+            # Duplicate pool codename error
             connection.rollback()
             return jsonify({"error": "The provided pool id is already in use."}), 409
 
@@ -238,7 +238,7 @@ def edit_user_profile(user_uuid, email=None, username=None):  # noqa: E501
         cursor.execute(query, (user_uuid,))
         result = cursor.fetchone()
         if not result:
-            return jsonify({"error": "User not found"}), 404
+            return jsonify({"error": "User not found."}), 404
 
         # user exists, continue
         updates = 0
@@ -255,7 +255,7 @@ def edit_user_profile(user_uuid, email=None, username=None):  # noqa: E501
 
         if updates == 0:
             cursor.close()
-            return jsonify({"error": "No changes to profile applied."}), 404
+            return jsonify({"error": "No changes to profile applied."}), 304
         
         cursor.close()
 
@@ -278,18 +278,19 @@ def get_all_feedbacks(page_number=None):  # noqa: E501
         connection = mysql.connect()
         cursor = connection.cursor()
         offset = (page_number - 1) * 10 if page_number else 0
-        query = "SELECT f.id, BIN_TO_UUID(f.user_uuid), f.content, f.timestamp FROM feedbacks f LIMIT 10 OFFSET %s"
+        query = "SELECT f.id, BIN_TO_UUID(f.user_uuid), f.timestamp FROM feedbacks f LIMIT 10 OFFSET %s"
         cursor.execute(query, (offset,))
         feedbacks = cursor.fetchall()
         cursor.close()
 
-        feedback_list = [
-            {"id": feedback[0], "user_uuid": feedback[1], "content": feedback[2], "timestamp": str(feedback[3])}
+        feedback_list = [ # TODO tolto content, verificare
+            {"id": feedback[0], "user_uuid": feedback[1], "timestamp": str(feedback[2])}
             for feedback in feedbacks
         ]
         return jsonify(feedback_list), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 def get_all_profiles(page_number=None):  # noqa: E501
     if 'username' not in session or session.get('role') != 'ADMIN':
@@ -339,14 +340,14 @@ def get_feedback_info(feedback_id):  # noqa: E501
             feedback_info = {"id": feedback[0], "user_uuid": feedback[1], "content": feedback[2], "timestamp": feedback[3], "username": feedback[4]}
             return jsonify(feedback_info), 200
         else:
-            return jsonify({"error": "Feedback not found"}), 404
+            return jsonify({"error": "Feedback not found."}), 404
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
-
 def get_system_logs():  # noqa: E501 TODO
     return 'do some magic!'
+
 
 def get_user_history(user_uuid, history_type, page_number=None):  # noqa: E501
     if 'username' not in session or session.get('role') != 'ADMIN':
@@ -366,7 +367,7 @@ def get_user_history(user_uuid, history_type, page_number=None):  # noqa: E501
         cursor.execute(query, (user_uuid,))
         result = cursor.fetchone()
         if not result:
-            return jsonify({"error": "User not found"}), 404
+            return jsonify({"error": "User not found."}), 404
 
         # user exists, continue
         offset = (page_number - 1) * 10 if page_number else 0
@@ -395,7 +396,7 @@ def get_user_history(user_uuid, history_type, page_number=None):  # noqa: E501
         return jsonify(history_list), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
- 
+
 
 def update_auction(auction_uuid):  # noqa: E501
     if 'username' not in session or session.get('role') != 'ADMIN':
@@ -408,19 +409,19 @@ def update_auction(auction_uuid):  # noqa: E501
     auction = Auction.from_dict(connexion.request.get_json())  # noqa: E501
     
     if auction.auction_uuid != auction_uuid:
-        return jsonify({"message": "Invalid request."}), 400
+        return jsonify({"message": "Auction UUID in request is different from the one inside the auction object."}), 406
     
     # starting price check
     if auction.starting_price <= 0:
-        return jsonify({"error": "Starting price cannot be lower or equal to 0"}), 400
+        return jsonify({"error": "Starting price cannot be lower or equal to 0."}), 412
     
     # starting price check
     if auction.current_bid < 0:
-        return jsonify({"error": "Starting price cannot be lower than 0"}), 400
+        return jsonify({"error": "Current bid cannot be lower than 0."}), 416
     
     # Current bid cannot be lower than starting price
     if auction.current_bid < auction.starting_price:
-        return jsonify({"error": "Current bid cannot be lower than starting price"}), 400
+        return jsonify({"error": "Current bid cannot be lower than starting price."}), 401
     
 
     # valid request from now on
@@ -472,11 +473,10 @@ def update_gacha(gacha_uuid):  # noqa: E501
     if not connexion.request.is_json:
         return jsonify({"message": "Invalid request."}), 400
 
-
     gacha = Gacha.from_dict(connexion.request.get_json())  # noqa: E501
 
     if gacha.gacha_uuid != gacha_uuid:
-        return jsonify({"message": "Invalid request."}), 400
+        return jsonify({"message": "Gacha UUID in request is different from the one inside the gacha object."}), 406
     
     # check if stats have correct rating and create a map with converted letters to number ratings
     letters_map = {
@@ -492,10 +492,9 @@ def update_gacha(gacha_uuid):  # noqa: E501
         letter = getattr(gacha.attributes, attr)
         if letter in letters_map:
             converted[attr] = letters_map[letter]
-        else: # no valid letter found, throwing error
-            return jsonify({"error": "Gacha stat " + attr + " does not have a valid rating. Valid ratings: A, B, C, D, E"}), 400
+        else: # no valid letter found
+            converted[attr] = None
     # converted is a map with for each key (stat) a value (numeric of the stat)
-
 
     # valid request from now on
     try:
@@ -511,7 +510,7 @@ def update_gacha(gacha_uuid):  # noqa: E501
         cursor.execute(query, (gacha_uuid,))
         result = cursor.fetchone()
         if not result:
-            return jsonify({"error": "Gacha not found"}), 404
+            return jsonify({"error": "Gacha not found."}), 404
         
 
         query = "UPDATE gachas_types SET name = %s, stat_power = %s, stat_speed = %s, stat_durability = %s, stat_precision = %s, stat_range = %s, stat_potential = %s, rarity = %s WHERE uuid = UUID_TO_BIN(%s)"
@@ -524,6 +523,7 @@ def update_gacha(gacha_uuid):  # noqa: E501
         connection.rollback()
         return jsonify({"error": str(e)}), 500
 
+
 def update_pool(pool_id):  # noqa: E501
     if 'username' not in session or session.get('role') != 'ADMIN':
         return jsonify({"error": "This account is not authorized to perform this action"}), 403
@@ -534,15 +534,15 @@ def update_pool(pool_id):  # noqa: E501
     pool = Pool.from_dict(connexion.request.get_json())  # noqa: E501
 
     if pool.id != pool_id:
-        return jsonify({"message": "Invalid request."}), 400
+        return jsonify({"message": "Pool UUID in request is different from the one inside the pool object."}), 406
 
     # check if probabilities are inside the probabilities fields and are floats
     if not isinstance(pool.probabilities.legendary_probability, float) or not isinstance(pool.probabilities.rare_probability, float) or not isinstance(pool.probabilities.epic_probability, float) or not isinstance(pool.probabilities.common_probability, float):
-        return jsonify({"error": "Invalid probabilities field."}), 400
+        return jsonify({"error": "Invalid probabilities field."}), 412
     
     # check if sum of probabilities is 1
     if pool.probabilities.legendary_probability + pool.probabilities.epic_probability + pool.probabilities.rare_probability + pool.probabilities.common_probability != 1:
-        return jsonify({"error": "Sum of probabilities is not 1."}), 400
+        return jsonify({"error": "Sum of probabilities is not 1."}), 416
 
     # valid request from now on
     try:

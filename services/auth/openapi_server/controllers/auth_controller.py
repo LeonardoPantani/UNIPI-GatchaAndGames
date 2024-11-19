@@ -16,7 +16,6 @@ from openapi_server import util
 import logging
 
 from flask import current_app, jsonify, request, session
-from flaskext.mysql import MySQL
 
 from pybreaker import CircuitBreaker, CircuitBreakerListener, CircuitBreakerError
 
@@ -112,7 +111,6 @@ def register():
     uuid_to_register = str(uuid.UUID(bytes=uuid_hex_to_register))
 
     try:
-
         @circuit_breaker
         def make_request_to_dbmanager():
             payload = { "uuid": uuid_to_register, "username": username_to_register, "email": email_to_register, "password": password_hashed }
@@ -133,11 +131,9 @@ def register():
         
         return jsonify({"message": "Registration successful."}), 201
     except requests.HTTPError as e:
-        if e.response.status_code == 409: # user already registered
-            return jsonify({"error": "The provided email are already in use."}), 409
-        elif e.response.status_code == 400: # programming error, we mask as invalid provided data to users
-            return jsonify({"error": "The provided username are already in use."}), 401
-        else: #other errors
+        if e.response.status_code == 409: # email already in use
+            return jsonify({"error": "The provided username / email is already in use."}), 409
+        else: # other errors
             return jsonify({"error": "Service temporarily unavailable."}), 503
     except requests.RequestException as e: # if request is NOT sent to dbmanager correctly (is down) [error not expected]
         return jsonify({"error": "Service unavailable. Please try again later."}), 503

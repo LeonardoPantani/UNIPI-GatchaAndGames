@@ -150,7 +150,7 @@ def remove_inventory_item():
         ''', (item_id,))
 
         if cursor.fetchone():
-            return jsonify({"error": "Cannot remove item that is in an active auction"}), 400
+            return jsonify({"error": "Cannot remove item that is in an active auction."}), 409
 
         # Delete the item
         cursor.execute('''

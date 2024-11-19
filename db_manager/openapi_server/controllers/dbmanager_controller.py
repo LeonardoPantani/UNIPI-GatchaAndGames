@@ -40,6 +40,8 @@ def login():
 
     mysql = current_app.extensions.get('mysql')
 
+    connection = None
+    cursor = None
     try:
         @circuit_breaker
         def make_request_to_db():
@@ -71,76 +73,96 @@ def login():
         else:
             return jsonify({"error": "Invalid username."}), 404
     except OperationalError as e: # if connect to db fails means there is an error in the db
+        logging.error("Query ["+ username +"]: Operational error.")
         return "", 500
     except ProgrammingError as e: # for example when you have a syntax error in your SQL or a table was not found
+        logging.error("Query ["+ username +"]: Programming error.")
         return "", 400
     except InternalError as e: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+        logging.error("Query ["+ username +"]: Internal error.")
         return "", 500
     except InterfaceError as e: # errors originating from Connector/Python itself, not related to the MySQL server
+        logging.error("Query ["+ username +"]: Interface error.")
         return "", 500
     except DatabaseError as e: # default for any MySQL error which does not fit the other exceptions
+        logging.error("Query ["+ username +"]: Database error.")
         return "", 500
     except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return "", 503
+    finally:
+        if connection:
+            connection.close()
+        if cursor:
+            cursor.close()
 
 
 # received from auth_controller
 def register(register_request=None):
     if not connexion.request.is_json:
-        return jsonify({"error": "Bad request."}), 400
+        return "", 400
     
+    # valid json request
     login_request = connexion.request.get_json()
     uuid = login_request.get("uuid")
     username = login_request.get("username")
     email = login_request.get("email")
     password_hash = login_request.get("password")
 
+    mysql = current_app.extensions.get('mysql')
+    connection = None
+    cursor = None
     try:
-        mysql = current_app.extensions.get('mysql')
-        if not mysql:
-            return jsonify({"error": "Database connection not initialized"}), 500
+        @circuit_breaker
+        def make_request_to_db():
+            connection = mysql.connect()
+            cursor = connection.cursor()
+            # Insert user in USERS table
+            cursor.execute(
+                'INSERT INTO users (uuid, email, password, role) VALUES (UUID_TO_BIN(%s), %s, %s, %s)',
+                (uuid, email, password_hash, 'USER')
+            )
+            # Insert profile in PROFILE table
+            cursor.execute(
+                'INSERT INTO profiles (uuid, username, currency, pvp_score) VALUES (UUID_TO_BIN(%s), %s, %s, %s)',
+                (uuid, username, 0, 0)
+            )
+            connection.commit()
+            return
 
-        # Begin transaction
-        connection = mysql.connect()
-        cursor = connection.cursor()
-
-        # Insert user in USERS table
-        cursor.execute(
-            'INSERT INTO users (uuid, email, password, role) VALUES (UUID_TO_BIN(%s), %s, %s, %s)',
-            (uuid, email, password_hash, 'USER')
-        )
-        
-        # Insert profile in PROFILE table
-        cursor.execute(
-            'INSERT INTO profiles (uuid, username, currency, pvp_score) VALUES (UUID_TO_BIN(%s), %s, %s, %s)',
-            (uuid, username, 0, 0)
-        )
-
-        # Commit transaction
-        connection.commit()
-
-        return jsonify({"message": "Successful registration."}), 201
-
-    except mysql.connect().IntegrityError:
-        # Duplicate email error
-        connection.rollback()
-        return jsonify({"error": "The provided email or username are already in use."}), 409
+        make_request_to_db()
+        return "", 201
     except OperationalError as e: # if connect to db fails means there is an error in the db
+        logging.error("Query ["+ uuid +", "+ username +"]: Operational error.")
         return "", 500
     except ProgrammingError as e: # for example when you have a syntax error in your SQL or a table was not found
+        logging.error("Query ["+ uuid +", "+ username +"]: Programming error.")
         return "", 400
     except IntegrityError as e: # for constraint violations such as duplicate entries or foreign key constraints
+        logging.error("Query ["+ uuid +", "+ username +"]: Integrity error.")
+        if connection:
+            connection.rollback()
         return "", 409
     except DataError as e: # if data format is invalid or out of range or size
+        logging.error("Query ["+ uuid +", "+ username +"]: Data error.")
         return "", 400
     except InternalError as e: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+        logging.error("Query ["+ uuid +", "+ username +"]: Internal error.")
         return "", 500
     except InterfaceError as e: # errors originating from Connector/Python itself, not related to the MySQL server
+        logging.error("Query ["+ uuid +", "+ username +"]: Interface error.")
         return "", 500
     except DatabaseError as e: # default for any MySQL error which does not fit the other exceptions
-        return "", 500
+        logging.error("Query ["+ uuid +", "+ username +"]: Database error.")
+        return "", 401
     except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return "", 503
+    finally:
+        if connection:
+            connection.close()
+        if cursor:
+            cursor.close()
 
 
 # received from feedback_controller

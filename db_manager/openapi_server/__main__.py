@@ -28,18 +28,24 @@ def main():
 
     # Tentativi per connettersi al database
     for attempt in range(1, 21):
+        connection = None
+        cursor = None
         try:
             # Prova a ottenere il cursore
             connection = mysql.connect()
             cursor = connection.cursor()
-            cursor.close()
-            break
         except Exception as e:
             print(f"Attempt {attempt}: error while connecting to db: {e}")
             if attempt == 20:
                 print("Unable to connect. Not retrying anymore.")
                 return
             time.sleep(1)
+        finally:
+            if connection:
+                connection.close()
+            if cursor:
+                cursor.close()
+
 
     connexion_app.app.extensions['mysql'] = mysql
     

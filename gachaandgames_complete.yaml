@@ -21,6 +21,9 @@ servers:
   - url: http://localhost:8080
     description: Local server
 paths:
+  ############################################
+  ################# FEEDBACK #################
+  ############################################
   /feedback/health_check:
     get:
       tags:
@@ -269,7 +272,7 @@ paths:
 
 
   ############################################
-  #################### PVP ###################
+  ################### PVP ####################
   ############################################
   /pvp/health_check:
     get:
@@ -1068,10 +1071,8 @@ paths:
           required: true
           schema:
             enum:
-              - bought_bundle
-              - sold_market
-              - bought_market
-              - gacha_pull
+              - bundle
+              - ingame
         - name: page_number
           in: query
           description: Page number of the list.
@@ -1082,13 +1083,7 @@ paths:
             minimum: 1
       responses:
         '200':
-          description: User profile.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/User'
+          description: User transaction history.
         '400':
           description: Invalid username.
         '401':
@@ -1373,9 +1368,9 @@ paths:
             application/json:
               schema:
                 items:
-                  $ref: '#/components/schemas/Feedback'
+                  $ref: '#/components/schemas/FeedbackId'
                 type: array
-          description: Feedback.
+          description: Feedback Ids.
         "400":
           description: Invalid username.
         "401":

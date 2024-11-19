@@ -33,6 +33,7 @@ def main():
             connection = mysql.connect()
             cursor = connection.cursor()
             cursor.close()
+            connection.close()
             break
         except Exception as e:
             print(f"Attempt {attempt}: error while connecting to db: {e}")

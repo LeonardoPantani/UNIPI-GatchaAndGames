@@ -16,10 +16,594 @@ servers:
 - description: Local server
   url: http://localhost:8080
 paths:
+  ############################################
+  ################### ADMIN ##################
+  ############################################
+  /db_manager/admin/ban_user_profile:
+    post:
+      tags:
+        - db_manager_admin
+      description: "Bans a user from the platform. Cannot ban another ADMIN."
+      operationId: ban_user_profile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_uuid:
+                  $ref: "#/components/schemas/UserId"
+      responses:
+        "200":
+          description: Profile successfully banned.
+        "400":
+          description: Invalid request format.
+        "404":
+          description: User not found.
+        "406":
+          description: You cannot delete your account like this.
+        "409":
+          description: Cannot ban a user with the ADMIN role.
+        "500":
+          description: Internal server error.
+  /db_manager/admin/create_gacha:
+    post:
+      tags:
+        - db_manager_admin
+      description: "Creates a gacha type."
+      operationId: create_gacha_type
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Gacha"
+      responses:
+        "200":
+          description: Gacha successfully created.
+        "400":
+          description: Invalid request format.
+        "500":
+          description: Internal server error.
+  /db_manager/admin/delete_gacha:
+    post:
+      tags:
+        - db_manager_admin
+      description: "Deletes a gacha type."
+      operationId: delete_gacha_type
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GachaId"
+      responses:
+        "200":
+          description: Gacha successfully created.
+        "400":
+          description: Invalid request format.
+        "404":
+          description: Gacha not found.
+        "500":
+          description: Internal server error.
+  /db_manager/admin/create_pool:
+    post:
+      tags:
+        - db_manager_admin
+      description: "Creates a gacha pool."
+      operationId: create_gacha_pool
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Pool"
+      responses:
+        "200":
+          description: Gacha successfully created.
+        "400":
+          description: Invalid request format.
+        "404":
+          description: "Item UUID not found in database: {gacha_type_uuid}"
+        "409":
+          description: The provided pool id is already in use.
+        "412":
+          description: Invalid probabilities field.
+        "416":
+          description: Sum of probabilities is not 1.
+        "500":
+          description: Internal server error.
+  /db_manager/admin/delete_pool:
+    post:
+      tags:
+        - db_manager_admin
+      description: "Deletes a gacha pool."
+      operationId: delete_gacha_pool
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PoolId"
+      responses:
+        "200":
+          description: Pool successfully created.
+        "400":
+          description: Invalid request format.
+        "404":
+          description: Pool not found.
+        "500":
+          description: Internal server error.
+  /db_manager/admin/edit_user_profile:
+    post:
+      tags:
+        - db_manager_admin
+      description: "Edits a user profile."
+      operationId: edit_user_profile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                uuid:
+                  $ref: "#/components/schemas/UserId"
+                email:
+                  $ref: "#/components/schemas/Email"
+                username:
+                  $ref: "#/components/schemas/Username"
+      responses:
+        "200":
+          description: User profile successfully updated.
+        "304":
+          description: No changes to profile applied.
+        "400":
+          description: Invalid request format.
+        "404":
+          description: User not found.
+        "500":
+          description: Internal server error.
+  /db_manager/admin/get_all_feedbacks:
+    post:
+      tags:
+        - db_manager_admin
+      description: "Gets a feedback list"
+      operationId: get_feedback_list
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                page_number:
+                  $ref: "#/components/schemas/PageNumber"
+      responses:
+        "200":
+          description: Feedback list.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FeedbackId"
+        "400":
+          description: Invalid request format.
+        "500":
+          description: Internal server error.
+  /db_manager/admin/get_all_profiles:
+    post:
+      tags:
+        - db_manager_admin
+      description: "Gets a profile list"
+      operationId: get_profile_list
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                page_number:
+                  $ref: "#/components/schemas/PageNumber"
+      responses:
+        "200":
+          description: User profile list.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+        "400":
+          description: Invalid request format.
+        "500":
+          description: Internal server error.
+  /db_manager/admin/get_feedback_info:
+    post:
+      tags:
+        - db_manager_admin
+      description: "Returns info on a single feedback"
+      operationId: get_feedback_info
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                feedback_id:
+                  $ref: "#/components/schemas/FeedbackId"
+      responses:
+        "200":
+          description: Feedback info.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Feedback"
+        "400":
+          description: Invalid request format.
+        "500":
+          description: Internal server error.
+  /db_manager/admin/get_user_history:
+    post:
+      tags:
+        - db_manager_admin
+      description: "Returns history of user's profile."
+      operationId: get_user_history
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_uuid:
+                  $ref: "#/components/schemas/UserId"
+                history_type:
+                  type: string
+                  enum:
+                    - bundle
+                    - ingame
+                page_number:
+                  $ref: "#/components/schemas/PageNumber"
+      responses:
+        "200":
+          description: User's history, based on history_type chosen.
+        "400":
+          description: Invalid request format.
+        "404":
+          description: User not found.
+        "500":
+          description: Internal server error.
+  /db_manager/admin/update_auction:
+    post:
+      tags:
+        - db_manager_admin
+      description: "Updates a specific auction."
+      operationId: update_auction
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Auction"
+      responses:
+        "200":
+          description: Auction successfully updated.
+        "400":
+          description: Invalid request format.
+        "401":
+          description: Current bid cannot be lower than starting price.
+        "404":
+          description: Some checks on the auction update failed.
+        "412":
+          description: Starting price cannot be lower or equal to 0.
+        "416":
+          description: Current bid cannot be lower than 0.
+        "500":
+          description: Internal server error.
+  /db_manager/admin/update_gacha:
+    post:
+      tags:
+        - db_manager_admin
+      description: "Updates a specific gacha."
+      operationId: update_gacha
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Gacha"
+      responses:
+        "200":
+          description: Gacha successfully updated.
+        "400":
+          description: Invalid request format.
+        "404":
+          description: Gacha not found.
+        "500":
+          description: Internal server error.
+  /db_manager/admin/update_pool:
+    post:
+      tags:
+        - db_manager_admin
+      description: "Updates a specific pool."
+      operationId: update_pool
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Pool"
+      responses:
+        "200":
+          description: Pool successfully updated.
+        "400":
+          description: Invalid request format.
+        "404":
+          description: Pool not found.
+        "412":
+          description: Invalid probabilities field.
+        "416":
+          description: Sum of probabilities is not 1.
+        "500":
+          description: Internal server error.
+
+
+
+  ############################################
+  ################ AUCTIONS ##################
+  ############################################
+  /db_manager/auctions/get_auction_status:
+    post:
+      tags:
+        - db_manager_auctions
+      description: "Returns auction data if an existing uuid is provided"
+      operationId: get_auction_status
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                uuid:
+                  $ref: "#/components/schemas/AuctionId"
+      responses:
+        "200":
+          description: Auction found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  auction:
+                    $ref: "#/components/schemas/Auction"
+        "400":
+          description: Invalid request format.
+        "404":
+          description: Auction not found.
+        "500":
+          description: Internal server error.
+  /db_manager/auctions/get_item_with_owner:
+    post:
+      tags:
+        - db_manager_auctions
+      description: "Returns inventory item details if corresponding owner and item UUIDs are provided."
+      operationId: get_item_with_owner
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_uuid: 
+                  $ref: "#/components/schemas/UserId"
+                item_uuid:
+                  $ref: "#/components/schemas/ItemId"
+      responses:
+        "200":
+          description: Successful retrieval of inventory item details.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  item:
+                    $ref: "#/components/schemas/InventoryItem"
+        "400":
+          description: Invalid request format.
+        "404":
+          description: Item not found for the given user UUID.
+        "500":
+          description: Internal server error.
+  /db_manager/auctions/get_currency:
+    post:
+      tags:
+        - db_manager_auctions
+      description: "Returns the currency of a user given the user UUID."
+      operationId: get_user_currency
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_uuid:
+                  $ref: "#/components/schemas/UserId"
+      responses:
+        "200":
+          description: Successful retrieval of user's currency.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  currency:
+                    type: integer
+                    description: "Currency of the user."
+        "400":
+          description: Invalid request format.
+        "404":
+          description: User not found.
+        "500":
+          description: Internal server error.
+  /db_manager/auctions/place_bid:        
+    post:
+      tags:
+        - db_manager_auctions
+      description: "Places a bid on an auction, updates the current bid and subtracts the user's currency" 
+      operationId: place_bid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_uuid:
+                  $ref: "#/components/schemas/UserId"
+                auction_uuid:
+                  $ref: "#/components/schemas/AuctionId"
+                new_bid:
+                  type: number
+                  format: integer
+                  description: "The new bid amount."
+      responses:
+        "200":
+          description: Successful bid placement.
+        "400":
+          description: Invalid request format.
+        "404":
+          description: Auction or user not found.
+        "500":
+          description: Internal server error.
+  /db_manager/auctions/refund_previous_bidder:
+    post:
+      tags:
+        - db_manager_auctions
+      description: "Refunds the currency to the previous highest bidder."
+      operationId: refund_previous_bidder
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                current_bidder:
+                  $ref: "#/components/schemas/UserId"
+                current_bid:
+                  type: number
+                  format: integer
+                  description: "The amount to be refunded to the previous highest bidder."
+      responses:
+        "200":
+          description: Successful refund to the previous bidder.
+        "400":
+          description: Invalid request format.
+        "404":
+          description: Previous bidder or auction not found.
+        "500":
+          description: Internal server error.  
+  /db_manager/auctions/create:
+    post:
+      tags:
+        - db_manager_auctions
+      description: "Creates a new auction by inserting the auction details into the database."
+      operationId: create_auction
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                auction:
+                  $ref: "#/components/schemas/Auction"
+      responses:
+        "201":
+          description: Successful creation of a new auction.
+        "400":
+          description: Invalid request format.
+        "409":
+          description: Auction with the given UUID already exists.
+        "500":
+          description: Internal server error.
+  /db_manager/auctions/get_user_involved_auctions:
+    post:
+      tags:
+        - db_manager_auctions
+      description: "Gets a list of all auctions the user is involved in, either as a seller or as a bidder, with pagination."
+      operationId: get_user_involved_auctions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_uuid:
+                  $ref: "#/components/schemas/UserId"
+                items_per_page:
+                  type: integer
+                  description: "Number of items per page."
+                offset:
+                  type: integer
+                  description: "Offset for pagination."
+              required:
+                - user_uuid
+                - items_per_page
+                - offset
+      responses:
+        "200":
+          description: List of auctions the user is involved with.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Auction"
+        "400":
+          description: Invalid request format.
+        "404":
+          description: No auctions found for the given user.
+        "500":
+          description: Internal server error.
+  /db_manager/auctions/list:
+    post:
+      tags:
+        - db_manager_auctions
+      description: "Returns a list of all auctions, filtered by status, rarity, and supports pagination."
+      operationId: list_auctions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum:
+                    - open
+                    - closed
+                  description: "Filter auctions by their status, either 'open' or 'closed'."
+                rarity:
+                    $ref: '#/components/schemas/GachaRarity'
+                items_per_page:
+                  type: integer
+                  description: "Number of auctions per page for pagination."
+                offset:
+                  type: integer
+                  description: "Offset for pagination, number of auctions to skip."
+      responses:
+        "200":
+          description: List of auctions matching the filters.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AuctionId"
+        "400":
+          description: Invalid request format.
+        "500":
+          description: Internal server error.
+
+
+
+  ############################################
+  ################### AUTH ###################
+  ############################################
   /db_manager/auth/login:
     post:
       tags:
-        - db_manager
+        - db_manager_auth
       description: "Returns user if correct credentials are provided."
       operationId: login
       requestBody:
@@ -60,11 +644,10 @@ paths:
           description: Invalid username.
         "500":
           description: Internal server error.
-
   /db_manager/auth/register:
     post:
       tags:
-        - db_manager
+        - db_manager_auth
       description: "Registers a user on db."
       operationId: register
       requestBody:
@@ -91,260 +674,16 @@ paths:
           description: The provided email or username are already in use.
         "500":
           description: Internal server error.
-  /db_manager/auctions/get_auction_status:
-    post:
-      tags:
-        - db_manager
-      description: "Returns auction data if an existing uuid is provided"
-      operationId: get_auction_status
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                uuid:
-                  $ref: "#/components/schemas/AuctionId"
-      responses:
-        "200":
-          description: Auction found.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  auction:
-                    $ref: "#/components/schemas/Auction"
-        "400":
-          description: Invalid request format.
-        "404":
-          description: Auction not found.
-        "500":
-          description: Internal server error.
-  /db_manager/auctions/get_item_with_owner:
-    post:
-      tags:
-        - db_manager
-      description: "Returns inventory item details if corresponding owner and item UUIDs are provided."
-      operationId: get_item_with_owner
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                user_uuid: 
-                  $ref: "#/components/schemas/UserId"
-                item_uuid:
-                  $ref: "#/components/schemas/ItemId"
-      responses:
-        "200":
-          description: Successful retrieval of inventory item details.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  item:
-                    $ref: "#/components/schemas/InventoryItem"
-        "400":
-          description: Invalid request format.
-        "404":
-          description: Item not found for the given user UUID.
-        "500":
-          description: Internal server error.
-  /db_manager/auctions/get_currency:
-    post:
-      tags:
-        - db_manager
-      description: "Returns the currency of a user given the user UUID."
-      operationId: get_user_currency
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                user_uuid:
-                  $ref: "#/components/schemas/UserId"
-      responses:
-        "200":
-          description: Successful retrieval of user's currency.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  currency:
-                    type: integer
-                    description: "Currency of the user."
-        "400":
-          description: Invalid request format.
-        "404":
-          description: User not found.
-        "500":
-          description: Internal server error.
-  /db_manager/auctions/place_bid:        
-    post:
-      tags:
-        - db_manager
-      description: "Places a bid on an auction, updates the current bid and subtracts the user's currency" 
-      operationId: place_bid
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                user_uuid:
-                  $ref: "#/components/schemas/UserId"
-                auction_uuid:
-                  $ref: "#/components/schemas/AuctionId"
-                new_bid:
-                  type: number
-                  format: integer
-                  description: "The new bid amount."
-      responses:
-        "200":
-          description: Successful bid placement.
-        "400":
-          description: Invalid request format.
-        "404":
-          description: Auction or user not found.
-        "500":
-          description: Internal server error.
-  /db_manager/auctions/refund_previous_bidder:
-    post:
-      tags:
-        - db_manager
-      description: "Refunds the currency to the previous highest bidder."
-      operationId: refund_previous_bidder
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                current_bidder:
-                  $ref: "#/components/schemas/UserId"
-                current_bid:
-                  type: number
-                  format: integer
-                  description: "The amount to be refunded to the previous highest bidder."
-      responses:
-        "200":
-          description: Successful refund to the previous bidder.
-        "400":
-          description: Invalid request format.
-        "404":
-          description: Previous bidder or auction not found.
-        "500":
-          description: Internal server error.  
-  /db_manager/auctions/create:
-    post:
-      tags:
-        - db_manager
-      description: "Creates a new auction by inserting the auction details into the database."
-      operationId: create_auction
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                auction:
-                  $ref: "#/components/schemas/Auction"
-      responses:
-        "201":
-          description: Successful creation of a new auction.
-        "400":
-          description: Invalid request format.
-        "409":
-          description: Auction with the given UUID already exists.
-        "500":
-          description: Internal server error.
-  /db_manager/auctions/get_user_involved_auctions:
-    post:
-      tags:
-        - db_manager
-      description: "Gets a list of all auctions the user is involved in, either as a seller or as a bidder, with pagination."
-      operationId: get_user_involved_auctions
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                user_uuid:
-                  $ref: "#/components/schemas/UserId"
-                items_per_page:
-                  type: integer
-                  description: "Number of items per page."
-                offset:
-                  type: integer
-                  description: "Offset for pagination."
-              required:
-                - user_uuid
-                - items_per_page
-                - offset
-      responses:
-        "200":
-          description: List of auctions the user is involved with.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Auction"
-        "400":
-          description: Invalid request format.
-        "404":
-          description: No auctions found for the given user.
-        "500":
-          description: Internal server error.
-  /db_manager/auctions/list:
-    post:
-      tags:
-        - db_manager
-      description: "Returns a list of all auctions, filtered by status, rarity, and supports pagination."
-      operationId: list_auctions
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                status:
-                  type: string
-                  enum:
-                    - open
-                    - closed
-                  description: "Filter auctions by their status, either 'open' or 'closed'."
-                rarity:
-                    $ref: '#/components/schemas/GachaRarity'
-                items_per_page:
-                  type: integer
-                  description: "Number of auctions per page for pagination."
-                offset:
-                  type: integer
-                  description: "Offset for pagination, number of auctions to skip."
-      responses:
-        "200":
-          description: List of auctions matching the filters.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/AuctionId"
-        "400":
-          description: Invalid request format.
-        "500":
-          description: Internal server error.
+
+
+
+  ############################################
+  ################# CURRENCY #################
+  ############################################
   /db_manager/currency/get_bundle_info:
     post:
       tags:
-        - db_manager
+        - db_manager_currency
       description: "Returns information about a bundle given its codename."
       operationId: get_bundle_info
       requestBody:
@@ -375,7 +714,7 @@ paths:
   /db_manager/currency/purchase_bundle:
     post:
       tags:
-        - db_manager
+        - db_manager_currency
       description: "Processes the purchase of a bundle by updating user credits and logging transactions in appropriate tables."
       operationId: purchase_bundle
       requestBody:
@@ -402,7 +741,7 @@ paths:
   /db_manager/currency/list_bundles:
     post:
       tags:
-        - db_manager
+        - db_manager_currency
       description: "Returns a list of all available bundles with their details."
       operationId: list_bundles
       responses:
@@ -418,10 +757,16 @@ paths:
           description: Invalid request format.
         "500":
           description: Internal server error.
+
+
+
+  ############################################
+  ################# FEEDBACK #################
+  ############################################
   /db_manager/feedback/submit:
     post:
       tags:
-        - db_manager
+        - db_manager_feedback
       description: "Allows users to submit feedback, which will be stored in the feedbacks table."
       operationId: submit_feedback
       requestBody:
@@ -432,7 +777,7 @@ paths:
               properties:
                 user_uuid:
                   $ref: "#/components/schemas/UserId"
-                content:
+                string:
                   type: string
                   description: "The feedback content provided by the user."
                   example: "I really enjoy using this feature, but I think it could be improved by adding X."
@@ -443,10 +788,22 @@ paths:
           description: Invalid request format.
         "500":
           description: Internal server error.
-  /db_manager/inventories/get_user_inventory_items:
+
+
+
+  ############################################
+  ################## GACHA ###################
+  ############################################
+  # todo
+
+
+  ############################################
+  ################ INVENTORY #################
+  ############################################
+  /db_manager/inventory/get_user_inventory_items:
     post:
       tags:
-        - db_manager
+        - db_manager_inventory
       description: "Returns the inventory items of a specific user by username, including pagination support."
       operationId: get_user_inventory_items
       requestBody:
@@ -488,10 +845,10 @@ paths:
           description: User not found.
         "500":
           description: Internal server error.
-  /db_manager/inventories/get_item:
+  /db_manager/inventory/get_user_item:
     post:
       tags:
-        - db_manager
+        - db_manager_inventory
       description: "Returns detailed information of a specific inventory item for a given user by username and inventory item UUID."
       operationId: get_inventory_item
       requestBody:
@@ -500,8 +857,8 @@ paths:
             schema:
               type: object
               properties:
-                username:
-                  $ref: "#/components/schemas/Username"
+                user_uuid:
+                  $ref: "#/components/schemas/UserId"
                 inventory_item_id:
                   $ref: "#/components/schemas/ItemId"
       responses:
@@ -517,10 +874,78 @@ paths:
           description: Item not found for the given user and item UUID.
         "500":
           description: Internal server error.
+  /db_manager/inventory/remove_user_item:
+    post:
+      tags:
+        - db_manager_inventory
+      description: "Removes a specific item from a user inventory. If item is in an auction, refuses the operation."
+      operationId: remove_item
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_uuid:
+                  $ref: "#/components/schemas/UserId"
+                inventory_item_id:
+                  $ref: "#/components/schemas/ItemId"
+      responses:
+        "200":
+          description: Item removed successfully.
+        "400":
+          description: Invalid request format.
+        "404":
+          description: Item not found.
+        "409":
+          description: Cannot remove item that is in an active auction.
+        "500":
+          description: Internal server error.
 
 
+
+  ############################################
+  ################# PROFILE ##################
+  ############################################
+  # todo
+
+
+
+  ############################################
+  ################### PVP ####################
+  ############################################
+  # todo
 components:
   schemas:
+    FeedbackId:
+      description: Id of feedback.
+      format: integer
+      title: id
+      type: number
+      example: 7
+    Feedback:
+      properties:
+        id:
+          $ref: "#/components/schemas/FeedbackId"
+        user_uuid:
+          $ref: "#/components/schemas/UserId"
+        content:
+          description: Actual feedback content.
+          example: I love this game11!
+          title: content
+          type: string
+        timestamp:
+          description: Timestamp when user created feedback
+          format: date-time
+          title: timestamp
+          type: string
+      title: Feedback
+      type: object
+    PageNumber:
+      type: integer
+      description: Page number, when needed.
+      default: 1
+      minimum: 1
     UserId:
       type: string
       format: uuid
@@ -543,6 +968,19 @@ components:
       format: email
       title: email
       type: string
+    User:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/UserId'
+        username:
+          $ref: '#/components/schemas/Username'
+        email:
+          $ref: '#/components/schemas/Email'
+        joindate:
+          type: string
+          format: date-time
+          description: Timestamp when user created their account
     AuctionId:
       type: string
       format: uuid
@@ -633,7 +1071,7 @@ components:
         name:
           $ref: '#/components/schemas/CurrencyName'
         value:
-          type: integer
+          type: number
           default: 10
           example: 10
           description: Amount of real currency.
@@ -653,7 +1091,88 @@ components:
           description: No. of credits.
           example: 5000
         prices:
-          type: array
-          description: List of prices in different currencies.
-          items:
             $ref: '#/components/schemas/CurrencyItem'
+    GachaId:
+      type: string
+      format: uuid
+      description: UUID of the gacha
+    GachaStat:
+      type: string
+      example: A
+      pattern: ^[A-Ea-e]$
+      description: Stat of a gacha.
+    Gacha:
+      type: object
+      properties:
+        gacha_uuid:
+          $ref: '#/components/schemas/GachaId'
+        name:
+          type: string
+          description: Name of the gacha
+          example: Tower of Gray
+        rarity:
+          $ref: '#/components/schemas/GachaRarity'
+        attributes:
+          type: object
+          properties:
+            power:
+              $ref: '#/components/schemas/GachaStat'
+            speed:
+              $ref: '#/components/schemas/GachaStat'
+            durability:
+              $ref: '#/components/schemas/GachaStat'
+            precision:
+              $ref: '#/components/schemas/GachaStat'
+            range:
+              $ref: '#/components/schemas/GachaStat'
+            potential:
+              $ref: '#/components/schemas/GachaStat'
+          required:
+            - power
+            - speed
+            - durability
+            - precision
+            - range
+            - potential
+          additionalProperties:
+            type: string
+    PoolId:
+      type: string
+      example: pool_starter
+      pattern: ^[a-zA-Z0-9_]+$
+      description: Internal code-name for the pool.
+    Pool:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/PoolId'
+        name:
+          type: string
+          example: Starter Pool
+          description: Visible name of the pool.
+        probabilities:
+          $ref: '#/components/schemas/RarityProbability'
+        items:
+          type: array
+          description: List of gacha items in the pool.
+          items:
+            $ref: '#/components/schemas/GachaId'
+    RarityProbability:
+      type: object
+      properties:
+        commonProbability:
+          type: number
+          format: float
+          default: 0.5
+        rareProbability:
+          type: number
+          format: float
+          default: 0.3
+        epicProbability:
+          type: number
+          format: float
+          default: 0.15
+        legendaryProbability:
+          type: number
+          format: float
+          default: 0.05
