@@ -3,8 +3,10 @@ services:
     image: nginx:alpine
     container_name: api_gateway_gachaandgames
     ports:
-      - "8080:8080"
+      - "443:443"
     volumes:
+      - ./api_gateway/security/selfsigned.key:/etc/nginx/ssl/selfsigned.key:ro
+      - ./api_gateway/security/selfsigned.crt:/etc/nginx/ssl/selfsigned.crt:ro
       - ./api_gateway/api_gateway.conf:/etc/nginx/nginx.conf:ro
       - ./favicon.ico:/usr/share/nginx/html/favicon.ico:ro
     depends_on:
