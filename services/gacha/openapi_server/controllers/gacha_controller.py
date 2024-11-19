@@ -50,7 +50,7 @@ def get_gacha_info(gacha_uuid):  # noqa: E501
                 stat_potential
             FROM gachas_types 
             WHERE uuid = UUID_TO_BIN(%s)
-        ''', (gacha_uuid,))
+        ''', (gacha_uuid,)) #/db_manager/gachas/get_gacha_info
         
         result = cursor.fetchone()
         if not result:
@@ -95,11 +95,18 @@ def pull_gacha(pool_id):
         cursor = connection.cursor()
 
         # Get pool probabilities and items
-        cursor.execute(
+        cursor.execute( #/db_manager/gachas/get_pool_info
             'SELECT probabilities, price FROM gacha_pools WHERE codename = %s',
             (pool_id,)
         )
         pool_result = cursor.fetchone()
+
+        cursor.execute (
+            'SELECT gacha_uuid FROM gacha_pools_items WHERE codename = %s',
+            (pool_id,)
+        )
+        
+        pullable_gachas = cursor.fetchall()
         
         if not pool_result:
             return jsonify({"error": "Pool not found"}), 404
@@ -115,13 +122,6 @@ def pull_gacha(pool_id):
         result = cursor.fetchone()
         if not result or result[0] < price:
             return jsonify({"error": "Not enough credits"}), 403
-        
-        cursor.execute (
-            'SELECT gacha_uuid FROM gacha_pools_items WHERE codename = %s',
-            (pool_id,)
-        )
-        
-        pullable_gachas = cursor.fetchall()
         
         # Determine rarity based on probabilities
         rarity_roll = random.random()
@@ -159,7 +159,7 @@ def pull_gacha(pool_id):
         selected_item = random.choice(items)
         
         # Deduct credits
-        cursor.execute(
+        cursor.execute( #/db_manager/gachas/get_currency
             'UPDATE profiles SET currency = currency - %s WHERE uuid = UUID_TO_BIN(%s)',
             (price, session['uuid'])
         )
@@ -168,7 +168,7 @@ def pull_gacha(pool_id):
         # Add to inventory with new UUID
         new_item_uuid = str(uuid.uuid4())  
 
-        cursor.execute(
+        cursor.execute( #/db_manager/gachas/give_item
         'INSERT INTO inventories (item_uuid, owner_uuid, stand_uuid, owners_no, currency_spent) VALUES (UUID_TO_BIN(%s), UUID_TO_BIN(%s), UUID_TO_BIN(%s), %s, %s)',
         (new_item_uuid, session['uuid'], selected_item[0], 0, price)
         )
@@ -220,7 +220,7 @@ def get_pool_info():  # noqa: E501
             FROM gacha_pools gp
             LEFT JOIN gacha_pools_items gpi ON gp.codename = gpi.codename
             GROUP BY gp.codename
-        ''')
+        ''') #/db_manager/gachas/get_pool_info ritorna anche gli item come da modello quindi la query dopo si può omettere
         
         results = cursor.fetchall()
         pools = []
@@ -319,7 +319,7 @@ def get_gachas(not_owned=None):  # noqa: E501
             username = session.get('username')
             if not username:
                 return {"error": "Not logged in"}, 403
-                
+                #query omissibile
             cursor.execute('''
                 SELECT BIN_TO_UUID(uuid) 
                 FROM profiles 
