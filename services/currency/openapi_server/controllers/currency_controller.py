@@ -2,6 +2,7 @@ import connexion
 import uuid
 import bcrypt
 import logging
+import requests
 
 from typing import Dict
 from typing import Tuple
@@ -16,7 +17,7 @@ from flaskext.mysql import MySQL
 from pybreaker import CircuitBreaker, CircuitBreakerError
 
 # Circuit breaker instance
-circuit_breaker = CircuitBreaker(fail_max=3, reset_timeout=30)
+circuit_breaker = CircuitBreaker(fail_max=5, reset_timeout=5, exclude=[requests.HTTPError])
 
 TRANSACTION_TYPE_BUNDLE_CODE = "bought_bundle"
 global_mock_accounts = {

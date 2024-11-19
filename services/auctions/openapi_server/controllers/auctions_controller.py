@@ -1,4 +1,5 @@
 import connexion
+import requests
 from typing import Dict
 from typing import Tuple
 from typing import Union
@@ -15,12 +16,12 @@ import logging
 from pybreaker import CircuitBreaker, CircuitBreakerError
 
 # Circuit breaker instance
-auction_circuit_breaker = CircuitBreaker(fail_max=3, reset_timeout=30)
+circuit_breaker = CircuitBreaker(fail_max=5, reset_timeout=5, exclude=[requests.HTTPError])
 
 def health_check():  # noqa: E501
     return jsonify({"message": "Service operational."}), 200
 
-@auction_circuit_breaker
+@circuit_breaker
 def bid_on_auction(auction_uuid): 
     #check if user is logged in
     if 'username' not in session:
@@ -124,7 +125,7 @@ def bid_on_auction(auction_uuid):
         if connection:
             connection.close()
 
-@auction_circuit_breaker
+@circuit_breaker
 def create_auction(): 
 
     if 'username' not in session:
@@ -189,7 +190,7 @@ def create_auction():
         if connection:
             connection.close()
 
-@auction_circuit_breaker
+@circuit_breaker
 def get_auction_status(auction_uuid): 
     
     if 'username' not in session:
@@ -275,7 +276,7 @@ def get_auction_status(auction_uuid):
         if connection:
             connection.close()
 
-@auction_circuit_breaker
+@circuit_breaker
 def get_auctions_history(page_number=None):  
     
     if 'username' not in session:
@@ -343,7 +344,7 @@ def get_auctions_history(page_number=None):
         if connection:
             connection.close()
 
-@auction_circuit_breaker
+@circuit_breaker
 def get_auctions_list(status=None, rarity=None, page_number=None): 
     
     if 'username' not in session:

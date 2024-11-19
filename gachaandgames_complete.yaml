@@ -29,10 +29,10 @@ paths:
       tags:
       - feedback
       description: Returns 200 if service is healthy.
-      responses:
-        "200":
-          description: Service OK
       summary: Gives information on service status.
+      responses:
+        '200':
+          description: Service operational.
   /feedback/:
     post:
       tags:
@@ -43,7 +43,7 @@ paths:
       parameters:
         - name: session
           in: cookie
-          required: true
+          required: false
           schema:
             type: string
         - name: string
@@ -52,12 +52,12 @@ paths:
           schema:
             type: string
       responses:
-        '200':
-          description: Feedback created successfully.
+        '201':
+          description: Feedback submitted successfully.
         '400':
           description: Invalid query parameters.
-        '500':
-          description: Internal server error.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
 
 
 
@@ -69,10 +69,10 @@ paths:
       tags:
       - auctions
       description: Returns 200 if service is healthy.
-      responses:
-        "200":
-          description: Service OK
       summary: Gives information on service status.
+      responses:
+        '200':
+          description: Service operational.
   /auctions/history:
     get:
       tags:
@@ -280,8 +280,8 @@ paths:
       - pvp
       description: Returns 200 if service is healthy.
       responses:
-        "200":
-          description: Service OK
+        '200':
+          description: Service operational.
       summary: Gives information on service status.
   /pvp/sendPvPRequest/{user_uuid}:
     post:
@@ -447,8 +447,8 @@ paths:
       - inventory
       description: Returns 200 if service is healthy.
       responses:
-        "200":
-          description: Service OK
+        '200':
+          description: Service operational.
       summary: Gives information on service status.
   /inventory:
     get:
@@ -552,8 +552,8 @@ paths:
       - gacha
       description: Returns 200 if service is healthy.
       responses:
-        "200":
-          description: Service OK
+        '200':
+          description: Service operational.
       summary: Gives information on service status.
   /gacha/pull/{pool_id}:
     post:
@@ -670,8 +670,8 @@ paths:
       - currency
       description: Returns 200 if service is healthy.
       responses:
-        "200":
-          description: Service OK
+        '200':
+          description: Service operational.
       summary: Gives information on service status.
   /currency/bundles:
     get:
@@ -728,8 +728,8 @@ paths:
       - profile
       description: Returns 200 if service is healthy.
       responses:
-        "200":
-          description: Service OK
+        '200':
+          description: Service operational.
       summary: Gives information on service status.
   /profile/{uuid}/info:
     get:
@@ -775,9 +775,7 @@ paths:
         content:
           application/json:
             schema:
-              properties:
-                password:
-                  type: string
+              $ref: "#/components/schemas/Password"
       responses:
         '200':
           description: Account deleted.
@@ -808,11 +806,11 @@ paths:
               type: object
               properties:
                 email:
-                  type: string
+                  $ref: "#/components/schemas/Email"
                 username:
                   $ref: '#/components/schemas/Username'
                 password:
-                  type: string
+                  $ref: "#/components/schemas/Password"
       responses:
         '200':
           description: Profile updated.
@@ -833,10 +831,10 @@ paths:
       tags:
       - auth
       description: Returns 200 if service is healthy.
-      responses:
-        "200":
-          description: Service OK
       summary: Gives information on service status.
+      responses:
+        '200':
+          description: Service operational.
   /auth/login:
     post:
       tags:
@@ -852,11 +850,9 @@ paths:
               type: object
               properties:
                 username:
-                  type: string
-                  description: The user's username.
+                  $ref: '#/components/schemas/Username'
                 password:
-                  type: string
-                  description: The user's password.
+                  $ref: "#/components/schemas/Password"
               required:
                 - username
                 - password
@@ -864,11 +860,15 @@ paths:
         '200':
           description: Login successful.
         '400':
-          description: Missing fields.
+          description: Invalid request.
         '401':
           description: Invalid credentials.
+        '409':
+          description: You are already logged in.
         '500':
           description: Internal server error.
+        '503':
+          description: Service unavailable. Please try again later.
   /auth/logout:
     delete:
       tags:
@@ -879,7 +879,7 @@ paths:
       parameters:
         - name: session
           in: cookie
-          required: true
+          required: false
           schema:
             type: string
       responses:
@@ -904,17 +904,11 @@ paths:
               type: object
               properties:
                 username:
-                  type: string
-                  description: >-
-                    The user's username. Must be at least 5 characters long and
-                    contain only letters, numbers, and underscores.
+                  $ref: '#/components/schemas/Username'
                 email:
-                  type: string
-                  format: email
-                  description: The user's email address. Must be a valid email format.
+                  $ref: '#/components/schemas/Email'
                 password:
-                  type: string
-                  description: The user's password.
+                  $ref: "#/components/schemas/Password"
               required:
                 - username
                 - email
@@ -923,11 +917,15 @@ paths:
         '201':
           description: Registration successful.
         '400':
-          description: Missing required fields.
+          description: Invalid request.
+        '401':
+          description: You are already logged in.
         '409':
-          description: The provided email address is already in use.
+          description: The provided username / email is already in use.
         '500':
           description: Internal server error.
+        '503':
+          description: Service unavailable. Please try again later.
 
 
 
@@ -940,8 +938,8 @@ paths:
       - admin
       description: Returns 200 if service is healthy.
       responses:
-        "200":
-          description: Service OK
+        '200':
+          description: Service operational.
       summary: Gives information on service status.
   /admin/profile/list:
     get:
@@ -1365,7 +1363,7 @@ paths:
           minimum: 1
           type: integer
       responses:
-        "200":
+        '200':
           content:
             application/json:
               schema:
@@ -1373,13 +1371,13 @@ paths:
                   $ref: '#/components/schemas/FeedbackId'
                 type: array
           description: Feedback Ids.
-        "400":
+        '400':
           description: Invalid username.
-        "401":
+        '401':
           description: This account is not authorized to perform this action.
-        "404":
+        '404':
           description: Feedbacks not found.
-        "500":
+        '500':
           description: Internal server error.
   /admin/feedback/{feedback_id}:
     get:
@@ -1400,15 +1398,15 @@ paths:
         schema:
           $ref: '#/components/schemas/FeedbackId'
       responses:
-        "200":
+        '200':
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Feedback'
           description: Successful operation
-        "404":
+        '404':
           description: Feedback not found
-        "500":
+        '500':
           description: Internal server error
 
 components:
@@ -1421,9 +1419,9 @@ components:
     Feedback:
       properties:
         id:
-          $ref: "#/components/schemas/FeedbackId"
+          $ref: '#/components/schemas/FeedbackId'
         user_uuid:
-          $ref: "#/components/schemas/UserId"
+          $ref: '#/components/schemas/UserId'
         content:
           description: Actual feedback content.
           example: I love this game11!
@@ -1498,6 +1496,7 @@ components:
         price:
           type: integer
           example: 15
+          minimum: 1
           description: In-game price to pull a gacha from this pool
         probabilities:
           $ref: '#/components/schemas/RarityProbability'
@@ -1543,12 +1542,12 @@ components:
       minLength: 5
       pattern: ^[a-zA-Z0-9_]+$
       example: LeoPanta01_
-      description: The username of the user
+      description: The user's username. Must be at least 5 characters long and contain only letters, numbers, and underscores.
     Email:
       type: string
       format: email
       description: The user's email.
-      example: l.pantani5@studenti.unipi.it/
+      example: l.pantani5@studenti.unipi.it
     AuctionStatus:
       type: string
       default: active
@@ -1601,6 +1600,11 @@ components:
           type: string
           format: date-time
           description: Timestamp when user created their account
+    Password:
+      type: string
+      minLength: 8
+      example: Th1s_c4n_b3_a_good_passw0rd...maybe
+      description: The user's password must be at least 8 characters and can accept all characters.
     GachaId:
       type: string
       format: uuid

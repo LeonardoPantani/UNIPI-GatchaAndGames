@@ -5,13 +5,14 @@ from typing import Tuple
 from typing import Union
 from flask import current_app, session, jsonify
 import logging
+import requests
 
 from openapi_server.models.inventory_item import InventoryItem  # noqa: E501
 from openapi_server import util
 from pybreaker import CircuitBreaker, CircuitBreakerError
 
 # Circuit breaker instance for inventory operations
-circuit_breaker = CircuitBreaker(fail_max=3, reset_timeout=30)
+circuit_breaker = CircuitBreaker(fail_max=5, reset_timeout=5, exclude=[requests.HTTPError])
 
 def health_check():  # noqa: E501
     return jsonify({"message": "Service operational."}), 200
