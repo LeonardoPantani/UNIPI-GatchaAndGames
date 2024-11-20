@@ -185,6 +185,9 @@ def create_pool():  # noqa: E501
     if pool.probabilities.legendary_probability + pool.probabilities.epic_probability + pool.probabilities.rare_probability + pool.probabilities.common_probability != 1:
         return jsonify({"error": "Sum of probabilities is not 1."}), 416
     
+    if pool.price < 1:
+        return jsonify({"error": "Price should be a positive number."}), 416
+
     # valid request from now on
     try:
         mysql = current_app.extensions.get('mysql')
@@ -193,14 +196,6 @@ def create_pool():  # noqa: E501
 
         connection = mysql.connect()
         cursor = connection.cursor()
-
-        # check if items really exists
-        for item in pool.items:
-            query = "SELECT uuid FROM gachas_types WHERE uuid = UUID_TO_BIN(%s)"
-            cursor.execute(query, (item))
-            connection.commit()
-            if cursor.fetchone() is None:
-                return jsonify({"error": "Item UUID not found in database: " + item}), 404
         
         # checks ok, inserting
         try:
@@ -210,8 +205,8 @@ def create_pool():  # noqa: E501
                 "epic_probability": pool.probabilities.epic_probability,
                 "legendary_probability":  pool.probabilities.legendary_probability,
             }
-            query = "INSERT INTO gacha_pools (codename, public_name, probabilities, items) VALUES (%s, %s, %s, %s)"
-            cursor.execute(query, (pool.id, pool.name, json.dumps(probabilities), json.dumps(pool.items)))
+            query = "INSERT INTO gacha_pools (codename, public_name, probabilities, price) VALUES (%s, %s, %s, %s)"
+            cursor.execute(query, (pool.id, pool.name, json.dumps(probabilities), pool.price))
             connection.commit()
             cursor.close()
         except mysql.connect().IntegrityError:
@@ -573,6 +568,9 @@ def update_pool(pool_id):  # noqa: E501
     if pool.probabilities.legendary_probability + pool.probabilities.epic_probability + pool.probabilities.rare_probability + pool.probabilities.common_probability != 1:
         return jsonify({"error": "Sum of probabilities is not 1."}), 416
 
+    if pool.price < 1:
+        return jsonify({"error": "Price should be a positive number."}), 416
+
     # valid request from now on
     try:
         mysql = current_app.extensions.get('mysql')
@@ -582,22 +580,14 @@ def update_pool(pool_id):  # noqa: E501
         connection = mysql.connect()
         cursor = connection.cursor()
 
-        # check if items really exists
-        for item in pool.items:
-            query = "SELECT uuid FROM gachas_types WHERE uuid = UUID_TO_BIN(%s)"
-            cursor.execute(query, (item))
-            connection.commit()
-            if cursor.fetchone() is None:
-                return jsonify({"error": "Item UUID not found in database: " + item}), 404
-
         probabilities = {
             "common_probability": pool.probabilities.common_probability,
             "rare_probability": pool.probabilities.rare_probability,
             "epic_probability": pool.probabilities.epic_probability,
             "legendary_probability":  pool.probabilities.legendary_probability,
         }
-        query = "UPDATE gacha_pools SET public_name = %s, probabilities = %s, items = %s WHERE codename = %s"
-        cursor.execute(query, (pool.name, json.dumps(probabilities), json.dumps(pool.items), pool_id))
+        query = "UPDATE gacha_pools SET public_name = %s, probabilities = %s, price = %s WHERE codename = %s"
+        cursor.execute(query, (pool.name, json.dumps(probabilities), pool.price, pool_id))
         connection.commit()
 
         if cursor.rowcount == 0:
