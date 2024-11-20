@@ -220,7 +220,7 @@ def get_pool_info():  # TODO ottimizzare questa funzione con una sola query
             FROM gacha_pools gp
             LEFT JOIN gacha_pools_items gpi ON gp.codename = gpi.codename
             GROUP BY gp.codename
-        ''') #/db_manager/gachas/get_pool_info ritorna anche gli item come da modello quindi la query dopo si può omettere
+        ''') #/db_manager/gachas/get_pools ritorna anche gli item come da modello quindi la query dopo si può omettere
         
         results = cursor.fetchall()
         pools = []

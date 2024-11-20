@@ -985,7 +985,30 @@ paths:
         '500':
           description: Internal server error.
         '503':
-          description: Circuit breaker open.   
+          description: Circuit breaker open.
+  /db_manager/gachas/get_pools:
+    post:
+      tags:
+          - db_manager_gachas
+      description: "Inserts the given item into user's inventory"
+      operationId: get_pools_list
+      responses:
+        "200":
+          description: Detailed information about all the pools.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pool'
+        "400":
+          description: Invalid request format.
+        "404":
+          description: User not found.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
 
 
 
