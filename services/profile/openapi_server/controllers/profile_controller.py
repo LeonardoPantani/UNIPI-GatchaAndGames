@@ -80,8 +80,8 @@ def delete_profile():  # noqa: E501
                            (user_uuid, user_uuid)
             )
             
-            cursor.execute('DELETE FROM auctions WHERE item_uuid IN (SELECT item_uuid FROM inventories WHERE owner_uuid = UUID_TP_BIN(%s)', (user_uuid,))
-            cursor.execute('DELETE FROM inventory WHERE owner_uuid = UUID_TO_BIN(%s)', (user_uuid,))
+            cursor.execute('DELETE FROM auctions WHERE item_uuid IN (SELECT item_uuid FROM inventories WHERE owner_uuid = UUID_TO_BIN(%s))', (user_uuid,))
+            cursor.execute('DELETE FROM inventories WHERE owner_uuid = UUID_TO_BIN(%s)', (user_uuid,))
 
             cursor.execute('DELETE FROM profiles WHERE uuid = UUID_TO_BIN(%s)', (user_uuid,))
             cursor.execute('DELETE FROM users WHERE uuid = UUID_TO_BIN(%s)', (user_uuid,))
