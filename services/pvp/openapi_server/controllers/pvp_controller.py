@@ -53,15 +53,16 @@ def accept_pvp_request(pvp_match_uuid):  # noqa: E501
 
         # Construct query with placeholders for the 7 UUIDs
         placeholders = ', '.join(['%s'] * len(team))
-        query = f'SELECT BIN_TO_UUID(owner_uuid) FROM inventories WHERE BIN_TO_UUID(item_uuid) IN ({placeholders})'
-
+        query = f'SELECT DISTINCT BIN_TO_UUID(owner_uuid) FROM inventories WHERE BIN_TO_UUID(item_uuid) IN ({placeholders})'
+        
         # Execute query with the gacha UUIDs
         cursor.execute(query, tuple(team))
         owner_uuids = cursor.fetchall()
-
+        
         # FIX: Correctly check that all items belong to the user
-        owner_uuids = [uuid[0] for uuid in owner_uuids]  # Extract UUIDs from fetched results
-        if any(owner_uuid != user_uuid for owner_uuid in owner_uuids):
+        owner_uuid = owner_uuids[0][0]
+        
+        if owner_uuid != user_uuid:
             return jsonify({"error": "Gacha items do not belong to you"}), 400
 
         # Deserialize `teams` if it was stored as a JSON string in the database
@@ -83,14 +84,14 @@ def accept_pvp_request(pvp_match_uuid):  # noqa: E501
 
         for i in range(7):
             extracted_stat = random.choice(stats)  # FIX: Use random.choice instead of random.randint to get a random stat
-
+            
             # /db_manager/pvp/get_gacha_stat
             cursor.execute(
                 f'SELECT gt.name, gt.{extracted_stat}, gt.stat_potential FROM inventories i JOIN gachas_types gt ON i.stand_uuid = gt.uuid WHERE i.item_uuid IN (UUID_TO_BIN(%s), UUID_TO_BIN(%s))',
                 (player1_team[i], player2_team[i])
             )
             result = cursor.fetchall()
-            print (result)
+            #print (result)
             # Store data in variables for comparison
             player1_stand_name, player1_stand_stat, player1_stand_potential = result[0]
             player2_stand_name, player2_stand_stat, player2_stand_potential = result[1]
@@ -120,10 +121,10 @@ def accept_pvp_request(pvp_match_uuid):  # noqa: E501
 
         if points > 0:
             winner = 0
-            log["winner"] = player1_uuid
+            log["winner"] = player1_uuid + " by " + str(points) + " points "
         else:
             winner = 1
-            log["winner"] = user_uuid
+            log["winner"] = user_uuid + " by " + str(points * -1) + " points "
 
         log_json = json.dumps(log)
 
