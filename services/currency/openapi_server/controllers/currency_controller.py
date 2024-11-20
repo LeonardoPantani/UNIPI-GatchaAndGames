@@ -65,75 +65,78 @@ def buy_currency(bundle_id):
     if 'username' not in session:
         return jsonify({"error": "Not logged in."}), 403
 
-    # valid request
+    # /db_manager/currency/get_bundle_info
+    # Returns information about a bundle given its codename.
     try:
-        # /db_manager/currency/get_bundle_info
-        # Returns information about a bundle given its codename.
-        try:
-            @circuit_breaker
-            def make_request_to_dbmanager():
-                payload = {
-                    "bundle_id": bundle_id
-                }
-                url = "http://db_manager:8080/db_manager/currency/get_bundle_info"
-                response = requests.post(url, json=payload)
-                response.raise_for_status()  # if response is obtained correctly
-                return response.json()
-        except requests.HTTPError as e:
-            if e.response.status_code == 404:
-                return jsonify({"error": "Bundle not found."}), 404
-            else:  # other errors
-                return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
-
+        @circuit_breaker
+        def make_request_to_dbmanager():
+            payload = {
+                "bundle_id": bundle_id
+            }
+            url = "http://db_manager:8080/db_manager/currency/get_bundle_info"
+            response = requests.post(url, json=payload)
+            response.raise_for_status()  # if response is obtained correctly
+            return response.json()
+        
         bundle = make_request_to_dbmanager()
-        codename = bundle["codename"]
-        currency_name = bundle["currency_name"]
-        public_name = bundle["public_name"]
-        credits_obtained = bundle["credits_obtained"]
-        price = bundle["price"]
+    except requests.HTTPError as e:
+        if e.response.status_code == 404:
+            return jsonify({"error": "Bundle not found."}), 404
+        else:  # other errors
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
+        return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:
+        return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503
 
-        candidate_user_account_no = -1
-        user_accounts = global_mock_accounts.get(session['uuid'])
+    codename = bundle["codename"]
+    currency_name = bundle["currency_name"]
+    public_name = bundle["public_name"]
+    credits_obtained = bundle["credits_obtained"]
+    price = bundle["price"]
 
-        if user_accounts:  # Ensure the user exists
-            accounts_list = user_accounts.get("accounts")  # Access the 'accounts' list
-            for index, element in enumerate(accounts_list):
-                if element["currency"] == currency_name:
-                    candidate_user_account_no = index
+    candidate_user_account_no = -1
+    user_accounts = global_mock_accounts.get(session['uuid'])
 
-        if user_accounts["accounts"][candidate_user_account_no]["currency"] != currency_name:
-            return jsonify({"error": "Different currency needed, contact your bank."}), 400
-        
-        if user_accounts["accounts"][candidate_user_account_no]["amount"] < price:
-            return jsonify({"error": "You cannot afford this bundle."}), 412
-        
-        user_accounts["accounts"][candidate_user_account_no]["amount"] -= price
+    if user_accounts:  # Ensure the user exists
+        accounts_list = user_accounts.get("accounts")  # Access the 'accounts' list
+        for index, element in enumerate(accounts_list):
+            if element["currency"] == currency_name:
+                candidate_user_account_no = index
 
-        
-        # /db_manager/currency/purchase_bundle
-        # Processes the purchase of a bundle by updating user credits and logging transactions in appropriate tables.
-        try:
-            @circuit_breaker
-            def make_request_to_dbmanager():
-                payload = {
-                    "user_uuid": session["uuid"],
-                    "bundle_codename": codename,
-                    "currency_name": currency_name,
-                    "credits_obtained": credits_obtained,
-                    "transaction_type_bundle_code": TRANSACTION_TYPE_BUNDLE_CODE
-                }
-                url = "http://db_manager:8080/db_manager/currency/purchase_bundle"
-                response = requests.post(url, json=payload)
-                response.raise_for_status()  # if response is obtained correctly
-                return
-        except requests.HTTPError as e:
-            if e.response.status_code == 404:
-                return jsonify({"error": "Bundle not found."}), 404
-            else:  # other errors
-                return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    if user_accounts["accounts"][candidate_user_account_no]["currency"] != currency_name:
+        return jsonify({"error": "Different currency needed, contact your bank."}), 400
+    
+    if user_accounts["accounts"][candidate_user_account_no]["amount"] < price:
+        return jsonify({"error": "You cannot afford this bundle."}), 412
+    
+    user_accounts["accounts"][candidate_user_account_no]["amount"] -= price
+
+    
+    # /db_manager/currency/purchase_bundle
+    # Processes the purchase of a bundle by updating user credits and logging transactions in appropriate tables.
+    try:
+        @circuit_breaker
+        def make_request_to_dbmanager():
+            payload = {
+                "user_uuid": session["uuid"],
+                "bundle_codename": codename,
+                "currency_name": currency_name,
+                "credits_obtained": credits_obtained,
+                "transaction_type_bundle_code": TRANSACTION_TYPE_BUNDLE_CODE
+            }
+            url = "http://db_manager:8080/db_manager/currency/purchase_bundle"
+            response = requests.post(url, json=payload)
+            response.raise_for_status()  # if response is obtained correctly
+            return
 
         make_request_to_dbmanager()
         return jsonify({"message": "Bundle " + public_name + " successfully bought."}), 200
+    except requests.HTTPError as e:
+        if e.response.status_code == 404:
+            return jsonify({"error": "Bundle not found."}), 404
+        else:  # other errors
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
     except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
         return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
