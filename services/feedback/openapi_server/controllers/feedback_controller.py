@@ -9,12 +9,12 @@ from pybreaker import CircuitBreaker, CircuitBreakerError
 circuit_breaker = CircuitBreaker(fail_max=3, reset_timeout=30)
 
 
-def health_check():  # noqa: E501
+def health_check():
     return jsonify({"message": "Service operational."}), 200
 
 
 @circuit_breaker
-def post_feedback():  # noqa: E501
+def post_feedback():
     if 'username' not in session:
         return jsonify({"error": "Not logged in."}), 403
 
