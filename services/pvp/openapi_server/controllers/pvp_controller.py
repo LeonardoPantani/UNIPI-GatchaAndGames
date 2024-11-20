@@ -199,7 +199,7 @@ def check_pending_pvp_requests():  # noqa: E501
         cursor.close()
         connection.close()
 
-def get_pvp_status(session, pvp_match_uuid):  # noqa: E501
+def get_pvp_status(pvp_match_uuid):  # noqa: E501
     if 'username' not in session:
         return jsonify({"error": "Not logged in"}), 403
 
@@ -224,16 +224,24 @@ def get_pvp_status(session, pvp_match_uuid):  # noqa: E501
                 winner_uuid = player1_uuid
             else:
                 winner_uuid = player2_uuid
-        
-        response = {
-            "pvp_match_uuid": pvp_match_uuid,
-            "sender_id": player1_uuid,
-            "receiver_id": player2_uuid,
-            "winner_id": winner_uuid,
-            "match_log": match_log,
-            "match_timestamp": timestamp
-        }
-        
+            response = {
+                "pvp_match_uuid": pvp_match_uuid,
+                "sender_id": player1_uuid,
+                "receiver_id": player2_uuid,
+                "winner_id": winner_uuid,
+                "match_log": match_log,
+                "match_timestamp": timestamp
+            }
+        else:
+            response = {
+                "pvp_match_uuid": pvp_match_uuid,
+                "sender_id": player1_uuid,
+                "receiver_id": player2_uuid,
+                "winner_id": "No winner yet",
+                "match_log": "Nothing to show here",
+                "match_timestamp": timestamp
+            }
+
         return jsonify(response), 200
 
     except Exception as e:
@@ -263,7 +271,7 @@ def reject_pv_prequest(pvp_match_uuid):  # noqa: E501
             DELETE FROM pvp_matches 
             WHERE BIN_TO_UUID(match_uuid) = %s AND player_2_uuid = UUID_TO_BIN(%s) AND winner IS NULL;
         '''
-        cursor.execute(delete_query, (pvp_match_uuid,))
+        cursor.execute(delete_query, (pvp_match_uuid, session['uuid']))
         connection.commit()
 
         if cursor.rowcount == 0:
@@ -283,6 +291,9 @@ def send_pvp_request(user_uuid):  # noqa: E501
     if 'username' not in session:
         return jsonify({"error": "Not logged in"}), 403
     
+    if session['uuid'] == user_uuid:
+        return jsonify({"error": "You cannot start a match with yourself."}), 406
+
     # Extract gacha UUIDs from the team parameter
     if connexion.request.is_json:
         body_request = connexion.request.get_json()
