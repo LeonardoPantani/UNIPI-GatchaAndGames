@@ -100,7 +100,7 @@ def bid_on_auction(auction_uuid):
         )
         #gives old bidder his funds back
         if current_bidder is not None:
-            cursor.execute( #/db_manager/auctions/refund_previous_bidder
+            cursor.execute(
                 'UPDATE profiles SET currency = currency + %s WHERE BIN_TO_UUID(uuid) = %s',
                 (current_bid, current_bidder)
             )
@@ -254,7 +254,7 @@ def get_auction_status(auction_uuid):
                 (session['uuid'],current_bid*(-1))
             )
             #not removed from auctions for history
-            full_response = {**response, "message": "Item redeemed successfully"}
+            full_response = {**response, "message": "Item redeemed successfully."}
             return jsonify(full_response), 200
 
         return jsonify(response), 200
@@ -400,11 +400,7 @@ def get_auctions_list(status=None, rarity=None, page_number=None):
             # Determine the auction status
             status = "closed" if end_time < now else "active"
 
-            auctions.append({
-                "auction_uuid": auction_uuid,
-                "status": status,
-                "end_time": end_time
-            })
+            auctions.append({"auction_uuid": auction_uuid})
 
         return jsonify(auctions), 200
     

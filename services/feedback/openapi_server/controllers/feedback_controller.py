@@ -47,7 +47,7 @@ def post_feedback():  # noqa: E501
             (session['uuid'], feedback_request)
         )
         connection.commit()
-        return jsonify({"message": "Feedback created successfully"}), 200
+        return jsonify({"message": "Feedback created successfully"}), 201
     except Exception as e:
         logging.error(f"Error while posting feedback: {str(e)}")
         return jsonify({"error": "Internal server error"}), 500

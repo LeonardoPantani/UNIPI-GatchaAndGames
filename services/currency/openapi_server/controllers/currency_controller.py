@@ -79,7 +79,7 @@ def buy_currency(bundle_id):  # noqa: E501
         bundle = cursor.fetchone()
 
         if not bundle:
-            return jsonify({"error": "Bundle not found"}), 404
+            return jsonify({"error": "Bundle not found for the given codename."}), 404
 
         # Extract bundle data
         codename, currency_name, public_name, credits_obtained, price = bundle

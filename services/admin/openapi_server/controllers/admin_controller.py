@@ -128,10 +128,12 @@ def create_gacha():  # noqa: E501
         connection = mysql.connect()
         cursor = connection.cursor()
         query = "INSERT INTO gachas_types (uuid, name, stat_power, stat_speed, stat_durability, stat_precision, stat_range, stat_potential, rarity, release_date) VALUES (UUID_TO_BIN(%s), %s, %s, %s, %s, %s, %s, %s, %s, %s)"
-        gacha_uuid = uuid.uuid4()
-        cursor.execute(query, (gacha_uuid, gacha.name, converted["power"], converted["speed"], converted["durability"], converted["precision"], converted["range"], converted["potential"], gacha.rarity, date.today()))
+        cursor.execute(query, (gacha.uuid, gacha.name, converted["power"], converted["speed"], converted["durability"], converted["precision"], converted["range"], converted["potential"], gacha.rarity, date.today()))
+        
+        if cursor.rowcount == 0:
+            return jsonify({"error": "The provided gacha uuid is already in use."}), 404
+        
         connection.commit()
-        cursor.close()
 
         return jsonify({"message": "Gacha successfully created.", "gacha_uuid": gacha_uuid}), 201
     except Exception as e:
@@ -403,7 +405,7 @@ def get_user_history(user_uuid, history_type, page_number=None):  # noqa: E501
         elif history_type == 'bundle':
             query = "SELECT BIN_TO_UUID(t.user_uuid) as user_uuid, t.bundle_codename, t.bundle_currency_name, t.timestamp, p.username FROM bundles_transactions t JOIN profiles p ON t.user_uuid = p.uuid WHERE t.user_uuid = UUID_TO_BIN(%s) LIMIT 10 OFFSET %s"
         else:
-            return jsonify({"error": "Invalid history type"}), 400
+            return jsonify({"error": "Invalid history type."}), 405
         
         cursor.execute(query, (user_uuid, offset))
         history = cursor.fetchall()
@@ -585,7 +587,7 @@ def update_pool(pool_id):  # noqa: E501
             cursor.execute(query, (item))
             connection.commit()
             if cursor.fetchone() is None:
-                return jsonify({"error": "Item UUID not found in database: " + item}), 400
+                return jsonify({"error": "Item UUID not found in database: " + item}), 404
 
         probabilities = {
             "common_probability": pool.probabilities.common_probability,
@@ -596,6 +598,10 @@ def update_pool(pool_id):  # noqa: E501
         query = "UPDATE gacha_pools SET public_name = %s, probabilities = %s, items = %s WHERE codename = %s"
         cursor.execute(query, (pool.name, json.dumps(probabilities), json.dumps(pool.items), pool_id))
         connection.commit()
+
+        if cursor.rowcount == 0:
+            return jsonify({"error": "Pool not found."}), 404
+        
         cursor.close()
 
         return jsonify({"message": "Pool successfully updated."}), 200
