@@ -1246,7 +1246,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PvPRequest"
+                $ref: "#/components/schemas/PvPRequestFull"
         "400":
           description: Invalid request.
         "404":
@@ -1335,7 +1335,7 @@ paths:
                 $ref: "#/components/schemas/UserId"
         "400":
           description: Invalid request.
-        "403":
+        "401":
           description: Gacha items do not belong to you.
         "500":
           description: Internal server error.
@@ -1345,31 +1345,101 @@ paths:
     post:
       tags:
         - db_manager_pvp
-      description: "Verifies that a list of gachas separated by a comma is entirely contained in player's inventory, before letting them send a pvp request."
+      description: "Inserts a PvP requests."
       operationId: finalize_pvp_request_sending
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/PvPRequestFull" # TODO CONTINUARE DA QUI
+              $ref: "#/components/schemas/PvPRequestFull"
       responses:
         "200":
-          description: Battle rejected successfully.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/UserId"
+          description: Match request sent successfully.
         "400":
           description: Invalid request.
-        "403":
-          description: Gacha items do not belong to you.
         "500":
           description: Internal server error.
         "503":
           description: Circuit breaker open.
-  
+  /db_manager/pvp/get_gacha_stat:
+    post:
+      tags:
+        - db_manager_pvp
+      description: "Returns a certain gacha stat for both gachas requested"
+      operationId: get_gacha_stat
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                player1_stand:
+                  $ref: "#/components/schemas/ItemId"
+                player2_stand:
+                  $ref: '#/components/schemas/ItemId'
+      responses:
+        "200":
+          description: Gacha stats retrieved.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  player1_stat:
+                    type: integer
+                    minimum: 1
+                    maximum: 5
+                    example: 4
+                    description: Value gacha stat.
+                  player2_stat:
+                    type: integer
+                    minimum: 1
+                    maximum: 5
+                    example: 4
+                    description: Value gacha stat.
+        "400":
+          description: Invalid request.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+  /db_manager/pvp/set_match_results:
+    post:
+      tags:
+        - db_manager_pvp
+      description: "Updates data of pvp_matches setting results."
+      operationId: set_match_results
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                match:
+                  $ref: '#/components/schemas/PvPRequestFull'
+                points:
+                  type: integer
+                  description: "Match adds 1 for each game won by player1 and subtracts 1 for each game won by player2"
+      responses:
+          "200":
+            description: Match result inserted.
+          "400":
+            description: Invalid request.
+          "404":
+            description: Match or User not found
+          "500":
+            description: Internal server error.
+          "503":
+            description: Circuit breaker open.
 components:
   schemas:
+    Team:
+      type: array
+      minItems: 7
+      maxItems: 7
+      items:
+        $ref: '#/components/schemas/GachaId'
+      description: Team used by players to battle each others.
     PvPRequestFull:
       type: object
       properties:
@@ -1379,8 +1449,18 @@ components:
           $ref: '#/components/schemas/UserId'
         receiver_id:
           $ref: '#/components/schemas/UserId'
-        TODO:
-          type: string
+        teams:
+          type: object
+          properties:
+            team1:
+              $ref: '#/components/schemas/Team'
+            team2:
+              $ref: '#/components/schemas/Team'
+        winner:
+          type: boolean
+          description: True if winner is player1, False if winner is player2, empty if there is no winner yet
+        match_log:
+          $ref: '#/components/schemas/MatchLog'
         
       description: Request of a PvP match sent by a player.
     MatchRequests:
@@ -1428,24 +1508,6 @@ components:
           maximum: 7
           items:
             $ref: "#/components/schemas/MatchPairing"
-    PvPRequest:
-      type: object
-      properties:
-        pvp_match_uuid:
-          $ref: '#/components/schemas/PvPMatchId'
-        sender_id:
-          $ref: '#/components/schemas/UserId'
-        receiver_id:
-          $ref: '#/components/schemas/UserId'
-        winner_id:
-          $ref: '#/components/schemas/UserId'
-        match_log:
-          $ref: '#/components/schemas/MatchLog'
-        match_timestamp:
-          type: string
-          format: date-time
-          description: Match timestamp.
-      description: Request of a PvP match sent by a player.
     FeedbackPreview:
       properties:
         id:
