@@ -115,7 +115,7 @@ def pull_gacha(pool_id):
         price = pool_result[1]
 
         # Check if user has enough credits (10)
-        cursor.execute(
+        cursor.execute( #/db_manager/gachas/get_currency
             'SELECT currency FROM profiles WHERE uuid = UUID_TO_BIN(%s)',
             (session['uuid'],)
         )
@@ -159,7 +159,7 @@ def pull_gacha(pool_id):
         selected_item = random.choice(items)
         
         # Deduct credits
-        cursor.execute( #/db_manager/gachas/get_currency
+        cursor.execute( 
             'UPDATE profiles SET currency = currency - %s WHERE uuid = UUID_TO_BIN(%s)',
             (price, session['uuid'])
         )
@@ -198,7 +198,7 @@ def pull_gacha(pool_id):
         cursor.close()
         connection.close()
 
-def get_pool_info():  # noqa: E501
+def get_pool_info():  # TODO ottimizzare questa funzione con una sola query
     cursor = None
     conn = None
     try:

@@ -84,6 +84,7 @@ def accept_pvp_request(pvp_match_uuid):  # noqa: E501
         for i in range(7):
             extracted_stat = random.choice(stats)  # FIX: Use random.choice instead of random.randint to get a random stat
 
+            # /db_manager/pvp/get_gacha_stat
             cursor.execute(
                 f'SELECT gt.name, gt.{extracted_stat}, gt.stat_potential FROM inventories i JOIN gachas_types gt ON i.stand_uuid = gt.uuid WHERE i.item_uuid IN (UUID_TO_BIN(%s), UUID_TO_BIN(%s))',
                 (player1_team[i], player2_team[i])
@@ -126,6 +127,7 @@ def accept_pvp_request(pvp_match_uuid):  # noqa: E501
 
         log_json = json.dumps(log)
 
+        # /db_manager/pvp/set_match_results
         cursor.execute(
             'UPDATE pvp_matches SET winner = %s, match_log = %s, timestamp = CURRENT_TIMESTAMP, gachas_types_used = %s WHERE match_uuid = UUID_TO_BIN(%s)',
             (winner, log_json, json.dumps(teams), pvp_match_uuid)  # FIX: Use json.dumps directly for teams
@@ -169,6 +171,7 @@ def check_pending_pvp_requests():  # noqa: E501
         cursor = connection.cursor()
 
         # Step 3: Fetch pending PvP requests for the logged-in user
+        # /db_manager/pvp/check_pending_pvp_requests
         logged_in_user_uuid = session['uuid']
         check_query = '''
             SELECT BIN_TO_UUID(match_uuid), BIN_TO_UUID(player_1_uuid), BIN_TO_UUID(player_2_uuid)
@@ -209,6 +212,7 @@ def get_pvp_status(session, pvp_match_uuid):  # noqa: E501
         connection = mysql.connect()
         cursor = connection.cursor()
         
+        # /db_manager/pvp/get_pvp_status
         cursor.execute(
             'SELECT match_uuid, BIN_TO_UUID(player_1_uuid), BIN_TO_UUID(player_2_uuid), winner, match_log, timestamp FROM pvp_matches WHERE match_uuid = UUID_TO_BIN(%s)',
             (pvp_match_uuid,)
@@ -254,6 +258,7 @@ def reject_pv_prequest(pvp_match_uuid):  # noqa: E501
         cursor = connection.cursor()
 
         # Delete the pending match request from the database
+        # /db_manager/pvp/reject_pvp_request
         delete_query = '''
             DELETE FROM pvp_matches 
             WHERE BIN_TO_UUID(match_uuid) = %s AND player_2_uuid = UUID_TO_BIN(%s) AND winner IS NULL;
@@ -296,6 +301,7 @@ def send_pvp_request(user_uuid):  # noqa: E501
         cursor = connection.cursor()
 
         # Construct query with placeholders for the 7 UUIDs
+        # /db_manager/pvp/verify_gacha_item_ownership
         placeholders = ', '.join(['%s'] * len(team))
         query = f'SELECT DISTINCT BIN_TO_UUID(owner_uuid) FROM inventories WHERE BIN_TO_UUID(item_uuid) IN ({placeholders})'
         
@@ -323,6 +329,7 @@ def send_pvp_request(user_uuid):  # noqa: E501
             return jsonify({"error": "Player 2 not found in profiles"}), 404
 
         # Step 2: Insert the new match into the pvp_matches table
+        # /db_manager/pvp/finalize_pvp_request_sending
         insert_query = '''
             INSERT INTO pvp_matches (match_uuid, player_1_uuid, player_2_uuid, winner, match_log, gachas_types_used)
             VALUES (UUID_TO_BIN(%s), UUID_TO_BIN(%s), UUID_TO_BIN(%s), %s, %s, %s);

@@ -41,7 +41,7 @@ def delete_profile():  # noqa: E501
             except Exception as e:
                 return jsonify({"error": "Invalid request format"}), 400
 
-            try:
+            try: # /db_manager/profile/get_user_info
                 cursor.execute('SELECT BIN_TO_UUID(uuid), password FROM users WHERE uuid = UUID_TO_BIN(%s)', (user_uuid,))
                 result = cursor.fetchone()
             except Exception as e:
@@ -57,6 +57,7 @@ def delete_profile():  # noqa: E501
             user_uuid = result[0]
 
             # Delete from tables in correct order due to foreign keys
+            # /db_manager/profile/delete
             cursor.execute('DELETE FROM feedbacks WHERE user_uuid = UUID_TO_BIN(%s)', (user_uuid,))
             cursor.execute('DELETE FROM ingame_transactions WHERE user_uuid = UUID_TO_BIN(%s)', (user_uuid,)) 
             cursor.execute('DELETE FROM bundles_transactions WHERE user_uuid = UUID_TO_BIN(%s)', (user_uuid,))
@@ -135,6 +136,7 @@ def edit_profile():  # noqa: E501
                 return jsonify({"error": "Invalid request format"}), 400
 
             # First verify the password like in delete_profile
+            # /db_manager/profile/get_user_hashed_psw
             cursor.execute(
                 'SELECT BIN_TO_UUID(u.uuid) as uuid, u.password FROM users u JOIN profiles p ON u.uuid = p.uuid WHERE p.username = %s', 
                 (username,)
@@ -163,7 +165,7 @@ def edit_profile():  # noqa: E501
                 updates.append("p.username = %s")
                 params.append(edit_request.username)
 
-            if updates:
+            if updates: # /db_manager/profile/edit
                 params.append(username)  # Add current username for WHERE clause
                 query = f"""
                     UPDATE users u JOIN profiles p ON u.uuid = p.uuid 
@@ -215,6 +217,7 @@ def get_user_info(uuid):  # noqa: E501
         cursor = conn.cursor()
         
         # Get user info from database
+        # /db_manager/profile/get_user_info
         cursor.execute('''
             SELECT BIN_TO_UUID(u.uuid) as id, p.username, u.email, p.created_at 
             FROM users u 

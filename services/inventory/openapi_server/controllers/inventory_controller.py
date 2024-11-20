@@ -28,14 +28,14 @@ def get_inventory():  # noqa: E501
 
         # Pagination parameters
         items_per_page = 10
-        page = connexion.request.args.get('page_number', default=1, type=int)
+        page_number = connexion.request.args.get('page_number', default=1, type=int)
         offset = (page - 1) * items_per_page
 
         try:
             conn = mysql.connect()
             cursor = conn.cursor()
 
-            # Get paginated results
+            # # /db_manager/inventory/get_user_inventory_items
             cursor.execute('''
                 SELECT 
                     BIN_TO_UUID(item_uuid),
@@ -45,7 +45,7 @@ def get_inventory():  # noqa: E501
                 FROM inventories
                 WHERE owner_uuid = UUID_TO_BIN(%s)
                 LIMIT %s OFFSET %s
-            ''', (user_uuid, items_per_page, offset))
+            ''', (user_uuid, items_per_page, page_number))
             
             inventory_items = []
             for row in cursor.fetchall():
@@ -82,6 +82,7 @@ def get_inventory_item_info(inventory_item_id):  # noqa: E501
             return jsonify({"error": "Not logged in"}), 403
 
         # Query to get inventory item details, ensuring the item belongs to the logged in user
+        # /db_manager/inventory/get_user_item_info
         cursor.execute('''
             SELECT 
                 BIN_TO_UUID(item_uuid) as item_id,
@@ -137,6 +138,7 @@ def remove_inventory_item():
         cursor = conn.cursor()
 
         # Then check if item is not in any active auction
+        # /db_manager/inventory/remove_user_item
         cursor.execute('''
             SELECT 1 FROM auctions 
             WHERE item_uuid = UUID_TO_BIN(%s)
