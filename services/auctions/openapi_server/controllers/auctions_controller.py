@@ -169,9 +169,6 @@ def create_auction():
 
         connection.commit()
 
-        cursor.close()
-        connection.close()
-
         return jsonify({"message":"Auction created successfully."}), 200
     
     except CircuitBreakerError:
