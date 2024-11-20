@@ -151,31 +151,31 @@ def purchase_bundle(purchase_bundle_request=None):
             connection.commit()
             return
 
-        make_request_to_db() 
+        make_request_to_db()
 
         return "", 200
     except OperationalError: # if connect to db fails means there is an error in the db
-        logging.error("Query ["+ purchase_bundle_request +"]: Operational error.")
+        logging.error("Query ["+ user_uuid + ", " + bundle_codename +"]: Operational error.")
         return "", 500
     except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
-        logging.error("Query ["+ purchase_bundle_request +"]: Programming error.")
+        logging.error("Query ["+ user_uuid + ", " + bundle_codename +"]: Programming error.")
         return "", 400
     except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
-        logging.error("Query ["+ purchase_bundle_request +"]: Integrity error.")
+        logging.error("Query ["+ user_uuid + ", " + bundle_codename +"]: Integrity error.")
         if connection:
             connection.rollback()
         return "", 409
     except DataError: # if data format is invalid or out of range or size
-        logging.error("Query ["+ purchase_bundle_request +"]: Data error.")
+        logging.error("Query ["+ user_uuid + ", " + bundle_codename +"]: Data error.")
         return "", 400
     except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
-        logging.error("Query ["+ purchase_bundle_request +"]: Internal error.")
+        logging.error("Query ["+ user_uuid + ", " + bundle_codename +"]: Internal error.")
         return "", 500
     except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
-        logging.error("Query ["+ purchase_bundle_request +"]: Interface error.")
+        logging.error("Query ["+ user_uuid + ", " + bundle_codename +"]: Interface error.")
         return "", 500
     except DatabaseError: # default for any MySQL error which does not fit the other exceptions
-        logging.error("Query ["+ purchase_bundle_request +"]: Database error.")
+        logging.error("Query ["+ user_uuid + ", " + bundle_codename +"]: Database error.")
         return "", 401
     except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
