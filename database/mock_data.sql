@@ -4,7 +4,7 @@ INSERT INTO users (uuid, email, password, role) VALUES
 (UNHEX(REPLACE('87f3b5d1-5e8e-4fa4-909b-3cd29f4b1f09', '-', '')), 'dio.brando@world.com', '$2b$12$3nOBbi1saMMQHppfKBS.1.HAJbeZAlMWCUcn3TIe1nVxSmMAIsbZ2', 'USER'), -- password: za_warudo
 (UNHEX(REPLACE('a4f0c592-12af-4bde-aacd-94cd0f27c57e', '-', '')), 'giorno@passione.it', '$2b$12$jqb2pkG1hQ4j4xJkbYTt8el9iVraf9IOg5ODWR9cjHcVF9sttNTja', 'USER'), -- password: gold_experience
 (UNHEX(REPLACE('b5c3d2e1-4f5e-6a7b-8c9d-0e1f2a3b4c5d', '-', '')), 'josuke@morioh.jp', '$2b$12$jqb2pkG1hQ4j4xJkbYTt8el9iVraf9IOg5ODWR9cjHcVF9sttNTja', 'USER'), -- password: crazy_diamond
-(UNHEX(REPLACE('4f2e8bb5-38e1-4537-9cfa-11425c3b4284', '-', '')), 'speedwagon@foundation.org', '$2b$12$xesJM04e8RQTK0yd0qIuQuJFf/ZMkq4YuEHYVzT4Isdff3lSHNshG', 'ADMIN'), -- password: admin_foundation
+(UNHEX(REPLACE('4f2e8bb5-38e1-4537-9cfa-11425c3b4284', '-', '')), 'speedwagon@foundation.org', '$2a$12$9HgqzV4s6zhKCBFRMuUGSONqS2bhIQqzpiF1U/K/VW1ofYWyU2mIa', 'ADMIN'), -- password: admin_foundation
 (UNHEX(REPLACE('a1a2a3a4-b5b6-c7c8-d9d0-e1e2e3e4e5e6', '-', '')), 'admin@admin.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewqkfQhrLvvD3.4K', 'ADMIN'); -- password: password -- Insert additional admin user
 
 
@@ -14,7 +14,7 @@ INSERT INTO profiles (uuid, username, currency, pvp_score) VALUES
 (UNHEX(REPLACE('87f3b5d1-5e8e-4fa4-909b-3cd29f4b1f09', '-', '')), 'DIOBrando', 6000, 95),
 (UNHEX(REPLACE('a4f0c592-12af-4bde-aacd-94cd0f27c57e', '-', '')), 'GiornoGiovanna', 4500, 85),
 (UNHEX(REPLACE('b5c3d2e1-4f5e-6a7b-8c9d-0e1f2a3b4c5d', '-', '')), 'JosukeHigashikata', 3500, 80),
-(UNHEX(REPLACE('4f2e8bb5-38e1-4537-9cfa-11425c3b4284', '-', '')), 'SpeedwagonAdmin', 10000, 98);
+(UNHEX(REPLACE('4f2e8bb5-38e1-4537-9cfa-11425c3b4284', '-', '')), 'SpeedwagonAdmin', 10000, 98),
 (UNHEX(REPLACE('a1a2a3a4-b5b6-c7c8-d9d0-e1e2e3e4e5e6', '-', '')), 'AdminUser', 100000000, 999);
 
 -- Insert into `gachas_types` table (Stands with their stats)
@@ -45,12 +45,12 @@ INSERT INTO gachas_types (uuid, name, stat_power, stat_speed, stat_durability, s
 
 
 -- Insert into `gacha_pools` table
-INSERT INTO gacha_pools (codename, public_name, probabilities, price, release_date) VALUES
-('pool_joestar', 'Joestar Legacy Pool', '{"common": 0.5, "rare": 0.3, "epic": 0.15, "legendary": 0.05}', 1000, '2024-01-01'),
-('pool_passione', 'Passione Gang Pool', '{"common": 0.45, "rare": 0.35, "epic": 0.15, "legendary": 0.05}', 1200, '2024-01-02'),
-('pool_duwang', 'Morioh Pool', '{"common": 0.4, "rare": 0.35, "epic": 0.2, "legendary": 0.05}', 1500, '2024-01-03'),
-('pool_pucci', 'Heaven Pool', '{"common": 0.3, "rare": 0.3, "epic": 0.3, "legendary": 0.1}', 2000, '2024-01-04'),
-('pool_valentine', 'Patriot Pool', '{"common": 0.4, "rare": 0.3, "epic": 0.2, "legendary": 0.1}', 1800, '2024-01-05');
+INSERT INTO gacha_pools (codename, public_name, probabilities, price) VALUES
+('pool_joestar', 'Joestar Legacy Pool', '{"common": 0.5, "rare": 0.3, "epic": 0.15, "legendary": 0.05}', 1000),
+('pool_passione', 'Passione Gang Pool', '{"common": 0.45, "rare": 0.35, "epic": 0.15, "legendary": 0.05}', 1200),
+('pool_duwang', 'Morioh Pool', '{"common": 0.4, "rare": 0.35, "epic": 0.2, "legendary": 0.05}', 1500),
+('pool_pucci', 'Heaven Pool', '{"common": 0.3, "rare": 0.3, "epic": 0.3, "legendary": 0.1}', 2000),
+('pool_valentine', 'Patriot Pool', '{"common": 0.4, "rare": 0.3, "epic": 0.2, "legendary": 0.1}', 1800);
 
 -- Insert into `gacha_pools_items` table (linking stands to their appropriate pools)
 INSERT INTO gacha_pools_items (codename, gacha_uuid) VALUES
