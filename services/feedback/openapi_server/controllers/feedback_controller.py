@@ -1,28 +1,19 @@
 import connexion
-import uuid
-import bcrypt
-import logging
+import requests
 
-from typing import Dict
-from typing import Tuple
-from typing import Union
-
-from openapi_server import util
-
-from flask import current_app, jsonify, request, session
-from flaskext.mysql import MySQL
+from flask import jsonify, session
 
 from pybreaker import CircuitBreaker, CircuitBreakerError
 
 # Circuit breaker instance
-feedback_circuit_breaker = CircuitBreaker(fail_max=3, reset_timeout=30)
+circuit_breaker = CircuitBreaker(fail_max=3, reset_timeout=30)
 
 
 def health_check():  # noqa: E501
     return jsonify({"message": "Service operational."}), 200
 
 
-@feedback_circuit_breaker
+@circuit_breaker
 def post_feedback():  # noqa: E501
     if 'username' not in session:
         return jsonify({"error": "Not logged in."}), 403
@@ -35,24 +26,26 @@ def post_feedback():  # noqa: E501
     if len(feedback_request) == 0:
         return jsonify({"message": "Invalid request."}), 400
 
-    mysql = current_app.extensions.get('mysql')
-    if not mysql:
-        return jsonify({"error": "Database connection not initialized"}), 500
-
     try:
-        connection = mysql.connect()
-        cursor = connection.cursor()
-        cursor.execute(
-            'INSERT INTO feedbacks (user_uuid, content) VALUES (UUID_TO_BIN(%s), %s)',
-            (session['uuid'], feedback_request)
-        )
-        connection.commit()
-        return jsonify({"message": "Feedback created successfully"}), 201
-    except Exception as e:
-        logging.error(f"Error while posting feedback: {str(e)}")
-        return jsonify({"error": "Internal server error"}), 500
-    finally:
-        if cursor:
-            cursor.close()
-        if connection:
-            connection.close()
+
+        @circuit_breaker
+        def make_request_to_dbmanager():
+            payload = {
+                "user_uuid": session["uuid"],
+                "string": feedback_request
+            }
+            url = "http://db_manager:8080/db_manager/feedback/submit"
+            response = requests.post(url, json=payload)
+            response.raise_for_status()  # if response is obtained correctly
+            return
+
+        make_request_to_dbmanager()
+
+        return jsonify({"message": "Feedback successfully submitted."}), 201
+    except requests.HTTPError as e:
+        if e.response.status_code == 400:  # programming error
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
+        return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:
+        return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503

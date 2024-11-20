@@ -14,26 +14,21 @@ class LoginRequest(Model):
     Do not edit the class manually.
     """
 
-    def __init__(self, username=None, password=None):  # noqa: E501
+    def __init__(self, username=None):  # noqa: E501
         """LoginRequest - a model defined in OpenAPI
 
         :param username: The username of this LoginRequest.  # noqa: E501
         :type username: str
-        :param password: The password of this LoginRequest.  # noqa: E501
-        :type password: str
         """
         self.openapi_types = {
-            'username': str,
-            'password': str
+            'username': str
         }
 
         self.attribute_map = {
-            'username': 'username',
-            'password': 'password'
+            'username': 'username'
         }
 
         self._username = username
-        self._password = password
 
     @classmethod
     def from_dict(cls, dikt) -> 'LoginRequest':
@@ -72,26 +67,3 @@ class LoginRequest(Model):
             raise ValueError("Invalid value for `username`, must be a follow pattern or equal to `/^[a-zA-Z0-9_]+$/`")  # noqa: E501
 
         self._username = username
-
-    @property
-    def password(self) -> str:
-        """Gets the password of this LoginRequest.
-
-        User's password  # noqa: E501
-
-        :return: The password of this LoginRequest.
-        :rtype: str
-        """
-        return self._password
-
-    @password.setter
-    def password(self, password: str):
-        """Sets the password of this LoginRequest.
-
-        User's password  # noqa: E501
-
-        :param password: The password of this LoginRequest.
-        :type password: str
-        """
-
-        self._password = password

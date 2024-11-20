@@ -16,17 +16,536 @@ servers:
 - description: Local server
   url: http://localhost:8080
 paths:
-  /db_manager/health_check:
-    get:
-      description: Returns 200 if service is healthy.
-      operationId: health_check
+  /db_manager/admin/ban_user_profile:
+    post:
+      description: Bans a user from the platform. Cannot ban another ADMIN.
+      operationId: ban_user_profile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ban_user_profile_request'
       responses:
         "200":
-          description: Service OK
-      summary: Gives information on service status.
+          description: Profile successfully banned.
+        "400":
+          description: Invalid request format.
+        "404":
+          description: User not found.
+        "409":
+          description: Cannot ban a user with the ADMIN role.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
       tags:
-      - dbmanager
-      x-openapi-router-controller: openapi_server.controllers.dbmanager_controller
+      - db_manager_admin
+      x-openapi-router-controller: openapi_server.controllers.db_manager_admin_controller
+  /db_manager/admin/create_gacha:
+    post:
+      description: Creates a gacha type.
+      operationId: create_gacha_type
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Gacha'
+      responses:
+        "201":
+          description: Gacha successfully created.
+        "400":
+          description: Invalid request format.
+        "409":
+          description: The provided gacha uuid is already in use.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+      tags:
+      - db_manager_admin
+      x-openapi-router-controller: openapi_server.controllers.db_manager_admin_controller
+  /db_manager/admin/create_pool:
+    post:
+      description: Creates a gacha pool.
+      operationId: create_gacha_pool
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Pool'
+      responses:
+        "201":
+          description: Gacha successfully created.
+        "400":
+          description: Invalid request format.
+        "404":
+          description: "Item UUID not found in database: {gacha_type_uuid}"
+        "409":
+          description: The provided pool id is already in use.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+      tags:
+      - db_manager_admin
+      x-openapi-router-controller: openapi_server.controllers.db_manager_admin_controller
+  /db_manager/admin/delete_gacha:
+    post:
+      description: Deletes a gacha type.
+      operationId: delete_gacha_type
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GachaId'
+      responses:
+        "200":
+          description: Gacha successfully deleted.
+        "400":
+          description: Invalid request format.
+        "404":
+          description: Gacha not found.
+        "500":
+          description: Internal server error.
+      tags:
+      - db_manager_admin
+      x-openapi-router-controller: openapi_server.controllers.db_manager_admin_controller
+  /db_manager/admin/delete_pool:
+    post:
+      description: Deletes a gacha pool.
+      operationId: delete_gacha_pool
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PoolId'
+      responses:
+        "200":
+          description: Pool successfully created.
+        "400":
+          description: Invalid request format.
+        "404":
+          description: Pool not found.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+      tags:
+      - db_manager_admin
+      x-openapi-router-controller: openapi_server.controllers.db_manager_admin_controller
+  /db_manager/admin/edit_user_profile:
+    post:
+      description: Edits a user profile.
+      operationId: edit_user_profile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/edit_user_profile_request'
+      responses:
+        "200":
+          description: User profile successfully updated.
+        "304":
+          description: No changes to profile applied.
+        "400":
+          description: Invalid request format.
+        "404":
+          description: User not found.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+      tags:
+      - db_manager_admin
+      x-openapi-router-controller: openapi_server.controllers.db_manager_admin_controller
+  /db_manager/admin/get_all_feedbacks:
+    post:
+      description: Gets a feedback list
+      operationId: get_feedback_list
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/get_feedback_list_request'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/FeedbackPreview'
+                type: array
+          description: Feedback list.
+        "400":
+          description: Invalid request format.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+      tags:
+      - db_manager_admin
+      x-openapi-router-controller: openapi_server.controllers.db_manager_admin_controller
+  /db_manager/admin/get_all_profiles:
+    post:
+      description: Gets a profile list
+      operationId: get_profile_list
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/get_feedback_list_request'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/User'
+                type: array
+          description: User profile list.
+        "400":
+          description: Invalid request format.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+      tags:
+      - db_manager_admin
+      x-openapi-router-controller: openapi_server.controllers.db_manager_admin_controller
+  /db_manager/admin/get_feedback_info:
+    post:
+      description: Returns info on a single feedback
+      operationId: get_feedback_info
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/get_feedback_info_request'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeedbackWithUsername'
+          description: Feedback info.
+        "400":
+          description: Invalid request format.
+        "404":
+          description: Feedback not found.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+      tags:
+      - db_manager_admin
+      x-openapi-router-controller: openapi_server.controllers.db_manager_admin_controller
+  /db_manager/admin/get_user_history:
+    post:
+      description: Returns history of user's profile.
+      operationId: get_user_history
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/get_user_history_request'
+      responses:
+        "200":
+          description: "User's history, based on history_type chosen."
+        "400":
+          description: Invalid request format.
+        "404":
+          description: User not found.
+        "405":
+          description: Invalid history type.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+      tags:
+      - db_manager_admin
+      x-openapi-router-controller: openapi_server.controllers.db_manager_admin_controller
+  /db_manager/admin/update_auction:
+    post:
+      description: Updates a specific auction.
+      operationId: update_auction
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Auction'
+      responses:
+        "200":
+          description: Auction successfully updated.
+        "400":
+          description: Invalid request format.
+        "404":
+          description: Some checks on the auction update failed.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+      tags:
+      - db_manager_admin
+      x-openapi-router-controller: openapi_server.controllers.db_manager_admin_controller
+  /db_manager/admin/update_gacha:
+    post:
+      description: Updates a specific gacha.
+      operationId: update_gacha
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Gacha'
+      responses:
+        "200":
+          description: Gacha successfully updated.
+        "400":
+          description: Invalid request format.
+        "404":
+          description: Gacha not found.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+      tags:
+      - db_manager_admin
+      x-openapi-router-controller: openapi_server.controllers.db_manager_admin_controller
+  /db_manager/admin/update_pool:
+    post:
+      description: Updates a specific pool.
+      operationId: update_pool
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Pool'
+      responses:
+        "200":
+          description: Pool successfully updated.
+        "400":
+          description: Invalid request format.
+        "404":
+          description: Some checks on the pool failed.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+      tags:
+      - db_manager_admin
+      x-openapi-router-controller: openapi_server.controllers.db_manager_admin_controller
+  /db_manager/auctions/complete_sale:
+    post:
+      description: "Completes the sale of an auctioned item by transferring ownership,\
+        \ updating balances, and logging transactions for the buyer and the seller."
+      operationId: complete_auction_sale
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/complete_auction_sale_request'
+      responses:
+        "200":
+          description: "Sale successfully completed, ownership transferred, balances\
+            \ updated, and transactions logged."
+        "400":
+          description: Invalid request format.
+        "404":
+          description: Item or user not found.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+      tags:
+      - db_manager_auctions
+      x-openapi-router-controller: openapi_server.controllers.db_manager_auctions_controller
+  /db_manager/auctions/create:
+    post:
+      description: Creates a new auction by inserting the auction details into the
+        database.
+      operationId: create_auction
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/get_auction_status_200_response'
+      responses:
+        "201":
+          description: Successful creation of a new auction.
+        "400":
+          description: Invalid request format.
+        "409":
+          description: Auction with the given UUID already exists.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+      tags:
+      - db_manager_auctions
+      x-openapi-router-controller: openapi_server.controllers.db_manager_auctions_controller
+  /db_manager/auctions/get_auction_status:
+    post:
+      description: Returns auction data if an existing uuid is provided
+      operationId: get_auction_status
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/get_auction_status_request'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/get_auction_status_200_response'
+          description: Auction found.
+        "400":
+          description: Invalid request format.
+        "404":
+          description: Auction not found.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+      tags:
+      - db_manager_auctions
+      x-openapi-router-controller: openapi_server.controllers.db_manager_auctions_controller
+  /db_manager/auctions/get_currency:
+    post:
+      description: Returns the currency of a user given the user UUID.
+      operationId: get_user_currency
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ban_user_profile_request'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/get_user_currency_200_response'
+          description: Successful retrieval of user's currency.
+        "400":
+          description: Invalid request format.
+        "404":
+          description: User not found.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+      tags:
+      - db_manager_auctions
+      x-openapi-router-controller: openapi_server.controllers.db_manager_auctions_controller
+  /db_manager/auctions/get_item_with_owner:
+    post:
+      description: Returns inventory item details if corresponding owner and item
+        UUIDs are provided.
+      operationId: get_item_with_owner
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/get_item_with_owner_request'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/get_item_with_owner_200_response'
+          description: Successful retrieval of inventory item details.
+        "400":
+          description: Invalid request format.
+        "404":
+          description: Item not found for the given user UUID.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+      tags:
+      - db_manager_auctions
+      x-openapi-router-controller: openapi_server.controllers.db_manager_auctions_controller
+  /db_manager/auctions/get_user_involved_auctions:
+    post:
+      description: "Gets a list of all auctions the user is involved in, either as\
+        \ a seller or as a bidder, with pagination."
+      operationId: get_user_involved_auctions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/get_user_involved_auctions_request'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Auction'
+                type: array
+          description: List of auctions the user is involved with.
+        "400":
+          description: Invalid request format.
+        "404":
+          description: No auctions found for the given user.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+      tags:
+      - db_manager_auctions
+      x-openapi-router-controller: openapi_server.controllers.db_manager_auctions_controller
+  /db_manager/auctions/list:
+    post:
+      description: "Returns a list of all auctions, filtered by status, rarity, and\
+        \ supports pagination."
+      operationId: list_auctions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/list_auctions_request'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/AuctionId'
+                type: array
+          description: List of auctions matching the filters.
+        "400":
+          description: Invalid request format.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+      tags:
+      - db_manager_auctions
+      x-openapi-router-controller: openapi_server.controllers.db_manager_auctions_controller
+  /db_manager/auctions/place_bid:
+    post:
+      description: "Places a bid on an auction, updates the current bid and subtracts\
+        \ the user's currency"
+      operationId: place_bid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/place_bid_request'
+      responses:
+        "200":
+          description: Successful bid placement.
+        "400":
+          description: Invalid request format.
+        "404":
+          description: Auction or user not found.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+      tags:
+      - db_manager_auctions
+      x-openapi-router-controller: openapi_server.controllers.db_manager_auctions_controller
   /db_manager/auth/login:
     post:
       description: Returns user if correct credentials are provided.
@@ -45,15 +564,15 @@ paths:
           description: Successful login with user details.
         "400":
           description: Invalid request format.
-        "401":
-          description: Invalid credentials.
         "404":
           description: Invalid username.
         "500":
           description: Internal server error.
+        "503":
+          description: Circuit breaker open.
       tags:
-      - dbmanager
-      x-openapi-router-controller: openapi_server.controllers.dbmanager_controller
+      - db_manager_auth
+      x-openapi-router-controller: openapi_server.controllers.db_manager_auth_controller
   /db_manager/auth/register:
     post:
       description: Registers a user on db.
@@ -68,19 +587,873 @@ paths:
           description: Successful registration.
         "400":
           description: Invalid request format.
+        "401":
+          description: The provided username is already in use.
         "409":
-          description: The provided email or username are already in use.
+          description: The provided email is already in use.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+      tags:
+      - db_manager_auth
+      x-openapi-router-controller: openapi_server.controllers.db_manager_auth_controller
+  /db_manager/currency/get_bundle_info:
+    post:
+      description: Returns information about a bundle given its codename.
+      operationId: get_bundle_info
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/get_bundle_info_request'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/get_bundle_info_200_response'
+          description: Successful retrieval of bundle information.
+        "400":
+          description: Invalid request format.
+        "404":
+          description: Bundle not found for the given codename.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+      tags:
+      - db_manager_currency
+      x-openapi-router-controller: openapi_server.controllers.db_manager_currency_controller
+  /db_manager/currency/list_bundles:
+    post:
+      description: Returns a list of all available bundles with their details.
+      operationId: list_bundles
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Bundle'
+                type: array
+          description: List of all bundles.
+        "400":
+          description: Invalid request format.
+        "404":
+          description: No bundles found.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+      tags:
+      - db_manager_currency
+      x-openapi-router-controller: openapi_server.controllers.db_manager_currency_controller
+  /db_manager/currency/purchase_bundle:
+    post:
+      description: Processes the purchase of a bundle by updating user credits and
+        logging transactions in appropriate tables.
+      operationId: purchase_bundle
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/purchase_bundle_request'
+      responses:
+        "200":
+          description: "Bundle successfully purchased, user credits updated, and transactions\
+            \ logged."
+        "400":
+          description: Invalid request format.
+        "404":
+          description: User or bundle not found.
         "500":
           description: Internal server error.
       tags:
-      - dbmanager
-      x-openapi-router-controller: openapi_server.controllers.dbmanager_controller
+      - db_manager_currency
+      x-openapi-router-controller: openapi_server.controllers.db_manager_currency_controller
+  /db_manager/feedback/submit:
+    post:
+      description: "Allows users to submit feedback, which will be stored in the feedbacks\
+        \ table."
+      operationId: submit_feedback
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/submit_feedback_request'
+      responses:
+        "201":
+          description: Feedback successfully submitted.
+        "400":
+          description: Invalid request format.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+      tags:
+      - db_manager_feedback
+      x-openapi-router-controller: openapi_server.controllers.db_manager_feedback_controller
+  /db_manager/gachas/get_currency:
+    post:
+      description: Returns the currency of a user given the user UUID.
+      operationId: get_currency
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ban_user_profile_request'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/get_currency_200_response'
+          description: Successful retrieval of user's currency.
+        "400":
+          description: Invalid request format.
+        "404":
+          description: User not found.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+      tags:
+      - db_manager_auctions
+      x-openapi-router-controller: openapi_server.controllers.db_manager_auctions_controller
+  /db_manager/gachas/get_gacha_info:
+    post:
+      description: Returns detailed information about a specific gacha by its UUID.
+      operationId: get_gacha_info
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/get_gacha_info_request'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Gacha'
+          description: Detailed information about the specified gacha.
+        "400":
+          description: Invalid request format.
+        "404":
+          description: Gacha not found for the given UUID.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+      tags:
+      - db_manager_gachas
+      x-openapi-router-controller: openapi_server.controllers.db_manager_gachas_controller
+  /db_manager/gachas/get_gacha_list:
+    post:
+      description: Inserts the given item into user's inventory
+      operationId: get_gacha_list
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/get_gacha_list_request'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Gacha'
+                type: array
+          description: Detailed information about the requested pool.
+        "400":
+          description: Invalid request format.
+        "404":
+          description: User not found.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+      tags:
+      - db_manager_gachas
+      x-openapi-router-controller: openapi_server.controllers.db_manager_gachas_controller
+  /db_manager/gachas/get_pool_info:
+    post:
+      description: Returns detailed information about a specific gacha pool by its
+        codename
+      operationId: get_pool_info
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PoolId'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pool'
+          description: Detailed information about the requested pool.
+        "400":
+          description: Invalid request format.
+        "404":
+          description: Pool not found for the given codename.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+      tags:
+      - db_manager_gachas
+      x-openapi-router-controller: openapi_server.controllers.db_manager_gachas_controller
+  /db_manager/gachas/get_pools:
+    post:
+      description: Inserts the given item into user's inventory
+      operationId: get_pools_list
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Pool'
+                type: array
+          description: Detailed information about all the pools.
+        "400":
+          description: Invalid request format.
+        "404":
+          description: User not found.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+      tags:
+      - db_manager_gachas
+      x-openapi-router-controller: openapi_server.controllers.db_manager_gachas_controller
+  /db_manager/gachas/give_item:
+    post:
+      description: Inserts the given item into user's inventory
+      operationId: give_item
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/give_item_request'
+      responses:
+        "201":
+          description: Item correctly inserted.
+        "400":
+          description: Invalid request format.
+        "404":
+          description: User or Gacha type not found.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+      tags:
+      - db_manager_gachas
+      x-openapi-router-controller: openapi_server.controllers.db_manager_gachas_controller
+  /db_manager/health_check:
+    get:
+      description: Returns 200 if service is healthy.
+      operationId: health_check
+      responses:
+        "200":
+          description: Service OK
+      summary: Gives information on service status.
+      x-openapi-router-controller: openapi_server.controllers.default_controller
+  /db_manager/inventory/get_user_inventory_items:
+    post:
+      description: "Returns the inventory items of a specific user by user UUID, paginated."
+      operationId: get_user_inventory_items
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/get_user_involved_auctions_request'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                description: List of inventory items.
+                items:
+                  $ref: '#/components/schemas/InventoryItem'
+                type: array
+          description: Paginated list of inventory items for the given user.
+        "400":
+          description: Invalid request format.
+        "404":
+          description: User not found.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+      tags:
+      - db_manager_inventory
+      x-openapi-router-controller: openapi_server.controllers.db_manager_inventory_controller
+  /db_manager/inventory/get_user_item_info:
+    post:
+      description: Returns detailed information of a specific inventory item for a
+        given user by username and inventory item UUID.
+      operationId: get_inventory_item
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/get_inventory_item_request'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryItem'
+          description: Detailed information of the specified inventory item.
+        "400":
+          description: Invalid request format.
+        "404":
+          description: Item not found for the given user and item UUID.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+      tags:
+      - db_manager_inventory
+      x-openapi-router-controller: openapi_server.controllers.db_manager_inventory_controller
+  /db_manager/inventory/remove_user_item:
+    post:
+      description: "Removes a specific item from a user inventory. If item is in an\
+        \ auction, refuses the operation."
+      operationId: remove_item
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/get_inventory_item_request'
+      responses:
+        "200":
+          description: Item removed successfully.
+        "400":
+          description: Invalid request format.
+        "404":
+          description: Item not found.
+        "409":
+          description: Cannot remove item that is in an active auction.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+      tags:
+      - db_manager_inventory
+      x-openapi-router-controller: openapi_server.controllers.db_manager_inventory_controller
+  /db_manager/profile/delete:
+    post:
+      description: Deletes user's profile and all related data
+      operationId: delete_user_profile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ban_user_profile_request'
+      responses:
+        "200":
+          description: Profile deleted successfully.
+        "400":
+          description: Invalid request format.
+        "404":
+          description: User not found.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+      tags:
+      - db_manager_profile
+      x-openapi-router-controller: openapi_server.controllers.db_manager_profile_controller
+  /db_manager/profile/edit:
+    post:
+      description: Modifies user information
+      operationId: edit_user_info
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/edit_user_info_request'
+      responses:
+        "200":
+          description: Profile updated.
+        "400":
+          description: Invalid request format.
+        "404":
+          description: User not found;
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+      tags:
+      - db_manager_profile
+      x-openapi-router-controller: openapi_server.controllers.db_manager_profile_controller
+  /db_manager/profile/get_user_hashed_psw:
+    post:
+      description: Returns user's hashed password
+      operationId: get_user_hash_psw
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ban_user_profile_request'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/get_user_hash_psw_200_response'
+          description: Profile updated.
+        "400":
+          description: Invalid request format.
+        "404":
+          description: User not found;
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+      tags:
+      - db_manager_profile
+      x-openapi-router-controller: openapi_server.controllers.db_manager_profile_controller
+  /db_manager/profile/get_user_info:
+    post:
+      description: Returns info about a specific user given his UUID
+      operationId: get_user_info
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ban_user_profile_request'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: Detailed information of the requested user.
+        "400":
+          description: Invalid request format.
+        "404":
+          description: User not found.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+      tags:
+      - db_manager_profile
+      x-openapi-router-controller: openapi_server.controllers.db_manager_profile_controller
+  /db_manager/pvp/check_pending_pvp_requests:
+    post:
+      description: Returns a list of pending pvp requests.
+      operationId: check_pending_pvp_requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ban_user_profile_request'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchRequests'
+          description: List of pending pvp requests.
+        "400":
+          description: Invalid request.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+      tags:
+      - db_manager_pvp
+      x-openapi-router-controller: openapi_server.controllers.db_manager_pvp_controller
+  /db_manager/pvp/finalize_pvp_request_sending:
+    post:
+      description: Inserts a PvP requests.
+      operationId: finalize_pvp_request_sending
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PvPRequestFull'
+      responses:
+        "200":
+          description: Match request sent successfully.
+        "400":
+          description: Invalid request.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+      tags:
+      - db_manager_pvp
+      x-openapi-router-controller: openapi_server.controllers.db_manager_pvp_controller
+  /db_manager/pvp/get_gacha_stat:
+    post:
+      description: Returns a certain gacha stat for both gachas requested
+      operationId: get_gacha_stat
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/get_gacha_stat_request'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/get_gacha_stat_200_response'
+          description: Gacha stats retrieved.
+        "400":
+          description: Invalid request.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+      tags:
+      - db_manager_pvp
+      x-openapi-router-controller: openapi_server.controllers.db_manager_pvp_controller
+  /db_manager/pvp/get_pvp_status:
+    post:
+      description: Obtains information regarding a pvp match.
+      operationId: get_pvp_status
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/get_pvp_status_request'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PvPRequestFull'
+          description: PvP Match.
+        "400":
+          description: Invalid request.
+        "404":
+          description: Match not found.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+      tags:
+      - db_manager_pvp
+      x-openapi-router-controller: openapi_server.controllers.db_manager_pvp_controller
+  /db_manager/pvp/reject_pvp_request:
+    post:
+      description: Rejects a pending pvp request.
+      operationId: reject_pvp_prequest
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/reject_pvp_prequest_request'
+      responses:
+        "200":
+          description: Battle rejected successfully.
+        "400":
+          description: Invalid request.
+        "404":
+          description: Cannot reject this PvP request.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+      tags:
+      - db_manager_pvp
+      x-openapi-router-controller: openapi_server.controllers.db_manager_pvp_controller
+  /db_manager/pvp/set_match_results:
+    post:
+      description: Updates data of pvp_matches setting results.
+      operationId: set_match_results
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/set_match_results_request'
+      responses:
+        "200":
+          description: Match result inserted.
+        "400":
+          description: Invalid request.
+        "404":
+          description: Match or User not found
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+      tags:
+      - db_manager_pvp
+      x-openapi-router-controller: openapi_server.controllers.db_manager_pvp_controller
+  /db_manager/pvp/verify_gacha_item_ownership:
+    post:
+      description: "Verifies that a list of gachas separated by a comma is entirely\
+        \ contained in player's inventory, before letting them send a pvp request."
+      operationId: verify_gacha_item_ownership
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/verify_gacha_item_ownership_request'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserId'
+          description: Battle rejected successfully.
+        "400":
+          description: Invalid request.
+        "401":
+          description: Gacha items do not belong to you.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
+      tags:
+      - db_manager_pvp
+      x-openapi-router-controller: openapi_server.controllers.db_manager_pvp_controller
 components:
   schemas:
+    Team:
+      description: Team used by players to battle each others.
+      items:
+        $ref: '#/components/schemas/GachaId'
+      maxItems: 7
+      minItems: 7
+      title: Team
+      type: array
+    PvPRequestFull:
+      description: Request of a PvP match sent by a player.
+      example:
+        winner: true
+        teams:
+          team1:
+          - null
+          - null
+          - null
+          - null
+          - null
+          team2:
+          - null
+          - null
+          - null
+          - null
+          - null
+        match_log:
+          pairings:
+          - player1:
+              stand_stat: 4
+            player2:
+              stand_stat: 3
+            extracted_stat: A
+            pair: player1 StarPlatinum vs player2 GoldenExperience
+          - player1:
+              stand_stat: 4
+            player2:
+              stand_stat: 3
+            extracted_stat: A
+            pair: player1 StarPlatinum vs player2 GoldenExperience
+          - player1:
+              stand_stat: 4
+            player2:
+              stand_stat: 3
+            extracted_stat: A
+            pair: player1 StarPlatinum vs player2 GoldenExperience
+          - player1:
+              stand_stat: 4
+            player2:
+              stand_stat: 3
+            extracted_stat: A
+            pair: player1 StarPlatinum vs player2 GoldenExperience
+          - player1:
+              stand_stat: 4
+            player2:
+              stand_stat: 3
+            extracted_stat: A
+            pair: player1 StarPlatinum vs player2 GoldenExperience
+        receiver_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        pvp_match_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        sender_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+      properties:
+        pvp_match_uuid:
+          description: UUID of the PvP match.
+          format: uuid
+          title: pvp_match_uuid
+          type: string
+        sender_id:
+          description: UUID of user.
+          format: uuid
+          title: inventory_item_owner_id
+          type: string
+        receiver_id:
+          description: UUID of user.
+          format: uuid
+          title: inventory_item_owner_id
+          type: string
+        teams:
+          $ref: '#/components/schemas/PvPRequestFull_teams'
+        winner:
+          description: "True if winner is player1, False if winner is player2, empty\
+            \ if there is no winner yet"
+          title: winner
+          type: boolean
+        match_log:
+          $ref: '#/components/schemas/MatchLog'
+      title: PvPRequestFull
+      type: object
+    MatchRequests:
+      items:
+        $ref: '#/components/schemas/MatchRequests_inner'
+      type: array
+    MatchPairing:
+      example:
+        player1:
+          stand_stat: 4
+        player2:
+          stand_stat: 3
+        extracted_stat: A
+        pair: player1 StarPlatinum vs player2 GoldenExperience
+      properties:
+        pair:
+          example: player1 StarPlatinum vs player2 GoldenExperience
+          title: pair
+          type: string
+        extracted_stat:
+          description: Stat of a gacha.
+          example: A
+          pattern: "^[A-Ea-e]$"
+          title: GachaStat
+          type: string
+        player1:
+          $ref: '#/components/schemas/MatchPairing_player1'
+        player2:
+          $ref: '#/components/schemas/MatchPairing_player2'
+      title: MatchPairing
+      type: object
+    MatchLog:
+      description: Infos on a specific match
+      example:
+        pairings:
+        - player1:
+            stand_stat: 4
+          player2:
+            stand_stat: 3
+          extracted_stat: A
+          pair: player1 StarPlatinum vs player2 GoldenExperience
+        - player1:
+            stand_stat: 4
+          player2:
+            stand_stat: 3
+          extracted_stat: A
+          pair: player1 StarPlatinum vs player2 GoldenExperience
+        - player1:
+            stand_stat: 4
+          player2:
+            stand_stat: 3
+          extracted_stat: A
+          pair: player1 StarPlatinum vs player2 GoldenExperience
+        - player1:
+            stand_stat: 4
+          player2:
+            stand_stat: 3
+          extracted_stat: A
+          pair: player1 StarPlatinum vs player2 GoldenExperience
+        - player1:
+            stand_stat: 4
+          player2:
+            stand_stat: 3
+          extracted_stat: A
+          pair: player1 StarPlatinum vs player2 GoldenExperience
+      properties:
+        pairings:
+          items:
+            $ref: '#/components/schemas/MatchPairing'
+          maxItems: 7
+          minItems: 7
+          title: pairings
+          type: array
+      title: MatchLog
+      type: object
+    FeedbackPreview:
+      example:
+        user_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        id: 7
+        timestamp: 2000-01-23T04:56:07.000+00:00
+      properties:
+        id:
+          description: Id of feedback.
+          example: 7
+          title: FeedbackId
+          type: integer
+        user_uuid:
+          description: UUID of user.
+          format: uuid
+          title: inventory_item_owner_id
+          type: string
+        timestamp:
+          description: Timestamp when user created feedback
+          format: date-time
+          title: timestamp
+          type: string
+      title: "Feedback preview, without content"
+      type: object
+    FeedbackId:
+      description: Id of feedback.
+      example: 7
+      title: FeedbackId
+      type: integer
+    FeedbackWithUsername:
+      example:
+        user_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        id: 7
+        content: I love this game11!
+        username: LeoPanta01_
+        timestamp: 2000-01-23T04:56:07.000+00:00
+      properties:
+        id:
+          description: Id of feedback.
+          example: 7
+          title: FeedbackId
+          type: integer
+        user_uuid:
+          description: UUID of user.
+          format: uuid
+          title: inventory_item_owner_id
+          type: string
+        username:
+          description: The username of the user
+          example: LeoPanta01_
+          minLength: 5
+          pattern: "^[a-zA-Z0-9_]+$"
+          title: username
+          type: string
+        content:
+          description: Actual feedback content.
+          example: I love this game11!
+          title: content
+          type: string
+        timestamp:
+          description: Timestamp when user created feedback
+          format: date-time
+          title: timestamp
+          type: string
+      title: "Feedback preview, including content"
+      type: object
+    PageNumber:
+      default: 1
+      description: "Page number, when needed."
+      minimum: 1
+      title: page_number
+      type: integer
     UserId:
       description: UUID of user.
       format: uuid
-      title: uuid
+      title: inventory_item_owner_id
       type: string
     UserIdHex:
       description: UUID of user in hex format.
@@ -94,12 +1467,556 @@ components:
       pattern: "^[a-zA-Z0-9_]+$"
       title: username
       type: string
+    Password:
+      description: The user's password must be at least 8 characters and can accept
+        all characters.
+      example: Th1s_c4n_b3_a_good_passw0rd...maybe
+      minLength: 8
+      title: password
+      type: string
     Email:
       description: The user's email.
       example: l.pantani5@studenti.unipi.it
       format: email
-      title: email
+      title: Email
       type: string
+    User:
+      example:
+        joindate: 2000-01-23T04:56:07.000+00:00
+        id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        email: l.pantani5@studenti.unipi.it
+        username: LeoPanta01_
+      properties:
+        id:
+          description: UUID of user.
+          format: uuid
+          title: inventory_item_owner_id
+          type: string
+        username:
+          description: The username of the user
+          example: LeoPanta01_
+          minLength: 5
+          pattern: "^[a-zA-Z0-9_]+$"
+          title: username
+          type: string
+        email:
+          description: The user's email.
+          example: l.pantani5@studenti.unipi.it
+          format: email
+          title: Email
+          type: string
+        joindate:
+          description: Timestamp when user created their account
+          format: date-time
+          title: joindate
+          type: string
+      title: User
+      type: object
+    AuctionId:
+      description: UUID of the auction.
+      format: uuid
+      title: auction_uuid
+      type: string
+    AuctionStatus:
+      default: active
+      enum:
+      - active
+      - closed
+      title: AuctionStatus
+      type: string
+    ItemId:
+      description: UUID of single item.
+      format: uuid
+      title: inventory_item_id
+      type: string
+    Auction:
+      example:
+        auction_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        inventory_item_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        starting_price: 0
+        end_time: 2000-01-23T04:56:07.000+00:00
+        inventory_item_owner_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        current_bid: 6
+        status: active
+        current_bidder: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+      properties:
+        auction_uuid:
+          description: UUID of the auction.
+          format: uuid
+          title: auction_uuid
+          type: string
+        status:
+          $ref: '#/components/schemas/AuctionStatus'
+        inventory_item_owner_id:
+          description: UUID of user.
+          format: uuid
+          title: inventory_item_owner_id
+          type: string
+        inventory_item_id:
+          description: UUID of single item.
+          format: uuid
+          title: inventory_item_id
+          type: string
+        starting_price:
+          description: Initial price set for the auction
+          title: starting_price
+          type: integer
+        current_bid:
+          description: Current highest bid
+          title: current_bid
+          type: integer
+        current_bidder:
+          description: UUID of user.
+          format: uuid
+          title: inventory_item_owner_id
+          type: string
+        end_time:
+          description: "When the auction ends, in UTC timestamp"
+          format: date-time
+          title: end_time
+          type: string
+      title: Auction
+      type: object
+    InventoryItem:
+      example:
+        item_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        obtained_date: 2000-01-23T04:56:07.000+00:00
+        price_paid: 6
+        owner_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        gacha_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        pull_date: 2000-01-23T04:56:07.000+00:00
+        owners_no: 0
+      properties:
+        owner_id:
+          description: UUID of user.
+          format: uuid
+          title: inventory_item_owner_id
+          type: string
+        item_id:
+          description: UUID of single item.
+          format: uuid
+          title: inventory_item_id
+          type: string
+        gacha_uuid:
+          description: UUID representing a gacha
+          format: uuid
+          title: gacha_uuid
+          type: string
+        pull_date:
+          description: Timestamp of first obtainment
+          format: date-time
+          title: pull_date
+          type: string
+        obtained_date:
+          description: Timestamp of latest obtainment
+          format: date-time
+          title: obtained_date
+          type: string
+        owners_no:
+          description: Number of previous owners of this item
+          title: owners_no
+          type: integer
+        price_paid:
+          description: Game currency used to buy this item
+          title: price_paid
+          type: integer
+      title: InventoryItem
+      type: object
+    GachaRarity:
+      description: Rarity level of the gacha
+      enum:
+      - common
+      - rare
+      - epic
+      - legendary
+      example: rare
+      title: GachaRarity
+      type: string
+    BundleId:
+      description: Internal code-name for the bundle.
+      example: bundle_amazing
+      pattern: "^[a-zA-Z0-9_]+$"
+      title: id
+      type: string
+    CurrencyName:
+      description: Currency code-name
+      example: EUR
+      pattern: "^[A-Z]{3}$"
+      title: name
+      type: string
+    CurrencyItem:
+      example:
+        name: EUR
+        value: 10
+      properties:
+        name:
+          description: Currency code-name
+          example: EUR
+          pattern: "^[A-Z]{3}$"
+          title: name
+          type: string
+        value:
+          default: 10
+          description: Amount of real currency.
+          example: 10
+          maximum: 999
+          minimum: 0
+          title: value
+          type: number
+      title: CurrencyItem
+      type: object
+    Bundle:
+      example:
+        amount: 5000
+        name: Amazing Bundle
+        id: bundle_amazing
+        prices:
+          name: EUR
+          value: 10
+      properties:
+        id:
+          description: Internal code-name for the bundle.
+          example: bundle_amazing
+          pattern: "^[a-zA-Z0-9_]+$"
+          title: id
+          type: string
+        name:
+          description: Visible name of the bundle.
+          example: Amazing Bundle
+          title: name
+          type: string
+        amount:
+          description: No. of credits.
+          example: 5000
+          title: amount
+          type: integer
+        prices:
+          $ref: '#/components/schemas/CurrencyItem'
+      title: Bundle
+      type: object
+    GachaId:
+      description: UUID of the gacha
+      format: uuid
+      title: GachaId
+      type: string
+    GachaStat:
+      description: Stat of a gacha.
+      example: A
+      pattern: "^[A-Ea-e]$"
+      title: GachaStat
+      type: string
+    Gacha:
+      example:
+        gacha_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        name: Tower of Gray
+        attributes:
+          durability: A
+          precision: A
+          range: A
+          power: A
+          potential: A
+          speed: A
+        rarity: rare
+      properties:
+        gacha_uuid:
+          description: UUID of the gacha
+          format: uuid
+          title: GachaId
+          type: string
+        name:
+          description: Name of the gacha
+          example: Tower of Gray
+          title: name
+          type: string
+        rarity:
+          $ref: '#/components/schemas/GachaRarity'
+        attributes:
+          $ref: '#/components/schemas/Gacha_attributes'
+      title: Gacha
+      type: object
+    PoolId:
+      description: Internal code-name for the pool.
+      example: pool_starter
+      pattern: "^[a-zA-Z0-9_]+$"
+      title: id
+      type: string
+    Pool:
+      example:
+        price: 15
+        name: Starter Pool
+        id: pool_starter
+        probabilities:
+          legendaryProbability: 5.962134
+          epicProbability: 1.4658129
+          commonProbability: 0.8008282
+          rareProbability: 6.0274563
+        items:
+        - null
+        - null
+      properties:
+        id:
+          description: Internal code-name for the pool.
+          example: pool_starter
+          pattern: "^[a-zA-Z0-9_]+$"
+          title: id
+          type: string
+        name:
+          description: Visible name of the pool.
+          example: Starter Pool
+          title: name
+          type: string
+        price:
+          description: In-game price to pull a gacha from this pool
+          example: 15
+          minimum: 1
+          title: price
+          type: integer
+        probabilities:
+          $ref: '#/components/schemas/RarityProbability'
+        items:
+          description: List of gacha items in the pool.
+          items:
+            $ref: '#/components/schemas/GachaId'
+          title: items
+          type: array
+      title: Pool
+      type: object
+    RarityProbability:
+      example:
+        legendaryProbability: 5.962134
+        epicProbability: 1.4658129
+        commonProbability: 0.8008282
+        rareProbability: 6.0274563
+      properties:
+        commonProbability:
+          default: 0.5
+          format: float
+          title: commonProbability
+          type: number
+        rareProbability:
+          default: 0.3
+          format: float
+          title: rareProbability
+          type: number
+        epicProbability:
+          default: 0.15
+          format: float
+          title: epicProbability
+          type: number
+        legendaryProbability:
+          default: 0.05
+          format: float
+          title: legendaryProbability
+          type: number
+      title: RarityProbability
+      type: object
+    PvPMatchId:
+      description: UUID of the PvP match.
+      format: uuid
+      title: pvp_match_uuid
+      type: string
+    ban_user_profile_request:
+      properties:
+        user_uuid:
+          description: UUID of user.
+          format: uuid
+          title: inventory_item_owner_id
+          type: string
+      title: ban_user_profile_request
+      type: object
+    edit_user_profile_request:
+      properties:
+        uuid:
+          description: UUID of user.
+          format: uuid
+          title: inventory_item_owner_id
+          type: string
+        email:
+          description: The user's email.
+          example: l.pantani5@studenti.unipi.it
+          format: email
+          title: Email
+          type: string
+        username:
+          description: The username of the user
+          example: LeoPanta01_
+          minLength: 5
+          pattern: "^[a-zA-Z0-9_]+$"
+          title: username
+          type: string
+      title: edit_user_profile_request
+      type: object
+    get_feedback_list_request:
+      properties:
+        page_number:
+          default: 1
+          description: "Page number, when needed."
+          minimum: 1
+          title: page_number
+          type: integer
+      title: get_feedback_list_request
+      type: object
+    get_feedback_info_request:
+      properties:
+        feedback_id:
+          description: Id of feedback.
+          example: 7
+          title: FeedbackId
+          type: integer
+      title: get_feedback_info_request
+      type: object
+    get_user_history_request:
+      properties:
+        user_uuid:
+          description: UUID of user.
+          format: uuid
+          title: inventory_item_owner_id
+          type: string
+        history_type:
+          enum:
+          - bundle
+          - ingame
+          title: history_type
+          type: string
+        page_number:
+          default: 1
+          description: "Page number, when needed."
+          minimum: 1
+          title: page_number
+          type: integer
+      title: get_user_history_request
+      type: object
+    get_auction_status_request:
+      properties:
+        uuid:
+          description: UUID of the auction.
+          format: uuid
+          title: auction_uuid
+          type: string
+      title: get_auction_status_request
+      type: object
+    get_auction_status_200_response:
+      example:
+        auction:
+          auction_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          inventory_item_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          starting_price: 0
+          end_time: 2000-01-23T04:56:07.000+00:00
+          inventory_item_owner_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          current_bid: 6
+          status: active
+          current_bidder: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+      properties:
+        auction:
+          $ref: '#/components/schemas/Auction'
+      title: get_auction_status_200_response
+      type: object
+    get_item_with_owner_request:
+      properties:
+        user_uuid:
+          description: UUID of user.
+          format: uuid
+          title: inventory_item_owner_id
+          type: string
+        item_uuid:
+          description: UUID of single item.
+          format: uuid
+          title: inventory_item_id
+          type: string
+      title: get_item_with_owner_request
+      type: object
+    get_item_with_owner_200_response:
+      example:
+        item:
+          item_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          obtained_date: 2000-01-23T04:56:07.000+00:00
+          price_paid: 6
+          owner_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          gacha_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+          pull_date: 2000-01-23T04:56:07.000+00:00
+          owners_no: 0
+      properties:
+        item:
+          $ref: '#/components/schemas/InventoryItem'
+      title: get_item_with_owner_200_response
+      type: object
+    get_user_currency_200_response:
+      example:
+        currency: 0
+      properties:
+        currency:
+          description: Currency of the user.
+          minimum: 0
+          title: currency
+          type: integer
+      title: get_user_currency_200_response
+      type: object
+    place_bid_request:
+      properties:
+        user_uuid:
+          description: UUID of user.
+          format: uuid
+          title: inventory_item_owner_id
+          type: string
+        auction_uuid:
+          description: UUID of the auction.
+          format: uuid
+          title: auction_uuid
+          type: string
+        new_bid:
+          description: The new bid amount.
+          minimum: 0
+          title: new_bid
+          type: integer
+      title: place_bid_request
+      type: object
+    get_user_involved_auctions_request:
+      properties:
+        user_uuid:
+          description: UUID of user.
+          format: uuid
+          title: inventory_item_owner_id
+          type: string
+        page_number:
+          minimum: 1
+          title: page_number
+          type: integer
+      title: get_user_involved_auctions_request
+      type: object
+    list_auctions_request:
+      properties:
+        status:
+          description: "Filter auctions by their status, either 'open' or 'closed'."
+          enum:
+          - open
+          - closed
+          title: status
+          type: string
+        rarity:
+          $ref: '#/components/schemas/GachaRarity'
+        page_number:
+          minimum: 1
+          title: page_number
+          type: integer
+      title: list_auctions_request
+      type: object
+    complete_auction_sale_request:
+      properties:
+        item_uuid:
+          description: UUID of single item.
+          format: uuid
+          title: inventory_item_id
+          type: string
+        current_bid:
+          title: current_bid
+          type: integer
+        user_uuid:
+          description: UUID of user.
+          format: uuid
+          title: inventory_item_owner_id
+          type: string
+      title: complete_auction_sale_request
+      type: object
     login_request:
       properties:
         username:
@@ -113,7 +2030,7 @@ components:
       type: object
     login_200_response:
       example:
-        password: password
+        password: Th1s_c4n_b3_a_good_passw0rd...maybe
         role: role
         uuid_hex: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
         uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
@@ -123,7 +2040,7 @@ components:
         uuid:
           description: UUID of user.
           format: uuid
-          title: uuid
+          title: inventory_item_owner_id
           type: string
         uuid_hex:
           description: UUID of user in hex format.
@@ -134,7 +2051,7 @@ components:
           description: The user's email.
           example: l.pantani5@studenti.unipi.it
           format: email
-          title: email
+          title: Email
           type: string
         username:
           description: The username of the user
@@ -148,7 +2065,10 @@ components:
           title: role
           type: string
         password:
-          description: User's password.
+          description: The user's password must be at least 8 characters and can accept
+            all characters.
+          example: Th1s_c4n_b3_a_good_passw0rd...maybe
+          minLength: 8
           title: password
           type: string
       title: login_200_response
@@ -158,16 +2078,19 @@ components:
         uuid:
           description: UUID of user.
           format: uuid
-          title: uuid
+          title: inventory_item_owner_id
           type: string
         email:
           description: The user's email.
           example: l.pantani5@studenti.unipi.it
           format: email
-          title: email
+          title: Email
           type: string
         password:
-          description: User's password.
+          description: The user's password must be at least 8 characters and can accept
+            all characters.
+          example: Th1s_c4n_b3_a_good_passw0rd...maybe
+          minLength: 8
           title: password
           type: string
         username:
@@ -178,4 +2101,387 @@ components:
           title: username
           type: string
       title: register_request
+      type: object
+    get_bundle_info_request:
+      properties:
+        bundle_id:
+          description: Codename of the bundle to retrieve.
+          title: bundle_id
+          type: string
+      title: get_bundle_info_request
+      type: object
+    get_bundle_info_200_response:
+      example:
+        bundle:
+          amount: 5000
+          name: Amazing Bundle
+          id: bundle_amazing
+          prices:
+            name: EUR
+            value: 10
+      properties:
+        bundle:
+          $ref: '#/components/schemas/Bundle'
+      title: get_bundle_info_200_response
+      type: object
+    purchase_bundle_request:
+      properties:
+        user_uuid:
+          description: UUID of user.
+          format: uuid
+          title: inventory_item_owner_id
+          type: string
+        bundle_codename:
+          description: Internal code-name for the bundle.
+          example: bundle_amazing
+          pattern: "^[a-zA-Z0-9_]+$"
+          title: id
+          type: string
+        currency_name:
+          description: Currency code-name
+          example: EUR
+          pattern: "^[A-Z]{3}$"
+          title: name
+          type: string
+        credits_obtained:
+          title: credits_obtained
+          type: integer
+        transaction_type_bundle_code:
+          example: bought_bundle
+          title: transaction_type_bundle_code
+          type: string
+      title: purchase_bundle_request
+      type: object
+    submit_feedback_request:
+      properties:
+        user_uuid:
+          description: UUID of user.
+          format: uuid
+          title: inventory_item_owner_id
+          type: string
+        string:
+          description: The feedback content provided by the user.
+          example: "I really enjoy using this feature, but I think it could be improved\
+            \ by adding X."
+          title: string
+          type: string
+      title: submit_feedback_request
+      type: object
+    get_gacha_info_request:
+      properties:
+        gacha_uuid:
+          description: UUID of the gacha
+          format: uuid
+          title: GachaId
+          type: string
+      required:
+      - gacha_uuid
+      title: get_gacha_info_request
+      type: object
+    get_currency_200_response:
+      example:
+        currency: 0
+      properties:
+        currency:
+          description: Currency of the user.
+          title: currency
+          type: integer
+      title: get_currency_200_response
+      type: object
+    give_item_request:
+      properties:
+        item_uuid:
+          description: UUID of single item.
+          format: uuid
+          title: inventory_item_id
+          type: string
+        owner_uuid:
+          description: UUID of user.
+          format: uuid
+          title: inventory_item_owner_id
+          type: string
+        stand_uuid:
+          description: UUID of the gacha
+          format: uuid
+          title: GachaId
+          type: string
+        price_paid:
+          description: Currency spent to obtain the item.
+          title: price_paid
+          type: integer
+      title: give_item_request
+      type: object
+    get_gacha_list_request:
+      properties:
+        user_uuid:
+          description: UUID of user.
+          format: uuid
+          title: inventory_item_owner_id
+          type: string
+        owned_filter:
+          description: Filters item list based on user ownership.
+          title: owned_filter
+          type: boolean
+      title: get_gacha_list_request
+      type: object
+    get_inventory_item_request:
+      properties:
+        user_uuid:
+          description: UUID of user.
+          format: uuid
+          title: inventory_item_owner_id
+          type: string
+        inventory_item_id:
+          description: UUID of single item.
+          format: uuid
+          title: inventory_item_id
+          type: string
+      title: get_inventory_item_request
+      type: object
+    get_user_hash_psw_200_response:
+      example:
+        password: password
+      properties:
+        password:
+          description: The user's password.
+          title: password
+          type: string
+      title: get_user_hash_psw_200_response
+      type: object
+    edit_user_info_request:
+      properties:
+        user_uuid:
+          description: UUID of user.
+          format: uuid
+          title: inventory_item_owner_id
+          type: string
+        username:
+          description: The username of the user
+          example: LeoPanta01_
+          minLength: 5
+          pattern: "^[a-zA-Z0-9_]+$"
+          title: username
+          type: string
+        email:
+          description: The user's email.
+          example: l.pantani5@studenti.unipi.it
+          format: email
+          title: Email
+          type: string
+      title: edit_user_info_request
+      type: object
+    get_pvp_status_request:
+      properties:
+        pvp_match_uuid:
+          description: UUID of the PvP match.
+          format: uuid
+          title: pvp_match_uuid
+          type: string
+      title: get_pvp_status_request
+      type: object
+    reject_pvp_prequest_request:
+      properties:
+        pvp_match_uuid:
+          description: UUID of the PvP match.
+          format: uuid
+          title: pvp_match_uuid
+          type: string
+        user_uuid:
+          description: UUID of user.
+          format: uuid
+          title: inventory_item_owner_id
+          type: string
+      title: reject_pvp_prequest_request
+      type: object
+    verify_gacha_item_ownership_request:
+      properties:
+        team:
+          description: List (surrounded by round brackets) of gacha uuids separated
+            by a comma
+          example: "(3fa85f64-5717-4562-b3fc-2c963f66afa6, 3fa85f64-5717-4562-b3fc-2c963f66afa6,\
+            \ 3fa85f64-5717-4562-b3fc-2c963f66afa6, 3fa85f64-5717-4562-b3fc-2c963f66afa6,\
+            \ 3fa85f64-5717-4562-b3fc-2c963f66afa6, 3fa85f64-5717-4562-b3fc-2c963f66afa6,\
+            \ 3fa85f64-5717-4562-b3fc-2c963f66afa6)"
+          pattern: "^\\(\\s*[a-zA-Z]+\\s*(,\\s*[a-zA-Z]+\\s*){6}\\)$"
+          title: team
+          type: string
+      title: verify_gacha_item_ownership_request
+      type: object
+    get_gacha_stat_request:
+      properties:
+        player1_stand:
+          description: UUID of single item.
+          format: uuid
+          title: inventory_item_id
+          type: string
+        player2_stand:
+          description: UUID of single item.
+          format: uuid
+          title: inventory_item_id
+          type: string
+      title: get_gacha_stat_request
+      type: object
+    get_gacha_stat_200_response:
+      example:
+        player2_stat: 4
+        player1_stat: 4
+      properties:
+        player1_stat:
+          description: Value gacha stat.
+          example: 4
+          maximum: 5
+          minimum: 1
+          title: player1_stat
+          type: integer
+        player2_stat:
+          description: Value gacha stat.
+          example: 4
+          maximum: 5
+          minimum: 1
+          title: player2_stat
+          type: integer
+      title: get_gacha_stat_200_response
+      type: object
+    set_match_results_request:
+      properties:
+        match:
+          $ref: '#/components/schemas/PvPRequestFull'
+        points:
+          description: Match adds 1 for each game won by player1 and subtracts 1 for
+            each game won by player2
+          title: points
+          type: integer
+      title: set_match_results_request
+      type: object
+    PvPRequestFull_teams:
+      example:
+        team1:
+        - null
+        - null
+        - null
+        - null
+        - null
+        team2:
+        - null
+        - null
+        - null
+        - null
+        - null
+      properties:
+        team1:
+          description: Team used by players to battle each others.
+          items:
+            $ref: '#/components/schemas/GachaId'
+          maxItems: 7
+          minItems: 7
+          title: Team
+          type: array
+        team2:
+          description: Team used by players to battle each others.
+          items:
+            $ref: '#/components/schemas/GachaId'
+          maxItems: 7
+          minItems: 7
+          title: Team
+          type: array
+      title: PvPRequestFull_teams
+      type: object
+    MatchRequests_inner:
+      example:
+        pvp_match_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        from: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+      properties:
+        pvp_match_uuid:
+          description: UUID of the PvP match.
+          format: uuid
+          title: pvp_match_uuid
+          type: string
+        from:
+          description: UUID of user.
+          format: uuid
+          title: inventory_item_owner_id
+          type: string
+      title: MatchRequests_inner
+      type: object
+    MatchPairing_player1:
+      example:
+        stand_stat: 4
+      properties:
+        stand_stat:
+          description: Value of extracted_stat
+          example: 4
+          maximum: 5
+          minimum: 1
+          title: stand_stat
+          type: integer
+      title: MatchPairing_player1
+      type: object
+    MatchPairing_player2:
+      example:
+        stand_stat: 3
+      properties:
+        stand_stat:
+          description: Value of extracted_stat
+          example: 3
+          maximum: 5
+          minimum: 1
+          title: stand_stat
+          type: integer
+      title: MatchPairing_player2
+      type: object
+    Gacha_attributes:
+      additionalProperties:
+        type: string
+      example:
+        durability: A
+        precision: A
+        range: A
+        power: A
+        potential: A
+        speed: A
+      properties:
+        power:
+          description: Stat of a gacha.
+          example: A
+          pattern: "^[A-Ea-e]$"
+          title: GachaStat
+          type: string
+        speed:
+          description: Stat of a gacha.
+          example: A
+          pattern: "^[A-Ea-e]$"
+          title: GachaStat
+          type: string
+        durability:
+          description: Stat of a gacha.
+          example: A
+          pattern: "^[A-Ea-e]$"
+          title: GachaStat
+          type: string
+        precision:
+          description: Stat of a gacha.
+          example: A
+          pattern: "^[A-Ea-e]$"
+          title: GachaStat
+          type: string
+        range:
+          description: Stat of a gacha.
+          example: A
+          pattern: "^[A-Ea-e]$"
+          title: GachaStat
+          type: string
+        potential:
+          description: Stat of a gacha.
+          example: A
+          pattern: "^[A-Ea-e]$"
+          title: GachaStat
+          type: string
+      required:
+      - durability
+      - potential
+      - power
+      - precision
+      - range
+      - speed
+      title: Gacha_attributes
       type: object

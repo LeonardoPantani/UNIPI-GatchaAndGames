@@ -1,23 +1,15 @@
-import json
-import logging
 import uuid
 from datetime import datetime
-from typing import Dict, Tuple, Union
-
 import bcrypt
 import connexion
 import requests
-from flask import current_app, jsonify, request, session
-from pybreaker import CircuitBreaker, CircuitBreakerError, CircuitBreakerListener
-
-from openapi_server import util
-from openapi_server.models.login_request import LoginRequest
-from openapi_server.models.register_request import RegisterRequest
+from flask import jsonify, session
+from pybreaker import CircuitBreaker, CircuitBreakerError
 
 # circuit breaker to stop requests when dbmanager fails
-circuit_breaker = CircuitBreaker(
-    fail_max=5, reset_timeout=5, exclude=[requests.HTTPError]
-)
+circuit_breaker = CircuitBreaker(fail_max=5, reset_timeout=5, exclude=[requests.HTTPError])
+
+
 
 
 def health_check():
@@ -106,7 +98,6 @@ def register():
     uuid_to_register = str(uuid.UUID(bytes=uuid_hex_to_register))
 
     try:
-
         @circuit_breaker
         def make_request_to_dbmanager():
             payload = {

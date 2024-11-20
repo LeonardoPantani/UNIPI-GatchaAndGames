@@ -189,7 +189,7 @@ class Login200Response(Model):
     def password(self) -> str:
         """Gets the password of this Login200Response.
 
-        User's password.  # noqa: E501
+        The user's password must be at least 8 characters and can accept all characters.  # noqa: E501
 
         :return: The password of this Login200Response.
         :rtype: str
@@ -200,10 +200,12 @@ class Login200Response(Model):
     def password(self, password: str):
         """Sets the password of this Login200Response.
 
-        User's password.  # noqa: E501
+        The user's password must be at least 8 characters and can accept all characters.  # noqa: E501
 
         :param password: The password of this Login200Response.
         :type password: str
         """
+        if password is not None and len(password) < 8:
+            raise ValueError("Invalid value for `password`, length must be greater than or equal to `8`")  # noqa: E501
 
         self._password = password

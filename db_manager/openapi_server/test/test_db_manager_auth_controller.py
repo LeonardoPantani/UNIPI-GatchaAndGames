@@ -8,21 +8,8 @@ from openapi_server.models.register_request import RegisterRequest  # noqa: E501
 from openapi_server.test import BaseTestCase
 
 
-class TestDbmanagerController(BaseTestCase):
-    """DbmanagerController integration test stubs"""
-
-    def test_health_check(self):
-        """Test case for health_check
-
-        Gives information on service status.
-        """
-        response = self.client.open(
-            '/dbmanager/health_check',
-            method='GET',
-            headers=headers,
-            content_type='application/json')
-        self.assert200(response,
-                       'Response body is : ' + response.data.decode('utf-8'))
+class TestDbManagerAuthController(BaseTestCase):
+    """DbManagerAuthController integration test stubs"""
 
     def test_login(self):
         """Test case for login
@@ -35,7 +22,7 @@ class TestDbmanagerController(BaseTestCase):
             'Content-Type': 'application/json',
         }
         response = self.client.open(
-            '/dbmanager/auth/login',
+            '/db_manager/auth/login',
             method='POST',
             headers=headers,
             data=json.dumps(login_request),
@@ -53,7 +40,7 @@ class TestDbmanagerController(BaseTestCase):
             'Content-Type': 'application/json',
         }
         response = self.client.open(
-            '/dbmanager/auth/register',
+            '/db_manager/auth/register',
             method='POST',
             headers=headers,
             data=json.dumps(register_request),

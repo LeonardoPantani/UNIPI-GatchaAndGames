@@ -129,7 +129,7 @@ def create_gacha():  # noqa: E501
         connection = mysql.connect()
         cursor = connection.cursor()
         query = "INSERT INTO gachas_types (uuid, name, stat_power, stat_speed, stat_durability, stat_precision, stat_range, stat_potential, rarity, release_date) VALUES (UUID_TO_BIN(%s), %s, %s, %s, %s, %s, %s, %s, %s, %s)"
-        cursor.execute(query, (gacha.uuid, gacha.name, converted["power"], converted["speed"], converted["durability"], converted["precision"], converted["range"], converted["potential"], gacha.rarity, date.today()))
+        cursor.execute(query, (gacha.gacha_uuid, gacha.name, converted["power"], converted["speed"], converted["durability"], converted["precision"], converted["range"], converted["potential"], gacha.rarity, date.today()))
         
         if cursor.rowcount == 0:
             return jsonify({"error": "The provided gacha uuid is already in use."}), 404
