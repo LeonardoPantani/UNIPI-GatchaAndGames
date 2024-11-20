@@ -474,8 +474,7 @@ paths:
                 auction_uuid:
                   $ref: '#/components/schemas/AuctionId'
                 new_bid:
-                  type: number
-                  format: integer
+                  type: integer
                   minimum: 0
                   description: 'The new bid amount.'
       responses:
@@ -754,8 +753,7 @@ paths:
                 currency_name:
                   $ref: '#/components/schemas/CurrencyName'
                 credits_obtained:
-                  type: number
-                  format: integer
+                  type: integer
                 transaction_type_bundle_code:
                   type: string
                   example: 'bought_bundle'
@@ -1514,8 +1512,8 @@ components:
       properties:
         pairings:
           type: array
-          minimum: 7
-          maximum: 7
+          minItems: 7
+          maxItems: 7
           items:
             $ref: '#/components/schemas/MatchPairing'
     FeedbackPreview:
@@ -1533,9 +1531,8 @@ components:
       type: object
     FeedbackId:
       description: Id of feedback.
-      format: integer
       title: FeedbackId
-      type: number
+      type: integer
       example: 7
     FeedbackWithUsername:
       properties:
@@ -1628,12 +1625,10 @@ components:
         inventory_item_id:
           $ref: '#/components/schemas/ItemId'
         starting_price:
-          type: number
-          format: integer
+          type: integer
           description: Initial price set for the auction
         current_bid:
-          type: number
-          format: integer
+          type: integer
           description: Current highest bid
         current_bidder:
           $ref: '#/components/schemas/UserId'
@@ -1664,8 +1659,7 @@ components:
           type: integer
           description: Number of previous owners of this item
         price_paid:
-          type: number
-          format: integer
+          type: integer
           description: Game currency used to buy this item
     GachaRarity:
       type: string
