@@ -5,8 +5,18 @@ on: push
 jobs:
   automated-api-tests:
     runs-on: ubuntu-latest
+    services:
+      docker:
+        image: your-docker-image:latest
+        options: --privileged  # If needed
+        ports:
+          - 8080:8080  # Adjust as necessary
     steps:
       - uses: actions/checkout@v4
+      - name: Install Docker Compose
+        run: sudo apt-get install docker-compose
+      - name: Start Docker Compose
+        run: docker-compose up -d
       - name: Install Postman CLI
         run: |
           curl -o- "https://dl-cli.pstmn.io/install/linux64.sh" | sh
