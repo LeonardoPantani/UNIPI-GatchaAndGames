@@ -287,7 +287,7 @@ def send_pvp_request(user_uuid):  # noqa: E501
     if connexion.request.is_json:
         body_request = connexion.request.get_json()
         team = body_request.get("gachas")
-
+    
     if len(team) != 7:
         return jsonify({"error": "Exactly 7 gacha items required"}), 400
 
@@ -303,16 +303,16 @@ def send_pvp_request(user_uuid):  # noqa: E501
         # Construct query with placeholders for the 7 UUIDs
         # /db_manager/pvp/verify_gacha_item_ownership
         placeholders = ', '.join(['%s'] * len(team))
+
         query = f'SELECT DISTINCT BIN_TO_UUID(owner_uuid) FROM inventories WHERE BIN_TO_UUID(item_uuid) IN ({placeholders})'
-        
         # Execute query with the gacha UUIDs
         cursor.execute(query, tuple(team))
-        owner_uuids = cursor.fetchall()[0]
+        owner_uuids = cursor.fetchall()
         
         if len(owner_uuids) != 1:
             return jsonify({"error": "Gacha items do not belong to you"}), 401
         
-        player1_uuid=owner_uuids[0]
+        player1_uuid=owner_uuids[0][0]
         
         if player1_uuid != session['uuid']:
             return jsonify({"error": "Gacha items do not belong to you"}), 401
@@ -335,11 +335,12 @@ def send_pvp_request(user_uuid):  # noqa: E501
             VALUES (UUID_TO_BIN(%s), UUID_TO_BIN(%s), UUID_TO_BIN(%s), %s, %s, %s);
         '''
         print(insert_query)
-        cursor.execute(insert_query, (uuid.uuid4(), player1_uuid, user_uuid, None, None, jsonify(team).get_data(as_text=True)))
+        match_uuid = uuid.uuid4()
+        cursor.execute(insert_query, (match_uuid, player1_uuid, user_uuid, None, None, jsonify(team).get_data(as_text=True)))
 
         connection.commit()
 
-        return jsonify({"message":"Match request sent successfully."}), 200
+        return jsonify({"message":"Match request sent successfully " + str(match_uuid)}), 200
 
     except Exception as e:
         return jsonify({"error":str(e)}), 500
