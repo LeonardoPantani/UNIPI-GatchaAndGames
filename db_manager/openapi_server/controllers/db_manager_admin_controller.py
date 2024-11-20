@@ -52,11 +52,6 @@ def ban_user_profile(ban_user_profile_request=None):  # noqa: E501
     except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
         logging.error("Query 1 ["+ user_uuid +"]: Programming error.")
         return "", 400
-    except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
-        logging.error("Query 1 ["+ user_uuid +"]: Integrity error.")
-        if connection:
-            connection.rollback()
-        return "", 409
     except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
         logging.error("Query 1 ["+ user_uuid +"]: Internal error.")
         return "", 500
