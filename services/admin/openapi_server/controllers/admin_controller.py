@@ -3,6 +3,7 @@ import connexion
 import uuid
 import bcrypt
 import json
+import requests
 from datetime import date
 
 from typing import Dict
@@ -20,6 +21,9 @@ from flask import current_app, jsonify, request, session
 from flaskext.mysql import MySQL
 from pybreaker import CircuitBreaker, CircuitBreakerError
 
+# circuit breaker to stop requests when dbmanager fails
+circuit_breaker = CircuitBreaker(fail_max=5, reset_timeout=5, exclude=[requests.HTTPError])
+
 
 
 def admin_health_check_get():  # noqa: E501
@@ -33,65 +37,30 @@ def ban_profile(user_uuid):  # noqa: E501
     if session.get('uuid') == user_uuid:
         return jsonify({"error": "You cannot delete your account like this"}), 406
     
-    # valid request from now on
     try:
-        mysql = current_app.extensions.get('mysql')
-        if not mysql:
-            return jsonify({"error": "Database connection not initialized"}), 500
 
-        connection = mysql.connect()
-        cursor = connection.cursor()
+        @circuit_breaker
+        def make_request_to_dbmanager():
+            payload = {"user_uuid": user_uuid}
+            url = "http://db_manager:8080/db_manager/admin/ban_user_profile"
+            response = requests.post(url, json=payload)
+            response.raise_for_status()  # if response is obtained correctly
+            return response.json()
 
-        query = "SELECT role FROM users WHERE uuid = UUID_TO_BIN(%s) LIMIT 1"
-        cursor.execute(query, (user_uuid,))
-        result = cursor.fetchone()
-        if result:
-            user_to_ban_role = result[0]
-            if user_to_ban_role == "ADMIN":
-                return jsonify({"error": "Cannot ban a user with the ADMIN role."}), 409
-        else:
-            return jsonify({"error": "User not found"}), 404
-        
-        cursor.execute('DELETE FROM feedbacks WHERE user_uuid = UUID_TO_BIN(%s)', (user_uuid,))
-        cursor.execute('DELETE FROM ingame_transactions WHERE user_uuid = UUID_TO_BIN(%s)', (user_uuid,)) 
-        cursor.execute('DELETE FROM bundles_transactions WHERE user_uuid = UUID_TO_BIN(%s)', (user_uuid,))
-
-        cursor.execute('''
-                        UPDATE profiles SET currency = currency + (
-                            SELECT current_bid
-                            FROM auctions
-                            WHERE item_uuid IN (
-                                SELECT item_uuid FROM inventories WHERE owner_uuid = UUID_TO_BIN(%s)
-                            )
-                        )
-                        WHERE uuid IN (
-                            SELECT current_bidder
-                            FROM auctions
-                            WHERE item_uuid IN (
-                                SELECT item_uuid FROM inventories WHERE owner_uuid = UUID_TO_BIN(%s)
-                            )
-                        )
-                        ''',
-                        (user_uuid, user_uuid)
-        )
-        
-        cursor.execute('DELETE FROM pvp_matches WHERE player_1_uuid = UUID_TO_BIN(%s) OR player_2_uuid = UUID_TO_BIN(%s)', (user_uuid,user_uuid))
-        cursor.execute('DELETE FROM auctions WHERE item_uuid IN (SELECT item_uuid FROM inventories WHERE owner_uuid = UUID_TO_BIN(%s))', (user_uuid,))
-        cursor.execute('DELETE FROM inventories WHERE owner_uuid = UUID_TO_BIN(%s)', (user_uuid,))
-
-        query = "DELETE FROM profiles WHERE uuid = UUID_TO_BIN(%s)"
-        cursor.execute(query, (user_uuid,))
-
-        query = "DELETE FROM users WHERE uuid = UUID_TO_BIN(%s)"
-        cursor.execute(query, (user_uuid,))
-
-        connection.commit()
-        cursor.close()
+        make_request_to_dbmanager()
 
         return jsonify({"message": "Profile successfully banned."}), 200
-    except Exception as e:
-        connection.rollback()
-        return jsonify({"error": str(e)}), 500
+    except requests.HTTPError as e:  # if request is sent to dbmanager correctly and it answers an application error (to be managed here) [error expected by us]
+        if e.response.status_code == 404:
+            return jsonify({"error": "User not found."}), 404
+        elif e.response.status_code == 409: 
+            return jsonify({"error": "Cannot ban a user with the ADMIN role."}), 409
+        else:  # other errors
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
+        return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:  # if request already failed multiple times, the circuit breaker is open and this code gets executed
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
 
 def create_gacha():  # noqa: E501
@@ -136,7 +105,7 @@ def create_gacha():  # noqa: E501
         
         connection.commit()
 
-        return jsonify({"message": "Gacha successfully created.", "gacha_uuid": gacha_uuid}), 201
+        return jsonify({"message": "Gacha successfully created.", "gacha_uuid": gacha.gacha_uuid}), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
