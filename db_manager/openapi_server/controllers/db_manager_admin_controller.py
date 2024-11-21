@@ -5,17 +5,17 @@ from typing import Dict
 from typing import Tuple
 from typing import Union
 
-from openapi_server.models.auction import Auction  # noqa: E501
-from openapi_server.models.ban_user_profile_request import BanUserProfileRequest  # noqa: E501
-from openapi_server.models.edit_user_profile_request import EditUserProfileRequest  # noqa: E501
-from openapi_server.models.feedback_preview import FeedbackPreview  # noqa: E501
-from openapi_server.models.feedback_with_username import FeedbackWithUsername  # noqa: E501
-from openapi_server.models.gacha import Gacha  # noqa: E501
-from openapi_server.models.get_feedback_info_request import GetFeedbackInfoRequest  # noqa: E501
-from openapi_server.models.get_feedback_list_request import GetFeedbackListRequest  # noqa: E501
-from openapi_server.models.get_user_history_request import GetUserHistoryRequest  # noqa: E501
-from openapi_server.models.pool import Pool  # noqa: E501
-from openapi_server.models.user import User  # noqa: E501
+from openapi_server.models.auction import Auction
+from openapi_server.models.ban_user_profile_request import BanUserProfileRequest
+from openapi_server.models.edit_user_profile_request import EditUserProfileRequest
+from openapi_server.models.feedback_preview import FeedbackPreview
+from openapi_server.models.feedback_with_username import FeedbackWithUsername
+from openapi_server.models.gacha import Gacha
+from openapi_server.models.get_feedback_info_request import GetFeedbackInfoRequest
+from openapi_server.models.get_feedback_list_request import GetFeedbackListRequest
+from openapi_server.models.get_user_history_request import GetUserHistoryRequest
+from openapi_server.models.pool import Pool
+from openapi_server.models.user import User
 from openapi_server import util
 
 from flask import current_app, jsonify
@@ -25,12 +25,12 @@ from pybreaker import CircuitBreaker, CircuitBreakerError
 
 circuit_breaker = CircuitBreaker(fail_max=5, reset_timeout=5, exclude=[OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError])
 
-def ban_user_profile(ban_user_profile_request=None):  # noqa: E501
+def ban_user_profile(ban_user_profile_request=None):
     if not connexion.request.is_json:
         return "", 400
     
     # valid json request
-    ban_user_profile_request = BanUserProfileRequest.from_dict(connexion.request.get_json())  # noqa: E501
+    ban_user_profile_request = BanUserProfileRequest.from_dict(connexion.request.get_json())
     user_uuid = ban_user_profile_request.user_uuid
 
     mysql = current_app.extensions.get('mysql')
@@ -145,7 +145,7 @@ def ban_user_profile(ban_user_profile_request=None):  # noqa: E501
     return "", 200
     
 
-def create_gacha_pool(pool=None):  # noqa: E501
+def create_gacha_pool(pool=None):
     """create_gacha_pool
 
     Creates a gacha pool. # noqa: E501
@@ -156,16 +156,16 @@ def create_gacha_pool(pool=None):  # noqa: E501
     :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
     """
     if connexion.request.is_json:
-        pool = Pool.from_dict(connexion.request.get_json())  # noqa: E501
+        pool = Pool.from_dict(connexion.request.get_json())
     return 'do some magic!'
 
 
-def create_gacha_type(gacha=None):  # noqa: E501
+def create_gacha_type(gacha=None):
     if not connexion.request.is_json:
         return "", 400
     
     # valid json request
-    gacha = Gacha.from_dict(connexion.request.get_json())  # noqa: E501
+    gacha = Gacha.from_dict(connexion.request.get_json())
 
     # converting letters to numbers for storage
     letters_map = {
@@ -223,8 +223,7 @@ def create_gacha_type(gacha=None):  # noqa: E501
         return "", 503
 
 
-
-def delete_gacha_pool(body=None):  # noqa: E501
+def delete_gacha_pool(body=None): # TODO controllare dipendenze
     """delete_gacha_pool
 
     Deletes a gacha pool. # noqa: E501
@@ -237,21 +236,60 @@ def delete_gacha_pool(body=None):  # noqa: E501
     return 'do some magic!'
 
 
-def delete_gacha_type(body=None):  # noqa: E501
-    """delete_gacha_type
+def delete_gacha_type(): #TODO vanno rimosse le cose nel modo corretto
+    if not connexion.request.is_json:
+        return "", 400
 
-    Deletes a gacha type. # noqa: E501
+    mysql = current_app.extensions.get('mysql')
 
-    :param body: 
-    :type body: str
-    :type body: str
+    gacha_uuid = connexion.request.get_json()
 
-    :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
-    """
-    return 'do some magic!'
+    try:
+        @circuit_breaker
+        def make_request_to_db():
+            connection = mysql.connect()
+            cursor = connection.cursor()
+
+            delete_query = "DELETE FROM gacha_pools_items WHERE gacha_uuid = UUID_TO_BIN(%s)"
+            cursor.execute(delete_query, (gacha_uuid,))
+            delete_query = "DELETE FROM inventories WHERE stand_uuid = UUID_TO_BIN(%s)"
+            cursor.execute(delete_query, (gacha_uuid,))
+            delete_query = "DELETE FROM gachas_types WHERE uuid = UUID_TO_BIN(%s)"
+            cursor.execute(delete_query, (gacha_uuid,))
+            connection.commit()
+            return cursor.rowcount
+
+        if make_request_to_db() == 0:
+            return jsonify({"error": "Gacha not found."}), 404
+
+        return "", 201
+    except OperationalError: # if connect to db fails means there is an error in the db
+        logging.error("Query ["+ gacha_uuid +"]: Operational error.")
+        return "", 500
+    except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
+        logging.error("Query ["+ gacha_uuid +"]: Integrity error.")
+        return "", 409
+    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+        logging.error("Query ["+ gacha_uuid +"]: Programming error.")
+        return "", 400
+    except DataError:
+        logging.error("Query ["+ gacha_uuid +"]: Data error.")
+        return "", 400
+    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+        logging.error("Query ["+ gacha_uuid +"]: Internal error.")
+        return "", 500
+    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+        logging.error("Query ["+ gacha_uuid +"]: Interface error.")
+        return "", 500
+    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+        logging.error("Query ["+ gacha_uuid +"]: Database error.")
+        return "", 500
+    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return "", 503
 
 
-def edit_user_profile(edit_user_profile_request=None):  # noqa: E501
+def edit_user_profile(edit_user_profile_request=None):
     """edit_user_profile
 
     Edits a user profile. # noqa: E501
@@ -262,11 +300,11 @@ def edit_user_profile(edit_user_profile_request=None):  # noqa: E501
     :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
     """
     if connexion.request.is_json:
-        edit_user_profile_request = EditUserProfileRequest.from_dict(connexion.request.get_json())  # noqa: E501
+        edit_user_profile_request = EditUserProfileRequest.from_dict(connexion.request.get_json())
     return 'do some magic!'
 
 
-def get_feedback_info(get_feedback_info_request=None):  # noqa: E501
+def get_feedback_info(get_feedback_info_request=None):
     """get_feedback_info
 
     Returns info on a single feedback # noqa: E501
@@ -277,11 +315,11 @@ def get_feedback_info(get_feedback_info_request=None):  # noqa: E501
     :rtype: Union[FeedbackWithUsername, Tuple[FeedbackWithUsername, int], Tuple[FeedbackWithUsername, int, Dict[str, str]]
     """
     if connexion.request.is_json:
-        get_feedback_info_request = GetFeedbackInfoRequest.from_dict(connexion.request.get_json())  # noqa: E501
+        get_feedback_info_request = GetFeedbackInfoRequest.from_dict(connexion.request.get_json())
     return 'do some magic!'
 
 
-def get_feedback_list(get_feedback_list_request=None):  # noqa: E501
+def get_feedback_list(get_feedback_list_request=None):
     """get_feedback_list
 
     Gets a feedback list # noqa: E501
@@ -292,11 +330,11 @@ def get_feedback_list(get_feedback_list_request=None):  # noqa: E501
     :rtype: Union[List[FeedbackPreview], Tuple[List[FeedbackPreview], int], Tuple[List[FeedbackPreview], int, Dict[str, str]]
     """
     if connexion.request.is_json:
-        get_feedback_list_request = GetFeedbackListRequest.from_dict(connexion.request.get_json())  # noqa: E501
+        get_feedback_list_request = GetFeedbackListRequest.from_dict(connexion.request.get_json())
     return 'do some magic!'
 
 
-def get_profile_list(get_feedback_list_request=None):  # noqa: E501
+def get_profile_list(get_feedback_list_request=None):
     """get_profile_list
 
     Gets a profile list # noqa: E501
@@ -307,11 +345,11 @@ def get_profile_list(get_feedback_list_request=None):  # noqa: E501
     :rtype: Union[List[User], Tuple[List[User], int], Tuple[List[User], int, Dict[str, str]]
     """
     if connexion.request.is_json:
-        get_feedback_list_request = GetFeedbackListRequest.from_dict(connexion.request.get_json())  # noqa: E501
+        get_feedback_list_request = GetFeedbackListRequest.from_dict(connexion.request.get_json())
     return 'do some magic!'
 
 
-def get_user_history(get_user_history_request=None):  # noqa: E501
+def get_user_history(get_user_history_request=None):
     """get_user_history
 
     Returns history of user&#39;s profile. # noqa: E501
@@ -322,11 +360,11 @@ def get_user_history(get_user_history_request=None):  # noqa: E501
     :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
     """
     if connexion.request.is_json:
-        get_user_history_request = GetUserHistoryRequest.from_dict(connexion.request.get_json())  # noqa: E501
+        get_user_history_request = GetUserHistoryRequest.from_dict(connexion.request.get_json())
     return 'do some magic!'
 
 
-def update_auction(auction=None):  # noqa: E501
+def update_auction(auction=None):
     """update_auction
 
     Updates a specific auction. # noqa: E501
@@ -337,11 +375,11 @@ def update_auction(auction=None):  # noqa: E501
     :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
     """
     if connexion.request.is_json:
-        auction = Auction.from_dict(connexion.request.get_json())  # noqa: E501
+        auction = Auction.from_dict(connexion.request.get_json())
     return 'do some magic!'
 
 
-def update_gacha(gacha=None):  # noqa: E501
+def update_gacha(gacha=None):
     """update_gacha
 
     Updates a specific gacha. # noqa: E501
@@ -352,11 +390,11 @@ def update_gacha(gacha=None):  # noqa: E501
     :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
     """
     if connexion.request.is_json:
-        gacha = Gacha.from_dict(connexion.request.get_json())  # noqa: E501
+        gacha = Gacha.from_dict(connexion.request.get_json())
     return 'do some magic!'
 
 
-def update_pool(pool=None):  # noqa: E501
+def update_pool(pool=None):
     """update_pool
 
     Updates a specific pool. # noqa: E501
@@ -367,5 +405,5 @@ def update_pool(pool=None):  # noqa: E501
     :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
     """
     if connexion.request.is_json:
-        pool = Pool.from_dict(connexion.request.get_json())  # noqa: E501
+        pool = Pool.from_dict(connexion.request.get_json())
     return 'do some magic!'
