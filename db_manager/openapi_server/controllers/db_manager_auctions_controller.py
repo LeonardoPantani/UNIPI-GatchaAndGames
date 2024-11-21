@@ -8,7 +8,6 @@ from openapi_server.models.ban_user_profile_request import BanUserProfileRequest
 from openapi_server.models.complete_auction_sale_request import CompleteAuctionSaleRequest  # noqa: E501
 from openapi_server.models.get_auction_status200_response import GetAuctionStatus200Response  # noqa: E501
 from openapi_server.models.get_auction_status_request import GetAuctionStatusRequest  # noqa: E501
-from openapi_server.models.get_currency200_response import GetCurrency200Response  # noqa: E501
 from openapi_server.models.get_item_with_owner200_response import GetItemWithOwner200Response  # noqa: E501
 from openapi_server.models.get_item_with_owner_request import GetItemWithOwnerRequest  # noqa: E501
 from openapi_server.models.get_user_currency200_response import GetUserCurrency200Response  # noqa: E501

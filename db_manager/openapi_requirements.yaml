@@ -897,7 +897,7 @@ paths:
   /db_manager/gachas/get_currency:
     post:
       tags:
-        - db_manager_auctions
+        - db_manager_gacha
       description: 'Returns the currency of a user given the user UUID.'
       operationId: get_currency
       requestBody:
