@@ -28,19 +28,73 @@ circuit_breaker = CircuitBreaker(fail_max=5, reset_timeout=5, exclude=[Operation
 
 
 def complete_auction_sale(complete_auction_sale_request=None):  # noqa: E501
-    """complete_auction_sale
+    if not connexion.request.is_json:
+        return "", 400
+    
+    complete_auction_sale_request = CompleteAuctionSaleRequest.from_dict(connexion.request.get_json())  # noqa: E501
+    
+    item_uuid = complete_auction_sale_request.item_uuid
+    current_bid = complete_auction_sale_request.current_bid
+    bidder_uuid = complete_auction_sale_request.user_uuid
 
-    Completes the sale of an auctioned item by transferring ownership, updating balances, and logging transactions for the buyer and the seller. # noqa: E501
+    mysql = current_app.extensions.get('mysql')
+    connection = None
 
-    :param complete_auction_sale_request: 
-    :type complete_auction_sale_request: dict | bytes
+    try:
+        @circuit_breaker
+        def make_request_to_db():
+            connection = mysql.connect()
+            cursor = connection.cursor()
+            cursor.execute(
+                'SELECT BIN_TO_UUID(owner_uuid) FROM inventories WHERE item_uuid = UUID_TO_BIN(%s)',
+                (item_uuid,)
+            )
+            old_owner_uuid = cursor.fetchone()[0]
 
-    :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
-    """
-    if connexion.request.is_json:
-        complete_auction_sale_request = CompleteAuctionSaleRequest.from_dict(connexion.request.get_json())  # noqa: E501
-    return 'do some magic!'
+            cursor.execute(
+                'UPDATE profiles SET currency = currency + %s WHERE uuid = UUID_TO_BIN(%s)',
+                (current_bid, old_owner_uuid)
+            )
+            cursor.execute(
+                'INSERT INTO ingame_transactions (user_uuid, credits, transaction_type) VALUES (UUID_TO_BIN(%s), %s, "sold_market")',
+                (old_owner_uuid,current_bid)
+            )
+            cursor.execute(
+                'UPDATE inventories SET owner_uuid = UUID_TO_BIN(%s) WHERE item_uuid = UUID_TO_BIN(%s)',
+                (bidder_uuid, item_uuid)
+            )
+            cursor.execute(
+                'INSERT INTO ingame_transactions (user_uuid, credits, transaction_type) VALUES (UUID_TO_BIN(%s), %s, "bought_market")',
+                (bidder_uuid,current_bid*(-1))
+            )
 
+        return jsonify({"message": "Item redeemed successfully."}), 200
+    except OperationalError: # if connect to db fails means there is an error in the db
+        logging.error("Query ["+ bidder_uuid + ", " + item_uuid +"]: Operational error.")
+        return "", 500
+    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+        logging.error("Query ["+ bidder_uuid + ", " + item_uuid +"]: Programming error.")
+        return "", 400
+    except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
+        logging.error("Query ["+ bidder_uuid + ", " + item_uuid +"]: Integrity error.")
+        if connection:
+            connection.rollback()
+        return "", 409
+    except DataError: # if data format is invalid or out of range or size
+        logging.error("Query ["+ bidder_uuid + ", " + item_uuid +"]: Data error.")
+        return "", 400
+    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+        logging.error("Query ["+ bidder_uuid + ", " + item_uuid +"]: Internal error.")
+        return "", 500
+    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+        logging.error("Query ["+ bidder_uuid + ", " + item_uuid +"]: Interface error.")
+        return "", 500
+    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+        logging.error("Query ["+ bidder_uuid + ", " + item_uuid +"]: Database error.")
+        return "", 401
+    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return "", 503
 
 def create_auction(get_auction_status200_response=None):  # noqa: E501
 
@@ -301,33 +355,169 @@ def get_user_currency(ban_user_profile_request=None):  # noqa: E501
 
 
 def get_user_involved_auctions(get_user_involved_auctions_request=None):  # noqa: E501
-    """get_user_involved_auctions
 
-    Gets a list of all auctions the user is involved in, either as a seller or as a bidder, with pagination. # noqa: E501
+    if not connexion.request.is_json:
+        return "", 400
+    
+    get_user_involved_auctions_request = GetUserInvolvedAuctionsRequest.from_dict(connexion.request.get_json())  # noqa: E501
 
-    :param get_user_involved_auctions_request: 
-    :type get_user_involved_auctions_request: dict | bytes
+    user_uuid = get_user_involved_auctions_request.user_uuid
+    page_number = get_user_involved_auctions_request.page_number
 
-    :rtype: Union[List[Auction], Tuple[List[Auction], int], Tuple[List[Auction], int, Dict[str, str]]
-    """
-    if connexion.request.is_json:
-        get_user_involved_auctions_request = GetUserInvolvedAuctionsRequest.from_dict(connexion.request.get_json())  # noqa: E501
-    return 'do some magic!'
+    items_per_page = 10
+    offset = (page_number-1)*10
+
+    mysql = current_app.extensions.get('mysql')
+    try:
+        @circuit_breaker
+        def make_request_to_db():
+            connection = mysql.connect()
+            cursor = connection.cursor()
+            cursor.execute( 
+                'SELECT BIN_TO_UUID(a.uuid), BIN_TO_UUID(a.item_uuid), BIN_TO_UUID(i.owner_uuid), a.starting_price, a.current_bid, BIN_TO_UUID(a.current_bidder), end_time FROM auctions a JOIN inventories i ON a.item_uuid = i.item_uuid WHERE i.owner_uuid = UUID_TO_BIN(%s) OR a.current_bidder = UUID_TO_BIN(%s) LIMIT %s OFFSET %s',
+                (user_uuid, user_uuid, items_per_page, offset)
+            )
+            return cursor.fetchall()
+        
+        auction_list = make_request_to_db()
+
+    except OperationalError: # if connect to db fails means there is an error in the db
+        logging.error("Query: Operational error.")
+        return "", 500
+    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+        logging.error("Query: Programming error.")
+        return "", 400
+    except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
+        logging.error("Query: Integrity error.")
+        return "", 409
+    except DataError: # if data format is invalid or out of range or size
+        logging.error("Query: Data error.")
+        return "", 400
+    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+        logging.error("Query: Internal error.")
+        return "", 500
+    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+        logging.error("Query: Interface error.")
+        return "", 500
+    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+        logging.error("Query: Database error.")
+        return "", 401
+    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return "", 503
+    
+    if not auction_list:
+        return jsonify({"error":"No auctions found for user "+user_uuid}), 404
+    
+    # Prepare the response data
+    auctions = []
+    now = datetime.now()
+    for auction in auction_list:
+        auction_uuid, item_id, owner_id, starting_price, current_bid, current_bidder, end_time = auction
+        
+        # Determine auction status based on the end time
+        status = "closed" if end_time < now else "active"
+        
+        auctions.append({
+            "auction_uuid": auction_uuid,
+            "inventory_item_id": item_id,
+            "inventory_item_owner_id": owner_id,
+            "starting_price": starting_price,
+            "current_bid": current_bid,
+            "current_bidder": current_bidder, #if this is the user it's an auction he has bid on, otherwise the user is the owner of the item or the auction hasn't been claimed yet
+            "end_time": end_time,
+            "status": status
+        })
+
+    return jsonify(auctions), 200
 
 
 def list_auctions(list_auctions_request=None):  # noqa: E501
-    """list_auctions
+    if not connexion.request.is_json:
+        return "", 400
+    
+    list_auctions_request = ListAuctionsRequest.from_dict(connexion.request.get_json())  # noqa: E501
+    
+    status = list_auctions_request.status
+    rarity = list_auctions_request.rarity
+    page_number = list_auctions_request.page_number
 
-    Returns a list of all auctions, filtered by status, rarity, and supports pagination. # noqa: E501
+    items_per_page = 10
+    offset = (page_number-1)*10
+    now = datetime.now()
 
-    :param list_auctions_request: 
-    :type list_auctions_request: dict | bytes
+    mysql = current_app.extensions.get('mysql')
 
-    :rtype: Union[List[str], Tuple[List[str], int], Tuple[List[str], int, Dict[str, str]]
-    """
-    if connexion.request.is_json:
-        list_auctions_request = ListAuctionsRequest.from_dict(connexion.request.get_json())  # noqa: E501
-    return 'do some magic!'
+    try:
+        @circuit_breaker
+        def make_request_to_db():
+            connection = mysql.connect()
+            cursor = connection.cursor()
+
+            query = '''
+                SELECT BIN_TO_UUID(a.uuid) AS auction_id, a.end_time
+                FROM auctions a
+                JOIN inventories i ON a.item_uuid = i.item_uuid
+                JOIN gachas_types g ON i.stand_uuid = g.uuid
+                WHERE a.end_time {}
+                '''.format('< %s' if status == 'closed' else '> %s')
+
+            # Parameters for the query
+            params = [now]
+
+            if rarity:
+                query += 'AND g.rarity = %s '
+                params.append(rarity)
+
+            query += 'LIMIT %s OFFSET %s'
+            params.extend([items_per_page, offset])
+
+            # Execute the query
+            cursor.execute(query, tuple(params))
+
+            auction_data = cursor.fetchall()
+            
+            return auction_data
+        
+        auction_list = make_request_to_db()
+        
+        if not auction_list:
+            return jsonify({"error": "No auctions found"}), 404
+        
+        auctions = []
+        for auction in auction_list:
+            auction_uuid, end_time = auction
+            # Determine the auction status
+            status = "closed" if end_time < now else "active"
+
+            auctions.append({"auction_uuid": auction_uuid})
+        
+        return jsonify(auctions), 200
+
+    except OperationalError: # if connect to db fails means there is an error in the db
+        logging.error("Query: Operational error.")
+        return "", 500
+    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+        logging.error("Query: Programming error.")
+        return "", 400
+    except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
+        logging.error("Query: Integrity error.")
+        return "", 409
+    except DataError: # if data format is invalid or out of range or size
+        logging.error("Query: Data error.")
+        return "", 400
+    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+        logging.error("Query: Internal error.")
+        return "", 500
+    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+        logging.error("Query: Interface error.")
+        return "", 500
+    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+        logging.error("Query: Database error.")
+        return "", 401
+    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return "", 503
 
 
 def place_bid(place_bid_request=None):  # noqa: E501

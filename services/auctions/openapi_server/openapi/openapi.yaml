@@ -179,9 +179,9 @@ paths:
         name: status
         required: false
         schema:
-          default: active
+          default: open
           enum:
-          - active
+          - open
           - closed
           type: string
         style: form
