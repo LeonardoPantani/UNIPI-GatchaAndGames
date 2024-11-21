@@ -52,15 +52,15 @@ def submit_feedback(submit_feedback_request=None):
         make_request_to_db()
         return "", 201
         
-    except OperationalError as e: # if connect to db fails means there is an error in the db
+    except OperationalError: # if connect to db fails means there is an error in the db
         return "", 500
-    except ProgrammingError as e: # for example when you have a syntax error in your SQL or a table was not found
+    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
         return "", 400
-    except InternalError as e: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
         return "", 500
-    except InterfaceError as e: # errors originating from Connector/Python itself, not related to the MySQL server
+    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
         return "", 500
-    except DatabaseError as e: # default for any MySQL error which does not fit the other exceptions
+    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
         return "", 500
     except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
         return "", 503

@@ -36,7 +36,6 @@ def ban_user_profile(ban_user_profile_request=None):
     mysql = current_app.extensions.get('mysql')
 
     connection = None
-    cursor = None
     try:
         @circuit_breaker
         def make_request_to_db():
@@ -290,17 +289,89 @@ def delete_gacha_type(): #TODO vanno rimosse le cose nel modo corretto
 
 
 def edit_user_profile(edit_user_profile_request=None):
-    """edit_user_profile
+    if not connexion.request.is_json:
+        return "", 400
+    
+    # valid json request
+    edit_user_profile_request = EditUserProfileRequest.from_dict(connexion.request.get_json())
 
-    Edits a user profile. # noqa: E501
+    user_uuid = edit_user_profile_request.uuid
+    user_email = edit_user_profile_request.email
+    username = edit_user_profile_request.username
+    
+    mysql = current_app.extensions.get('mysql')
 
-    :param edit_user_profile_request: 
-    :type edit_user_profile_request: dict | bytes
 
-    :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
-    """
-    if connexion.request.is_json:
-        edit_user_profile_request = EditUserProfileRequest.from_dict(connexion.request.get_json())
+    try:
+        # to discriminate which request failed outside the function make_request_to_db()
+        not_found = False
+
+        @circuit_breaker
+        def make_request_to_db():
+            global not_found
+            updates = 0
+
+            connection = mysql.connect()
+            cursor = connection.cursor()
+            # check if profile with that uuid exists
+            query = "SELECT uuid FROM users WHERE uuid = UUID_TO_BIN(%s) LIMIT 1"
+            cursor.execute(query, (user_uuid,))
+            result = cursor.fetchone()
+            if not result:
+                not_found = True
+                return updates
+
+            # user exists, continue
+            if user_email:
+                query = "UPDATE users SET email = %s WHERE uuid = UUID_TO_BIN(%s)"
+                cursor.execute(query, (user_email, user_uuid))
+                updates += cursor.rowcount
+            if username:
+                query = "UPDATE profiles SET username = %s WHERE uuid = UUID_TO_BIN(%s)"
+                cursor.execute(query, (username, user_uuid))
+                updates += cursor.rowcount
+                
+            connection.commit()
+            return updates
+
+        updates = make_request_to_db()
+
+        if not_found:
+            return "", 404
+        
+        if updates == 0:
+            return "", 203
+        
+        return "", 200
+
+    except OperationalError: # if connect to db fails means there is an error in the db
+        logging.error("Query ["+ user_uuid +"]: Operational error.")
+        return "", 500
+    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+        logging.error("Query ["+ user_uuid +"]: Programming error.")
+        return "", 400
+    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+        logging.error("Query ["+ user_uuid +"]: Internal error.")
+        return "", 500
+    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+        logging.error("Query ["+ user_uuid +"]: Interface error.")
+        return "", 500
+    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+        logging.error("Query ["+ user_uuid +"]: Database error.")
+        return "", 500
+    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return "", 503
+
+
+    user_role = make_request_to_db()
+
+    if user_role:
+        if user_role == "ADMIN":
+            return "", 409
+    else:
+        return "", 404
+    
     return 'do some magic!'
 
 

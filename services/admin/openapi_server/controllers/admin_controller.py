@@ -98,7 +98,7 @@ def create_gacha():
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
 
-def delete_gacha(gacha_uuid):
+def delete_gacha(gacha_uuid): #TODO vanno rimosse le cose nel modo corretto
     if 'username' not in session or session.get('role') != 'ADMIN':
         return jsonify({"error": "This account is not authorized to perform this action"}), 403
     
@@ -199,7 +199,7 @@ def create_pool():
         return jsonify({"error": str(e)}), 500
     
 
-def delete_pool(pool_id):
+def delete_pool(pool_id): # TODO controllare dipendenze
     if 'username' not in session or session.get('role') != 'ADMIN':
         return jsonify({"error": "This account is not authorized to perform this action"}), 403
     
@@ -229,44 +229,34 @@ def edit_user_profile(user_uuid, email=None, username=None):
     if 'username' not in session or session.get('role') != 'ADMIN':
         return jsonify({"error": "This account is not authorized to perform this action"}), 403
     
+    payload = {
+        "uuid": user_uuid,
+        "email": email,
+        "username": username
+    }
+
     try:
-        mysql = current_app.extensions.get('mysql')
-        if not mysql:
-            return jsonify({"error": "Database connection not initialized"}), 500
+        @circuit_breaker
+        def make_request_to_dbmanager():
+            url = "http://db_manager:8080/db_manager/admin/edit_user_profile"
+            response = requests.post(url, json=payload)
+            response.raise_for_status()  # if response is obtained correctly
+            return response
 
-        connection = mysql.connect()
-        cursor = connection.cursor()
-
-        # check if profile with that uuid exists
-        query = "SELECT uuid FROM users WHERE uuid = UUID_TO_BIN(%s) LIMIT 1"
-        cursor.execute(query, (user_uuid,))
-        result = cursor.fetchone()
-        if not result:
-            return jsonify({"error": "User not found."}), 404
-
-        # user exists, continue
-        updates = 0
-
-        if email:
-            query = "UPDATE users SET email = %s WHERE uuid = UUID_TO_BIN(%s)"
-            cursor.execute(query, (email, user_uuid))
-            updates += cursor.rowcount
-        if username:
-            query = "UPDATE profiles SET username = %s WHERE uuid = UUID_TO_BIN(%s)"
-            cursor.execute(query, (username, user_uuid))
-            updates += cursor.rowcount
-        connection.commit()
-
-        if updates == 0:
-            cursor.close()
-            return jsonify({"error": "No changes to profile applied."}), 304
-        
-        cursor.close()
+        response = make_request_to_dbmanager()
+        if response.status_code == 203:
+            return jsonify({"message": "No changes to profile applied."}), 203
 
         return jsonify({"message": "User profile successfully updated."}), 200
-    except Exception as e:
-        connection.rollback()
-        return jsonify({"error": str(e)}), 500
+    except requests.HTTPError as e:  # if request is sent to dbmanager correctly and it answers an application error (to be managed here) [error expected by us]
+        if e.response.status_code == 404:
+            return jsonify({"error": "User not found."}), 404
+        else:  # other errors
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
+        return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:  # if request already failed multiple times, the circuit breaker is open and this code gets executed
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
 
 def get_all_feedbacks(page_number=None):
