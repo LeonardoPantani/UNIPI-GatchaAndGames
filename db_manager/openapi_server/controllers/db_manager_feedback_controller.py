@@ -21,7 +21,7 @@ from pymysql.err import OperationalError, DataError, DatabaseError, IntegrityErr
 from pybreaker import CircuitBreaker, CircuitBreakerError
 
 
-# circuit breaker to stop requests when dbmanager fails
+
 circuit_breaker = CircuitBreaker(fail_max=5, reset_timeout=5, exclude=[OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError])
 
 
@@ -32,7 +32,6 @@ def submit_feedback(submit_feedback_request=None):
 
     submit_feedback_request = SubmitFeedbackRequest.from_dict(connexion.request.get_json())
     
-    print(submit_feedback_request)
     # valid json request
     feedback_request = submit_feedback_request.string
     user_uuid = submit_feedback_request.user_uuid

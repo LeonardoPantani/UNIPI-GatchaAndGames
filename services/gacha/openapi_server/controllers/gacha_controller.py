@@ -145,14 +145,11 @@ def pull_gacha(pool_id):
         FROM gachas_types 
         WHERE uuid IN ({placeholders}) AND rarity = %s
         '''
-        print(selected_rarity)
         # Extract only the first elements of each tuple from pullable_gachas for the UUIDs
         uuid_values = [item[0] for item in pullable_gachas]
-        print(query)
         # Execute the query, passing UUID values and selected_rarity
         cursor.execute(query, uuid_values + [selected_rarity])
         items = cursor.fetchall()
-        print(items)
         if not items:
             return jsonify({"error": "No items found in pool"}), 500
             

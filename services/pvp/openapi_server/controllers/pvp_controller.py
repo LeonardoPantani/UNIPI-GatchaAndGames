@@ -346,7 +346,6 @@ def send_pvp_request(user_uuid):  # noqa: E501
             INSERT INTO pvp_matches (match_uuid, player_1_uuid, player_2_uuid, winner, match_log, gachas_types_used)
             VALUES (UUID_TO_BIN(%s), UUID_TO_BIN(%s), UUID_TO_BIN(%s), %s, %s, %s);
         '''
-        print(insert_query)
         match_uuid = uuid.uuid4()
         cursor.execute(insert_query, (match_uuid, player1_uuid, user_uuid, None, None, jsonify(team).get_data(as_text=True)))
 

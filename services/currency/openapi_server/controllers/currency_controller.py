@@ -3,7 +3,7 @@ from flask import jsonify, session
 from pybreaker import CircuitBreaker, CircuitBreakerError
 
 
-# circuit breaker to stop requests when dbmanager fails
+
 circuit_breaker = CircuitBreaker(
     fail_max=5, reset_timeout=5, exclude=[requests.HTTPError]
 )

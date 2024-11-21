@@ -10,27 +10,27 @@ from typing import Dict
 from typing import Tuple
 from typing import Union
 
-from openapi_server.models.auction import Auction  # noqa: E501
-from openapi_server.models.feedback import Feedback  # noqa: E501
-from openapi_server.models.gacha import Gacha  # noqa: E501
-from openapi_server.models.pool import Pool  # noqa: E501
-from openapi_server.models.user import User  # noqa: E501
+from openapi_server.models.auction import Auction
+from openapi_server.models.feedback import Feedback
+from openapi_server.models.gacha import Gacha
+from openapi_server.models.pool import Pool
+from openapi_server.models.user import User
 from openapi_server import util
 
 from flask import current_app, jsonify, request, session
 from flaskext.mysql import MySQL
 from pybreaker import CircuitBreaker, CircuitBreakerError
 
-# circuit breaker to stop requests when dbmanager fails
+
 circuit_breaker = CircuitBreaker(fail_max=5, reset_timeout=5, exclude=[requests.HTTPError])
 
 
 
-def admin_health_check_get():  # noqa: E501
+def admin_health_check_get():
     return jsonify({"message": "Service operational."}), 200
 
 
-def ban_profile(user_uuid):  # noqa: E501
+def ban_profile(user_uuid):
     if 'username' not in session or session.get('role') != 'ADMIN':
         return jsonify({"error": "This account is not authorized to perform this action"}), 403
     
@@ -63,7 +63,7 @@ def ban_profile(user_uuid):  # noqa: E501
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
 
-def create_gacha():  # noqa: E501
+def create_gacha():
     if 'username' not in session or session.get('role') != 'ADMIN':
         return jsonify({"error": "This account is not authorized to perform this action"}), 403
     
@@ -71,46 +71,34 @@ def create_gacha():  # noqa: E501
         return jsonify({"message": "Invalid request."}), 400
     
     # valid request from now on
-    gacha = Gacha.from_dict(connexion.request.get_json())  # noqa: E501
+    gacha = Gacha.from_dict(connexion.request.get_json())
     try:
-        mysql = current_app.extensions.get('mysql')
-        if not mysql:
-            return jsonify({"error": "Database connection not initialized"}), 500
 
-        # converting letters to numbers for storage
-        letters_map = {
-            'A': 5,
-            'B': 4,
-            'C': 3,
-            'D': 2,
-            'E': 1
-        }
-        attributes = ['power', 'speed', 'durability', 'precision', 'range', 'potential']
-        converted = {}
-        for attr in attributes:
-            letter = getattr(gacha.attributes, attr)
-            if letter in letters_map:
-                converted[attr] = letters_map[letter]
-            else:
-                converted[attr] = None
-        # converted is a map with for each key (stat) a value (numeric of the stat)
+        @circuit_breaker
+        def make_request_to_dbmanager():
+            payload = {gacha}
+            url = "http://db_manager:8080/db_manager/admin/ban_user_profile"
+            response = requests.post(url, json=payload)
+            response.raise_for_status()  # if response is obtained correctly
+            return response.json()
 
-        connection = mysql.connect()
-        cursor = connection.cursor()
-        query = "INSERT INTO gachas_types (uuid, name, stat_power, stat_speed, stat_durability, stat_precision, stat_range, stat_potential, rarity, release_date) VALUES (UUID_TO_BIN(%s), %s, %s, %s, %s, %s, %s, %s, %s, %s)"
-        cursor.execute(query, (gacha.gacha_uuid, gacha.name, converted["power"], converted["speed"], converted["durability"], converted["precision"], converted["range"], converted["potential"], gacha.rarity, date.today()))
-        
-        if cursor.rowcount == 0:
-            return jsonify({"error": "The provided gacha uuid is already in use."}), 404
-        
-        connection.commit()
+        make_request_to_dbmanager()
 
         return jsonify({"message": "Gacha successfully created.", "gacha_uuid": gacha.gacha_uuid}), 201
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except requests.HTTPError as e:  # if request is sent to dbmanager correctly and it answers an application error (to be managed here) [error expected by us]
+        if e.response.status_code == 404:
+            return jsonify({"error": "User not found."}), 404
+        elif e.response.status_code == 409: 
+            return jsonify({"error": "Cannot ban a user with the ADMIN role."}), 409
+        else:  # other errors
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
+        return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:  # if request already failed multiple times, the circuit breaker is open and this code gets executed
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
 
-def delete_gacha(gacha_uuid):  # noqa: E501
+def delete_gacha(gacha_uuid):
     if 'username' not in session or session.get('role') != 'ADMIN':
         return jsonify({"error": "This account is not authorized to perform this action"}), 403
     
@@ -137,14 +125,14 @@ def delete_gacha(gacha_uuid):  # noqa: E501
         return jsonify({"error": str(e)}), 500
 
 
-def create_pool():  # noqa: E501
+def create_pool():
     if 'username' not in session or session.get('role') != 'ADMIN':
         return jsonify({"error": "This account is not authorized to perform this action"}), 403
     
     if not connexion.request.is_json:
         return jsonify({"message": "Invalid request."}), 400
     
-    pool = Pool.from_dict(connexion.request.get_json())  # noqa: E501
+    pool = Pool.from_dict(connexion.request.get_json())
 
     # check if probabilities are inside the probabilities fields and are floats
     if not isinstance(pool.probabilities.legendary_probability, float) or not isinstance(pool.probabilities.rare_probability, float) or not isinstance(pool.probabilities.epic_probability, float) or not isinstance(pool.probabilities.common_probability, float):
@@ -188,7 +176,7 @@ def create_pool():  # noqa: E501
         return jsonify({"error": str(e)}), 500
     
 
-def delete_pool(pool_id):  # noqa: E501
+def delete_pool(pool_id):
     if 'username' not in session or session.get('role') != 'ADMIN':
         return jsonify({"error": "This account is not authorized to perform this action"}), 403
     
@@ -214,7 +202,7 @@ def delete_pool(pool_id):  # noqa: E501
         return jsonify({"error": str(e)}), 500
 
 
-def edit_user_profile(user_uuid, email=None, username=None):  # noqa: E501
+def edit_user_profile(user_uuid, email=None, username=None):
     if 'username' not in session or session.get('role') != 'ADMIN':
         return jsonify({"error": "This account is not authorized to perform this action"}), 403
     
@@ -258,7 +246,7 @@ def edit_user_profile(user_uuid, email=None, username=None):  # noqa: E501
         return jsonify({"error": str(e)}), 500
 
 
-def get_all_feedbacks(page_number=None):  # noqa: E501
+def get_all_feedbacks(page_number=None):
     if 'username' not in session or session.get('role') != 'ADMIN':
         return jsonify({"error": "This account is not authorized to perform this action"}), 403
     
@@ -285,7 +273,7 @@ def get_all_feedbacks(page_number=None):  # noqa: E501
         return jsonify({"error": str(e)}), 500
 
 
-def get_all_profiles(page_number=None):  # noqa: E501
+def get_all_profiles(page_number=None):
     if 'username' not in session or session.get('role') != 'ADMIN':
         return jsonify({"error": "This account is not authorized to perform this action"}), 403
     
@@ -312,7 +300,7 @@ def get_all_profiles(page_number=None):  # noqa: E501
         return jsonify({"error": str(e)}), 500
 
 
-def get_feedback_info(feedback_id):  # noqa: E501
+def get_feedback_info(feedback_id):
     if 'username' not in session or session.get('role') != 'ADMIN':
         return jsonify({"error": "This account is not authorized to perform this action"}), 403
     
@@ -338,11 +326,11 @@ def get_feedback_info(feedback_id):  # noqa: E501
         return jsonify({"error": str(e)}), 500
 
 
-def get_system_logs():  # noqa: E501 TODO
+def get_system_logs(): #TODO
     return 'do some magic!'
 
 
-def get_user_history(user_uuid, history_type, page_number=None):  # noqa: E501
+def get_user_history(user_uuid, history_type, page_number=None):
     if 'username' not in session or session.get('role') != 'ADMIN':
         return jsonify({"error": "This account is not authorized to perform this action"}), 403
     
@@ -391,7 +379,7 @@ def get_user_history(user_uuid, history_type, page_number=None):  # noqa: E501
         return jsonify({"error": str(e)}), 500
 
 
-def update_auction(auction_uuid):  # noqa: E501
+def update_auction(auction_uuid):
     if 'username' not in session or session.get('role') != 'ADMIN':
         return jsonify({"error": "This account is not authorized to perform this action"}), 403
     
@@ -399,7 +387,7 @@ def update_auction(auction_uuid):  # noqa: E501
         return jsonify({"message": "Invalid request."}), 400
 
     
-    auction = Auction.from_dict(connexion.request.get_json())  # noqa: E501
+    auction = Auction.from_dict(connexion.request.get_json())
     
     if auction.auction_uuid != auction_uuid:
         return jsonify({"message": "Auction UUID in request is different from the one inside the auction object."}), 406
@@ -459,14 +447,14 @@ def update_auction(auction_uuid):  # noqa: E501
         return jsonify({"error": str(e)}), 500
 
 
-def update_gacha(gacha_uuid):  # noqa: E501
+def update_gacha(gacha_uuid):
     if 'username' not in session or session.get('role') != 'ADMIN':
         return jsonify({"error": "This account is not authorized to perform this action"}), 403
     
     if not connexion.request.is_json:
         return jsonify({"message": "Invalid request."}), 400
 
-    gacha = Gacha.from_dict(connexion.request.get_json())  # noqa: E501
+    gacha = Gacha.from_dict(connexion.request.get_json())
 
     if gacha.gacha_uuid != gacha_uuid:
         return jsonify({"message": "Gacha UUID in request is different from the one inside the gacha object."}), 406
@@ -517,14 +505,14 @@ def update_gacha(gacha_uuid):  # noqa: E501
         return jsonify({"error": str(e)}), 500
 
 
-def update_pool(pool_id):  # noqa: E501
+def update_pool(pool_id):
     if 'username' not in session or session.get('role') != 'ADMIN':
         return jsonify({"error": "This account is not authorized to perform this action"}), 403
     
     if not connexion.request.is_json:
         return jsonify({"message": "Invalid request."}), 400
     
-    pool = Pool.from_dict(connexion.request.get_json())  # noqa: E501
+    pool = Pool.from_dict(connexion.request.get_json())
 
     if pool.id != pool_id:
         return jsonify({"message": "Pool UUID in request is different from the one inside the pool object."}), 406

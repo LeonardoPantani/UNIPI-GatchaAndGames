@@ -4,6 +4,8 @@ from typing import Tuple
 from typing import Union
 
 from openapi_server.models.gacha import Gacha  # noqa: E501
+from openapi_server.models.ban_user_profile_request import BanUserProfileRequest  # noqa: E501
+from openapi_server.models.get_currency200_response import GetCurrency200Response  # noqa: E501
 from openapi_server.models.get_gacha_info_request import GetGachaInfoRequest  # noqa: E501
 from openapi_server.models.get_gacha_list_request import GetGachaListRequest  # noqa: E501
 from openapi_server.models.give_item_request import GiveItemRequest  # noqa: E501
@@ -77,4 +79,19 @@ def give_item(give_item_request=None):  # noqa: E501
     """
     if connexion.request.is_json:
         give_item_request = GiveItemRequest.from_dict(connexion.request.get_json())  # noqa: E501
+    return 'do some magic!'
+
+
+def get_currency(ban_user_profile_request=None):  # noqa: E501
+    """get_currency
+
+    Returns the currency of a user given the user UUID. # noqa: E501
+
+    :param ban_user_profile_request: 
+    :type ban_user_profile_request: dict | bytes
+
+    :rtype: Union[GetCurrency200Response, Tuple[GetCurrency200Response, int], Tuple[GetCurrency200Response, int, Dict[str, str]]
+    """
+    if connexion.request.is_json:
+        ban_user_profile_request = BanUserProfileRequest.from_dict(connexion.request.get_json())  # noqa: E501
     return 'do some magic!'
