@@ -3,26 +3,27 @@ info:
   contact:
     email: support@gachaandgames.it
   description: |-
-    API for managing gacha items, auctions, PVP battles, currency, and user authentication.
+    API for Authentication Service.
 
     Useful links:
     - [Project repository](https://github.com/LeonardoPantani/UNIPI-GachaAndGames)
   license:
     name: GPL-3.0
     url: https://www.gnu.org/licenses/gpl-3.0.html#license-text
+  termsOfService: http://localhost:8080/tos
   title: Gacha System - OpenAPI 3.0
   version: 1.0.0
 servers:
 - description: Local server
-  url: http://localhost:8080/
+  url: http://localhost:8080
 paths:
   /auth/health_check:
     get:
       description: Returns 200 if service is healthy.
-      operationId: health_check
+      operationId: auth_health_check_get
       responses:
         "200":
-          description: Service OK
+          description: Service operational.
       summary: Gives information on service status.
       tags:
       - auth
@@ -41,11 +42,15 @@ paths:
         "200":
           description: Login successful.
         "400":
-          description: Missing fields.
+          description: Invalid request.
         "401":
           description: Invalid credentials.
+        "409":
+          description: You are already logged in.
         "500":
           description: Internal server error.
+        "503":
+          description: Service unavailable. Please try again later.
       summary: Log in into an account.
       tags:
       - auth
@@ -58,7 +63,7 @@ paths:
       - explode: true
         in: cookie
         name: session
-        required: true
+        required: false
         schema:
           type: string
         style: form
@@ -87,31 +92,87 @@ paths:
         "201":
           description: Registration successful.
         "400":
-          description: Missing required fields.
+          description: Invalid request.
+        "401":
+          description: You are already logged in.
+        "406":
+          description: The specified email is not valid.
         "409":
-          description: The provided email address is already in use.
+          description: The provided username / email is already in use.
         "500":
           description: Internal server error.
+        "503":
+          description: Service unavailable. Please try again later.
       summary: Registers a new account.
       tags:
       - auth
       x-openapi-router-controller: openapi_server.controllers.auth_controller
 components:
   schemas:
+    Username:
+      description: "The user's username. Must be at least 5 characters long and contain\
+        \ only letters, numbers, and underscores."
+      example: LeoPanta01_
+      minLength: 5
+      pattern: "^[a-zA-Z0-9_]+$"
+      title: username
+      type: string
+    Email:
+      description: The user's email.
+      example: l.pantani5@studenti.unipi.it
+      format: email
+      title: email
+      type: string
+    Password:
+      description: The user's password must be at least 8 characters and can accept
+        all characters.
+      example: Th1s_c4n_b3_a_good_passw0rd...maybe
+      minLength: 8
+      title: password
+      type: string
+    login_request:
+      properties:
+        username:
+          description: "The user's username. Must be at least 5 characters long and\
+            \ contain only letters, numbers, and underscores."
+          example: LeoPanta01_
+          minLength: 5
+          pattern: "^[a-zA-Z0-9_]+$"
+          title: username
+          type: string
+        password:
+          description: The user's password must be at least 8 characters and can accept
+            all characters.
+          example: Th1s_c4n_b3_a_good_passw0rd...maybe
+          minLength: 8
+          title: password
+          type: string
+      required:
+      - password
+      - username
+      title: login_request
+      type: object
     register_request:
       properties:
         username:
           description: "The user's username. Must be at least 5 characters long and\
             \ contain only letters, numbers, and underscores."
+          example: LeoPanta01_
+          minLength: 5
+          pattern: "^[a-zA-Z0-9_]+$"
           title: username
           type: string
         email:
-          description: The user's email address. Must be a valid email format.
+          description: The user's email.
+          example: l.pantani5@studenti.unipi.it
           format: email
           title: email
           type: string
         password:
-          description: The user's password.
+          description: The user's password must be at least 8 characters and can accept
+            all characters.
+          example: Th1s_c4n_b3_a_good_passw0rd...maybe
+          minLength: 8
           title: password
           type: string
       required:
@@ -119,19 +180,4 @@ components:
       - password
       - username
       title: register_request
-      type: object
-    login_request:
-      properties:
-        username:
-          description: The user's username.
-          title: username
-          type: string
-        password:
-          description: The user's password.
-          title: password
-          type: string
-      required:
-      - password
-      - username
-      title: login_request
       type: object

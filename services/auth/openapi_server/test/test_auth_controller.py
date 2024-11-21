@@ -10,16 +10,17 @@ from openapi_server.test import BaseTestCase
 class TestAuthController(BaseTestCase):
     """AuthController integration test stubs"""
 
-    def test_health_check(self):
-        """Test case for health_check
+    def test_auth_health_check_get(self):
+        """Test case for auth_health_check_get
 
         Gives information on service status.
         """
+        headers = { 
+        }
         response = self.client.open(
             '/auth/health_check',
             method='GET',
-            headers=headers,
-            content_type='application/json')
+            headers=headers)
         self.assert200(response,
                        'Response body is : ' + response.data.decode('utf-8'))
 
@@ -33,7 +34,7 @@ class TestAuthController(BaseTestCase):
             'Content-Type': 'application/json',
         }
         response = self.client.open(
-            '/login',
+            '/auth/login',
             method='POST',
             headers=headers,
             data=json.dumps(login_request),
@@ -49,7 +50,7 @@ class TestAuthController(BaseTestCase):
         headers = { 
         }
         response = self.client.open(
-            '/logout',
+            '/auth/logout',
             method='DELETE',
             headers=headers)
         self.assert200(response,
@@ -65,7 +66,7 @@ class TestAuthController(BaseTestCase):
             'Content-Type': 'application/json',
         }
         response = self.client.open(
-            '/register',
+            '/auth/register',
             method='POST',
             headers=headers,
             data=json.dumps(register_request),
