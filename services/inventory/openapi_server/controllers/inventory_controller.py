@@ -17,57 +17,39 @@ circuit_breaker = CircuitBreaker(fail_max=5, reset_timeout=5, exclude=[requests.
 def health_check():  # noqa: E501
     return jsonify({"message": "Service operational."}), 200
 
-@circuit_breaker
 def get_inventory():  # noqa: E501
     user_uuid = session.get("uuid")
     if not user_uuid:
         return jsonify({"error": "Not logged in"}), 403
     
+    page_number = connexion.request.args.get('page_number', default=1, type=int)
+    
     try:
-        mysql = current_app.extensions.get('mysql')
+        @circuit_breaker
+        def make_request_to_dbmanager():
+            payload = {
+                "user_uuid": user_uuid,
+                "page_number": page_number
+            }
+            url = "http://db_manager:8080/db_manager/inventory/get_user_inventory_items"
+            response = requests.post(url, json=payload)
+            response.raise_for_status()  # if response is obtained correctly
+            return response.json()
 
-        # Pagination parameters
-        items_per_page = 10
-        page_number = connexion.request.args.get('page_number', default=1, type=int)
-        offset = (page - 1) * items_per_page
+        inventory_items = make_request_to_dbmanager()
 
-        try:
-            conn = mysql.connect()
-            cursor = conn.cursor()
+        return jsonify(inventory_items), 200
 
-            # # /db_manager/inventory/get_user_inventory_items
-            cursor.execute('''
-                SELECT 
-                    BIN_TO_UUID(item_uuid),
-                    BIN_TO_UUID(owner_uuid),
-                    BIN_TO_UUID(stand_uuid),
-                    obtained_at
-                FROM inventories
-                WHERE owner_uuid = UUID_TO_BIN(%s)
-                LIMIT %s OFFSET %s
-            ''', (user_uuid, items_per_page, page_number))
-            
-            inventory_items = []
-            for row in cursor.fetchall():
-                item = InventoryItem(
-                    item_id=row[0],
-                    owner_id=row[1],
-                    gacha_uuid=row[2],
-                    obtained_date=row[3]
-                )
-                inventory_items.append(item)
-            
-            return jsonify(inventory_items), 200
+    except requests.HTTPError as e:
+        if e.response.status_code == 404:
+            return jsonify({"error": "No item found"}), 404
+        else:  # other errors
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
+        return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:
+        return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503  
 
-        except Exception as e:
-            logging.error(f"Database error: {str(e)}")
-            return jsonify({"error": "Database error"}), 500
-
-    except Exception as e:
-        logging.error(f"Server error: {str(e)}")
-        return jsonify({"error": "Internal server error"}), 500
-
-@circuit_breaker
 def get_inventory_item_info(inventory_item_id):  # noqa: E501
     user_uuid = session.get('uuid')
     if not user_uuid:
@@ -99,52 +81,44 @@ def get_inventory_item_info(inventory_item_id):  # noqa: E501
     except CircuitBreakerError:
         return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503  
 
-@circuit_breaker
+
 def remove_inventory_item():
+     # Get item_id from request args
+    item_id = connexion.request.args.get('inventory_item_id')
+    if not item_id:
+        return jsonify({"error": "Missing inventory_item_id parameter"}), 400
+
+    mysql = current_app.extensions.get('mysql')
+    if not mysql:
+        return jsonify({"error": "Database connection not initialized"}), 500
+        
+    user_uuid = session.get('uuid')
+    if not user_uuid:
+        return jsonify({"error": "Not logged in"}), 403
     try:
-        # Get item_id from request args
-        item_id = connexion.request.args.get('inventory_item_id')
-        if not item_id:
-            return jsonify({"error": "Missing inventory_item_id parameter"}), 400
+        @circuit_breaker
+        def make_request_to_dbmanager():
+            payload = {
+                "user_uuid": user_uuid,
+                "inventory_item_id": item_id
+            }
+            url = "http://db_manager:8080/db_manager/inventory/remove_user_item"
+            response = requests.post(url, json=payload)
+            response.raise_for_status()  # if response is obtained correctly
+            return 
+        
+        make_request_to_dbmanager()
 
-        mysql = current_app.extensions.get('mysql')
-        if not mysql:
-            return jsonify({"error": "Database connection not initialized"}), 500
-            
-        user_uuid = session.get('uuid')
-        if not user_uuid:
-            return jsonify({"error": "Not logged in"}), 403
-
-        conn = mysql.connect()
-        cursor = conn.cursor()
-
-        # Then check if item is not in any active auction
-        # /db_manager/inventory/remove_user_item
-        cursor.execute('''
-            SELECT 1 FROM auctions 
-            WHERE item_uuid = UUID_TO_BIN(%s)
-            AND end_time > NOW()
-        ''', (item_id,))
-
-        if cursor.fetchone():
-            return jsonify({"error": "Cannot remove item that is in an active auction."}), 409
-
-        # Delete the item
-        cursor.execute('''
-            DELETE FROM inventories 
-            WHERE item_uuid = UUID_TO_BIN(%s)
-            AND owner_uuid = UUID_TO_BIN(%s)
-        ''', (item_id, user_uuid))
-
-        if cursor.rowcount == 0:
-            conn.rollback()
-            return jsonify({"error": "Failed to remove item"}), 500
-
-        conn.commit()
-        return jsonify({"message": "Item successfully removed"}), 200
+        return jsonify({"message": "Item successfully removed."}), 200
     
-    except Exception as e:
-        if conn:
-            conn.rollback()
-        logging.error(f"Error in remove_inventory_item: {str(e)}\n{traceback.format_exc()}")
-        return jsonify({"error": "Internal server error"}), 500
+    except requests.HTTPError as e:
+        if e.response.status_code == 404:
+            return jsonify({"error": "No item found"}), 404
+        elif e.response.status_code == 409:
+            return jsonify({"error": "Cannot remove item that is in an active auction."}), 409
+        else:  # other errors
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
+        return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:
+        return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503 

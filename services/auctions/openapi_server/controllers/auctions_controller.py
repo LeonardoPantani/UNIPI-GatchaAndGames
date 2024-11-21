@@ -208,8 +208,6 @@ def create_auction():
     except CircuitBreakerError:
         return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503
 
-
-@circuit_breaker
 def get_auction_status(auction_uuid): 
     
     if 'username' not in session:
@@ -266,7 +264,6 @@ def get_auction_status(auction_uuid):
 
     return auction, 200
 
-@circuit_breaker
 def get_auctions_history(page_number=None):  
     
     if 'username' not in session:
@@ -300,7 +297,6 @@ def get_auctions_history(page_number=None):
     except CircuitBreakerError:
         return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503
 
-@circuit_breaker
 def get_auctions_list(status=None, rarity=None, page_number=None): 
     
     if 'username' not in session:

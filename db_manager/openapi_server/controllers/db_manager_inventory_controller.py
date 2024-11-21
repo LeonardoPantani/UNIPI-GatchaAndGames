@@ -90,30 +90,150 @@ def get_inventory_item(get_inventory_item_request=None):  # noqa: E501
 
 
 def get_user_inventory_items(get_user_involved_auctions_request=None):  # noqa: E501
-    """get_user_inventory_items
+    if not connexion.request.is_json:
+        return "", 400    
+    get_user_inventory_request = GetUserInvolvedAuctionsRequest.from_dict(connexion.request.get_json())  # noqa: E501
 
-    Returns the inventory items of a specific user by user UUID, paginated. # noqa: E501
+    user_uuid = get_user_inventory_request.user_uuid
+    page_number = get_user_inventory_request.page_number
 
-    :param get_user_involved_auctions_request: 
-    :type get_user_involved_auctions_request: dict | bytes
+    mysql = current_app.extensions.get('mysql')
+    try:
+        @circuit_breaker
+        def make_request_to_db():
+            connection = mysql.connect()
+            cursor = connection.cursor()
 
-    :rtype: Union[List[InventoryItem], Tuple[List[InventoryItem], int], Tuple[List[InventoryItem], int, Dict[str, str]]
-    """
-    if connexion.request.is_json:
-        get_user_involved_auctions_request = GetUserInvolvedAuctionsRequest.from_dict(connexion.request.get_json())  # noqa: E501
-    return 'do some magic!'
+            items_per_page = 10
+            offset = (page_number - 1) * items_per_page
+
+            cursor.execute('''
+                SELECT 
+                    BIN_TO_UUID(item_uuid),
+                    BIN_TO_UUID(owner_uuid),
+                    BIN_TO_UUID(stand_uuid),
+                    obtained_at,
+                    owners_no,
+                    currency_spent
+                FROM inventories
+                WHERE owner_uuid = UUID_TO_BIN(%s)
+                LIMIT %s OFFSET %s
+            ''', (user_uuid, items_per_page, offset))
+
+            return cursor.fetchall()
+        
+        item_list = make_request_to_db()
+
+        inventory_items = []
+        for row in item_list:
+            item = {
+                "owner_id": row[1],
+                "item_id": row[0],
+                "gacha_uuid": row[2],
+                "pull_date": None, #forse si aggiunge
+                "obtained_date": row[3].strftime("%Y-%m-%d %H:%M:%S"),
+                "owners_no": row[4],
+                "price_paid": row[5]
+            }
+            inventory_items.append(item)
+            
+        return jsonify(inventory_items), 200
+
+    except OperationalError: # if connect to db fails means there is an error in the db
+        logging.error("Query ["+ user_uuid +"]: Operational error.")
+        return "", 500
+    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+        logging.error("Query ["+ user_uuid +"]: Programming error.")
+        return "", 400
+    except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
+        logging.error("Query ["+ user_uuid +"]: Integrity error.")
+        return "", 409
+    except DataError: # if data format is invalid or out of range or size
+        logging.error("Query ["+ user_uuid +"]: Data error.")
+        return "", 400
+    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+        logging.error("Query ["+ user_uuid +"]: Internal error.")
+        return "", 500
+    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+        logging.error("Query ["+ user_uuid +"]: Interface error.")
+        return "", 500
+    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+        logging.error("Query ["+ user_uuid +"]: Database error.")
+        return "", 401
+    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return "", 503       
 
 
 def remove_item(get_inventory_item_request=None):  # noqa: E501
-    """remove_item
+    if not connexion.request.is_json:
+        return "", 400
+    
+    get_inventory_item_request = GetInventoryItemRequest.from_dict(connexion.request.get_json())  # noqa: E501
 
-    Removes a specific item from a user inventory. If item is in an auction, refuses the operation. # noqa: E501
+    user_uuid = get_inventory_item_request.user_uuid
+    item_id = get_inventory_item_request.inventory_item_id
+    print(user_uuid)
+    print(item_id)
+    mysql = current_app.extensions.get('mysql')
+    try:
+        @circuit_breaker
+        def make_request_to_db():
+            connection = mysql.connect()
+            cursor = connection.cursor()
 
-    :param get_inventory_item_request: 
-    :type get_inventory_item_request: dict | bytes
+            cursor.execute('''
+                SELECT 1 FROM auctions 
+                WHERE item_uuid = UUID_TO_BIN(%s)
+                AND end_time > NOW()
+            ''', (item_id,))
 
-    :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
-    """
-    if connexion.request.is_json:
-        get_inventory_item_request = GetInventoryItemRequest.from_dict(connexion.request.get_json())  # noqa: E501
-    return 'do some magic!'
+            if cursor.fetchone():
+                return 409
+
+            # Delete the item
+            cursor.execute('''
+                DELETE FROM inventories 
+                WHERE item_uuid = UUID_TO_BIN(%s)
+                AND owner_uuid = UUID_TO_BIN(%s)
+            ''', (item_id, user_uuid))
+            
+            if cursor.rowcount == 0:
+                return 404
+
+            connection.commit()
+            return 200
+        
+        response = make_request_to_db()
+        print (response)
+        if response == 409:
+            return jsonify({"error": "Cannot remove item that is in an active auction."}), 409
+        elif response == 404:
+            return jsonify({"error": "Item not found."}), 404
+        
+        return jsonify({"message": "Item successfully removed"}), 200
+        
+    except OperationalError: # if connect to db fails means there is an error in the db
+        logging.error("Query ["+ item_id +"]: Operational error.")
+        return "", 500
+    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+        logging.error("Query ["+ item_id +"]: Programming error.")
+        return "", 400
+    except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
+        logging.error("Query ["+ item_id +"]: Integrity error.")
+        return "", 409
+    except DataError: # if data format is invalid or out of range or size
+        logging.error("Query ["+ item_id +"]: Data error.")
+        return "", 400
+    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+        logging.error("Query ["+ item_id +"]: Internal error.")
+        return "", 500
+    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+        logging.error("Query ["+ item_id +"]: Interface error.")
+        return "", 500
+    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+        logging.error("Query ["+ item_id +"]: Database error.")
+        return "", 401
+    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return "", 503
