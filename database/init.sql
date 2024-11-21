@@ -89,8 +89,8 @@ CREATE TABLE inventories (
     owners_no INT NOT NULL,
     currency_spent INT NOT NULL,
     PRIMARY KEY (item_uuid),
-    FOREIGN KEY (owner_uuid) REFERENCES profiles(uuid) ON DELETE CASCADE,
-    FOREIGN KEY (stand_uuid) REFERENCES gachas_types(uuid) ON DELETE CASCADE
+    FOREIGN KEY (owner_uuid) REFERENCES profiles(uuid),
+    FOREIGN KEY (stand_uuid) REFERENCES gachas_types(uuid)
 );
 
 CREATE TABLE auctions (
@@ -133,6 +133,6 @@ CREATE TABLE gacha_pools_items (
     codename VARCHAR(100),
     gacha_uuid BINARY(16),
     PRIMARY KEY (codename, gacha_uuid),
-    FOREIGN KEY (codename) REFERENCES gacha_pools(codename) ON DELETE CASCADE,
-    FOREIGN KEY (gacha_uuid) REFERENCES gachas_types(uuid) ON DELETE CASCADE
+    FOREIGN KEY (codename) REFERENCES gacha_pools(codename),
+    FOREIGN KEY (gacha_uuid) REFERENCES gachas_types(uuid)
 );
