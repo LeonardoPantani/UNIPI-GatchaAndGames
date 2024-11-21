@@ -69,54 +69,35 @@ def get_inventory():  # noqa: E501
 
 @circuit_breaker
 def get_inventory_item_info(inventory_item_id):  # noqa: E501
+    user_uuid = session.get('uuid')
+    if not user_uuid:
+        return jsonify({"error": "Not logged in"}), 403
+
     try:
-        # Get database connection
-        mysql = current_app.extensions.get('mysql')
-            
-        conn = mysql.connect()
-        cursor = conn.cursor()
+        @circuit_breaker
+        def make_request_to_dbmanager():
+            payload = {
+                "user_uuid": user_uuid,
+                "inventory_item_id": inventory_item_id
+            }
+            url = "http://db_manager:8080/db_manager/inventory/get_user_item_info"
+            response = requests.post(url, json=payload)
+            response.raise_for_status()  # if response is obtained correctly
+            return response.json()
 
-        # Get username from session
-        user_uuid = session.get('uuid')
-        if not user_uuid:
-            return jsonify({"error": "Not logged in"}), 403
+        item = make_request_to_dbmanager()
 
-        # Query to get inventory item details, ensuring the item belongs to the logged in user
-        # /db_manager/inventory/get_user_item_info
-        cursor.execute('''
-            SELECT 
-                BIN_TO_UUID(item_uuid) as item_id,
-                BIN_TO_UUID(owner_uuid) as owner_id,
-                BIN_TO_UUID(stand_uuid) as gacha_uuid,
-                obtained_at,
-                owners_no,
-                currency_spent
-            FROM inventories
-            WHERE owner_uuid = UUID_TO_BIN(%s) 
-            AND item_uuid = UUID_TO_BIN(%s)
-        ''', (user_uuid, inventory_item_id))
+        return jsonify(item), 200
 
-        row = cursor.fetchone()
-        if not row:
-            return jsonify({"error": "Item not found in player's inventory."}), 404
-
-        # Create InventoryItem object with the fetched data
-        item = InventoryItem(
-            item_id=row[0],
-            owner_id=row[1],
-            gacha_uuid=row[2],
-            obtained_date=row[3],
-            owners_no=row[4],
-            price_paid=row[5]
-        )
-
-
-        # Return single item wrapped in a list as per API spec
-        return jsonify([item.to_dict()]), 200
-
-    except Exception as e:
-        logging.error(f"Error in get_inventory_item_info: {str(e)}\n{traceback.format_exc()}")
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+    except requests.HTTPError as e:
+        if e.response.status_code == 404:
+            return jsonify({"error": "No item found"}), 404
+        else:  # other errors
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
+        return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:
+        return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503  
 
 @circuit_breaker
 def remove_inventory_item():

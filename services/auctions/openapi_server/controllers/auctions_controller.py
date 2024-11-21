@@ -309,7 +309,7 @@ def get_auctions_list(status=None, rarity=None, page_number=None):
     status = request.args.get('status','open')
     rarity = request.args.get('rarity')
     page_number = int(request.args.get('page_number',1))
-    print(status)
+
     try:
         @circuit_breaker
         def make_request_to_dbmanager():
