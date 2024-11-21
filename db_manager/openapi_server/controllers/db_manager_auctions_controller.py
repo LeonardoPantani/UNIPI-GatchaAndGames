@@ -8,7 +8,6 @@ from openapi_server.models.ban_user_profile_request import BanUserProfileRequest
 from openapi_server.models.complete_auction_sale_request import CompleteAuctionSaleRequest  # noqa: E501
 from openapi_server.models.get_auction_status200_response import GetAuctionStatus200Response  # noqa: E501
 from openapi_server.models.get_auction_status_request import GetAuctionStatusRequest  # noqa: E501
-from openapi_server.models.get_currency200_response import GetCurrency200Response  # noqa: E501
 from openapi_server.models.get_item_with_owner200_response import GetItemWithOwner200Response  # noqa: E501
 from openapi_server.models.get_item_with_owner_request import GetItemWithOwnerRequest  # noqa: E501
 from openapi_server.models.get_user_currency200_response import GetUserCurrency200Response  # noqa: E501
@@ -60,21 +59,6 @@ def get_auction_status(get_auction_status_request=None):  # noqa: E501
     """
     if connexion.request.is_json:
         get_auction_status_request = GetAuctionStatusRequest.from_dict(connexion.request.get_json())  # noqa: E501
-    return 'do some magic!'
-
-
-def get_currency(ban_user_profile_request=None):  # noqa: E501
-    """get_currency
-
-    Returns the currency of a user given the user UUID. # noqa: E501
-
-    :param ban_user_profile_request: 
-    :type ban_user_profile_request: dict | bytes
-
-    :rtype: Union[GetCurrency200Response, Tuple[GetCurrency200Response, int], Tuple[GetCurrency200Response, int, Dict[str, str]]
-    """
-    if connexion.request.is_json:
-        ban_user_profile_request = BanUserProfileRequest.from_dict(connexion.request.get_json())  # noqa: E501
     return 'do some magic!'
 
 
