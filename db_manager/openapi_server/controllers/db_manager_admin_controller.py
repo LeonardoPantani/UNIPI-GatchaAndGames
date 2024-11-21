@@ -251,6 +251,10 @@ def delete_gacha_type():
             connection = mysql.connect()
             cursor = connection.cursor()
 
+            delete_query = "DELETE FROM gacha_pools_items WHERE gacha_uuid = UUID_TO_BIN(%s)"
+            cursor.execute(delete_query, (gacha_uuid,))
+            delete_query = "DELETE FROM inventories WHERE stand_uuid = UUID_TO_BIN(%s)"
+            cursor.execute(delete_query, (gacha_uuid,))
             delete_query = "DELETE FROM gachas_types WHERE uuid = UUID_TO_BIN(%s)"
             cursor.execute(delete_query, (gacha_uuid,))
             connection.commit()
