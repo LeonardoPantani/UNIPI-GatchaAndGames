@@ -1,11 +1,11 @@
 services:
-  api_gateway:
+  api_gateway_public:
     image: nginx:alpine
-    container_name: unipi-gatchaandgames-api_gateway
+    container_name: api_gateway_public_gachaandgames
     ports:
       - "8080:8080"
     volumes:
-      - ./api_gateway/api_gateway.conf:/etc/nginx/nginx.conf:ro
+      - ./api_gateway_public/api_gateway.conf:/etc/nginx/nginx.conf:ro
       - ./favicon.ico:/usr/share/nginx/html/favicon.ico:ro
     depends_on:
       - service_admin
@@ -19,7 +19,29 @@ services:
       - service_pvp
     restart: always
     networks:
-        - backend_gachaandgames_network
+      - public_gachaandgames_network
+
+  api_gateway_private:
+    image: nginx:alpine
+    container_name: api_gateway_private_gachaandgames
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./api_gateway_private/api_gateway.conf:/etc/nginx/nginx.conf:ro
+      - ./favicon.ico:/usr/share/nginx/html/favicon.ico:ro
+    depends_on:
+      - service_admin
+      - service_auctions
+      - service_auth
+      - service_currency
+      - service_feedback
+      - service_gacha
+      - service_inventory
+      - service_profile
+      - service_pvp
+    restart: always
+    networks:
+      - private_gachaandgames_network
 
   db:
     image: db_gachaandgames
@@ -38,7 +60,8 @@ services:
       retries: 3
     restart: always
     networks:
-      - backend_gachaandgames_network
+      - private_gachaandgames_network
+      - public_gachaandgames_network # to remove
 
   db_manager:
     image: db_manager_gachaandgames
@@ -54,7 +77,8 @@ services:
     tty: true
     restart: always
     networks:
-      - backend_gachaandgames_network
+      - private_gachaandgames_network
+      - public_gachaandgames_network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/db_manager/health_check"]
       start_period: 15s
@@ -78,7 +102,7 @@ services:
     tty: true
     restart: always
     networks:
-      - backend_gachaandgames_network
+      - private_gachaandgames_network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/admin/health_check"]
       start_period: 10s
@@ -102,7 +126,7 @@ services:
     tty: true
     restart: always
     networks:
-      - backend_gachaandgames_network
+      - public_gachaandgames_network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/auth/health_check"]
       start_period: 10s
@@ -126,7 +150,7 @@ services:
     tty: true
     restart: always
     networks:
-      - backend_gachaandgames_network
+      - public_gachaandgames_network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/auctions/health_check"]
       start_period: 10s
@@ -150,7 +174,7 @@ services:
     tty: true
     restart: always
     networks:
-      - backend_gachaandgames_network
+      - public_gachaandgames_network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/currency/health_check"]
       start_period: 10s
@@ -174,7 +198,7 @@ services:
     tty: true
     restart: always
     networks:
-      - backend_gachaandgames_network
+      - public_gachaandgames_network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/feedback/health_check"]
       start_period: 10s
@@ -198,7 +222,7 @@ services:
     tty: true
     restart: always
     networks:
-      - backend_gachaandgames_network
+      - public_gachaandgames_network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/gacha/health_check"]
       start_period: 10s
@@ -222,7 +246,7 @@ services:
     tty: true
     restart: always
     networks:
-      - backend_gachaandgames_network
+      - public_gachaandgames_network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/inventory/health_check"]
       start_period: 10s
@@ -246,7 +270,7 @@ services:
     tty: true
     restart: always
     networks:
-      - backend_gachaandgames_network
+      - public_gachaandgames_network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/profile/health_check"]
       start_period: 10s
@@ -270,7 +294,7 @@ services:
     tty: true
     restart: always
     networks:
-      - backend_gachaandgames_network
+      - public_gachaandgames_network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/pvp/health_check"]
       start_period: 10s
@@ -281,7 +305,7 @@ services:
       replicas: 1
 
 networks:
-  backend_gachaandgames_network:
-
+  private_gachaandgames_network:
+  public_gachaandgames_network:
 volumes:
   mysql_gatchaandgames_db:

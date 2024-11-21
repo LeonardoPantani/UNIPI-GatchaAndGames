@@ -920,6 +920,8 @@ paths:
           description: Invalid request.
         '401':
           description: You are already logged in.
+        '406':
+          description: The specified email is not valid.
         '409':
           description: The provided username / email is already in use.
         '500':
@@ -1548,6 +1550,11 @@ components:
       format: email
       description: The user's email.
       example: l.pantani5@studenti.unipi.it
+    Password:
+      type: string
+      minLength: 8
+      example: Th1s_c4n_b3_a_good_passw0rd...maybe
+      description: The user's password must be at least 8 characters and can accept all characters.
     AuctionStatus:
       type: string
       default: active
@@ -1600,11 +1607,6 @@ components:
           type: string
           format: date-time
           description: Timestamp when user created their account
-    Password:
-      type: string
-      minLength: 8
-      example: Th1s_c4n_b3_a_good_passw0rd...maybe
-      description: The user's password must be at least 8 characters and can accept all characters.
     GachaId:
       type: string
       format: uuid

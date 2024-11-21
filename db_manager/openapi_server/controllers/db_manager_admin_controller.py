@@ -160,18 +160,67 @@ def create_gacha_pool(pool=None):  # noqa: E501
 
 
 def create_gacha_type(gacha=None):  # noqa: E501
-    """create_gacha_type
+    if not connexion.request.is_json:
+        return "", 400
+    
+    # valid json request
+    gacha = Gacha.from_dict(connexion.request.get_json())  # noqa: E501
 
-    Creates a gacha type. # noqa: E501
+    # converting letters to numbers for storage
+    letters_map = {
+        'A': 5,
+        'B': 4,
+        'C': 3,
+        'D': 2,
+        'E': 1
+    }
+    attributes = ['power', 'speed', 'durability', 'precision', 'range', 'potential']
+    converted = {}
+    for attr in attributes:
+        letter = getattr(gacha.attributes, attr)
+        if letter in letters_map:
+            converted[attr] = letters_map[letter]
+        else:
+            converted[attr] = None
+    # converted is a map with for each key (stat) a value (numeric of the stat)
 
-    :param gacha: 
-    :type gacha: dict | bytes
+    mysql = current_app.extensions.get('mysql')
 
-    :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
-    """
-    if connexion.request.is_json:
-        gacha = Gacha.from_dict(connexion.request.get_json())  # noqa: E501
-    return 'do some magic!'
+    connection = None
+    cursor = None
+    try:
+        @circuit_breaker
+        def make_request_to_db():
+            connection = mysql.connect()
+            cursor = connection.cursor()
+            query = "INSERT INTO gachas_types (uuid, name, stat_power, stat_speed, stat_durability, stat_precision, stat_range, stat_potential, rarity, release_date) VALUES (UUID_TO_BIN(%s), %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+            cursor.execute(query, (gacha.gacha_uuid, gacha.name, converted["power"], converted["speed"], converted["durability"], converted["precision"], converted["range"], converted["potential"], gacha.rarity, date.today()))
+            if cursor.rowcount == 0:
+                return jsonify({"error": "The provided gacha uuid is already in use."}), 404
+            return
+
+    except OperationalError: # if connect to db fails means there is an error in the db
+        logging.error("Query 1 ["+ gacha.gacha_uuid +"]: Operational error.")
+        return "", 500
+    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+        logging.error("Query 1 ["+ gacha.gacha_uuid +"]: Programming error.")
+        return "", 400
+    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+        logging.error("Query 1 ["+ gacha.gacha_uuid +"]: Internal error.")
+        return "", 500
+    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+        logging.error("Query 1 ["+ gacha.gacha_uuid +"]: Interface error.")
+        return "", 500
+    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+        logging.error("Query 1 ["+ gacha.gacha_uuid +"]: Database error.")
+        return "", 500
+    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return "", 503
+
+
+    user_role = make_request_to_db()
+
 
 
 def delete_gacha_pool(body=None):  # noqa: E501

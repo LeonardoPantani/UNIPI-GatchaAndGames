@@ -1,8 +1,16 @@
 import uuid
+import re
 from datetime import datetime
 import bcrypt
 import connexion
 import requests
+from typing import Dict
+from typing import Tuple
+from typing import Union
+
+from openapi_server.models.login_request import LoginRequest  # noqa: E501
+from openapi_server.models.register_request import RegisterRequest  # noqa: E501
+from openapi_server import util
 from flask import jsonify, session
 from pybreaker import CircuitBreaker, CircuitBreakerError
 
@@ -12,11 +20,11 @@ circuit_breaker = CircuitBreaker(fail_max=5, reset_timeout=5, exclude=[requests.
 
 
 
-def health_check():
+def auth_health_check_get():
     return jsonify({"message": "Service operational."}), 200
 
 
-def login():
+def login():  # noqa: E501
     if "username" in session:
         return jsonify({"error": "You are already logged in."}), 409
 
@@ -24,9 +32,9 @@ def login():
         return jsonify({"message": "Invalid request."}), 400
 
     # valid json request
-    login_request = connexion.request.get_json()
-    username_to_login = login_request.get("username")
-    password_to_login = login_request.get("password")
+    login_request = LoginRequest.from_dict(connexion.request.get_json())
+    username_to_login = login_request.username
+    password_to_login = login_request.password
 
     try:
 
@@ -85,10 +93,12 @@ def register():
         return jsonify({"message": "Invalid request."}), 400
 
     # valid json request
-    register_request = connexion.request.get_json()
-    username_to_register = register_request.get("username")
-    email_to_register = register_request.get("email")
-    password_to_hash = register_request.get("password")
+    register_request = RegisterRequest.from_dict(connexion.request.get_json())
+    if not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', register_request.email):
+        return jsonify({"error": "The specified email is not valid."}), 406
+    username_to_register = register_request.username
+    email_to_register = register_request.email
+    password_to_hash = register_request.password
 
     # hashing
     password_hashed = bcrypt.hashpw(password_to_hash.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
