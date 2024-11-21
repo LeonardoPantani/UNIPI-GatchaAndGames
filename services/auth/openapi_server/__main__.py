@@ -6,12 +6,14 @@ import time
 
 from openapi_server import encoder
 
-from flask import current_app
+from flask import current_app, Flask
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 
 def main():
     connexion_app = connexion.App(__name__, specification_dir='./openapi/')
     connexion_app.app.json_encoder = encoder.JSONEncoder
+    connexion_app.app.wsgi_app = ProxyFix(connexion_app.app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
     # secret key flask
     connexion_app.app.secret_key = os.environ.get('FLASK_SECRET_KEY')

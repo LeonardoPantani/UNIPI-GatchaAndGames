@@ -21,7 +21,7 @@ from flask import current_app, jsonify
 from pymysql.err import OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError
 from pybreaker import CircuitBreaker, CircuitBreakerError
 
-# circuit breaker to stop requests when dbmanager fails
+
 circuit_breaker = CircuitBreaker(fail_max=5, reset_timeout=5, exclude=[OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError])
 
 def ban_user_profile(ban_user_profile_request=None):  # noqa: E501
