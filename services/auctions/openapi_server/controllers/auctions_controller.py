@@ -35,95 +35,104 @@ def bid_on_auction(auction_uuid):
         return jsonify({"error": "Invalid bid value."}), 400
 
     try:
-        #connect to database
-        mysql = current_app.extensions.get('mysql')
-        if not mysql:
-            return jsonify({"error": "Database connection not initialized"}), 500
+        @circuit_breaker
+        def make_request_to_dbmanager():
+            payload = {
+                "uuid": auction_uuid
+            }
+            url = "http://db_manager:8080/db_manager/auctions/get_auction_status"
+            response = requests.post(url, json=payload)
+            response.raise_for_status()
+            return response.json()
         
-        connection = mysql.connect()
-        cursor = connection.cursor()
-        #get auction from database
-        cursor.execute( #/db_manager/auctions/get_auction_status
-            'SELECT item_uuid, starting_price, current_bid, current_bidder, end_time FROM auctions WHERE BIN_TO_UUID(uuid) = %s',
-            (auction_uuid,)
-        )
+        auction = make_request_to_dbmanager()
 
-        auction = cursor.fetchone()
-
-        if not auction:
+    except requests.HTTPError as e:
+        if e.response.status_code == 404:
             return jsonify({"error": "Auction not found."}), 404
-        
-        item_uuid, starting_price, current_bid, current_bidder, end_time = auction
-        
-        #prepare new data to insert
-        if not current_bid:
-            new_bid = starting_price
-        else:    
-            new_bid = current_bid + increment
-
-        if datetime.now() > end_time:
-            return jsonify({"error":"Auction is closed"}), 403
-
-        cursor.execute( #/db_manager/auctions/get_item_with_owner
-            'SELECT * FROM inventories WHERE owner_uuid = UUID_TO_BIN(%s) AND item_uuid = %s',
-            (user_uuid, item_uuid)
-        )
-
-        item_found = cursor.fetchone()
-        if item_found:
-            return jsonify({"error":"Cannot bid on your own auctions"}), 400
-        
-        if user_uuid == current_bidder:
-            return jsonify({"message":"Already the highest bidder"}), 200
-
-        cursor.execute( #/db_manager/auctions/get_currency
-            'SELECT currency FROM profiles WHERE uuid = UUID_TO_BIN(%s)',
-            (user_uuid,)
-        )
-        user_profile = cursor.fetchone()
-        
-        if not user_profile:
-            return jsonify({"error": "User profile not found."}), 404
-        #check if user has enough funds
-        user_currency = user_profile[0]
-        if user_currency < new_bid:
-            return jsonify({"error": "Insufficient funds."}), 406
-        #updates auction
-        cursor.execute( #/db_manager/auctions/place_bid
-            'UPDATE auctions SET current_bid = %s, current_bidder = UUID_TO_BIN(%s) WHERE uuid = %s',
-            (new_bid, user_uuid, auction_uuid)
-        )
-        #updates user funds
-        cursor.execute(
-            'UPDATE profiles SET currency = currency - %s WHERE uuid = UUID_TO_BIN(%s)',
-            (new_bid, user_uuid)
-        )
-        #gives old bidder his funds back
-        if current_bidder is not None:
-            cursor.execute(
-                'UPDATE profiles SET currency = currency + %s WHERE BIN_TO_UUID(uuid) = %s',
-                (current_bid, current_bidder)
-            )
-        
-        connection.commit()
-
-        return jsonify({"message": "Bid placed successfully."}), 200
-
+        else:  # other errors
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
+        return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
-        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
-        return jsonify({"error": "Service unavailable. Please try again later."}), 503
+        return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503
 
-    except Exception as e:
-        # Rollback transaction on error
-        connection.rollback()
-        return jsonify({"error": str(e)}), 500
+    item_uuid = auction["inventory_item_id"]
+    starting_price = auction["starting_price"]
+    current_bid = auction["current_bid"]
+    current_bidder = auction["current_bidder"]
+    end_time = auction["end_time"]
+    owner_uuid = auction["inventory_item_owner_id"]
+    status = auction["status"]
+
+    #prepare new data to insert
+    if not current_bid:
+        new_bid = starting_price
+    else:    
+        new_bid = current_bid + increment
+
+    if user_uuid == owner_uuid:
+            return jsonify({"error":"Cannot bid on your own auctions"}), 400
+
+    if user_uuid == current_bidder:
+        return jsonify({"message":"Already the highest bidder"}), 200
+
+    if status == "closed":
+        return jsonify({"error":"Auction is closed"}), 403
+
+    try:
+        @circuit_breaker
+        def make_request_to_dbmanager():
+            payload = {
+                "user_uuid": user_uuid
+            }
+            url = "http://db_manager:8080/db_manager/auctions/get_currency"
+            response = requests.post(url, json=payload)
+            response.raise_for_status()  # if response is obtained correctly
+            return response.json()
+        
+        currency_json = make_request_to_dbmanager()
+
+    except requests.HTTPError as e:
+        if e.response.status_code == 404:
+            return jsonify({"error": "User not found."}), 404
+        else:  # other errors
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
+        return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:
+        return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503
+
+    #check if user has enough funds
+    user_currency = currency_json["currency"]
+    if user_currency < new_bid:
+        return jsonify({"error": "Insufficient funds."}), 406
     
-    finally:
-        # Close the database connection
-        if cursor:
-            cursor.close()
-        if connection:
-            connection.close()
+    try:
+        @circuit_breaker
+        def make_request_to_dbmanager():
+            payload = {
+                "user_uuid": user_uuid,
+                "auction_uuid": auction_uuid,
+                "new_bid": new_bid
+            }
+            url = "http://db_manager:8080/db_manager/auctions/place_bid"
+            response = requests.post(url, json=payload)
+            response.raise_for_status()  # if response is obtained correctly
+            return
+        
+        make_request_to_dbmanager()
+        return jsonify({"message": "Successfully bid "+ str(new_bid) +"on auction " + auction_uuid + "."}), 200
+    except requests.HTTPError as e:
+        if e.response.status_code == 404:
+            return jsonify({"error": "Auction or user not found."}), 404
+        else:  # other errors
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
+        return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:
+        return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503
+
 
 @circuit_breaker
 def create_auction(): 
