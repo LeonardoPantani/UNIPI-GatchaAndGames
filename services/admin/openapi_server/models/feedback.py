@@ -16,7 +16,7 @@ class Feedback(Model):
         """Feedback - a model defined in OpenAPI
 
         :param id: The id of this Feedback.  # noqa: E501
-        :type id: float
+        :type id: int
         :param user_uuid: The user_uuid of this Feedback.  # noqa: E501
         :type user_uuid: str
         :param content: The content of this Feedback.  # noqa: E501
@@ -25,7 +25,7 @@ class Feedback(Model):
         :type timestamp: datetime
         """
         self.openapi_types = {
-            'id': float,
+            'id': int,
             'user_uuid': str,
             'content': str,
             'timestamp': datetime
@@ -55,24 +55,24 @@ class Feedback(Model):
         return util.deserialize_model(dikt, cls)
 
     @property
-    def id(self) -> float:
+    def id(self) -> int:
         """Gets the id of this Feedback.
 
         Id of feedback.  # noqa: E501
 
         :return: The id of this Feedback.
-        :rtype: float
+        :rtype: int
         """
         return self._id
 
     @id.setter
-    def id(self, id: float):
+    def id(self, id: int):
         """Sets the id of this Feedback.
 
         Id of feedback.  # noqa: E501
 
         :param id: The id of this Feedback.
-        :type id: float
+        :type id: int
         """
 
         self._id = id

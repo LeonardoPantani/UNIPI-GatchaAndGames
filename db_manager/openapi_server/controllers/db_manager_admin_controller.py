@@ -350,6 +350,9 @@ def edit_user_profile(edit_user_profile_request=None):
     except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
         logging.error("Query ["+ user_uuid +"]: Programming error.")
         return "", 400
+    except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
+        logging.error("Query ["+ user_uuid +"]: Integrity error.")
+        return "", 409
     except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
         logging.error("Query ["+ user_uuid +"]: Internal error.")
         return "", 500
@@ -364,45 +367,106 @@ def edit_user_profile(edit_user_profile_request=None):
         return "", 503
 
 
-    user_role = make_request_to_db()
-
-    if user_role:
-        if user_role == "ADMIN":
-            return "", 409
-    else:
-        return "", 404
-    
-    return 'do some magic!'
-
-
 def get_feedback_info(get_feedback_info_request=None):
-    """get_feedback_info
+    if not connexion.request.is_json:
+        return "", 400
+    
+    # valid json request
+    get_feedback_info_request = GetFeedbackInfoRequest.from_dict(connexion.request.get_json())
+    feedback_id = get_feedback_info_request.feedback_id
+    
+    mysql = current_app.extensions.get('mysql')
 
-    Returns info on a single feedback # noqa: E501
+    try:
+        @circuit_breaker
+        def make_request_to_db():
+            connection = mysql.connect()
+            cursor = connection.cursor()
+            query = "SELECT f.id, BIN_TO_UUID(f.user_uuid) as uuid, f.content, f.timestamp, p.username FROM feedbacks f JOIN profiles p ON f.user_uuid = p.uuid WHERE id = %s"
+            cursor.execute(query, (feedback_id,))
+            return cursor.fetchone()
 
-    :param get_feedback_info_request: 
-    :type get_feedback_info_request: dict | bytes
+        feedback = make_request_to_db()
+        
+        if feedback:
+            feedback_info = {"id": feedback[0], "user_uuid": feedback[1], "content": feedback[2], "timestamp": feedback[3], "username": feedback[4]}
+            return jsonify(feedback_info), 200
+        else:
+            return "", 404
 
-    :rtype: Union[FeedbackWithUsername, Tuple[FeedbackWithUsername, int], Tuple[FeedbackWithUsername, int, Dict[str, str]]
-    """
-    if connexion.request.is_json:
-        get_feedback_info_request = GetFeedbackInfoRequest.from_dict(connexion.request.get_json())
+    except OperationalError: # if connect to db fails means there is an error in the db
+        logging.error("Query ["+ feedback_id +"]: Operational error.")
+        return "", 500
+    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+        logging.error("Query ["+ feedback_id +"]: Programming error.")
+        return "", 400
+    except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
+        logging.error("Query ["+ feedback_id +"]: Integrity error.")
+        return "", 409
+    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+        logging.error("Query ["+ feedback_id +"]: Internal error.")
+        return "", 500
+    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+        logging.error("Query ["+ feedback_id +"]: Interface error.")
+        return "", 500
+    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+        logging.error("Query ["+ feedback_id +"]: Database error.")
+        return "", 500
+    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return "", 503
+
     return 'do some magic!'
 
 
 def get_feedback_list(get_feedback_list_request=None):
-    """get_feedback_list
+    if not connexion.request.is_json:
+        return "", 400
+    
+    # valid json request
+    get_feedback_list_request = GetFeedbackListRequest.from_dict(connexion.request.get_json())
+    page_number = get_feedback_list_request.page_number
+    offset = (page_number - 1) * 10 if page_number else 0
+    
+    mysql = current_app.extensions.get('mysql')
 
-    Gets a feedback list # noqa: E501
+    try:
+        @circuit_breaker
+        def make_request_to_db():
+            connection = mysql.connect()
+            cursor = connection.cursor()
+            query = "SELECT f.id, BIN_TO_UUID(f.user_uuid), f.timestamp FROM feedbacks f LIMIT 10 OFFSET %s"
+            cursor.execute(query, (offset,))
+            return cursor.fetchall()
 
-    :param get_feedback_list_request: 
-    :type get_feedback_list_request: dict | bytes
+        feedbacks = make_request_to_db()
+        feedback_list = [
+            {"id": feedback[0], "user_uuid": feedback[1], "timestamp": str(feedback[2])}
+            for feedback in feedbacks
+        ]
+        return jsonify(feedback_list), 200
 
-    :rtype: Union[List[FeedbackPreview], Tuple[List[FeedbackPreview], int], Tuple[List[FeedbackPreview], int, Dict[str, str]]
-    """
-    if connexion.request.is_json:
-        get_feedback_list_request = GetFeedbackListRequest.from_dict(connexion.request.get_json())
-    return 'do some magic!'
+    except OperationalError: # if connect to db fails means there is an error in the db
+        logging.error("Query ["+ page_number +"]: Operational error.")
+        return "", 500
+    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+        logging.error("Query ["+ page_number +"]: Programming error.")
+        return "", 400
+    except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
+        logging.error("Query ["+ page_number +"]: Integrity error.")
+        return "", 409
+    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+        logging.error("Query ["+ page_number +"]: Internal error.")
+        return "", 500
+    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+        logging.error("Query ["+ page_number +"]: Interface error.")
+        return "", 500
+    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+        logging.error("Query ["+ page_number +"]: Database error.")
+        return "", 500
+    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return "", 503
 
 
 def get_profile_list(get_feedback_list_request=None):

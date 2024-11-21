@@ -165,7 +165,7 @@ class TestAdminController(BaseTestCase):
             'Accept': 'application/json',
         }
         response = self.client.open(
-            '/admin/feedback/{feedback_id}'.format(feedback_id=3.4),
+            '/admin/feedback/{feedback_id}'.format(feedback_id=3),
             method='GET',
             headers=headers)
         self.assert200(response,
