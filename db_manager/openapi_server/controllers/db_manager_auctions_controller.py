@@ -121,9 +121,11 @@ def create_auction(get_auction_status200_response=None):  # noqa: E501
                 (item_uuid, datetime.now())
             )
 
-            result = cursor.fetchone()[0]
-            if result:
+            result = cursor.fetchone()
+            if not result:
                 return "", 409
+            
+            result = result[0]
 
             cursor.execute(
                 'INSERT INTO auctions (uuid, item_uuid, starting_price, current_bid, current_bidder, end_time) VALUES (UUID_TO_BIN(%s), UUID_TO_BIN(%s), %s, 0, NULL, %s)',
