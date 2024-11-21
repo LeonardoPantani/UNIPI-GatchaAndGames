@@ -73,41 +73,29 @@ def create_gacha():
     # valid request from now on
     gacha = Gacha.from_dict(connexion.request.get_json())
     try:
-        mysql = current_app.extensions.get('mysql')
-        if not mysql:
-            return jsonify({"error": "Database connection not initialized"}), 500
 
-        # converting letters to numbers for storage
-        letters_map = {
-            'A': 5,
-            'B': 4,
-            'C': 3,
-            'D': 2,
-            'E': 1
-        }
-        attributes = ['power', 'speed', 'durability', 'precision', 'range', 'potential']
-        converted = {}
-        for attr in attributes:
-            letter = getattr(gacha.attributes, attr)
-            if letter in letters_map:
-                converted[attr] = letters_map[letter]
-            else:
-                converted[attr] = None
-        # converted is a map with for each key (stat) a value (numeric of the stat)
+        @circuit_breaker
+        def make_request_to_dbmanager():
+            payload = {gacha}
+            url = "http://db_manager:8080/db_manager/admin/ban_user_profile"
+            response = requests.post(url, json=payload)
+            response.raise_for_status()  # if response is obtained correctly
+            return response.json()
 
-        connection = mysql.connect()
-        cursor = connection.cursor()
-        query = "INSERT INTO gachas_types (uuid, name, stat_power, stat_speed, stat_durability, stat_precision, stat_range, stat_potential, rarity, release_date) VALUES (UUID_TO_BIN(%s), %s, %s, %s, %s, %s, %s, %s, %s, %s)"
-        cursor.execute(query, (gacha.gacha_uuid, gacha.name, converted["power"], converted["speed"], converted["durability"], converted["precision"], converted["range"], converted["potential"], gacha.rarity, date.today()))
-        
-        if cursor.rowcount == 0:
-            return jsonify({"error": "The provided gacha uuid is already in use."}), 404
-        
-        connection.commit()
+        make_request_to_dbmanager()
 
         return jsonify({"message": "Gacha successfully created.", "gacha_uuid": gacha.gacha_uuid}), 201
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except requests.HTTPError as e:  # if request is sent to dbmanager correctly and it answers an application error (to be managed here) [error expected by us]
+        if e.response.status_code == 404:
+            return jsonify({"error": "User not found."}), 404
+        elif e.response.status_code == 409: 
+            return jsonify({"error": "Cannot ban a user with the ADMIN role."}), 409
+        else:  # other errors
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
+        return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:  # if request already failed multiple times, the circuit breaker is open and this code gets executed
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
 
 def delete_gacha(gacha_uuid):
