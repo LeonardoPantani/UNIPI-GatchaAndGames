@@ -10,6 +10,7 @@ on:
 	else
 		echo "Starting Docker daemon..."
 		sudo systemctl start docker
+		echo "Docker daemon started."
 	fi
 
 off: down
@@ -31,8 +32,8 @@ up: on
 down:
 	#!/bin/bash
 	if [ $(docker compose ps | wc -l) -le 13 ]; then
-		echo "Stopping containers..."
-		docker compose down
+		echo "Removing containers and resetting database..."
+		docker compose down -v
 	else
 		echo "Containers are stopped..."
 	fi
@@ -40,8 +41,8 @@ down:
 start: on
 	#!/bin/bash
 	if [ $(docker compose ps | wc -l) -ne 13 ]; then
-		echo "Starting containers..."
-		docker compose start
+		echo "Starting containers and building..."
+		docker compose up --build -d
 	else
 		echo "Containers are already running..."
 	fi
@@ -56,12 +57,21 @@ stop:
 	fi
 
 ps:
-	#!/bin/bash
-	if $(systemctl --quiet is-active docker); then
-		docker compose ps -a
-	else
-		echo "Docker daemon is stopped."
-	fi
+    #!/bin/bash
+    if systemctl --quiet is-active docker; then
+        docker ps --format "table {{{{.ID}}\t{{{{.Names}}\t{{{{.Status}}"
+    else
+        echo "Docker daemon is stopped."
+    fi
+
+status:
+    #!/bin/bash
+    if systemctl --quiet is-active docker; then
+        docker ps --format "table {{{{.ID}}\t{{{{.Names}}\t{{{{.Status}}"
+    else
+        echo "Docker daemon is stopped."
+    fi
+
 
 @db: up
 	echo "Get into {{db_container_name}}..."
@@ -69,9 +79,6 @@ ps:
 
 build: on
 	docker compose build
-
-config: on
-	docker compose config
 
 logs service_name replica_number='1':
 	#!/bin/bash
@@ -85,6 +92,7 @@ logs service_name replica_number='1':
 			container_name="unipi-gatchaandgames-service_${service_name}-${replica_number}"
 		fi
 		echo "Showing logs for $container_name..."
+		echo "Press CTRL+C to exit."
 		docker logs -f $container_name
 	else
 		echo "Invalid service name. Must be one of: $allowed_services"

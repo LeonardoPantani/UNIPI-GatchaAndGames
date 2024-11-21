@@ -1,7 +1,7 @@
 services:
   api_gateway:
     image: nginx:alpine
-    container_name: api_gateway_gachaandgames
+    container_name: unipi-gatchaandgames-api_gateway
     ports:
       - "8080:8080"
     volumes:
@@ -23,7 +23,7 @@ services:
 
   db:
     image: db_gachaandgames
-    container_name: mysql_db_gachaandgames
+    container_name: unipi-gatchaandgames-database
     build: ./database/
     ports:
       - "3306"
@@ -32,7 +32,7 @@ services:
       - mysql_gatchaandgames_db:/var/lib/mysql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      start_period: 30s
+      start_period: 20s
       interval: 15s
       timeout: 3s
       retries: 3
@@ -57,7 +57,7 @@ services:
       - backend_gachaandgames_network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/db_manager/health_check"]
-      start_period: 10s
+      start_period: 15s
       interval: 1m
       timeout: 3s
       retries: 3
