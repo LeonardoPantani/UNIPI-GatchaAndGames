@@ -719,7 +719,7 @@ paths:
         "503":
           description: Circuit breaker open.
       tags:
-      - db_manager_gacha
+      - db_manager_gachas
       x-openapi-router-controller: openapi_server.controllers.db_manager_gachas_controller
   /db_manager/gachas/get_gacha_info:
     post:
