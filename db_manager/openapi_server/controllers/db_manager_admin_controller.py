@@ -1,5 +1,6 @@
 import connexion
 import logging
+from datetime import date
 from typing import Dict
 from typing import Tuple
 from typing import Union
@@ -186,8 +187,6 @@ def create_gacha_type(gacha=None):  # noqa: E501
 
     mysql = current_app.extensions.get('mysql')
 
-    connection = None
-    cursor = None
     try:
         @circuit_breaker
         def make_request_to_db():
@@ -195,31 +194,33 @@ def create_gacha_type(gacha=None):  # noqa: E501
             cursor = connection.cursor()
             query = "INSERT INTO gachas_types (uuid, name, stat_power, stat_speed, stat_durability, stat_precision, stat_range, stat_potential, rarity, release_date) VALUES (UUID_TO_BIN(%s), %s, %s, %s, %s, %s, %s, %s, %s, %s)"
             cursor.execute(query, (gacha.gacha_uuid, gacha.name, converted["power"], converted["speed"], converted["durability"], converted["precision"], converted["range"], converted["potential"], gacha.rarity, date.today()))
-            if cursor.rowcount == 0:
-                return jsonify({"error": "The provided gacha uuid is already in use."}), 404
+            connection.commit()
             return
 
+        make_request_to_db()
+
+        return "", 201
     except OperationalError: # if connect to db fails means there is an error in the db
-        logging.error("Query 1 ["+ gacha.gacha_uuid +"]: Operational error.")
+        logging.error("Query ["+ gacha.gacha_uuid +"]: Operational error.")
         return "", 500
+    except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
+        logging.error("Query ["+ gacha.gacha_uuid +"]: Integrity error.")
+        return jsonify({"error": "The provided gacha uuid is already in use."}), 409
     except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
-        logging.error("Query 1 ["+ gacha.gacha_uuid +"]: Programming error.")
+        logging.error("Query ["+ gacha.gacha_uuid +"]: Programming error.")
         return "", 400
     except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
-        logging.error("Query 1 ["+ gacha.gacha_uuid +"]: Internal error.")
+        logging.error("Query ["+ gacha.gacha_uuid +"]: Internal error.")
         return "", 500
     except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
-        logging.error("Query 1 ["+ gacha.gacha_uuid +"]: Interface error.")
+        logging.error("Query ["+ gacha.gacha_uuid +"]: Interface error.")
         return "", 500
     except DatabaseError: # default for any MySQL error which does not fit the other exceptions
-        logging.error("Query 1 ["+ gacha.gacha_uuid +"]: Database error.")
+        logging.error("Query ["+ gacha.gacha_uuid +"]: Database error.")
         return "", 500
     except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return "", 503
-
-
-    user_role = make_request_to_db()
 
 
 

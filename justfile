@@ -1,4 +1,4 @@
-db_container_name  := "mysql_db_gachaandgames"
+db_container_name  := "unipi-gatchaandgames-database"
 allowed_services := "admin auctions auth currency feedback gacha inventory profile pvp dbmanager"
 
 default: up
@@ -75,7 +75,7 @@ status:
 
 @db: up
 	echo "Get into {{db_container_name}}..."
-	docker exec -it {{db_container_name}} mysql -u root -h 0.0.0.0 -P 3306 -p
+	docker exec -it {{db_container_name}} mysql -u root -h 0.0.0.0 gacha_test_db -P 3306 -p
 
 build: on
 	docker compose build

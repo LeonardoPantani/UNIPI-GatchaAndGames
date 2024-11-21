@@ -76,8 +76,8 @@ def create_gacha():
 
         @circuit_breaker
         def make_request_to_dbmanager():
-            payload = {gacha}
-            url = "http://db_manager:8080/db_manager/admin/ban_user_profile"
+            payload = connexion.request.get_json()
+            url = "http://db_manager:8080/db_manager/admin/create_gacha"
             response = requests.post(url, json=payload)
             response.raise_for_status()  # if response is obtained correctly
             return response.json()
@@ -86,10 +86,10 @@ def create_gacha():
 
         return jsonify({"message": "Gacha successfully created.", "gacha_uuid": gacha.gacha_uuid}), 201
     except requests.HTTPError as e:  # if request is sent to dbmanager correctly and it answers an application error (to be managed here) [error expected by us]
-        if e.response.status_code == 404:
+        if e.response.status_code == 400: # programming error
             return jsonify({"error": "User not found."}), 404
-        elif e.response.status_code == 409: 
-            return jsonify({"error": "Cannot ban a user with the ADMIN role."}), 409
+        elif e.response.status_code == 409: # conflict
+            return jsonify({"error": "The provided gacha uuid is already in use."}), 409
         else:  # other errors
             return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
     except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
