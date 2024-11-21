@@ -123,9 +123,6 @@ def get_auction_status(get_auction_status_request=None):  # noqa: E501
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return "", 503
 
-def get_currency(ban_user_profile_request=None):  # noqa: E501
-    return
-
 def get_item_with_owner(get_item_with_owner_request=None):  # noqa: E501
     """get_item_with_owner
 
