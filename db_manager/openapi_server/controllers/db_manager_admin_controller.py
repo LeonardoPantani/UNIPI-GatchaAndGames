@@ -223,8 +223,7 @@ def create_gacha_type(gacha=None):
         return "", 503
 
 
-
-def delete_gacha_pool(body=None):
+def delete_gacha_pool(body=None): # TODO controllare dipendenze
     """delete_gacha_pool
 
     Deletes a gacha pool. # noqa: E501
@@ -237,7 +236,7 @@ def delete_gacha_pool(body=None):
     return 'do some magic!'
 
 
-def delete_gacha_type():
+def delete_gacha_type(): #TODO vanno rimosse le cose nel modo corretto
     if not connexion.request.is_json:
         return "", 400
 
