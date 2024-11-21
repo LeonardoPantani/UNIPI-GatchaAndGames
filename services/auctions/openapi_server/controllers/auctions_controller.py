@@ -21,7 +21,6 @@ circuit_breaker = CircuitBreaker(fail_max=5, reset_timeout=5, exclude=[requests.
 def health_check():  # noqa: E501
     return jsonify({"message": "Service operational."}), 200
 
-@circuit_breaker
 def bid_on_auction(auction_uuid): 
     #check if user is logged in
     if 'username' not in session:
@@ -122,7 +121,7 @@ def bid_on_auction(auction_uuid):
             return
         
         make_request_to_dbmanager()
-        return jsonify({"message": "Successfully bid "+ str(new_bid) +"on auction " + auction_uuid + "."}), 200
+        return jsonify({"message": "Successfully bid "+ str(new_bid) +" on auction " + auction_uuid + "."}), 200
     except requests.HTTPError as e:
         if e.response.status_code == 404:
             return jsonify({"error": "Auction or user not found."}), 404
@@ -133,8 +132,6 @@ def bid_on_auction(auction_uuid):
     except CircuitBreakerError:
         return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503
 
-
-@circuit_breaker
 def create_auction(): 
 
     if 'username' not in session:
@@ -150,51 +147,67 @@ def create_auction():
 
     if not owner_id or not item_id:
         return jsonify({"error": "Invalid query parameters."}), 400
-        
+
     try:
-        mysql = current_app.extensions.get('mysql')
-        if not mysql:
-            return jsonify({"error": "Database connection not initialized"}), 500
+        @circuit_breaker
+        def make_request_to_dbmanager():
+            payload = {
+                "user_uuid": owner_id,
+                "item_uuid": item_id
+            }
+            url = "http://db_manager:8080/db_manager/auctions/get_item_with_owner"
+            response = requests.post(url, json=payload)
+            response.raise_for_status()  # if response is obtained correctly
+            return response.json()
         
-        connection = mysql.connect()
-        cursor = connection.cursor()
-
-        cursor.execute( #/db_manager/auctions/get_item_with_owner (si prendono poi solo i dati necessari per non creare ulteriori endpoint)
-            'SELECT owner_uuid FROM inventories WHERE BIN_TO_UUID(owner_uuid) = %s AND BIN_TO_UUID(item_uuid) = %s',
-            (owner_id, item_id)
-        )
-
-        searched_item = cursor.fetchone()
-        if not searched_item:
-            return jsonify({"error": "Item not found in player's inventory."}), 404
+        item = make_request_to_dbmanager()
         
-        auction_id = uuid.uuid4()
-        end_time = datetime.now() + timedelta(minutes=10)
-
-        cursor.execute( #/db_manager/auctions/create
-            'INSERT INTO auctions (uuid, item_uuid, starting_price, current_bid, current_bidder, end_time) VALUES (UUID_TO_BIN(%s), UUID_TO_BIN(%s), %s, %s, %s, %s)',
-            (auction_id, item_id, starting_price, None, None, end_time)
-        )
-
-        connection.commit()
-
-        return jsonify({"message":"Auction created successfully."}), 200
-    
+    except requests.HTTPError as e:
+        if e.response.status_code == 404:
+            return jsonify({"error": "Item not found."}), 404
+        else:  # other errors
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
+        return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
-        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
-        return jsonify({"error": "Service unavailable. Please try again later."}), 503
+        return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503
 
-    except Exception as e:
-        # Rollback transaction on error
-        connection.rollback()
-        return jsonify({"error": str(e)}), 500
+    auction_id = str(uuid.uuid4())
+    end_time = datetime.now() + timedelta(minutes=10)
     
-    finally:
-        # Close the database connection
-        if cursor:
-            cursor.close()
-        if connection:
-            connection.close()
+    try:
+        @circuit_breaker
+        def make_request_to_db_manager():
+            payload = {
+                "auction":{
+                    "auction_uuid": auction_id,
+                    "status": "active",
+                    "inventory_item_owner_id": owner_id,
+                    "inventory_item_id": item_id,
+                    "starting_price": starting_price,
+                    "current_bid": 0,
+                    "current_bidder": "",
+                    "end_time": end_time.strftime("%Y-%m-%d %H:%M:%S")
+                }
+            }
+            url = "http://db_manager:8080/db_manager/auctions/create"
+            response = requests.post(url, json=payload)
+            response.raise_for_status()  # if response is obtained correctly
+            return
+
+        make_request_to_db_manager()
+
+        return jsonify({"message":"Auction created successfully."}), 201
+    
+    except requests.HTTPError as e:
+        if e.response.status_code == 409:
+            return jsonify({"error": "Another auction on the same item is still active"}), 409
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
+        return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:
+        return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503
+
 
 @circuit_breaker
 def get_auction_status(auction_uuid): 
