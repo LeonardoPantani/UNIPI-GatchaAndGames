@@ -88,7 +88,7 @@ def check_pending_pvp_requests(ban_user_profile_request=None):
 def finalize_pvp_request_sending(pv_p_request_full=None):
     if not connexion.request.is_json:
         return "", 400
-    
+
     # valid json request
     pv_p_request_full = PvPRequestFull.from_dict(connexion.request.get_json())
     match_uuid = pv_p_request_full.pvp_match_uuid
@@ -133,7 +133,7 @@ def finalize_pvp_request_sending(pv_p_request_full=None):
     except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return "", 503
-
+    
     try:
         @circuit_breaker
         def make_request_to_db():
@@ -147,8 +147,8 @@ def finalize_pvp_request_sending(pv_p_request_full=None):
             connection.commit()
 
         make_request_to_db()
-
         return "", 200
+
     except OperationalError:  # if connect to db fails means there is an error in the db
         logging.error("Query 2 ["+ user_uuid + "]: Operational error.")
         return "", 500
@@ -175,18 +175,60 @@ def finalize_pvp_request_sending(pv_p_request_full=None):
 
 
 def get_gacha_stat(get_gacha_stat_request=None):
-    """get_gacha_stat
+    if not connexion.request.is_json:
+        return "", 400
+    
+    get_gacha_stat_request = GetGachaStatRequest.from_dict(connexion.request.get_json())
 
-    Returns a certain gacha stat for both gachas requested # noqa: E501
+    player1_item_uuid = get_gacha_stat_request.player1_stand
+    player2_item_uuid = get_gacha_stat_request.player2_stand
+    extracted_stat = get_gacha_stat_request.extracted_stat
+    
+    mysql = current_app.extensions.get('mysql')
+    try:
+        @circuit_breaker
+        def make_request_to_db():
+            connection = mysql.connect()
+            cursor = connection.cursor()
+            cursor.execute(
+                f'SELECT gt.name, gt.{extracted_stat}, gt.stat_potential FROM inventories i JOIN gachas_types gt ON i.stand_uuid = gt.uuid WHERE i.item_uuid IN (UUID_TO_BIN(%s), UUID_TO_BIN(%s))',
+                (player1_item_uuid, player2_item_uuid)
+            )
+            result = cursor.fetchall()
+            if cursor.rowcount != 2:
+                "", 404
+            return result, 200
+        
+        gachas, code = make_request_to_db()
 
-    :param get_gacha_stat_request: 
-    :type get_gacha_stat_request: dict | bytes
+        if code != 200:
+            return "", code
 
-    :rtype: Union[GetGachaStat200Response, Tuple[GetGachaStat200Response, int], Tuple[GetGachaStat200Response, int, Dict[str, str]]
-    """
-    if connexion.request.is_json:
-        get_gacha_stat_request = GetGachaStatRequest.from_dict(connexion.request.get_json())
-    return 'do some magic!'
+        response = {
+            "player1_stat": gachas[0],
+            "player2_stat": gachas[1]
+        }
+        
+        return jsonify(response), 200
+
+    except OperationalError:  # if connect to db fails means there is an error in the db
+        logging.error("Query : Operational error.")
+        return "", 500
+    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+        logging.error("Query : Programming error.")
+        return "", 400
+    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+        logging.error("Query : Internal error.")
+        return "", 500
+    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+        logging.error("Query : Interface error.")
+        return "", 500
+    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+        logging.error("Query : Database error.")
+        return "", 500
+    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return "", 503
 
 
 def get_pvp_status(get_pvp_status_request=None):
@@ -278,7 +320,7 @@ def reject_pvp_prequest(reject_pvp_prequest_request=None):
     reject_pvp_prequest_request = RejectPvpPrequestRequest.from_dict(connexion.request.get_json())
     pvp_match_uuid = reject_pvp_prequest_request.pvp_match_uuid
     user_uuid = reject_pvp_prequest_request.user_uuid
-
+    
     mysql = current_app.extensions.get('mysql')
     try:
         @circuit_breaker
@@ -319,19 +361,68 @@ def reject_pvp_prequest(reject_pvp_prequest_request=None):
 
 
 def set_match_results(set_match_results_request=None):
-    """set_match_results
+    if not connexion.request.is_json:
+        return "", 400
+    
+    set_match_results_request = SetMatchResultsRequest.from_dict(connexion.request.get_json())
 
-    Updates data of pvp_matches setting results. # noqa: E501
+    pvp_match = set_match_results_request.match
+    points = set_match_results_request.points
 
-    :param set_match_results_request: 
-    :type set_match_results_request: dict | bytes
+    winner = pvp_match["winner"]
+    match_log = pvp_match["match_log"]
+    teams = pvp_match["teams"]
+    match_uuid = pvp_match["pvp_match_uuid"]
+    player1_uuid = pvp_match["sender_id"]
+    player2_uuid = pvp_match["receiver_id"]
 
-    :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
-    """
-    if connexion.request.is_json:
-        set_match_results_request = SetMatchResultsRequest.from_dict(connexion.request.get_json())
-    return 'do some magic!'
+    mysql = current_app.extensions.get('mysql')
+    try:
+        @circuit_breaker
+        def make_request_to_db():
+            connection = mysql.connect()
+            cursor = connection.cursor()
+            cursor.execute(
+                'UPDATE pvp_matches SET winner = %s, match_log = %s, timestamp = CURRENT_TIMESTAMP, gachas_types_used = %s WHERE match_uuid = UUID_TO_BIN(%s)',
+                (winner, match_log, teams, match_uuid)  # FIX: Use json.dumps directly for teams
+            )
 
+            # Update pvp_score for the winner in the database
+            if winner:
+                cursor.execute(
+                    'UPDATE profiles SET pvp_score = pvp_score + %s WHERE uuid = UUID_TO_BIN(%s)',
+                    (points, player1_uuid)
+                )
+            else:
+                cursor.execute(
+                    'UPDATE profiles SET pvp_score = pvp_score + %s WHERE uuid = UUID_TO_BIN(%s)',
+                    (points, player2_uuid)
+                )
+            cursor.commit()
+            return
+        
+        make_request_to_db()
+
+        return "", 200
+        
+    except OperationalError:  # if connect to db fails means there is an error in the db
+        logging.error("Query : Operational error.")
+        return "", 500
+    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+        logging.error("Query : Programming error.")
+        return "", 400
+    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+        logging.error("Query : Internal error.")
+        return "", 500
+    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+        logging.error("Query : Interface error.")
+        return "", 500
+    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+        logging.error("Query : Database error.")
+        return "", 500
+    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return "", 503
 
 def verify_gacha_item_ownership(verify_gacha_item_ownership_request=None):
     if not connexion.request.is_json:
@@ -340,7 +431,7 @@ def verify_gacha_item_ownership(verify_gacha_item_ownership_request=None):
     # valid json request
     verify_gacha_item_ownership_request = VerifyGachaItemOwnershipRequest.from_dict(connexion.request.get_json())
     team = verify_gacha_item_ownership_request.team
-    
+    team = tuple(team.strip('()').split(','))
     mysql = current_app.extensions.get('mysql')
     try:
         @circuit_breaker
@@ -350,7 +441,7 @@ def verify_gacha_item_ownership(verify_gacha_item_ownership_request=None):
             placeholders = ', '.join(['%s'] * len(team))
             query = f'SELECT DISTINCT BIN_TO_UUID(owner_uuid) FROM inventories WHERE BIN_TO_UUID(item_uuid) IN ({placeholders})'
             # Execute query with the gacha UUIDs
-            cursor.execute(query, tuple(team))
+            cursor.execute(query, team)
             result = cursor.fetchall()
             return result
         
