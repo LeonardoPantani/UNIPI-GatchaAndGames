@@ -181,7 +181,7 @@ def create_auction():
             payload = {
                 "auction":{
                     "auction_uuid": auction_id,
-                    "status": "active",
+                    "status": "open",
                     "inventory_item_owner_id": owner_id,
                     "inventory_item_id": item_id,
                     "starting_price": starting_price,
