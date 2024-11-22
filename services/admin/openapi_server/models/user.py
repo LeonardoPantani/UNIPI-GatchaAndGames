@@ -83,7 +83,7 @@ class User(Model):
     def username(self) -> str:
         """Gets the username of this User.
 
-        The username of the user  # noqa: E501
+        The user's username. Must be at least 5 characters long and contain only letters, numbers, and underscores.  # noqa: E501
 
         :return: The username of this User.
         :rtype: str
@@ -94,7 +94,7 @@ class User(Model):
     def username(self, username: str):
         """Sets the username of this User.
 
-        The username of the user  # noqa: E501
+        The user's username. Must be at least 5 characters long and contain only letters, numbers, and underscores.  # noqa: E501
 
         :param username: The username of this User.
         :type username: str

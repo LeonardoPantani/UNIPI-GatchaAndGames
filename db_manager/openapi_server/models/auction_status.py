@@ -15,7 +15,7 @@ class AuctionStatus(Model):
     """
     allowed enum values
     """
-    ACTIVE = 'active'
+    OPEN = 'open'
     CLOSED = 'closed'
     def __init__(self):  # noqa: E501
         """AuctionStatus - a model defined in OpenAPI

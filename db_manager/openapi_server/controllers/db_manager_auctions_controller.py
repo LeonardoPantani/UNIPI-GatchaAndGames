@@ -196,7 +196,7 @@ def get_auction_status(get_auction_status_request=None):  # noqa: E501
         if not auction:
                 return jsonify({"error": "Auction not found for given UUID."}), 404
         
-        status = "closed" if datetime.now() > auction[6] else "active"
+        status = "closed" if datetime.now() > auction[6] else "open"
 
         payload = {
             "auction_uuid": auction_uuid,
@@ -420,7 +420,7 @@ def get_user_involved_auctions(get_user_involved_auctions_request=None):  # noqa
         auction_uuid, item_id, owner_id, starting_price, current_bid, current_bidder, end_time = auction
         
         # Determine auction status based on the end time
-        status = "closed" if end_time < now else "active"
+        status = "closed" if end_time < now else "open"
         
         auctions.append({
             "auction_uuid": auction_uuid,
@@ -492,7 +492,7 @@ def list_auctions(list_auctions_request=None):  # noqa: E501
         for auction in auction_list:
             auction_uuid, end_time = auction
             # Determine the auction status
-            status = "closed" if end_time < now else "active"
+            status = "closed" if end_time < now else "open"
 
             auctions.append({"auction_uuid": auction_uuid})
         

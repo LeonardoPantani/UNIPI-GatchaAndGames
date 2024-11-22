@@ -16,13 +16,15 @@ class Pool(Model):
     Do not edit the class manually.
     """
 
-    def __init__(self, id=None, name=None, probabilities=None, items=None):  # noqa: E501
+    def __init__(self, id=None, name=None, price=None, probabilities=None, items=None):  # noqa: E501
         """Pool - a model defined in OpenAPI
 
         :param id: The id of this Pool.  # noqa: E501
         :type id: str
         :param name: The name of this Pool.  # noqa: E501
         :type name: str
+        :param price: The price of this Pool.  # noqa: E501
+        :type price: int
         :param probabilities: The probabilities of this Pool.  # noqa: E501
         :type probabilities: RarityProbability
         :param items: The items of this Pool.  # noqa: E501
@@ -31,6 +33,7 @@ class Pool(Model):
         self.openapi_types = {
             'id': str,
             'name': str,
+            'price': int,
             'probabilities': RarityProbability,
             'items': List[str]
         }
@@ -38,12 +41,14 @@ class Pool(Model):
         self.attribute_map = {
             'id': 'id',
             'name': 'name',
+            'price': 'price',
             'probabilities': 'probabilities',
             'items': 'items'
         }
 
         self._id = id
         self._name = name
+        self._price = price
         self._probabilities = probabilities
         self._items = items
 
@@ -105,6 +110,31 @@ class Pool(Model):
         """
 
         self._name = name
+
+    @property
+    def price(self) -> int:
+        """Gets the price of this Pool.
+
+        In-game price to pull a gacha from this pool  # noqa: E501
+
+        :return: The price of this Pool.
+        :rtype: int
+        """
+        return self._price
+
+    @price.setter
+    def price(self, price: int):
+        """Sets the price of this Pool.
+
+        In-game price to pull a gacha from this pool  # noqa: E501
+
+        :param price: The price of this Pool.
+        :type price: int
+        """
+        if price is not None and price < 1:  # noqa: E501
+            raise ValueError("Invalid value for `price`, must be a value greater than or equal to `1`")  # noqa: E501
+
+        self._price = price
 
     @property
     def probabilities(self) -> RarityProbability:

@@ -206,7 +206,7 @@ def remove_item(get_inventory_item_request=None):  # noqa: E501
         
         response = make_request_to_db()
         if response == 409:
-            return jsonify({"error": "Cannot remove item that is in an active auction."}), 409
+            return jsonify({"error": "Cannot remove item that is in an open auction."}), 409
         elif response == 404:
             return jsonify({"error": "Item not found."}), 404
         

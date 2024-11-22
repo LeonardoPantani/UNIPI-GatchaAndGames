@@ -10,6 +10,7 @@ info:
   license:
     name: GPL-3.0
     url: https://www.gnu.org/licenses/gpl-3.0.html#license-text
+  termsOfService: http://localhost:8080/tos
   title: Gacha System - OpenAPI 3.0
   version: 1.0.0
 servers:
@@ -24,7 +25,7 @@ paths:
       - explode: true
         in: cookie
         name: session
-        required: true
+        required: false
         schema:
           type: string
         style: form
@@ -84,9 +85,9 @@ paths:
             application/json:
               schema:
                 items:
-                  $ref: '#/components/schemas/Feedback'
+                  $ref: '#/components/schemas/FeedbackId'
                 type: array
-          description: Feedback.
+          description: Feedback Ids.
         "400":
           description: Invalid username.
         "401":
@@ -141,7 +142,7 @@ paths:
       - explode: true
         in: cookie
         name: session
-        required: true
+        required: false
         schema:
           type: string
         style: form
@@ -174,7 +175,7 @@ paths:
       - explode: true
         in: cookie
         name: session
-        required: true
+        required: false
         schema:
           type: string
         style: form
@@ -208,7 +209,7 @@ paths:
       - explode: true
         in: cookie
         name: session
-        required: true
+        required: false
         schema:
           type: string
         style: form
@@ -246,12 +247,12 @@ paths:
       operationId: admin_health_check_get
       responses:
         "200":
-          description: Service OK
+          description: Service operational.
       summary: Gives information on service status.
       tags:
       - admin
       x-openapi-router-controller: openapi_server.controllers.admin_controller
-  /admin/logs:
+  /admin/logs/:
     get:
       description: Allows to retrieve logs of the system.
       operationId: get_system_logs
@@ -259,7 +260,7 @@ paths:
       - explode: true
         in: cookie
         name: session
-        required: true
+        required: false
         schema:
           type: string
         style: form
@@ -288,7 +289,7 @@ paths:
       - explode: true
         in: cookie
         name: session
-        required: true
+        required: false
         schema:
           type: string
         style: form
@@ -321,7 +322,7 @@ paths:
       - explode: true
         in: cookie
         name: session
-        required: true
+        required: false
         schema:
           type: string
         style: form
@@ -355,7 +356,7 @@ paths:
       - explode: true
         in: cookie
         name: session
-        required: true
+        required: false
         schema:
           type: string
         style: form
@@ -395,7 +396,7 @@ paths:
       - explode: true
         in: cookie
         name: session
-        required: true
+        required: false
         schema:
           type: string
         style: form
@@ -438,7 +439,7 @@ paths:
       - explode: true
         in: cookie
         name: session
-        required: true
+        required: false
         schema:
           type: string
         style: form
@@ -472,7 +473,7 @@ paths:
       - explode: true
         in: cookie
         name: session
-        required: true
+        required: false
         schema:
           type: string
         style: form
@@ -520,7 +521,7 @@ paths:
       - explode: true
         in: cookie
         name: session
-        required: true
+        required: false
         schema:
           type: string
         style: form
@@ -538,8 +539,8 @@ paths:
         required: true
         schema:
           enum:
-          - ingame
           - bundle
+          - ingame
           type: string
         style: form
       - description: Page number of the list.
@@ -554,13 +555,7 @@ paths:
         style: form
       responses:
         "200":
-          content:
-            application/json:
-              schema:
-                items:
-                  $ref: '#/components/schemas/User'
-                type: array
-          description: User profile.
+          description: User transaction history.
         "400":
           description: Invalid username.
         "401":
@@ -577,21 +572,19 @@ components:
   schemas:
     FeedbackId:
       description: Id of feedback.
-      format: integer
       title: id
-      type: number
+      type: integer
     Feedback:
       example:
         user_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
-        id: 0.8008281904610115
+        id: 0
         content: I love this game11!
         timestamp: 2000-01-23T04:56:07.000+00:00
       properties:
         id:
           description: Id of feedback.
-          format: integer
           title: id
-          type: number
+          type: integer
         user_uuid:
           description: UUID of user.
           format: uuid
@@ -622,6 +615,7 @@ components:
       type: string
     Pool:
       example:
+        price: 15
         name: Starter Pool
         id: pool_starter
         probabilities:
@@ -644,6 +638,12 @@ components:
           example: Starter Pool
           title: name
           type: string
+        price:
+          description: In-game price to pull a gacha from this pool
+          example: 15
+          minimum: 1
+          title: price
+          type: integer
         probabilities:
           $ref: '#/components/schemas/RarityProbability'
         items:
@@ -699,7 +699,8 @@ components:
       title: inventory_item_owner_id
       type: string
     Username:
-      description: The username of the user
+      description: "The user's username. Must be at least 5 characters long and contain\
+        \ only letters, numbers, and underscores."
       example: LeoPanta01_
       minLength: 5
       pattern: "^[a-zA-Z0-9_]+$"
@@ -707,14 +708,14 @@ components:
       type: string
     Email:
       description: The user's email.
-      example: l.pantani5@studenti.unipi.it/
+      example: l.pantani5@studenti.unipi.it
       format: email
       title: email
       type: string
     AuctionStatus:
-      default: active
+      default: open
       enum:
-      - active
+      - open
       - closed
       title: AuctionStatus
       type: string
@@ -736,7 +737,7 @@ components:
         end_time: 2000-01-23T04:56:07.000+00:00
         inventory_item_owner_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
         current_bid: 6.0274563
-        status: active
+        status: open
         current_bidder: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
       properties:
         auction_uuid:
@@ -782,7 +783,7 @@ components:
       example:
         joindate: 2000-01-23T04:56:07.000+00:00
         id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
-        email: l.pantani5@studenti.unipi.it/
+        email: l.pantani5@studenti.unipi.it
         username: LeoPanta01_
       properties:
         id:
@@ -791,7 +792,8 @@ components:
           title: inventory_item_owner_id
           type: string
         username:
-          description: The username of the user
+          description: "The user's username. Must be at least 5 characters long and\
+            \ contain only letters, numbers, and underscores."
           example: LeoPanta01_
           minLength: 5
           pattern: "^[a-zA-Z0-9_]+$"
@@ -799,7 +801,7 @@ components:
           type: string
         email:
           description: The user's email.
-          example: l.pantani5@studenti.unipi.it/
+          example: l.pantani5@studenti.unipi.it
           format: email
           title: email
           type: string
