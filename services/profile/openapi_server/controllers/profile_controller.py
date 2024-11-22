@@ -3,6 +3,7 @@ import connexion
 import bcrypt
 import pymysql
 import logging
+import requests
 
 from typing import Dict
 from typing import Tuple
@@ -122,7 +123,6 @@ def edit_profile():  # noqa: E501
 
         # Get username from session
         username = session.get('username')
-        logging.info(f"Username from session: {username}")
         
         if not username:
             return jsonify({"error": "Not logged in"}), 403
@@ -137,19 +137,20 @@ def edit_profile():  # noqa: E501
 
             # First verify the password like in delete_profile
             # /db_manager/profile/get_user_hashed_psw
-            cursor.execute(
-                'SELECT BIN_TO_UUID(u.uuid) as uuid, u.password FROM users u JOIN profiles p ON u.uuid = p.uuid WHERE p.username = %s', 
-                (username,)
+            response = requests.post(
+            'http://db_manager:8080/db_manager/profile/get_user_hashed_psw',
+            json={"user_uuid": session.get('uuid')}
             )
-            result = cursor.fetchone()
-
-            if not result:
-                return jsonify({"error": "User not found"}), 404
             
-            # Verify password using bcrypt
+            if response.status_code == 404:
+                return jsonify({"error": "User not found"}), 404
+
+            hashed_password = response.json().get('password') 
+            
+                    # Verify password
             if not edit_request.password or not bcrypt.checkpw(
-                edit_request.password.encode('utf-8'), 
-                result[1].encode('utf-8')
+            edit_request.password.encode('utf-8'),
+            hashed_password.encode('utf-8')
             ):
                 return jsonify({"error": "Invalid password"}), 403
 
@@ -165,23 +166,33 @@ def edit_profile():  # noqa: E501
                 updates.append("p.username = %s")
                 params.append(edit_request.username)
 
-            if updates: # /db_manager/profile/edit
-                params.append(username)  # Add current username for WHERE clause
-                query = f"""
-                    UPDATE users u JOIN profiles p ON u.uuid = p.uuid 
-                    SET {', '.join(updates)}
-                    WHERE p.username = %s
-                """
-                cursor.execute(query, params)
-                conn.commit()
+            if updates:  # /db_manager/profile/edit
+                try:
+                    response = requests.post(
+                        'http://db_manager:8080/db_manager/profile/edit',
+                        json={
+                            "user_uuid": session.get('uuid'),
+                            "email": edit_request.email,
+                            "username": edit_request.username
+                        }
+                    )
+                    
+                    if response.status_code == 404:
+                        return jsonify({"error": "User not found"}), 404
+                    elif response.status_code == 304:
+                        return jsonify({"message": "No changes needed"}), 304
+                    elif response.status_code != 200:
+                        return jsonify({"error": "Error updating profile"}), 500
+                    
+                    # Update session if username changed
+                    if edit_request.username:
+                        session['username'] = edit_request.username
 
-                # Update session if username changed
-                if edit_request.username:
-                    session['username'] = edit_request.username
+                    return jsonify({"message": "Profile updated successfully"}), 200
 
-                return jsonify({"message": "Profile updated successfully"}), 200
-            
-            return jsonify({"error": "No fields to update"}), 400
+                except requests.RequestException:
+                    return jsonify({"error": "Service temporarily unavailable"}), 503
+                        
 
    
 
