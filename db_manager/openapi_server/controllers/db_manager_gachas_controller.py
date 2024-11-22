@@ -410,6 +410,8 @@ def give_item(give_item_request=None):  # noqa: E501
                 'INSERT INTO inventories (item_uuid, owner_uuid, stand_uuid, owners_no, currency_spent) VALUES (UUID_TO_BIN(%s), UUID_TO_BIN(%s), UUID_TO_BIN(%s), %s, %s)',
                 (item_uuid, user_uuid, stand_uuid, 1, price_paid)
             )
+
+            connection.commit()
             return
 
         make_request_to_db()

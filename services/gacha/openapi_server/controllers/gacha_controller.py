@@ -125,7 +125,7 @@ def pull_gacha(pool_id):
             if rarity_roll <= cumulative_prob:
                 selected_rarity = rarity.upper()
                 break
-        
+        selected_rarity = selected_rarity.replace("PROBABILITY", "")
         for item in item_list:
             if item["rarity"] == selected_rarity:
                 pullable_gachas.append(item)
