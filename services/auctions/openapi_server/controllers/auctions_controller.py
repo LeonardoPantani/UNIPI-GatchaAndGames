@@ -238,17 +238,18 @@ def get_auction_status(auction_uuid):
         return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
         return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503
-        
+
     if auction["status"] == 'closed':
         try:
+            
             @circuit_breaker
             def make_request_to_dbmanager():
                 payload = {
-                    "item_uuid": auction[3],
-                    "current_bid": auction[5],
+                    "item_uuid": auction['inventory_item_id'],
+                    "current_bid": auction['current_bid'],
                     "user_uuid": session["uuid"]
                 }
-                url = "http://db_manager:8080/db_manager/auction/complete_sale"
+                url = "http://db_manager:8080/db_manager/auctions/complete_sale"
                 response = requests.post(url, json=payload)
                 response.raise_for_status()  # if response is obtained correctly
                 return 
