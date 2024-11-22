@@ -153,10 +153,10 @@ def create_gacha_pool(pool=None):
     pool = Pool.from_dict(connexion.request.get_json())
 
     probabilities = {
-        "common": pool.probabilities.common_probability,
-        "rare": pool.probabilities.rare_probability,
-        "epic": pool.probabilities.epic_probability,
-        "legendary":  pool.probabilities.legendary_probability,
+        "commonProbability": pool.probabilities.common_probability,
+        "rareProbability": pool.probabilities.rare_probability,
+        "epicProbability": pool.probabilities.epic_probability,
+        "legendaryProbability":  pool.probabilities.legendary_probability,
     }
     
     mysql = current_app.extensions.get('mysql')
@@ -264,16 +264,51 @@ def create_gacha_type(gacha=None):
 
 
 def delete_gacha_pool(body=None): # TODO controllare dipendenze tra elementi nel db
-    """delete_gacha_pool
+    if not connexion.request.is_json:
+        return "", 400
 
-    Deletes a gacha pool. # noqa: E501
+    mysql = current_app.extensions.get('mysql')
 
-    :param body: 
-    :type body: str
+    pool_id = connexion.request.get_json()
+    try:
+        @circuit_breaker
+        def make_request_to_db():
+            connection = mysql.connect()
+            cursor = connection.cursor()
 
-    :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
-    """
-    return 'do some magic!'
+            query = "DELETE FROM gacha_pools WHERE codename = %s"
+            cursor.execute(query, (pool_id,))
+            connection.commit()
+            return cursor.rowcount
+
+        if make_request_to_db() == 0:
+            return jsonify({"error": "Pool not found."}), 404
+
+        return "", 201
+    except OperationalError: # if connect to db fails means there is an error in the db
+        logging.error("Query ["+ pool_id +"]: Operational error.")
+        return "", 500
+    except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
+        logging.error("Query ["+ pool_id +"]: Integrity error.")
+        return "", 409
+    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+        logging.error("Query ["+ pool_id +"]: Programming error.")
+        return "", 400
+    except DataError:
+        logging.error("Query ["+ pool_id +"]: Data error.")
+        return "", 400
+    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+        logging.error("Query ["+ pool_id +"]: Internal error.")
+        return "", 500
+    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+        logging.error("Query ["+ pool_id +"]: Interface error.")
+        return "", 500
+    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+        logging.error("Query ["+ pool_id +"]: Database error.")
+        return "", 500
+    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return "", 503
 
 
 def delete_gacha_type(): # TODO controllare dipendenze tra elementi nel db
@@ -283,7 +318,6 @@ def delete_gacha_type(): # TODO controllare dipendenze tra elementi nel db
     mysql = current_app.extensions.get('mysql')
 
     gacha_uuid = connexion.request.get_json()
-
     try:
         @circuit_breaker
         def make_request_to_db():
@@ -733,34 +767,141 @@ def update_auction(auction=None):
     except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return "", 503
-    return 'do some magic!'
 
 
-def update_gacha(gacha=None): # TODO da fare
-    """update_gacha
+def update_gacha(gacha=None):
+    if not connexion.request.is_json:
+        return "", 400
 
-    Updates a specific gacha. # noqa: E501
+    gacha = Gacha.from_dict(connexion.request.get_json())
 
-    :param gacha: 
-    :type gacha: dict | bytes
+    # check if stats have correct rating and create a map with converted letters to number ratings
+    letters_map = {
+        'A': 5,
+        'B': 4,
+        'C': 3,
+        'D': 2,
+        'E': 1
+    }
+    attributes = ['power', 'speed', 'durability', 'precision', 'range', 'potential']
+    converted = {}
+    for attr in attributes:
+        letter = getattr(gacha.attributes, attr)
+        if letter in letters_map:
+            converted[attr] = letters_map[letter]
+        else: # no valid letter found
+            converted[attr] = None
+    # converted is a map with for each key (stat) a value (numeric of the stat)
 
-    :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
-    """
-    if connexion.request.is_json:
-        gacha = Gacha.from_dict(connexion.request.get_json())
-    return 'do some magic!'
+    mysql = current_app.extensions.get('mysql')
+    try:
+        @circuit_breaker
+        def make_request_to_db():
+            connection = mysql.connect()
+            cursor = connection.cursor()
+            no_gacha_found = False
+            rows_updated = 0
+
+            # check if gacha with that uuid exists
+            query = "SELECT uuid FROM gachas_types WHERE uuid = UUID_TO_BIN(%s) LIMIT 1"
+            cursor.execute(query, (gacha.gacha_uuid,))
+            result = cursor.fetchone()
+            if not result:
+                no_gacha_found = True
+                return no_gacha_found, rows_updated
+
+            query = "UPDATE gachas_types SET name = %s, stat_power = %s, stat_speed = %s, stat_durability = %s, stat_precision = %s, stat_range = %s, stat_potential = %s, rarity = %s WHERE uuid = UUID_TO_BIN(%s)"
+            cursor.execute(query, (gacha.name, converted["power"], converted["speed"], converted["durability"], converted["precision"], converted["range"], converted["potential"], gacha.rarity, gacha.gacha_uuid))
+            connection.commit()
+            rows_updated += cursor.rowcount
+            
+            return no_gacha_found, rows_updated
+        
+        no_gacha_found, rows_updated = make_request_to_db()
+
+        if no_gacha_found:
+            return jsonify({"error": "Gacha not found."}), 404
+
+        if rows_updated == 0:
+            return jsonify({"error": "No changes were applied."}), 404
+        
+        return "", 200
+    except OperationalError: # if connect to db fails means there is an error in the db
+        logging.error("Query ["+ gacha.gacha_uuid +"]: Operational error.")
+        return "", 500
+    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+        logging.error("Query ["+ gacha.gacha_uuid +"]: Programming error.")
+        return "", 400
+    except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
+        logging.error("Query ["+ gacha.gacha_uuid +"]: Integrity error.")
+        return "", 409
+    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+        logging.error("Query ["+ gacha.gacha_uuid +"]: Internal error.")
+        return "", 500
+    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+        logging.error("Query ["+ gacha.gacha_uuid +"]: Interface error.")
+        return "", 500
+    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+        logging.error("Query ["+ gacha.gacha_uuid +"]: Database error.")
+        return "", 500
+    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return "", 503
 
 
-def update_pool(pool=None): # TODO da fare
-    """update_pool
+def update_pool(pool=None):
+    if not connexion.request.is_json:
+        return "", 400
+    
+    pool = Pool.from_dict(connexion.request.get_json())
 
-    Updates a specific pool. # noqa: E501
+    # valid request from now on
+    probabilities = {
+        "commonProbability": pool.probabilities.common_probability,
+        "rareProbability": pool.probabilities.rare_probability,
+        "epicProbability": pool.probabilities.epic_probability,
+        "legendaryProbability":  pool.probabilities.legendary_probability,
+    }
 
-    :param pool: 
-    :type pool: dict | bytes
+    mysql = current_app.extensions.get('mysql')
+    try:
+        @circuit_breaker
+        def make_request_to_db():
+            connection = mysql.connect()
+            cursor = connection.cursor()
+            rows_updated = 0
 
-    :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
-    """
-    if connexion.request.is_json:
-        pool = Pool.from_dict(connexion.request.get_json())
-    return 'do some magic!'
+            query = "UPDATE gacha_pools SET public_name = %s, probabilities = %s, price = %s WHERE codename = %s"
+            cursor.execute(query, (pool.name, json.dumps(probabilities), pool.price, pool.id))
+            connection.commit()
+            rows_updated += cursor.rowcount
+            
+            return rows_updated
+        
+        rows_updated = make_request_to_db() 
+
+        if rows_updated == 0:
+            return jsonify({"error": "No changes were applied."}), 404
+        
+        return "", 200
+    except OperationalError: # if connect to db fails means there is an error in the db
+        logging.error("Query ["+ pool.id +"]: Operational error.")
+        return "", 500
+    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+        logging.error("Query ["+ pool.id +"]: Programming error.")
+        return "", 400
+    except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
+        logging.error("Query ["+ pool.id +"]: Integrity error.")
+        return "", 409
+    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+        logging.error("Query ["+ pool.id +"]: Internal error.")
+        return "", 500
+    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+        logging.error("Query ["+ pool.id +"]: Interface error.")
+        return "", 500
+    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+        logging.error("Query ["+ pool.id +"]: Database error.")
+        return "", 500
+    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return "", 503
