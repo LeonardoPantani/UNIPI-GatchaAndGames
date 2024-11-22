@@ -120,7 +120,6 @@ components:
     Email:
       description: The user's email.
       example: l.pantani5@studenti.unipi.it
-      format: email
       title: email
       type: string
     Password:
@@ -165,7 +164,6 @@ components:
         email:
           description: The user's email.
           example: l.pantani5@studenti.unipi.it
-          format: email
           title: email
           type: string
         password:
