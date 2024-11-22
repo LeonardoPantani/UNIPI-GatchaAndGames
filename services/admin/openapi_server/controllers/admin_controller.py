@@ -435,7 +435,7 @@ def update_auction(auction_uuid):
         
         make_request_to_dbmanager()
 
-        return jsonify({"message": "Auction updated."}), 404
+        return jsonify({"message": "Auction updated."}), 200
     except requests.HTTPError as e:  # if request is sent to dbmanager correctly and it answers an application error (to be managed here) [error expected by us]
         if e.response.status_code == 404:
             return json.loads(e.response.text), 404
