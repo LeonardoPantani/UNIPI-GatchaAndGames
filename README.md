@@ -1,4 +1,21 @@
 # UNIPI-GachaAndGames
+## Note per la consegna del 22/11/2024
+1. Il sistema di logging al momento non è implementato (WIP).
+2. I test sono principalmente integration tests eseguiti con postman, il cui json si trova, come richiesto, nella cartella docs. Attualmente non coprono ogni test case, ma almeno il codice 200 per ogni metodo di ogni microservizio. Gli unit tests insieme al performance testing saranno consegnati successivamente.
+3. Il servizio PVP è stato temporaneamente disattivato, a causa della mancata conformità con le specifiche richieste (WIP).
+4. Per registrarsi come amministratore ed effettuare le relative operazioni, la richiesta di registrazione (al servizio auth) va inviata alla porta 8081 di localhost. Le funzioni amministrative devono essere inviate sulla stessa porta 8081, tutte le altre richieste (auth, auctions, currency, ...) devono essere inviate sulla 8080. Il servizio auth fa parte sia della rete privata che pubblica. Il servizio admin è esclusivo della rete privata.
+
+Per fare i test si possono usare i seguenti admin (la prima riga è l'username, la seconda la password):
+```
+SpeedwagonAdmin
+admin_foundation
+```
+
+```
+AdminUser
+password
+```
+
 
 Il progetto **UNIPI-GachaAndGames** è un sistema Gacha sviluppato per il corso di Secure Software Engineering all'Università di Pisa. Il sistema utilizza un'architettura a microservizi, dove ogni servizio gestisce una specifica funzionalità dell'applicazione.
 
@@ -14,24 +31,39 @@ Il progetto **UNIPI-GachaAndGames** è un sistema Gacha sviluppato per il corso 
 ### Esempio di configurazione in `api_gateway.conf`:
 
 ```nginx
-events {}
-
 http {
-    upstream service_profile {
-        least_conn;
-        server service_profile:8080 max_fails=3 fail_timeout=10s;
+    upstream service_admin {
+        server service_admin:8080;
     }
 
-    # Configurazione di altri servizi...
+    upstream service_auth {
+        server service_auth:8080;
+    }
 
     server {
-        listen 80;
+        listen 8081;
 
-        location /profile/ {
-            proxy_pass http://service_profile;
+        location ^~ /admin/ {
+            proxy_pass http://service_admin/admin/;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+    
+        location ^~ /auth/ {
+            proxy_pass http://service_auth/auth/;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header X-Forwarded-Host $host;
+            proxy_set_header X-Source-Gateway Gateway-Private;
         }
 
-        # Altre location per gli altri servizi...
+        location ^~ /favicon.ico {
+            root /usr/share/nginx/html;
+        }
     }
 }
 ```
@@ -69,7 +101,7 @@ Ogni servizio contiene:
 - **Dockerfile**: Per la containerizzazione del servizio.
 - **requirements.txt**: Elenco delle dipendenze Python.
 - **openapi_server/**: Codice sorgente specifico del servizio, strutturato come segue:
-  - **__main__.py**: Punto di ingresso dell'applicazione Flask. Qui viene creata l'istanza dell'applicazione, configurato il server e vengono registrate le blueprint dei controller.
+  - **__main__.py**: Punto di ingresso di Flask. Qui viene creata l'istanza dell'applicazione, configurato il server e vengono registrate le blueprint dei controller.
   - **controllers/**: Contiene i controller che gestiscono le richieste HTTP in arrivo. Ogni controller è responsabile di una specifica parte delle API e definisce le funzioni che vengono chiamate in risposta alle varie rotte definite.
     - Esempio: `auth_controller.py`, `profile_controller.py`.
     - All'interno dei controller si gestiscono le logiche di business, si interagisce con i modelli e si preparano le risposte da inviare al client.
@@ -108,24 +140,11 @@ docker compose up
 Nella funzione `login` nel file `auth_controller.py`, dopo aver verificato le credenziali dell'utente, l'UUID viene salvato nella sessione:
 
 ```python
-session['uuid'] = data["uuid"]
+# codice ...
+session['uuid'] = generated_uuid
+# codice ...
 ```
 
 ### Configurazioni Nginx
 
 Il file `api_gateway.conf` gestisce l'indirizzamento delle richieste ai servizi appropriati, utilizzando blocchi `upstream` e `location` per ciascun servizio.
-
-### Esecuzione dei Test
-
-Per eseguire i test, utilizzare il comando:
-
-```bash
-tox
-```
-
-## Note per la consegna del 22/11/2024
-
-1. Pvp è stato temporaneamente disattivato, a causa della mancata conformità con le specifiche richieste (Work in progress)
-2. I test sono principalmente integration tests eseguiti con postman, il cui json si trova, come richiesto, nella cartella docs. Attualmente non coprono ogni test case, ma almeno il codice 200 per ogni metodo di ogni microservizio. Gli unit tests insieme al performance testing saranno consegnati successivamente.
-3. Per fare i test si possono usare i seguenti admin: (username= SpeedwagonAdmin password=admin_foundation ; username = AdminUser password= password). Per registrarsi come amministratore ed effettuare operazioni relative, la richiesta va inoltrata alla porta 8081, tutte le altre richieste vengono inoltrate normalmente alla 8080.
-
