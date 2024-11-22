@@ -125,10 +125,8 @@ def create_auction(get_auction_status200_response=None):  # noqa: E501
             )
 
             result = cursor.fetchone()
-            if not result:
+            if result:
                 return "", 409
-            
-            result = result[0]
 
             cursor.execute(
                 'INSERT INTO auctions (uuid, item_uuid, starting_price, current_bid, current_bidder, end_time) VALUES (UUID_TO_BIN(%s), UUID_TO_BIN(%s), %s, 0, NULL, %s)',
