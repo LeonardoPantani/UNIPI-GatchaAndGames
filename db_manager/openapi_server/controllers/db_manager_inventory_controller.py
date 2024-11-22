@@ -50,7 +50,7 @@ def get_inventory_item(get_inventory_item_request=None):  # noqa: E501
         item = make_request_to_db()
         if not item:
             return jsonify({"error": "Item not found in player's inventory."}), 404
-        
+            
         payload = {
             "owner_id": item[1],
             "item_id": item[0],
@@ -205,7 +205,6 @@ def remove_item(get_inventory_item_request=None):  # noqa: E501
             return 200
         
         response = make_request_to_db()
-        print (response)
         if response == 409:
             return jsonify({"error": "Cannot remove item that is in an active auction."}), 409
         elif response == 404:
