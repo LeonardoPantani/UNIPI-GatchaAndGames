@@ -191,114 +191,34 @@ def get_pool_info():
     except CircuitBreakerError:
         return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503
 
-def get_gachas(not_owned=None):  # noqa: E501
-    """Lists all gachas.
+def get_gachas(not_owned):  # noqa: E501
+    if 'username' not in session:
+        return jsonify({"error": "Not logged in"}), 403
     
-    Returns a list of all gachas. If not_owned is True, shows only unowned gachas.
-    If not_owned is False, shows only owned gachas.
-    """
-    cursor = None
-    conn = None
+    user_uuid = session['uuid']
+
     try:
-        mysql = current_app.extensions.get('mysql')
-        if not mysql:
-            return {"error": "Database connection not initialized"}, 500
-            
-        conn = mysql.connect()
-        cursor = conn.cursor()
-
-        # Get user_uuid from session if filter is active
-        user_uuid = None
-        if not_owned is not None:  # If we need to filter by ownership
-            username = session.get('username')
-            if not username:
-                return {"error": "Not logged in"}, 403
-                #query omissibile
-            cursor.execute('''
-                SELECT BIN_TO_UUID(uuid) 
-                FROM profiles 
-                WHERE username = %s
-            ''', (username,))
-            result = cursor.fetchone()
-            if not result:
-                return {"error": "User not found"}, 404
-            user_uuid = result[0]
-
-        if user_uuid:
-            if not_owned:  # Show unowned gachas
-                cursor.execute('''
-                    SELECT DISTINCT
-                        BIN_TO_UUID(gt.uuid) as gacha_uuid,
-                        gt.name,
-                        LOWER(gt.rarity) as rarity,
-                        gt.stat_power,
-                        gt.stat_speed,
-                        gt.stat_durability,
-                        gt.stat_precision,
-                        gt.stat_range,
-                        gt.stat_potential
-                    FROM gachas_types gt
-                    WHERE NOT EXISTS (
-                        SELECT 1 FROM inventories i 
-                        WHERE i.stand_uuid = gt.uuid 
-                        AND i.owner_uuid = UUID_TO_BIN(%s)
-                    )
-                ''', (user_uuid,))
-            else:  # Show only owned gachas
-                cursor.execute('''
-                    SELECT DISTINCT
-                        BIN_TO_UUID(gt.uuid) as gacha_uuid,
-                        gt.name,
-                        LOWER(gt.rarity) as rarity,
-                        gt.stat_power,
-                        gt.stat_speed,
-                        gt.stat_durability,
-                        gt.stat_precision,
-                        gt.stat_range,
-                        gt.stat_potential
-                    FROM gachas_types gt
-                    INNER JOIN inventories i ON 
-                        i.stand_uuid = gt.uuid AND
-                        i.owner_uuid = UUID_TO_BIN(%s)
-                ''', (user_uuid,))
-        else:  # Show all gachas when no filter
-            cursor.execute('''
-                SELECT
-                    BIN_TO_UUID(uuid) as gacha_uuid,
-                    name,
-                    LOWER(rarity) as rarity,
-                    stat_power,
-                    stat_speed,
-                    stat_durability,
-                    stat_precision,
-                    stat_range,
-                    stat_potential
-                FROM gachas_types
-            ''')
-
-        gachas = []
-        for result in cursor.fetchall():
-            gacha = Gacha(
-                gacha_uuid=result[0],
-                name=result[1],
-                rarity=result[2],
-                attributes={
-                    "power": chr(ord('A') + 5 - max(1, min(5, result[3] // 20))),
-                    "speed": chr(ord('A') + 5 - max(1, min(5, result[4] // 20))),
-                    "durability": chr(ord('A') + 5 - max(1, min(5, result[5] // 20))),
-                    "precision": chr(ord('A') + 5 - max(1, min(5, result[6] // 20))),
-                    "range": chr(ord('A') + 5 - max(1, min(5, result[7] // 20))),
-                    "potential": chr(ord('A') + 5 - max(1, min(5, result[8] // 20)))
-                }
-            )
-            gachas.append(gacha)
-        return gachas
+        @circuit_breaker
+        def make_request_to_dbmanager():
+            payload = {
+                "user_uuid": user_uuid,
+                "owned_filter": not_owned  
+            }
+            url = "http://db_manager:8080/db_manager/gachas/get_gacha_list"
+            response = requests.post(url, json=payload)
+            response.raise_for_status()
+            return response.json()
         
+        gacha_list = make_request_to_dbmanager()
 
-    except Exception as e:
-        return {"error": str(e)}, 500
-    finally:
-        if cursor:
-            cursor.close()
-        if conn:
-            conn.close()
+        return jsonify(gacha_list), 200
+    
+    except requests.HTTPError as e:
+        if e.response.status_code == 404:
+            return jsonify({"error": "Pool not found."}), 404
+        else:  # other errors
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
+        return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:
+        return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503

@@ -103,19 +103,108 @@ def get_gacha_info(get_gacha_info_request=None):  # noqa: E501
         return "", 503
 
 def get_gacha_list(get_gacha_list_request=None):  # noqa: E501
-    """get_gacha_list
+    if not connexion.request.is_json:
+        return "", 400
+    
+    get_gacha_list_request = GetGachaListRequest.from_dict(connexion.request.get_json())  # noqa: E501
+    
+    user_uuid = get_gacha_list_request.user_uuid
+    not_owned = get_gacha_list_request.owned_filter
 
-    Inserts the given item into user&#39;s inventory # noqa: E501
+    mysql = current_app.extensions.get('mysql')
+    try:
+        @circuit_breaker
+        def make_request_to_db():
+            connection = mysql.connect()
+            cursor = connection.cursor()
 
-    :param get_gacha_list_request: 
-    :type get_gacha_list_request: dict | bytes
+            if not_owned:  # Show unowned gachas
+                cursor.execute('''
+                    SELECT DISTINCT
+                        BIN_TO_UUID(gt.uuid) as gacha_uuid,
+                        gt.name,
+                        LOWER(gt.rarity) as rarity,
+                        gt.stat_power,
+                        gt.stat_speed,
+                        gt.stat_durability,
+                        gt.stat_precision,
+                        gt.stat_range,
+                        gt.stat_potential
+                    FROM gachas_types gt
+                    WHERE NOT EXISTS (
+                        SELECT 1 FROM inventories i 
+                        WHERE i.stand_uuid = gt.uuid 
+                        AND i.owner_uuid = UUID_TO_BIN(%s)
+                    )
+                ''', (user_uuid,))
+            else:  # Show only owned gachas
+                cursor.execute('''
+                    SELECT DISTINCT
+                        BIN_TO_UUID(gt.uuid) as gacha_uuid,
+                        gt.name,
+                        LOWER(gt.rarity) as rarity,
+                        gt.stat_power,
+                        gt.stat_speed,
+                        gt.stat_durability,
+                        gt.stat_precision,
+                        gt.stat_range,
+                        gt.stat_potential
+                    FROM gachas_types gt
+                    INNER JOIN inventories i ON 
+                        i.stand_uuid = gt.uuid AND
+                        i.owner_uuid = UUID_TO_BIN(%s)
+                ''', (user_uuid,))
 
-    :rtype: Union[List[Gacha], Tuple[List[Gacha], int], Tuple[List[Gacha], int, Dict[str, str]]
-    """
-    if connexion.request.is_json:
-        get_gacha_list_request = GetGachaListRequest.from_dict(connexion.request.get_json())  # noqa: E501
-    return 'do some magic!'
+            return cursor.fetchall()
+        
+        gacha_list = make_request_to_db()
 
+        if not gacha_list:
+            return "", 404
+
+        gachas = []
+        for result in gacha_list:
+            gacha = Gacha(
+                gacha_uuid=result[0],
+                name=result[1],
+                rarity=result[2],
+                attributes={
+                    "power": chr(ord('A') + 5 - max(1, min(5, result[3] // 20))),
+                    "speed": chr(ord('A') + 5 - max(1, min(5, result[4] // 20))),
+                    "durability": chr(ord('A') + 5 - max(1, min(5, result[5] // 20))),
+                    "precision": chr(ord('A') + 5 - max(1, min(5, result[6] // 20))),
+                    "range": chr(ord('A') + 5 - max(1, min(5, result[7] // 20))),
+                    "potential": chr(ord('A') + 5 - max(1, min(5, result[8] // 20)))
+                }
+            )
+            gachas.append(gacha)
+        return jsonify(gachas), 200
+
+    except OperationalError: # if connect to db fails means there is an error in the db
+        logging.error("Query ["+ user_uuid +"]: Operational error.")
+        return "", 500
+    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+        logging.error("Query ["+ user_uuid +"]: Programming error.")
+        return "", 400
+    except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
+        logging.error("Query ["+ user_uuid +"]: Integrity error.")
+        return "", 409
+    except DataError: # if data format is invalid or out of range or size
+        logging.error("Query ["+ user_uuid +"]: Data error.")
+        return "", 400
+    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+        logging.error("Query ["+ user_uuid +"]: Internal error.")
+        return "", 500
+    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+        logging.error("Query ["+ user_uuid +"]: Interface error.")
+        return "", 500
+    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+        logging.error("Query ["+ user_uuid +"]: Database error.")
+        return "", 401
+    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return "", 503
+     
 
 def get_pool_info(body):  # noqa: E501 
     if body is None:
