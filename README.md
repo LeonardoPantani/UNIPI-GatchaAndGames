@@ -123,6 +123,8 @@ Per eseguire i test, utilizzare il comando:
 tox
 ```
 
-## Link Utili
+## Note per la consegna del 22/11/2024
 
-- **Repository GitHub**: [UNIPI-GachaAndGames](https://github.com/LeonardoPantani/UNIPI-GatchaAndGames)
+1. Pvp è stato temporaneamente disattivato, a causa della mancata conformità con le specifiche richieste (Work in progress)
+2. I test sono principalmente integration tests eseguiti con postman, il cui json si trova, come richiesto, nella cartella docs. Attualmente non coprono ogni test case, ma almeno il codice 200 per ogni metodo di ogni microservizio. Gli unit tests insieme al performance testing saranno consegnati successivamente.
+
