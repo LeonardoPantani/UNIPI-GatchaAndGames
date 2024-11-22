@@ -1,4 +1,5 @@
 import connexion
+import requests
 import uuid
 import bcrypt
 import random
@@ -14,10 +15,15 @@ from openapi_server.models.pool import Pool  # noqa: E501
 from openapi_server import util
 from openapi_server.models.rarity_probability import RarityProbability  # noqa: E501
 
-from flask import current_app, jsonify, request, session
-from flaskext.mysql import MySQL
+from flask import jsonify, request, session, current_app
+from werkzeug.exceptions import BadRequest, NotFound, InternalServerError
+import uuid
+from datetime import datetime, timedelta
+import logging
 from pybreaker import CircuitBreaker, CircuitBreakerError
 
+# Circuit breaker instance
+circuit_breaker = CircuitBreaker(fail_max=5, reset_timeout=5, exclude=[requests.HTTPError])
 
 def health_check():  # noqa: E501
     return jsonify({"message": "Service operational."}), 200
@@ -25,105 +31,91 @@ def health_check():  # noqa: E501
 
 
 def get_gacha_info(gacha_uuid):  # noqa: E501
-    cursor = None
-    conn = None
     try:
-        # Get database connection from Flask current_app
-        mysql = current_app.extensions.get('mysql')
-        if not mysql:
-            return {"error": "Database connection not initialized"}, 500
-            
-        conn = mysql.connect()
-        cursor = conn.cursor()
-
-        # Query the gacha info from the database
-        cursor.execute('''
-            SELECT 
-                BIN_TO_UUID(uuid) as gacha_uuid,
-                name,
-                LOWER(rarity) as rarity,
-                stat_power,
-                stat_speed,
-                stat_durability,
-                stat_precision,
-                stat_range,
-                stat_potential
-            FROM gachas_types 
-            WHERE uuid = UUID_TO_BIN(%s)
-        ''', (gacha_uuid,)) #/db_manager/gachas/get_gacha_info
-        
-        result = cursor.fetchone()
-        if not result:
-            return {"error": "Gacha type not found."}, 404
-
-        # Create a Gacha object with the retrieved data
-        gacha = Gacha(
-            gacha_uuid=result[0],
-            name=result[1], 
-            rarity=result[2],
-            attributes={
-                "power": chr(ord('A') + 5 - max(1, min(5, result[3] // 20))),
-                "speed": chr(ord('A') + 5 - max(1, min(5, result[4] // 20))),
-                "durability": chr(ord('A') + 5 - max(1, min(5, result[5] // 20))),
-                "precision": chr(ord('A') + 5 - max(1, min(5, result[6] // 20))),
-                "range": chr(ord('A') + 5 - max(1, min(5, result[7] // 20))),
-                "potential": chr(ord('A') + 5 - max(1, min(5, result[8] // 20)))
+        def make_request_to_dbmanager():
+            payload = {
+                "gacha_uuid": gacha_uuid
             }
-        )
-        return gacha, 200
-
-  
-    except Exception as e:
-        return {"error": str(e)}, 500
+            url = "http://db_manager:8080/db_manager/gachas/get_gacha_info"
+            response = requests.post(url, json=payload)
+            response.raise_for_status()  # if response is obtained correctly
+            return response.json()
         
-    finally:
-        if cursor:
-            cursor.close()
-        if conn:
-            conn.close()
+        gacha_data = make_request_to_dbmanager()
 
+        return jsonify(gacha_data), 200
+        
+    except requests.HTTPError as e:
+        if e.response.status_code == 404:
+            return jsonify({"error": "Gacha not found."}), 404
+        else:  # other errors
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
+        return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:
+        return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503
+    
 def pull_gacha(pool_id):
     if 'username' not in session:
         return jsonify({"error": "Not logged in"}), 403
 
     try:
-        mysql = current_app.extensions.get('mysql')
-        if not mysql:
-            return jsonify({"error": "Database connection not initialized"}), 500
-
-        connection = mysql.connect()
-        cursor = connection.cursor()
-
-        # Get pool probabilities and items
-        cursor.execute( #/db_manager/gachas/get_pool_info
-            'SELECT probabilities, price FROM gacha_pools WHERE codename = %s',
-            (pool_id,)
-        )
-        pool_result = cursor.fetchone()
-
-        cursor.execute (
-            'SELECT gacha_uuid FROM gacha_pools_items WHERE codename = %s',
-            (pool_id,)
-        )
+        @circuit_breaker
+        def make_request_to_dbmanager():
+            payload = pool_id
+            url = "http://db_manager:8080/db_manager/gachas/get_pool_info"
+            response = requests.post(url, json=payload)
+            response.raise_for_status()  # if response is obtained correctly
+            return response.json()
         
-        pullable_gachas = cursor.fetchall()
-        
-        if not pool_result:
-            return jsonify({"error": "Pool not found"}), 404
+        pool = make_request_to_dbmanager()
 
-        probabilities = json.loads(pool_result[0])
-        price = pool_result[1]
-
-        # Check if user has enough credits (10)
-        cursor.execute( #/db_manager/gachas/get_currency
-            'SELECT currency FROM profiles WHERE uuid = UUID_TO_BIN(%s)',
-            (session['uuid'],)
-        )
-        result = cursor.fetchone()
-        if not result or result[0] < price:
-            return jsonify({"error": "Not enough credits"}), 403
+        probabilities = json.loads(pool["probabilities"])
+        price = pool["price"]
         
-        # Determine rarity based on probabilities
+    except requests.HTTPError as e:
+        if e.response.status_code == 404:
+            return jsonify({"error": "Pool not found."}), 404
+        else:  # other errors
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
+        return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:
+        return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503
+    
+    try:
+        @circuit_breaker
+        def make_request_to_dbmanager():
+            payload = {
+                "user_uuid": session['uuid']
+            }
+            url = "http://db_manager:8080/db_manager/gachas/get_currency"
+            response = requests.post(url, json=payload)
+            response.raise_for_status()  # if response is obtained correctly
+            return response.json()
+        
+        currency = make_request_to_dbmanager()
+
+    except requests.HTTPError as e:
+        if e.response.status_code == 404:
+            return jsonify({"error": "Pool not found."}), 404
+        else:  # other errors
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
+        return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:
+        return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503
+    
+
+    if currency["currency"] < price:
+        return jsonify({"error": "Not enough credits"}), 403
+
+    item_list = pool["items"]
+    if item_list == []:
+        return jsonify({"error": "This pool has no gachas"}), 404
+
+    pullable_gachas = []
+    while(pullable_gachas == []):
         rarity_roll = random.random()
         selected_rarity = None
         cumulative_prob = 0
@@ -133,166 +125,71 @@ def pull_gacha(pool_id):
             if rarity_roll <= cumulative_prob:
                 selected_rarity = rarity.upper()
                 break
-
-        # Get random item of selected rarity
-        # Generate placeholders for UUIDs dynamically
-        placeholders = ','.join(['%s' for _ in pullable_gachas])
-
-        # Define the query with the dynamically generated placeholders
-        query = f'''
-        SELECT BIN_TO_UUID(uuid), name, stat_power, stat_speed, 
-            stat_durability, stat_precision, stat_range, stat_potential
-        FROM gachas_types 
-        WHERE uuid IN ({placeholders}) AND rarity = %s
-        '''
-        # Extract only the first elements of each tuple from pullable_gachas for the UUIDs
-        uuid_values = [item[0] for item in pullable_gachas]
-        # Execute the query, passing UUID values and selected_rarity
-        cursor.execute(query, uuid_values + [selected_rarity])
-        items = cursor.fetchall()
-        if not items:
-            return jsonify({"error": "No items found in pool"}), 500
-            
-        selected_item = random.choice(items)
         
-        # Deduct credits
-        cursor.execute( 
-            'UPDATE profiles SET currency = currency - %s WHERE uuid = UUID_TO_BIN(%s)',
-            (price, session['uuid'])
-        )
+        for item in item_list:
+            if item["rarity"] == selected_rarity:
+                pullable_gachas.append(item)
+        if pullable_gachas != []:
+            selected_item = random.choice(pullable_gachas)
 
-        # Add to inventory
-        # Add to inventory with new UUID
-        new_item_uuid = str(uuid.uuid4())  
-
-        cursor.execute( #/db_manager/gachas/give_item
-        'INSERT INTO inventories (item_uuid, owner_uuid, stand_uuid, owners_no, currency_spent) VALUES (UUID_TO_BIN(%s), UUID_TO_BIN(%s), UUID_TO_BIN(%s), %s, %s)',
-        (new_item_uuid, session['uuid'], selected_item[0], 0, price)
-        )
-
-        connection.commit()
-
-        # Return complete Gacha object
-        gacha = Gacha(
-            gacha_uuid=selected_item[0],
-            name=selected_item[1],
-            rarity=selected_rarity.lower(),
-            attributes={
-                "power": chr(ord('A') + 5 - max(1, min(5, selected_item[2] // 20))),
-                "speed": chr(ord('A') + 5 - max(1, min(5, selected_item[3] // 20))),
-                "durability": chr(ord('A') + 5 - max(1, min(5, selected_item[4] // 20))),
-                "precision": chr(ord('A') + 5 - max(1, min(5, selected_item[5] // 20))),
-                "range": chr(ord('A') + 5 - max(1, min(5, selected_item[6] // 20))),
-                "potential": chr(ord('A') + 5 - max(1, min(5, selected_item[7] // 20)))
-            }
-        )
-
-        return gacha
-    except Exception as e:
-        connection.rollback()
-        return jsonify({"error": str(e)}), 500
-    finally:
-        cursor.close()
-        connection.close()
-
-def get_pool_info():  # TODO ottimizzare questa funzione con una sola query
-    cursor = None
-    conn = None
     try:
-        mysql = current_app.extensions.get('mysql')
-        if not mysql:
-            return {"error": "Database connection not initialized"}, 500
-            
-        conn = mysql.connect()
-        cursor = conn.cursor()
-
-        # Query pools and their items
-        cursor.execute('''
-            SELECT 
-                gp.codename,
-                gp.public_name,
-                gp.probabilities,
-                gp.price,
-                GROUP_CONCAT(BIN_TO_UUID(gpi.gacha_uuid)) as gacha_uuids
-            FROM gacha_pools gp
-            LEFT JOIN gacha_pools_items gpi ON gp.codename = gpi.codename
-            GROUP BY gp.codename
-        ''') #/db_manager/gachas/get_pools ritorna anche gli item come da modello quindi la query dopo si può omettere
+        @circuit_breaker
+        def make_request_to_dbmanager():
+            payload = {
+                "item_uuid": str(uuid.uuid4()),
+                "owner_uuid": session['uuid'],
+                "stand_uuid": selected_item['gacha_uuid'],
+                "price_paid": price
+            }
+            url = "http://db_manager:8080/db_manager/gachas/give_item"
+            response = requests.post(url, json=payload)
+            response.raise_for_status()  # if response is obtained correctly
+            return 
         
-        results = cursor.fetchall()
-        pools = []
+        make_request_to_dbmanager()
 
-        if not results:
-            return jsonify({"error": "No pools found"}), 404
+    except requests.HTTPError as e:
+        if e.response.status_code == 404:
+            return jsonify({"error": "Pool not found."}), 404
+        else:  # other errors
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
+        return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:
+        return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503
+
+    gacha = Gacha(
+        gacha_uuid=selected_item['gacha_uuid'],
+        name=selected_item['name'],
+        rarity=selected_rarity.lower(),
+        attributes= selected_item['attributes']
+    )
+
+    return jsonify(gacha), 200
+
+def get_pool_info(): 
+    
+    try:
+        @circuit_breaker
+        def make_request_to_dbmanager():
+            url = "http://db_manager:8080/db_manager/gachas/get_pools"
+            response = requests.post(url)
+            response.raise_for_status()
+            return response.json()
         
-        for result in results:
-            # Parse JSON strings from database
-            probabilities = json.loads(result[2])
-            gacha_uuids = result[4].split(',') if result[4] else []
-            
-            # Create RarityProbability object
-            rarity_prob = RarityProbability(
-                common_probability=probabilities.get('common', 0.5),
-                rare_probability=probabilities.get('rare', 0.3),
-                epic_probability=probabilities.get('epic', 0.15),
-                legendary_probability=probabilities.get('legendary', 0.05)
-            )
-
-            # Query gacha details
-            if gacha_uuids:
-                placeholders = ','.join(['UUID_TO_BIN(%s)' for _ in gacha_uuids])
-                cursor.execute(f'''
-                    SELECT 
-                        BIN_TO_UUID(uuid) as gacha_uuid,
-                        name,
-                        LOWER(rarity) as rarity,
-                        stat_power,
-                        stat_speed,
-                        stat_durability,
-                        stat_precision,
-                        stat_range,
-                        stat_potential
-                    FROM gachas_types 
-                    WHERE uuid IN ({placeholders})
-                ''', gacha_uuids)
-                
-                items = []
-                for item in cursor.fetchall():
-                    items.append(Gacha(
-                        gacha_uuid=item[0],
-                        name=item[1],
-                        rarity=item[2],
-                        attributes={
-                            "power": chr(ord('A') + 5 - max(1, min(5, item[3] // 20))),
-                            "speed": chr(ord('A') + 5 - max(1, min(5, item[4] // 20))),
-                            "durability": chr(ord('A') + 5 - max(1, min(5, item[5] // 20))),
-                            "precision": chr(ord('A') + 5 - max(1, min(5, item[6] // 20))),
-                            "range": chr(ord('A') + 5 - max(1, min(5, item[7] // 20))),
-                            "potential": chr(ord('A') + 5 - max(1, min(5, item[8] // 20)))
-                        }
-                    ))
-            else:
-                items = []
-            
-            # Create Pool object
-            pool = Pool(
-                id=result[0],
-                name=result[1],
-                probabilities=rarity_prob,
-                items=items
-            )
-            pools.append(pool)
-            
-        return jsonify(pools), 200
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        pool = make_request_to_dbmanager()
         
-    finally:
-        if cursor:
-            cursor.close()
-        if conn:
-            conn.close()
+        return jsonify(pool), 200
+    
+    except requests.HTTPError as e:
+        if e.response.status_code == 404:
+            return jsonify({"error": "Pool not found."}), 404
+        else:  # other errors
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
+        return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:
+        return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503
 
 def get_gachas(not_owned=None):  # noqa: E501
     """Lists all gachas.
