@@ -148,7 +148,7 @@ def delete_gacha(gacha_uuid): #TODO vanno rimosse le cose nel modo corretto
         return jsonify({"error": str(e)}), 500
 
 
-def create_pool():
+def create_pool():  
     if 'username' not in session or session.get('role') != 'ADMIN':
         return jsonify({"error": "This account is not authorized to perform this action"}), 403
     
@@ -170,33 +170,28 @@ def create_pool():
 
     # valid request from now on
     try:
-        mysql = current_app.extensions.get('mysql')
-        if not mysql:
-            return jsonify({"error": "Database connection not initialized"}), 500   
+        @circuit_breaker
+        def make_request_to_dbmanager():
+            payload = connexion.request.get_json()
+            url = "http://db_manager:8080/db_manager/admin/create_pool"
+            response = requests.post(url, json=payload)
+            response.raise_for_status()  # if response is obtained correctly
+            return
 
-        connection = mysql.connect()
-        cursor = connection.cursor()
-        
-        # checks ok, inserting
-        try:
-            probabilities = {
-                "common_probability": pool.probabilities.common_probability,
-                "rare_probability": pool.probabilities.rare_probability,
-                "epic_probability": pool.probabilities.epic_probability,
-                "legendary_probability":  pool.probabilities.legendary_probability,
-            }
-            query = "INSERT INTO gacha_pools (codename, public_name, probabilities, price) VALUES (%s, %s, %s, %s)"
-            cursor.execute(query, (pool.id, pool.name, json.dumps(probabilities), pool.price))
-            connection.commit()
-            cursor.close()
-        except mysql.connect().IntegrityError:
-            # Duplicate pool codename error
-            connection.rollback()
-            return jsonify({"error": "The provided pool id is already in use."}), 409
+        make_request_to_dbmanager()
 
         return jsonify({"message": "Pool successfully created."}), 201
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except requests.HTTPError as e:  # if request is sent to dbmanager correctly and it answers an application error (to be managed here) [error expected by us]
+        if e.response.status_code == 404:
+            return jsonify({"error": "Item UUID not found in database."}), 409
+        elif e.response.status_code == 409:
+            return jsonify({"error": "The provided pool id is already in use."}), 409
+        else:  # other errors
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
+        return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:  # if request already failed multiple times, the circuit breaker is open and this code gets executed
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
     
 
 def delete_pool(pool_id): # TODO controllare dipendenze
@@ -294,39 +289,43 @@ def get_all_profiles(page_number=None):
     if 'username' not in session or session.get('role') != 'ADMIN':
         return jsonify({"error": "This account is not authorized to perform this action"}), 403
     
-    # valid request from now on
+     # valid json request
+    if page_number is None:
+        page_number = 1
+
+    payload = {
+        "page_number": page_number
+    }
+
     try:
-        mysql = current_app.extensions.get('mysql')
-        if not mysql:
-            return jsonify({"error": "Database connection not initialized"}), 500
+        @circuit_breaker
+        def make_request_to_dbmanager():
+            url = "http://db_manager:8080/db_manager/admin/get_all_profiles"
+            response = requests.post(url, json=payload)
+            response.raise_for_status()  # if response is obtained correctly
+            return response.json()
 
-        connection = mysql.connect()
-        cursor = connection.cursor()
-        offset = (page_number - 1) * 10 if page_number else 0
-        query = "SELECT BIN_TO_UUID(p.uuid) as uuid, u.email, p.username, p.currency, p.pvp_score, p.created_at, u.role FROM profiles p JOIN users u ON p.uuid = u.uuid LIMIT 10 OFFSET %s"
-        cursor.execute(query, (offset,))
-        profiles = cursor.fetchall()
-        cursor.close()
-
-        profile_list = [
-            {"id": profile[0], "email": profile[1], "username": profile[2], "currency": profile[3], "pvp_score": profile[4], "joindate": str(profile[5]), "role": profile[6]}
-            for profile in profiles
-        ]
-        return jsonify(profile_list), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        response = make_request_to_dbmanager()
+        
+        return jsonify(response), 200
+    except requests.HTTPError:  # if request is sent to dbmanager correctly and it answers an application error (to be managed here) [error expected by us]
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
+        return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:  # if request already failed multiple times, the circuit breaker is open and this code gets executed
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
 
 def get_feedback_info(feedback_id=None):
     if 'username' not in session or session.get('role') != 'ADMIN':
         return jsonify({"error": "This account is not authorized to perform this action"}), 403
     
-
+    # valid request from now on
     if feedback_id is None:
         feedback_id = 1
     
     payload = {
-        "feedback_id": int(feedback_id) # idk why it is a float
+        "feedback_id": feedback_id
     }
 
     try:
@@ -352,7 +351,7 @@ def get_feedback_info(feedback_id=None):
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
 
-def get_system_logs(): #TODO
+def get_system_logs(): # TODO
     return 'do some magic!'
 
 
@@ -361,48 +360,40 @@ def get_user_history(user_uuid, history_type, page_number=None):
         return jsonify({"error": "This account is not authorized to perform this action"}), 403
     
     # valid request from now on
+    if page_number is None:
+        page_number = 1
+    if history_type is None:
+        history_type = "ingame"
+    
+    payload = {
+        "user_uuid": user_uuid,
+        "history_type": history_type,
+        "page_number": page_number
+    }
+
     try:
-        mysql = current_app.extensions.get('mysql')
-        if not mysql:
-            return jsonify({"error": "Database connection not initialized"}), 500
+        @circuit_breaker
+        def make_request_to_dbmanager():
+            url = "http://db_manager:8080/db_manager/admin/get_user_history"
+            response = requests.post(url, json=payload)
+            response.raise_for_status()  # if response is obtained correctly
+            return response.json()
 
-        connection = mysql.connect()
-        cursor = connection.cursor()
+        response = make_request_to_dbmanager()
 
-        # check if profile with that uuid exists
-        query = "SELECT uuid FROM users WHERE uuid = UUID_TO_BIN(%s) LIMIT 1"
-        cursor.execute(query, (user_uuid,))
-        result = cursor.fetchone()
-        if not result:
+        return jsonify(response), 200
+
+    except requests.HTTPError as e:  # if request is sent to dbmanager correctly and it answers an application error (to be managed here) [error expected by us]
+        if e.response.status_code == 404:
             return jsonify({"error": "User not found."}), 404
-
-        # user exists, continue
-        offset = (page_number - 1) * 10 if page_number else 0
-
-        if history_type == 'ingame':
-            query = "SELECT BIN_TO_UUID(t.user_uuid) as user_uuid, t.credits, t.transaction_type, t.timestamp, p.username FROM ingame_transactions t JOIN profiles p ON t.user_uuid = p.uuid WHERE t.user_uuid = UUID_TO_BIN(%s) LIMIT 10 OFFSET %s"
-        elif history_type == 'bundle':
-            query = "SELECT BIN_TO_UUID(t.user_uuid) as user_uuid, t.bundle_codename, t.bundle_currency_name, t.timestamp, p.username FROM bundles_transactions t JOIN profiles p ON t.user_uuid = p.uuid WHERE t.user_uuid = UUID_TO_BIN(%s) LIMIT 10 OFFSET %s"
-        else:
-            return jsonify({"error": "Invalid history type."}), 405
-        
-        cursor.execute(query, (user_uuid, offset))
-        history = cursor.fetchall()
-        cursor.close()
-
-        if history_type == "ingame":
-            history_list = [
-                {"user_uuid": entry[0], "credits": entry[1], "transaction_type": entry[2], "timestamp": str(entry[3]), "username": entry[4]}
-                for entry in history
-            ]
-        else: # history_type == bundle
-            history_list = [
-                {"user_uuid": entry[0], "codename": entry[1], "currency_name": entry[2], "timestamp": str(entry[3]), "username": entry[4]}
-                for entry in history
-            ]
-        return jsonify(history_list), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        elif e.response.status_code == 405:
+            return jsonify({"error": "Invalid history type."}), 404
+        else:  # other errors
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
+        return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:  # if request already failed multiple times, the circuit breaker is open and this code gets executed
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
 
 def update_auction(auction_uuid):
@@ -564,10 +555,10 @@ def update_pool(pool_id):
         cursor = connection.cursor()
 
         probabilities = {
-            "common_probability": pool.probabilities.common_probability,
-            "rare_probability": pool.probabilities.rare_probability,
-            "epic_probability": pool.probabilities.epic_probability,
-            "legendary_probability":  pool.probabilities.legendary_probability,
+            "common": pool.probabilities.common_probability,
+            "rare": pool.probabilities.rare_probability,
+            "epic": pool.probabilities.epic_probability,
+            "legendary":  pool.probabilities.legendary_probability,
         }
         query = "UPDATE gacha_pools SET public_name = %s, probabilities = %s, price = %s WHERE codename = %s"
         cursor.execute(query, (pool.name, json.dumps(probabilities), pool.price, pool_id))

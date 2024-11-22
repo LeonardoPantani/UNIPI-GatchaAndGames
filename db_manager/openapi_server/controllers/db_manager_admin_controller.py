@@ -1,5 +1,6 @@
 import connexion
 import logging
+import json
 from datetime import date
 from typing import Dict
 from typing import Tuple
@@ -145,18 +146,58 @@ def ban_user_profile(ban_user_profile_request=None):
     
 
 def create_gacha_pool(pool=None):
-    """create_gacha_pool
+    if not connexion.request.is_json:
+        return "", 400
+    
+    # valid json request
+    pool = Pool.from_dict(connexion.request.get_json())
 
-    Creates a gacha pool. # noqa: E501
+    probabilities = {
+        "common": pool.probabilities.common_probability,
+        "rare": pool.probabilities.rare_probability,
+        "epic": pool.probabilities.epic_probability,
+        "legendary":  pool.probabilities.legendary_probability,
+    }
+    
+    mysql = current_app.extensions.get('mysql')
 
-    :param pool: 
-    :type pool: dict | bytes
+    try:
+        @circuit_breaker
+        def make_request_to_db():
+            connection = mysql.connect()
+            cursor = connection.cursor()
+            query = "INSERT INTO gacha_pools (codename, public_name, probabilities, price) VALUES (%s, %s, %s, %s)"
+            cursor.execute(query, (pool.id, pool.name, json.dumps(probabilities), pool.price))
+            for gacha_type_uuid in pool.items:
+                query = "INSERT INTO gacha_pools (codename, gacha_uuid) VALUES (%s, %s)"
+                cursor.execute(query, (pool.id, gacha_type_uuid))
+            connection.commit()
+            return
 
-    :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
-    """
-    if connexion.request.is_json:
-        pool = Pool.from_dict(connexion.request.get_json())
-    return 'do some magic!'
+        make_request_to_db()
+
+        return "", 201
+    except OperationalError: # if connect to db fails means there is an error in the db
+        logging.error("Query ["+ pool.id +"]: Operational error.")
+        return "", 500
+    except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
+        logging.error("Query ["+ pool.id +"]: Integrity error.")
+        return "", 409
+    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+        logging.error("Query ["+ pool.id +"]: Programming error.")
+        return "", 400
+    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+        logging.error("Query ["+ pool.id +"]: Internal error.")
+        return "", 500
+    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+        logging.error("Query ["+ pool.id +"]: Interface error.")
+        return "", 500
+    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+        logging.error("Query ["+ pool.id +"]: Database error.")
+        return "", 500
+    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return "", 503
 
 
 def create_gacha_type(gacha=None):
@@ -222,7 +263,7 @@ def create_gacha_type(gacha=None):
         return "", 503
 
 
-def delete_gacha_pool(body=None): # TODO controllare dipendenze
+def delete_gacha_pool(body=None): # TODO controllare dipendenze tra elementi nel db
     """delete_gacha_pool
 
     Deletes a gacha pool. # noqa: E501
@@ -235,7 +276,7 @@ def delete_gacha_pool(body=None): # TODO controllare dipendenze
     return 'do some magic!'
 
 
-def delete_gacha_type(): #TODO vanno rimosse le cose nel modo corretto
+def delete_gacha_type(): # TODO controllare dipendenze tra elementi nel db
     if not connexion.request.is_json:
         return "", 400
 
@@ -470,36 +511,140 @@ def get_feedback_list(get_feedback_list_request=None):
 
 
 def get_profile_list(get_feedback_list_request=None):
-    """get_profile_list
+    if not connexion.request.is_json:
+        return "", 400
 
-    Gets a profile list # noqa: E501
+    # valid json request
+    get_feedback_list_request = GetFeedbackListRequest.from_dict(connexion.request.get_json())
+    page_number = get_feedback_list_request.page_number
+    offset = (page_number - 1) * 10 if page_number else 0
+    
+    mysql = current_app.extensions.get('mysql')
 
-    :param get_feedback_list_request: 
-    :type get_feedback_list_request: dict | bytes
+    try:
+        @circuit_breaker
+        def make_request_to_db():
+            connection = mysql.connect()
+            cursor = connection.cursor()
+            query = "SELECT BIN_TO_UUID(p.uuid) as uuid, u.email, p.username, p.currency, p.pvp_score, p.created_at, u.role FROM profiles p JOIN users u ON p.uuid = u.uuid LIMIT 10 OFFSET %s"
+            cursor.execute(query, (offset,))
+            return cursor.fetchall()
 
-    :rtype: Union[List[User], Tuple[List[User], int], Tuple[List[User], int, Dict[str, str]]
-    """
-    if connexion.request.is_json:
-        get_feedback_list_request = GetFeedbackListRequest.from_dict(connexion.request.get_json())
-    return 'do some magic!'
+        profiles = make_request_to_db()
+        profile_list = [
+            {"id": profile[0], "email": profile[1], "username": profile[2], "currency": profile[3], "pvp_score": profile[4], "joindate": str(profile[5]), "role": profile[6]}
+            for profile in profiles
+        ]
+        return jsonify(profile_list), 200
+
+    except OperationalError: # if connect to db fails means there is an error in the db
+        logging.error("Query ["+ page_number +"]: Operational error.")
+        return "", 500
+    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+        logging.error("Query ["+ page_number +"]: Programming error.")
+        return "", 400
+    except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
+        logging.error("Query ["+ page_number +"]: Integrity error.")
+        return "", 409
+    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+        logging.error("Query ["+ page_number +"]: Internal error.")
+        return "", 500
+    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+        logging.error("Query ["+ page_number +"]: Interface error.")
+        return "", 500
+    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+        logging.error("Query ["+ page_number +"]: Database error.")
+        return "", 500
+    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return "", 503
 
 
 def get_user_history(get_user_history_request=None):
-    """get_user_history
+    if not connexion.request.is_json:
+        return "", 400
+    
+    # valid json request
+    get_user_history_request = GetUserHistoryRequest.from_dict(connexion.request.get_json())
+    user_uuid = get_user_history_request.user_uuid
+    history_type = get_user_history_request.history_type
+    page_number = get_user_history_request.page_number
 
-    Returns history of user&#39;s profile. # noqa: E501
-
-    :param get_user_history_request: 
-    :type get_user_history_request: dict | bytes
-
-    :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
-    """
-    if connexion.request.is_json:
-        get_user_history_request = GetUserHistoryRequest.from_dict(connexion.request.get_json())
-    return 'do some magic!'
+    mysql = current_app.extensions.get('mysql')
 
 
-def update_auction(auction=None):
+    try:
+        not_found = False
+        invalid_history_type = False
+
+        @circuit_breaker
+        def make_request_to_db():
+            connection = mysql.connect()
+            cursor = connection.cursor()
+            query = "SELECT uuid FROM users WHERE uuid = UUID_TO_BIN(%s) LIMIT 1"
+            cursor.execute(query, (user_uuid,))
+            result = cursor.fetchone()
+            if not result:
+                return None, True, False  # history, not_found, invalid_history_type
+
+            # user exists, continue
+            offset = (page_number - 1) * 10 if page_number else 0
+
+            if history_type == 'ingame':
+                query = "SELECT BIN_TO_UUID(t.user_uuid) as user_uuid, t.credits, t.transaction_type, t.timestamp, p.username FROM ingame_transactions t JOIN profiles p ON t.user_uuid = p.uuid WHERE t.user_uuid = UUID_TO_BIN(%s) LIMIT 10 OFFSET %s"
+            elif history_type == 'bundle':
+                query = "SELECT BIN_TO_UUID(t.user_uuid) as user_uuid, t.bundle_codename, t.bundle_currency_name, t.timestamp, p.username FROM bundles_transactions t JOIN profiles p ON t.user_uuid = p.uuid WHERE t.user_uuid = UUID_TO_BIN(%s) LIMIT 10 OFFSET %s"
+            else:
+                return None, False, True  # history, not_found, invalid_history_type
+
+            cursor.execute(query, (user_uuid, offset))
+            history = cursor.fetchall()
+            return history, False, False  # history, not_found, invalid_history_type
+
+
+        history, not_found, invalid_history_type = make_request_to_db()
+
+        if not_found:
+            return "", 404
+
+        if invalid_history_type:
+            return "", 405
+
+        if history_type == "ingame":
+            history_list = [
+                {"user_uuid": entry[0], "credits": entry[1], "transaction_type": entry[2], "timestamp": str(entry[3]), "username": entry[4]}
+                for entry in history
+            ]
+        else:  # history_type == 'bundle'
+            history_list = [
+                {"user_uuid": entry[0], "codename": entry[1], "currency_name": entry[2], "timestamp": str(entry[3]), "username": entry[4]}
+                for entry in history
+            ]
+        return jsonify(history_list), 200
+    except OperationalError: # if connect to db fails means there is an error in the db
+        logging.error("Query ["+ user_uuid +"]: Operational error.")
+        return "", 500
+    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+        logging.error("Query ["+ user_uuid +"]: Programming error.")
+        return "", 400
+    except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
+        logging.error("Query ["+ user_uuid +"]: Integrity error.")
+        return "", 409
+    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+        logging.error("Query ["+ user_uuid +"]: Internal error.")
+        return "", 500
+    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+        logging.error("Query ["+ user_uuid +"]: Interface error.")
+        return "", 500
+    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+        logging.error("Query ["+ user_uuid +"]: Database error.")
+        return "", 500
+    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return "", 503
+
+
+def update_auction(auction=None): # TODO da fare
     """update_auction
 
     Updates a specific auction. # noqa: E501
@@ -514,7 +659,7 @@ def update_auction(auction=None):
     return 'do some magic!'
 
 
-def update_gacha(gacha=None):
+def update_gacha(gacha=None): # TODO da fare
     """update_gacha
 
     Updates a specific gacha. # noqa: E501
@@ -529,7 +674,7 @@ def update_gacha(gacha=None):
     return 'do some magic!'
 
 
-def update_pool(pool=None):
+def update_pool(pool=None): # TODO da fare
     """update_pool
 
     Updates a specific pool. # noqa: E501

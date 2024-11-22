@@ -1415,9 +1415,8 @@ components:
   schemas:
     FeedbackId:
       description: Id of feedback.
-      format: integer
       title: id
-      type: number
+      type: integer
     Feedback:
       properties:
         id:

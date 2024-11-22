@@ -54,8 +54,8 @@ services:
       - mysql_gatchaandgames_db:/var/lib/mysql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      start_period: 20s
-      interval: 15s
+      start_period: 35s
+      interval: 5s
       timeout: 3s
       retries: 3
     restart: always
@@ -81,8 +81,8 @@ services:
       - public_gachaandgames_network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/db_manager/health_check"]
-      start_period: 15s
-      interval: 1m
+      start_period: 5s
+      interval: 15s
       timeout: 3s
       retries: 3
     deploy:

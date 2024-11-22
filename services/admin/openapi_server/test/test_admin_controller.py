@@ -64,7 +64,7 @@ class TestAdminController(BaseTestCase):
 
         Creates a pool.
         """
-        pool = {"name":"Starter Pool","id":"pool_starter","probabilities":{"legendaryProbability":5.962134,"epicProbability":1.4658129,"commonProbability":0.8008282,"rareProbability":6.0274563},"items":[null,null]}
+        pool = {"price":15,"name":"Starter Pool","id":"pool_starter","probabilities":{"legendaryProbability":5.962134,"epicProbability":1.4658129,"commonProbability":0.8008282,"rareProbability":6.0274563},"items":[null,null]}
         headers = { 
             'Content-Type': 'application/json',
         }
@@ -165,7 +165,7 @@ class TestAdminController(BaseTestCase):
             'Accept': 'application/json',
         }
         response = self.client.open(
-            '/admin/feedback/{feedback_id}'.format(feedback_id=3),
+            '/admin/feedback/{feedback_id}'.format(feedback_id=56),
             method='GET',
             headers=headers)
         self.assert200(response,
@@ -180,7 +180,7 @@ class TestAdminController(BaseTestCase):
             'Accept': 'application/json',
         }
         response = self.client.open(
-            '/admin/logs',
+            '/admin/logs/',
             method='GET',
             headers=headers)
         self.assert200(response,
@@ -191,10 +191,9 @@ class TestAdminController(BaseTestCase):
 
         Returns history of a user.
         """
-        query_string = [('type', 'type_example'),
+        query_string = [('history_type', 'history_type_example'),
                         ('page_number', 1)]
         headers = { 
-            'Accept': 'application/json',
         }
         response = self.client.open(
             '/admin/profile/{user_uuid}/history'.format(user_uuid='user_uuid_example'),
@@ -245,7 +244,7 @@ class TestAdminController(BaseTestCase):
 
         Updates a pool.
         """
-        pool = {"name":"Starter Pool","id":"pool_starter","probabilities":{"legendaryProbability":5.962134,"epicProbability":1.4658129,"commonProbability":0.8008282,"rareProbability":6.0274563},"items":[null,null]}
+        pool = {"price":15,"name":"Starter Pool","id":"pool_starter","probabilities":{"legendaryProbability":5.962134,"epicProbability":1.4658129,"commonProbability":0.8008282,"rareProbability":6.0274563},"items":[null,null]}
         headers = { 
             'Content-Type': 'application/json',
         }
