@@ -161,6 +161,8 @@ def create_auction():
             return response.json()
         
         item = make_request_to_dbmanager()
+        if item['owner_id'] != session['uuid']:
+            return jsonify({"error": "This item is not yours."}), 403
         
     except requests.HTTPError as e:
         if e.response.status_code == 404:
