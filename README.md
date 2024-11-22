@@ -127,5 +127,5 @@ tox
 
 1. Pvp è stato temporaneamente disattivato, a causa della mancata conformità con le specifiche richieste (Work in progress)
 2. I test sono principalmente integration tests eseguiti con postman, il cui json si trova, come richiesto, nella cartella docs. Attualmente non coprono ogni test case, ma almeno il codice 200 per ogni metodo di ogni microservizio. Gli unit tests insieme al performance testing saranno consegnati successivamente.
-3. Per fare i test si possono usare i seguenti admin: (username= SpeedwagonAdmin password=admin_foundation ; username = AdminUser password= password). Purtroppo non abbiamo implementato ancora un metodo per registrarsi come admin.
+3. Per fare i test si possono usare i seguenti admin: (username= SpeedwagonAdmin password=admin_foundation ; username = AdminUser password= password). Per registrarsi come amministratore ed effettuare operazioni relative, la richiesta va inoltrata alla porta 8081, tutte le altre richieste vengono inoltrate normalmente alla 8080.
 
