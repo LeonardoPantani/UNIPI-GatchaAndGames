@@ -11,7 +11,7 @@ from typing import Union
 from openapi_server.models.login_request import LoginRequest  # noqa: E501
 from openapi_server.models.register_request import RegisterRequest  # noqa: E501
 from openapi_server import util
-from flask import jsonify, session
+from flask import jsonify, session, request
 from pybreaker import CircuitBreaker, CircuitBreakerError
 
 
@@ -92,6 +92,12 @@ def register():
     if not connexion.request.is_json:
         return jsonify({"message": "Invalid request."}), 400
 
+    source_gateway = request.headers.get('X-Source-Gateway', 'Unknown')
+    if source_gateway == "Gateway-Private":
+        role = "ADMIN"
+    else:
+        role = "USER"
+
     # valid json request
     register_request = RegisterRequest.from_dict(connexion.request.get_json())
     if not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', register_request.email):
@@ -115,6 +121,7 @@ def register():
                 "username": username_to_register,
                 "email": email_to_register,
                 "password": password_hashed,
+                "role": role
             }
             url = "http://db_manager:8080/db_manager/auth/register"
             response = requests.post(url, json=payload)

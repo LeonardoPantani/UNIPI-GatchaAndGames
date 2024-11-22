@@ -16,7 +16,7 @@ services:
       - service_gacha
       - service_inventory
       - service_profile
-      - service_pvp
+    #  - service_pvp
     restart: always
     networks:
       - public_gachaandgames_network
@@ -38,7 +38,7 @@ services:
       - service_gacha
       - service_inventory
       - service_profile
-      - service_pvp
+    #  - service_pvp
     restart: always
     networks:
       - private_gachaandgames_network
@@ -127,6 +127,7 @@ services:
     restart: always
     networks:
       - public_gachaandgames_network
+      - private_gachaandgames_network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/auth/health_check"]
       start_period: 10s
@@ -280,29 +281,30 @@ services:
     deploy:
       replicas: 1
 
-  service_pvp:
-    image: service_pvp
-    build: ./services/pvp/
-    ports:
-      - "8080"
-    env_file: ./services/pvp/.env
-    volumes:
-      - ./services/pvp:/usr/src/app/
-    depends_on:
-      db_manager:
-        condition: service_healthy
-    tty: true
-    restart: always
-    networks:
-      - public_gachaandgames_network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/pvp/health_check"]
-      start_period: 10s
-      interval: 1m
-      timeout: 3s
-      retries: 3
-    deploy:
-      replicas: 1
+  # 22/11/2024: Suspended because still WIP
+  # service_pvp:
+  #   image: service_pvp
+  #   build: ./services/pvp/
+  #   ports:
+  #     - "8080"
+  #   env_file: ./services/pvp/.env
+  #   volumes:
+  #     - ./services/pvp:/usr/src/app/
+  #   depends_on:
+  #     db_manager:
+  #       condition: service_healthy
+  #   tty: true
+  #   restart: always
+  #   networks:
+  #     - public_gachaandgames_network
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:8080/pvp/health_check"]
+  #     start_period: 10s
+  #     interval: 1m
+  #     timeout: 3s
+  #     retries: 3
+  #   deploy:
+  #     replicas: 1
 
 networks:
   private_gachaandgames_network:

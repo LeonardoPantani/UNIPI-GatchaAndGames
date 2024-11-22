@@ -22,7 +22,7 @@ off: down
 
 up: on
 	#!/bin/bash
-	if [ $(docker compose ps | wc -l) -ne 14 ]; then
+	if [ $(docker compose ps | wc -l) -ne 13 ]; then
 		echo "Starting containers..."
 		docker compose up -d
 	else
@@ -31,7 +31,7 @@ up: on
 
 down:
 	#!/bin/bash
-	if [ $(docker compose ps | wc -l) -le 14 ]; then
+	if [ $(docker compose ps | wc -l) -le 13 ]; then
 		echo "Removing containers and resetting database..."
 		docker compose down -v
 	else
@@ -40,7 +40,7 @@ down:
 
 start: on
 	#!/bin/bash
-	if [ $(docker compose ps | wc -l) -ne 14 ]; then
+	if [ $(docker compose ps | wc -l) -ne 13 ]; then
 		echo "Starting containers and building..."
 		docker compose up --build -d
 	else
@@ -49,7 +49,7 @@ start: on
 
 stop:
 	#!/bin/bash
-	if [ $(docker compose ps | wc -l) -eq 14 ]; then
+	if [ $(docker compose ps | wc -l) -eq 13 ]; then
 		echo "Stopping containers..."
 		docker compose stop
 	else

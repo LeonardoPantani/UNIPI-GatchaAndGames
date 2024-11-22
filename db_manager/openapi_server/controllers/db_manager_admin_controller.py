@@ -26,6 +26,7 @@ from pybreaker import CircuitBreaker, CircuitBreakerError
 
 circuit_breaker = CircuitBreaker(fail_max=5, reset_timeout=5, exclude=[OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError])
 
+
 def ban_user_profile(ban_user_profile_request=None):
     if not connexion.request.is_json:
         return "", 400
@@ -67,7 +68,7 @@ def ban_user_profile(ban_user_profile_request=None):
         return "", 503
 
 
-    user_role = make_request_to_db()
+    user_role = make_request_to_db()[0]
 
     if user_role:
         if user_role == "ADMIN":
@@ -404,14 +405,10 @@ def edit_user_profile(edit_user_profile_request=None):
     
     mysql = current_app.extensions.get('mysql')
 
-
     try:
-        # to discriminate which request failed outside the function make_request_to_db()
-        not_found = False
-
         @circuit_breaker
         def make_request_to_db():
-            global not_found
+            not_found = False
             updates = 0
 
             connection = mysql.connect()
@@ -422,7 +419,7 @@ def edit_user_profile(edit_user_profile_request=None):
             result = cursor.fetchone()
             if not result:
                 not_found = True
-                return updates
+                return not_found, updates
 
             # user exists, continue
             if user_email:
@@ -435,9 +432,9 @@ def edit_user_profile(edit_user_profile_request=None):
                 updates += cursor.rowcount
                 
             connection.commit()
-            return updates
+            return not_found, updates
 
-        updates = make_request_to_db()
+        not_found, updates = make_request_to_db()
 
         if not_found:
             return "", 404

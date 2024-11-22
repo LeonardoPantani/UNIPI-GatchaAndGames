@@ -89,6 +89,7 @@ def register():
     username = login_request.get("username")
     email = login_request.get("email")
     password_hash = login_request.get("password")
+    role = login_request.get("role")
 
     mysql = current_app.extensions.get('mysql')
     connection = None
@@ -100,7 +101,7 @@ def register():
             # Insert user in USERS table
             cursor.execute(
                 'INSERT INTO users (uuid, email, password, role) VALUES (UUID_TO_BIN(%s), %s, %s, %s)',
-                (user_uuid, email, password_hash, 'USER')
+                (user_uuid, email, password_hash, role)
             )
             # Insert profile in PROFILE table
             cursor.execute(
