@@ -3777,6 +3777,41 @@
 								"type": "text/javascript",
 								"packages": {}
 							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const logoutRequest = {\r",
+									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    method: 'DELETE'\r",
+									"};\r",
+									"\r",
+									"const loginAsUserRequest = {\r",
+									"    url: 'http://localhost:8080/auth/login',\r",
+									"    method: 'POST',\r",
+									"    header: {\r",
+									"        'Content-Type': 'application/json'\r",
+									"    },\r",
+									"    body: {\r",
+									"        mode: 'raw',\r",
+									"        raw: JSON.stringify({\r",
+									"            \"username\": \"SpeedwagonAdmin\",\r",
+									"            \"password\": \"admin_foundation\"\r",
+									"        })\r",
+									"    }\r",
+									"};\r",
+									"pm.sendRequest(logoutRequest)\r",
+									"    .then(() => {\r",
+									"        return pm.sendRequest(loginAsUserRequest);\r",
+									"    })\r",
+									"    .catch(err => {\r",
+									"        console.error('Error in request chain:', err);\r",
+									"    });"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
 						}
 					],
 					"request": {
@@ -3792,8 +3827,17 @@
 						},
 						"method": "POST",
 						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
 						"url": {
-							"raw": "{{baseUrl}}/auctions/create?starting_price=10&inventory_item_owner_id={{user_uuid}}&inventory_item_id={{item_uuid}}",
+							"raw": "{{baseUrl}}/auctions/create?starting_price=10&inventory_item_owner_id={{user_uuid}}&inventory_item_id={{SpeedWagon_item#3}}",
 							"host": [
 								"{{baseUrl}}"
 							],
@@ -3812,7 +3856,7 @@
 								},
 								{
 									"key": "inventory_item_id",
-									"value": "{{item_uuid}}"
+									"value": "{{SpeedWagon_item#3}}"
 								},
 								{
 									"key": "Cookie",
@@ -3889,6 +3933,16 @@
 									"        console.error('Error:', error);\r",
 									"    }\r",
 									"};"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
 								],
 								"type": "text/javascript",
 								"packages": {}
@@ -4189,7 +4243,7 @@
 							"script": {
 								"exec": [
 									"pm.sendRequest({\r",
-									"    url: 'http://localhost/auth/logout',\r",
+									"    url: 'http://localhost:8080/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"}, function (err, res) {\r",
 									"    if (err) {\r",
@@ -4356,7 +4410,32 @@
 							"listen": "prerequest",
 							"script": {
 								"exec": [
-									""
+									"const logoutRequest = {\r",
+									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    method: 'DELETE'\r",
+									"};\r",
+									"\r",
+									"const loginAsUserRequest = {\r",
+									"    url: 'http://localhost:8080/auth/login',\r",
+									"    method: 'POST',\r",
+									"    header: {\r",
+									"        'Content-Type': 'application/json'\r",
+									"    },\r",
+									"    body: {\r",
+									"        mode: 'raw',\r",
+									"        raw: JSON.stringify({\r",
+									"            \"username\": \"SpeedwagonAdmin\",\r",
+									"            \"password\": \"admin_foundation\"\r",
+									"        })\r",
+									"    }\r",
+									"};\r",
+									"pm.sendRequest(logoutRequest)\r",
+									"    .then(() => {\r",
+									"        return pm.sendRequest(loginAsUserRequest);\r",
+									"    })\r",
+									"    .catch(err => {\r",
+									"        console.error('Error in request chain:', err);\r",
+									"    });"
 								],
 								"type": "text/javascript",
 								"packages": {}
@@ -4433,8 +4512,36 @@
 						{
 							"listen": "prerequest",
 							"script": {
-								"exec": [],
-								"type": "text/javascript"
+								"exec": [
+									"const logoutRequest = {\r",
+									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    method: 'DELETE'\r",
+									"};\r",
+									"\r",
+									"const loginAsUserRequest = {\r",
+									"    url: 'http://localhost:8080/auth/login',\r",
+									"    method: 'POST',\r",
+									"    header: {\r",
+									"        'Content-Type': 'application/json'\r",
+									"    },\r",
+									"    body: {\r",
+									"        mode: 'raw',\r",
+									"        raw: JSON.stringify({\r",
+									"            \"username\": \"SpeedwagonAdmin\",\r",
+									"            \"password\": \"admin_foundation\"\r",
+									"        })\r",
+									"    }\r",
+									"};\r",
+									"pm.sendRequest(logoutRequest)\r",
+									"    .then(() => {\r",
+									"        return pm.sendRequest(loginAsUserRequest);\r",
+									"    })\r",
+									"    .catch(err => {\r",
+									"        console.error('Error in request chain:', err);\r",
+									"    });"
+								],
+								"type": "text/javascript",
+								"packages": {}
 							}
 						}
 					],
@@ -4803,7 +4910,7 @@
 						"method": "DELETE",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/inventory/?inventory_item_owner_id={{user_uuid}}&inventory_item_id={{item_uuid}}",
+							"raw": "{{baseUrl}}/inventory/?inventory_item_owner_id={{user_uuid}}&inventory_item_id={{SpeedWagon_item#3}}",
 							"host": [
 								"{{baseUrl}}"
 							],
@@ -4818,189 +4925,8 @@
 								},
 								{
 									"key": "inventory_item_id",
-									"value": "{{item_uuid}}"
+									"value": "{{SpeedWagon_item#3}}"
 								}
-							]
-						}
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "PvP Service Tests",
-			"item": [
-				{
-					"name": "Health Check",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/pvp/health_check",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"pvp",
-								"health_check"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Send PVP Request",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"// Send PVP Request Test\r",
-									"pm.test(\"Send PVP Request\", function () {\r",
-									"    // Check status code\r",
-									"    pm.response.to.have.status(200);\r",
-									"    \r",
-									"    // Parse response\r",
-									"    const responseData = pm.response.json();\r",
-									"    \r",
-									"    // Extract UUID using regex\r",
-									"    const uuidMatch = responseData.message.match(/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i);\r",
-									"    \r",
-									"    if (uuidMatch) {\r",
-									"        // Save UUID to environment variable\r",
-									"        pm.environment.set(\"pvp_match_uuid\", uuidMatch[0]);\r",
-									"        console.log(\"Saved PVP match UUID:\", uuidMatch[0]);\r",
-									"    } else {\r",
-									"        console.error(\"Could not extract UUID from response\");\r",
-									"    }\r",
-									"});"
-								],
-								"type": "text/javascript",
-								"packages": {}
-							}
-						},
-						{
-							"listen": "prerequest",
-							"script": {
-								"exec": [
-									""
-								],
-								"type": "text/javascript",
-								"packages": {}
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{\r\n    \"gachas\": [ //item di SpeedWagon\r\n        \"{{SpeedWagon_item#1}}\", // Star Platinum\r\n        \"{{SpeedWagon_item#2}}\", // The World  \r\n        \"{{SpeedWagon_item#3}}\", // Gold Experience\r\n        \"{{SpeedWagon_item#4}}\", // Crazy Diamond\r\n        \"{{SpeedWagon_item#5}}\", // Silver Chariot\r\n        \"{{SpeedWagon_item#6}}\", // Hermit Purple\r\n        \"{{SpeedWagon_item#7}}\"  // Magicians Red\r\n    ]\r\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "http://localhost:8080/pvp/sendPvPRequest/{{user_uuid2}}",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8080",
-							"path": [
-								"pvp",
-								"sendPvPRequest",
-								"{{user_uuid2}}"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Accept PVP Request",
-					"request": {
-						"method": "POST",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{\r\n    \"gachas\": [ //questi sono gli item di AdminUser\r\n        \"{{AdminUser_item#1}}\", // Made in Heaven\r\n        \"{{AdminUser_item#2}}\", // King Crimson\r\n        \"{{AdminUser_item#3}}\", // Killer Queen\r\n        \"{{AdminUser_item#4}}\", // Purple Haze\r\n        \"{{AdminUser_item#5}}\", // Sex Pistols\r\n        \"{{AdminUser_item#6}}\", // Beach Boy\r\n        \"{{AdminUser_item#7}}\"  // Aerosmith\r\n    ]\r\n}\r\n",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "http://localhost:8080/pvp/acceptPvPRequest/{pvp_match_uuid}",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8080",
-							"path": [
-								"pvp",
-								"acceptPvPRequest",
-								"{pvp_match_uuid}"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Reject PVP Request",
-					"request": {
-						"method": "POST",
-						"header": [],
-						"url": {
-							"raw": "http://localhost:8080/pvp/rejectPvPRequest/{{pvp_match_uuid}}",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8080",
-							"path": [
-								"pvp",
-								"rejectPvPRequest",
-								"{{pvp_match_uuid}}"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Check Pending PVP Requests",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/pvp/checkPendingPvPRequests",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"pvp",
-								"checkPendingPvPRequests"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get PVP Match Status",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/pvp/status/{{pvp_match_uuid}}",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"pvp",
-								"status",
-								"{{pvp_match_uuid}}"
 							]
 						}
 					},
@@ -5276,6 +5202,43 @@
 			"item": [
 				{
 					"name": "Buy bundle",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const logoutRequest = {\r",
+									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    method: 'DELETE'\r",
+									"};\r",
+									"\r",
+									"const loginAsUserRequest = {\r",
+									"    url: 'http://localhost:8080/auth/login',\r",
+									"    method: 'POST',\r",
+									"    header: {\r",
+									"        'Content-Type': 'application/json'\r",
+									"    },\r",
+									"    body: {\r",
+									"        mode: 'raw',\r",
+									"        raw: JSON.stringify({\r",
+									"            \"username\": \"SpeedwagonAdmin\",\r",
+									"            \"password\": \"admin_foundation\"\r",
+									"        })\r",
+									"    }\r",
+									"};\r",
+									"pm.sendRequest(logoutRequest)\r",
+									"    .then(() => {\r",
+									"        return pm.sendRequest(loginAsUserRequest);\r",
+									"    })\r",
+									"    .catch(err => {\r",
+									"        console.error('Error in request chain:', err);\r",
+									"    });"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
 					"request": {
 						"method": "POST",
 						"header": [],
