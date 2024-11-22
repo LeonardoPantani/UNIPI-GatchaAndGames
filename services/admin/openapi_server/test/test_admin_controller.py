@@ -208,7 +208,7 @@ class TestAdminController(BaseTestCase):
 
         Updates an auction.
         """
-        auction = {"auction_uuid":"046b6c7f-0b8a-43b9-b35d-6489e6daee91","inventory_item_id":"046b6c7f-0b8a-43b9-b35d-6489e6daee91","starting_price":0.8008282,"end_time":"2000-01-23T04:56:07.000+00:00","inventory_item_owner_id":"046b6c7f-0b8a-43b9-b35d-6489e6daee91","current_bid":6.0274563,"status":"active","current_bidder":"046b6c7f-0b8a-43b9-b35d-6489e6daee91"}
+        auction = {"auction_uuid":"046b6c7f-0b8a-43b9-b35d-6489e6daee91","inventory_item_id":"046b6c7f-0b8a-43b9-b35d-6489e6daee91","starting_price":0.8008282,"end_time":"2000-01-23T04:56:07.000+00:00","inventory_item_owner_id":"046b6c7f-0b8a-43b9-b35d-6489e6daee91","current_bid":6.0274563,"status":"open","current_bidder":"046b6c7f-0b8a-43b9-b35d-6489e6daee91"}
         headers = { 
             'Content-Type': 'application/json',
         }

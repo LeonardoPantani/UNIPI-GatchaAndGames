@@ -14,7 +14,7 @@ class Auction(Model):
     Do not edit the class manually.
     """
 
-    def __init__(self, auction_uuid=None, status=AuctionStatus.ACTIVE, inventory_item_owner_id=None, inventory_item_id=None, starting_price=None, current_bid=None, current_bidder=None, end_time=None):  # noqa: E501
+    def __init__(self, auction_uuid=None, status=AuctionStatus.OPEN, inventory_item_owner_id=None, inventory_item_id=None, starting_price=None, current_bid=None, current_bidder=None, end_time=None):  # noqa: E501
         """Auction - a model defined in OpenAPI
 
         :param auction_uuid: The auction_uuid of this Auction.  # noqa: E501

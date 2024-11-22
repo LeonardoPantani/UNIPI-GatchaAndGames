@@ -713,9 +713,9 @@ components:
       title: email
       type: string
     AuctionStatus:
-      default: active
+      default: open
       enum:
-      - active
+      - open
       - closed
       title: AuctionStatus
       type: string
@@ -737,7 +737,7 @@ components:
         end_time: 2000-01-23T04:56:07.000+00:00
         inventory_item_owner_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
         current_bid: 6.0274563
-        status: active
+        status: open
         current_bidder: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
       properties:
         auction_uuid:

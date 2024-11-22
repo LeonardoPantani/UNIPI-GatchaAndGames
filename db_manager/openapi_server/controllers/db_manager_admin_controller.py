@@ -669,6 +669,7 @@ def update_auction(auction=None):
             result = cursor.fetchone()
             if not result:
                 no_auction_found = True
+                return no_auction_found, no_item_found, no_valid_bidder, rows_updated
 
             # check if item with that uuid exists
             query = "SELECT item_uuid FROM inventories WHERE item_uuid = UUID_TO_BIN(%s) LIMIT 1"
@@ -676,6 +677,8 @@ def update_auction(auction=None):
             result = cursor.fetchone()
             if not result:
                 no_item_found = True
+                return no_auction_found, no_item_found, no_valid_bidder, rows_updated
+
 
             # check if current bidder is a valid user uuid
             query = "SELECT uuid FROM users WHERE uuid = UUID_TO_BIN(%s) LIMIT 1"
@@ -683,6 +686,7 @@ def update_auction(auction=None):
             result = cursor.fetchone()
             if not result:
                 no_valid_bidder = True
+                return no_auction_found, no_item_found, no_valid_bidder, rows_updated
                 
 
             # auction exists, continue
@@ -705,12 +709,12 @@ def update_auction(auction=None):
             return jsonify({"error": "Current bidder user profile not found."}), 404
 
         if rows_updated == 0:
-            return jsonify({"error": "Cannot update auction."}), 404
+            return jsonify({"error": "No changes were applied."}), 404
 
         return "", 200
     except OperationalError: # if connect to db fails means there is an error in the db
         logging.error("Query ["+ auction.auction_uuid +"]: Operational error.")
-        return "", 500
+        return "", 417
     except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
         logging.error("Query ["+ auction.auction_uuid +"]: Programming error.")
         return "", 400

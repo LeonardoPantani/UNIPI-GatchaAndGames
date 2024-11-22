@@ -112,7 +112,7 @@ paths:
       tags:
         - auctions
       summary: Retrieve the list of auctions.
-      description: Returns a list of all active auctions for gacha items.
+      description: Returns a list of all open auctions for gacha items.
       operationId: getAuctionsList
       parameters:
         - name: session
@@ -126,9 +126,9 @@ paths:
           required: false
           schema:
             type: string
-            default: active
+            default: open
             enum:
-              - active
+              - open
               - closed
         - name: rarity
           in: query
@@ -234,8 +234,8 @@ paths:
     post:
       tags:
         - auctions
-      summary: Bids on an active auction
-      description: Sends a bid to an active auction, if the user has enough currency.
+      summary: Bids on an open auction
+      description: Sends a bid to an open auction, if the user has enough currency.
       operationId: bidOnAuction
       parameters:
         - name: session
@@ -1556,9 +1556,9 @@ components:
       description: The user's password must be at least 8 characters and can accept all characters.
     AuctionStatus:
       type: string
-      default: active
+      default: open
       enum:
-        - active
+        - open
         - closed
     ItemId:
       type: string

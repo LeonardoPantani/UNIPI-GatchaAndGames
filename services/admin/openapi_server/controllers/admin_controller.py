@@ -433,35 +433,21 @@ def update_auction(auction_uuid):
             response.raise_for_status()  # if response is obtained correctly
             return response.json()
         
-        a = make_request_to_dbmanager()
-        print(a)
+        make_request_to_dbmanager()
 
         return jsonify({"message": "Auction updated."}), 404
     except requests.HTTPError as e:  # if request is sent to dbmanager correctly and it answers an application error (to be managed here) [error expected by us]
         if e.response.status_code == 404:
             return json.loads(e.response.text), 404
+        elif e.response.status_code == 417:
+            return jsonify({"error": "Invalid date format."}), 417
         else:  # other errors
             return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
     except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
         return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:  # if request already failed multiple times, the circuit breaker is open and this code gets executed
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
-    # valid request from now on
-    try:
-        mysql = current_app.extensions.get('mysql')
-        if not mysql:
-            return jsonify({"error": "Database connection not initialized"}), 500
 
-        connection = mysql.connect()
-        cursor = connection.cursor()
-
-       
-        cursor.close()
-
-        return jsonify({"message": "Auction successfully updated."}), 200
-    except Exception as e:
-        connection.rollback()
-        return jsonify({"error": str(e)}), 500
 
 
 def update_gacha(gacha_uuid):
