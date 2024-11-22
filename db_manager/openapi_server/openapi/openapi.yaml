@@ -1205,7 +1205,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserId'
-          description: Battle rejected successfully.
+          description: Owner UUID.
         "400":
           description: Invalid request.
         "401":
@@ -2302,7 +2302,6 @@ components:
             \ 3fa85f64-5717-4562-b3fc-2c963f66afa6, 3fa85f64-5717-4562-b3fc-2c963f66afa6,\
             \ 3fa85f64-5717-4562-b3fc-2c963f66afa6, 3fa85f64-5717-4562-b3fc-2c963f66afa6,\
             \ 3fa85f64-5717-4562-b3fc-2c963f66afa6)"
-          pattern: "^\\(\\s*[a-zA-Z]+\\s*(,\\s*[a-zA-Z]+\\s*){6}\\)$"
           title: team
           type: string
       title: verify_gacha_item_ownership_request

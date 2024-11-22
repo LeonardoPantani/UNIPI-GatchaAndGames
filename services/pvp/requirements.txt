@@ -16,3 +16,5 @@ python-dotenv == 1.0.1
 flask-mysql == 1.5.2
 cryptography == 43.0.3
 bcrypt == 4.2.0
+pybreaker == 1.2.0
+requests == 2.32.3

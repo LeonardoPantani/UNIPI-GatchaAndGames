@@ -1345,7 +1345,7 @@ paths:
                   description: 'List (surrounded by round brackets) of gacha uuids separated by a comma'
       responses:
         '200':
-          description: Battle rejected successfully.
+          description: Owner UUID.
           content:
             application/json:
               schema:

@@ -61,7 +61,7 @@ class VerifyGachaItemOwnershipRequest(Model):
         :param team: The team of this VerifyGachaItemOwnershipRequest.
         :type team: str
         """
-        if team is not None and not re.search(r'^\(\s*[a-zA-Z]+\s*(,\s*[a-zA-Z]+\s*){6}\)$', team):  # noqa: E501
+        if team is None:  # noqa: E501
             raise ValueError("Invalid value for `team`.")  # noqa: E501
 
         self._team = team

@@ -67,6 +67,9 @@ def complete_auction_sale(complete_auction_sale_request=None):  # noqa: E501
                 'INSERT INTO ingame_transactions (user_uuid, credits, transaction_type) VALUES (UUID_TO_BIN(%s), %s, "bought_market")',
                 (bidder_uuid,current_bid*(-1))
             )
+            return
+        
+        make_request_to_db()
 
         return jsonify({"message": "Item redeemed successfully."}), 200
     except OperationalError: # if connect to db fails means there is an error in the db
@@ -242,7 +245,6 @@ def get_item_with_owner(get_item_with_owner_request=None):  # noqa: E501
     item_uuid = get_item_with_owner_request.item_uuid
 
     mysql = current_app.extensions.get('mysql')
-    connection = None
     try:
         @circuit_breaker
         def make_request_to_db():
