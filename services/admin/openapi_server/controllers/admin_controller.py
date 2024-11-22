@@ -423,6 +423,30 @@ def update_auction(auction_uuid):
     
 
     # valid request from now on
+
+    try:
+        @circuit_breaker
+        def make_request_to_dbmanager():
+            payload = connexion.request.get_json()
+            url = "http://db_manager:8080/db_manager/admin/update_auction"
+            response = requests.post(url, json=payload)
+            response.raise_for_status()  # if response is obtained correctly
+            return response.json()
+        
+        a = make_request_to_dbmanager()
+        print(a)
+
+        return jsonify({"message": "Auction updated."}), 404
+    except requests.HTTPError as e:  # if request is sent to dbmanager correctly and it answers an application error (to be managed here) [error expected by us]
+        if e.response.status_code == 404:
+            return json.loads(e.response.text), 404
+        else:  # other errors
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
+        return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:  # if request already failed multiple times, the circuit breaker is open and this code gets executed
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
+    # valid request from now on
     try:
         mysql = current_app.extensions.get('mysql')
         if not mysql:
@@ -431,31 +455,7 @@ def update_auction(auction_uuid):
         connection = mysql.connect()
         cursor = connection.cursor()
 
-        # check if auction with that uuid exists
-        query = "SELECT uuid FROM auctions WHERE uuid = UUID_TO_BIN(%s) LIMIT 1"
-        cursor.execute(query, (auction_uuid,))
-        result = cursor.fetchone()
-        if not result:
-            return jsonify({"error": "Auction not found"}), 404
-
-        # check if item with that uuid exists
-        query = "SELECT item_uuid FROM inventories WHERE item_uuid = UUID_TO_BIN(%s) LIMIT 1"
-        cursor.execute(query, (auction.inventory_item_id,))
-        result = cursor.fetchone()
-        if not result:
-            return jsonify({"error": "Item ID not found in any inventory"}), 404
-
-        # check if current bidder is a valid user uuid
-        query = "SELECT uuid FROM users WHERE uuid = UUID_TO_BIN(%s) LIMIT 1"
-        cursor.execute(query, (auction.current_bidder,))
-        result = cursor.fetchone()
-        if not result:
-            return jsonify({"error": "Current bidder user profile not found"}), 404
-
-        # auction exists, continue
-        query = "UPDATE auctions SET item_uuid = UUID_TO_BIN(%s), starting_price = %s, current_bid = %s, current_bidder = UUID_TO_BIN(%s), end_time = %s WHERE uuid = UUID_TO_BIN(%s)"
-        cursor.execute(query, (auction.inventory_item_id, auction.starting_price, auction.current_bid, auction.current_bidder, auction.end_time, auction_uuid))
-        connection.commit()
+       
         cursor.close()
 
         return jsonify({"message": "Auction successfully updated."}), 200
