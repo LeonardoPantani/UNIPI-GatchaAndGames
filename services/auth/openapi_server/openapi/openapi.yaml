@@ -1,0 +1,181 @@
+openapi: 3.0.0
+info:
+  contact:
+    email: support@gachaandgames.it
+  description: |-
+    API for Authentication Service.
+
+    Useful links:
+    - [Project repository](https://github.com/LeonardoPantani/UNIPI-GachaAndGames)
+  license:
+    name: GPL-3.0
+    url: https://www.gnu.org/licenses/gpl-3.0.html#license-text
+  termsOfService: http://localhost:8080/tos
+  title: Gacha System - OpenAPI 3.0
+  version: 1.0.0
+servers:
+- description: Local server
+  url: http://localhost:8080
+paths:
+  /auth/health_check:
+    get:
+      description: Returns 200 if service is healthy.
+      operationId: auth_health_check_get
+      responses:
+        "200":
+          description: Service operational.
+      summary: Gives information on service status.
+      tags:
+      - auth
+      x-openapi-router-controller: openapi_server.controllers.auth_controller
+  /auth/login:
+    post:
+      description: Logs a user into the game. Accepts username and password.
+      operationId: login
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/login_request'
+        required: true
+      responses:
+        "200":
+          description: Login successful.
+        "400":
+          description: Invalid request.
+        "401":
+          description: Invalid credentials.
+        "409":
+          description: You are already logged in.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Service unavailable. Please try again later.
+      summary: Log in into an account.
+      tags:
+      - auth
+      x-openapi-router-controller: openapi_server.controllers.auth_controller
+  /auth/logout:
+    delete:
+      description: Allows an account to log out.
+      operationId: logout
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          description: Logout successful.
+        "403":
+          description: Not logged in.
+        "500":
+          description: Internal server error.
+      summary: Logs out from an account.
+      tags:
+      - auth
+      x-openapi-router-controller: openapi_server.controllers.auth_controller
+  /auth/register:
+    post:
+      description: "Registers a new user account with username, email, and password."
+      operationId: register
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/register_request'
+        required: true
+      responses:
+        "201":
+          description: Registration successful.
+        "400":
+          description: Invalid request.
+        "401":
+          description: You are already logged in.
+        "406":
+          description: The specified email is not valid.
+        "409":
+          description: The provided username / email is already in use.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Service unavailable. Please try again later.
+      summary: Registers a new account.
+      tags:
+      - auth
+      x-openapi-router-controller: openapi_server.controllers.auth_controller
+components:
+  schemas:
+    Username:
+      description: "The user's username. Must be at least 5 characters long and contain\
+        \ only letters, numbers, and underscores."
+      example: LeoPanta01_
+      minLength: 5
+      pattern: "^[a-zA-Z0-9_]+$"
+      title: username
+      type: string
+    Email:
+      description: The user's email.
+      example: l.pantani5@studenti.unipi.it
+      title: email
+      type: string
+    Password:
+      description: The user's password must be at least 8 characters and can accept
+        all characters.
+      example: Th1s_c4n_b3_a_good_passw0rd...maybe
+      minLength: 8
+      title: password
+      type: string
+    login_request:
+      properties:
+        username:
+          description: "The user's username. Must be at least 5 characters long and\
+            \ contain only letters, numbers, and underscores."
+          example: LeoPanta01_
+          minLength: 5
+          pattern: "^[a-zA-Z0-9_]+$"
+          title: username
+          type: string
+        password:
+          description: The user's password must be at least 8 characters and can accept
+            all characters.
+          example: Th1s_c4n_b3_a_good_passw0rd...maybe
+          minLength: 8
+          title: password
+          type: string
+      required:
+      - password
+      - username
+      title: login_request
+      type: object
+    register_request:
+      properties:
+        username:
+          description: "The user's username. Must be at least 5 characters long and\
+            \ contain only letters, numbers, and underscores."
+          example: LeoPanta01_
+          minLength: 5
+          pattern: "^[a-zA-Z0-9_]+$"
+          title: username
+          type: string
+        email:
+          description: The user's email.
+          example: l.pantani5@studenti.unipi.it
+          title: email
+          type: string
+        password:
+          description: The user's password must be at least 8 characters and can accept
+            all characters.
+          example: Th1s_c4n_b3_a_good_passw0rd...maybe
+          minLength: 8
+          title: password
+          type: string
+      required:
+      - email
+      - password
+      - username
+      title: register_request
+      type: object

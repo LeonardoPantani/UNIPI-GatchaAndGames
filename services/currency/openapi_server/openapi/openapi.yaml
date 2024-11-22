@@ -1,0 +1,148 @@
+openapi: 3.0.0
+info:
+  contact:
+    email: support@gachaandgames.it
+  description: |-
+    API for managing gacha items, auctions, PVP battles, currency, and user authentication.
+
+    Useful links:
+    - [Project repository](https://github.com/LeonardoPantani/UNIPI-GachaAndGames)
+  license:
+    name: GPL-3.0
+    url: https://www.gnu.org/licenses/gpl-3.0.html#license-text
+  title: Gacha System - OpenAPI 3.0
+  version: 1.0.0
+servers:
+- description: Local server
+  url: http://localhost:8080
+paths:
+  /currency/health_check:
+    get:
+      description: Returns 200 if service is healthy.
+      operationId: health_check
+      responses:
+        "200":
+          description: Service OK
+      summary: Gives information on service status.
+      tags:
+      - currency
+      x-openapi-router-controller: openapi_server.controllers.currency_controller
+  /currency/bundles:
+    get:
+      description: Returns a list of available bundles
+      operationId: get_bundles
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Bundle'
+                type: array
+          description: Successful operation
+        "500":
+          description: Internal server error
+      summary: Lists available bundles to buy currency.
+      tags:
+      - currency
+      x-openapi-router-controller: openapi_server.controllers.currency_controller
+  /currency/buy/{bundle_id}:
+    post:
+      description: Allows a player to purchase in-game credits using real-world currency.
+      operationId: buy_currency
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: path
+        name: bundle_id
+        required: true
+        schema:
+          $ref: '#/components/schemas/BundleId'
+        style: simple
+      responses:
+        "200":
+          description: Purchase successful.
+        "400":
+          description: Purchase failed.
+        "500":
+          description: Internal server error.
+      summary: Buy in-game credits
+      tags:
+      - currency
+      x-openapi-router-controller: openapi_server.controllers.currency_controller
+components:
+  schemas:
+    BundleId:
+      description: Internal code-name for the bundle.
+      example: bundle_amazing
+      pattern: "^[a-zA-Z0-9_]+$"
+      title: id
+      type: string
+    CurrencyName:
+      description: Currency code-name
+      example: EUR
+      pattern: "^[A-Z]{3}$"
+      title: name
+      type: string
+    CurrencyItem:
+      example:
+        name: EUR
+        value: 10
+      properties:
+        name:
+          description: Currency code-name
+          example: EUR
+          pattern: "^[A-Z]{3}$"
+          title: name
+          type: string
+        value:
+          default: 10
+          description: Amount of real currency.
+          example: 10
+          maximum: 999
+          minimum: 0
+          title: value
+          type: integer
+      title: CurrencyItem
+      type: object
+    Bundle:
+      example:
+        amount: 5000
+        name: Amazing Bundle
+        id: bundle_amazing
+        prices:
+        - name: EUR
+          value: 10
+        - name: EUR
+          value: 10
+      properties:
+        id:
+          description: Internal code-name for the bundle.
+          example: bundle_amazing
+          pattern: "^[a-zA-Z0-9_]+$"
+          title: id
+          type: string
+        name:
+          description: Visible name of the bundle.
+          example: Amazing Bundle
+          title: name
+          type: string
+        amount:
+          description: No. of credits.
+          example: 5000
+          title: amount
+          type: integer
+        prices:
+          description: List of prices in different currencies.
+          items:
+            $ref: '#/components/schemas/CurrencyItem'
+          title: prices
+          type: array
+      title: Bundle
+      type: object

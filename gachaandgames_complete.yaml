@@ -1,0 +1,1750 @@
+openapi: 3.0.0
+info:
+  title: Gacha System - OpenAPI 3.0
+  description: >-
+    API for managing gacha items, auctions, PVP battles, currency, and user
+    authentication.
+
+
+    Useful links:
+
+    - [Project
+    repository](https://github.com/LeonardoPantani/UNIPI-GachaAndGames)
+  version: 1.0.0
+  license:
+    name: GPL-3.0
+    url: https://www.gnu.org/licenses/gpl-3.0.html#license-text
+  contact:
+    email: support@gachaandgames.it
+  termsOfService: http://localhost:8080/tos
+servers:
+  - url: http://localhost:8080
+    description: Local server
+paths:
+  ############################################
+  ################# FEEDBACK #################
+  ############################################
+  /feedback/health_check:
+    get:
+      tags:
+      - feedback
+      description: Returns 200 if service is healthy.
+      summary: Gives information on service status.
+      responses:
+        '200':
+          description: Service operational.
+  /feedback/:
+    post:
+      tags:
+        - feedback
+      summary: Sends a feedback.
+      description: Creates a feedback to the admins.
+      operationId: postFeedback
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+        - name: string
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Feedback submitted successfully.
+        '400':
+          description: Invalid query parameters.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+
+
+
+  ############################################
+  ################ AUCTIONS ##################
+  ############################################
+  /auctions/health_check:
+    get:
+      tags:
+      - auctions
+      description: Returns 200 if service is healthy.
+      summary: Gives information on service status.
+      responses:
+        '200':
+          description: Service operational.
+  /auctions/history:
+    get:
+      tags:
+        - auctions
+      summary: Retrieve history of my auctions.
+      description: Returns a list of all my auctions for gacha items.
+      operationId: getAuctionsHistory
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: page_number
+          in: query
+          description: Page number of the list.
+          required: false
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+      responses:
+        '200':
+          description: List of my auctions.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AuctionId'
+        '400':
+          description: Invalid query parameters
+        '500':
+          description: Internal server error
+  /auctions/list:
+    get:
+      tags:
+        - auctions
+      summary: Retrieve the list of auctions.
+      description: Returns a list of all open auctions for gacha items.
+      operationId: getAuctionsList
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: Filter auctions by status.
+          required: false
+          schema:
+            type: string
+            default: open
+            enum:
+              - open
+              - closed
+        - name: rarity
+          in: query
+          description: Filter auctions by type of gacha item.
+          required: false
+          schema:
+            $ref: '#/components/schemas/GachaRarity'
+        - name: page_number
+          in: query
+          description: Page number of the list.
+          required: false
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+      responses:
+        '200':
+          description: List of auctions, filtered.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AuctionId'
+        '400':
+          description: Invalid query parameters
+        '500':
+          description: Internal server error
+  /auctions/status/{auction_uuid}:
+    get:
+      tags:
+        - auctions
+      summary: Retrieve info on specific auction.
+      description: Returns info on the auction with a specific id.
+      operationId: getAuctionStatus
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: auction_uuid
+          in: path
+          description: The id of the auction to obtain info
+          required: true
+          schema:
+            $ref: '#/components/schemas/AuctionId'
+      responses:
+        '200':
+          description: The auction required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Auction'
+        '404':
+          description: Auction not found
+        '500':
+          description: Internal server error
+  /auctions/create:
+    post:
+      tags:
+        - auctions
+      summary: Creates an auction.
+      description: Creates an auction for an item in player's inventory.
+      operationId: createAuction
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: starting_price
+          in: query
+          description: The starting price of the auction.
+          required: false
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 1000000
+        - name: inventory_item_owner_id
+          in: query
+          description: The owner id of the item.
+          required: true
+          schema:
+            $ref: '#/components/schemas/UserId'
+        - name: inventory_item_id
+          in: query
+          description: The inventory item id.
+          required: true
+          schema:
+            $ref: '#/components/schemas/ItemId'
+      responses:
+        '200':
+          description: Auction created successfully.
+        '400':
+          description: Invalid query parameters.
+        '404':
+          description: Item in player's inventory not found.
+        '500':
+          description: Internal server error.
+  /auctions/bid/{auction_uuid}:
+    post:
+      tags:
+        - auctions
+      summary: Bids on an open auction
+      description: Sends a bid to an open auction, if the user has enough currency.
+      operationId: bidOnAuction
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: auction_uuid
+          in: path
+          description: Id of the auction to bid on.
+          required: true
+          schema:
+            $ref: '#/components/schemas/AuctionId'
+        - name: bid
+          in: query
+          description: Bid value.
+          required: true
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+      responses:
+        '200':
+          description: Bid sent successfully.
+        '400':
+          description: Invalid query parameters.
+        '403':
+          description: Auction is closed.
+        '406':
+          description: Insufficient funds.
+        '500':
+          description: Internal server error.
+
+
+
+  ############################################
+  ################### PVP ####################
+  ############################################
+  /pvp/health_check:
+    get:
+      tags:
+      - pvp
+      description: Returns 200 if service is healthy.
+      responses:
+        '200':
+          description: Service operational.
+      summary: Gives information on service status.
+  /pvp/sendPvPRequest/{user_uuid}:
+    post:
+      tags:
+        - pvp
+      summary: Sends a PvP match request.
+      description: Sends a requests to another player to initiate a PvP battle.
+      operationId: sendPVPRequest
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: user_uuid
+          in: path
+          description: The player's UUID to send the battle request to.
+          required: true
+          schema:
+            $ref: '#/components/schemas/UserId'
+      requestBody:
+        description: Specify the team to battle the player with.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Team'
+      responses:
+        '200':
+          description: Request to fight sent successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PvPRequest'
+        '400':
+          description: Player's UUID not found.
+        '500':
+          description: Internal server error.
+  /pvp/checkPendingPvPRequests:
+    get:
+      tags:
+        - pvp
+      summary: Returns a list of pending PvP requests.
+      description: >-
+        If the current user has one or more pending requests, a list will be
+        returned. The current user's UUID is obtained via session cookie.
+      operationId: checkPendingPVPRequests
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The list containing requests for current user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PendingPvPRequests'
+        '400':
+          description: Invalid input data
+        '500':
+          description: Internal server error
+  /pvp/acceptPvPRequest/{pvp_match_uuid}:
+    post:
+      tags:
+        - pvp
+      summary: Accept a pending PvP request.
+      description: Allows a player to accept a PvP battle with another user.
+      operationId: acceptPVPRequest
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: pvp_match_uuid
+          in: path
+          description: The pending pvp request's match id.
+          required: true
+          schema:
+            $ref: '#/components/schemas/PvPMatchId'
+      requestBody:
+        description: Specify the team to battle the player with.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Team'
+      responses:
+        '200':
+          description: Battle started successfully.
+        '400':
+          description: Invalid pvp match id or team data.
+        '500':
+          description: Internal server error.
+  /pvp/rejectPvPRequest/{pvp_match_uuid}:
+    post:
+      tags:
+        - pvp
+      summary: Rejects a pending PvP request.
+      description: Allows a player to reject a PvP battle with another user.
+      operationId: rejectPVPrequest
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: pvp_match_uuid
+          in: path
+          description: The pending pvp request's match id.
+          required: true
+          schema:
+            $ref: '#/components/schemas/PvPMatchId'
+      responses:
+        '200':
+          description: Battle rejected successfully.
+        '400':
+          description: Invalid pvp match id.
+        '500':
+          description: Internal server error.
+  /pvp/status/{pvp_match_uuid}:
+    get:
+      tags:
+        - pvp
+      summary: Returns the results of a PvP match.
+      description: Allows a player to view the results of the match.
+      operationId: getPVPStatus
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: pvp_match_uuid
+          in: path
+          description: The pending pvp request's match id.
+          required: true
+          schema:
+            $ref: '#/components/schemas/PvPMatchId'
+      responses:
+        '200':
+          description: Match results found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PvPRequest'
+        '400':
+          description: Invalid match id.
+        '500':
+          description: Internal server error.
+
+
+
+  ############################################
+  ################ INVENTORY #################
+  ############################################
+  /inventory/health_check:
+    get:
+      tags:
+      - inventory
+      description: Returns 200 if service is healthy.
+      responses:
+        '200':
+          description: Service operational.
+      summary: Gives information on service status.
+  /inventory:
+    get:
+      tags:
+        - inventory
+      summary: Retrieve player's inventory
+      description: Returns a list of gacha items currently owned by the player.
+      operationId: getInventory
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: page_number
+          in: query
+          description: Page number of the list.
+          required: false
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InventoryItem'
+        '400':
+          description: Invalid request.
+        '500':
+          description: Internal server error
+    delete:
+      tags:
+        - inventory
+      summary: Removes an item from player's inventory
+      description: Returns a list of gacha items currently owned by the player.
+      operationId: removeInventoryItem
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: inventory_item_owner_id
+          in: query
+          schema:
+            $ref: '#/components/schemas/UserId'
+        - name: inventory_item_id
+          in: query
+          schema:
+            $ref: '#/components/schemas/ItemId'
+      responses:
+        '200':
+          description: Item removed from inventory
+        '404':
+          description: Item not found.
+        '500':
+          description: Internal server error
+  /inventory/{inventory_item_id}:
+    get:
+      tags:
+        - inventory
+      summary: Shows infos on my inventory item.
+      description: Returns infos on my inventory item.
+      operationId: getInventoryItemInfo
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: inventory_item_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ItemId'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InventoryItem'
+        '500':
+          description: Internal server error
+
+
+
+  ############################################
+  ################## GACHA ###################
+  ############################################
+  /gacha/health_check:
+    get:
+      tags:
+      - gacha
+      description: Returns 200 if service is healthy.
+      responses:
+        '200':
+          description: Service operational.
+      summary: Gives information on service status.
+  /gacha/pull/{pool_id}:
+    post:
+      tags:
+        - gacha
+      summary: Pull a random gacha from a specific pool.
+      description: >-
+        Allows a player to pull a random gacha item from a specified pool.
+        Consumes in-game currency.
+      operationId: pullGacha
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: pool_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/PoolId'
+      responses:
+        '200':
+          description: Successful pull
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Gacha'
+        '403':
+          description: Insufficient funds.
+        '500':
+          description: Internal server error.
+  /gacha/{gacha_uuid}:
+    get:
+      tags:
+        - gacha
+      summary: Shows infos on a gacha.
+      description: Returns infos on a gacha.
+      operationId: getGachaInfo
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: gacha_uuid
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/GachaId'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Gacha'
+        '404':
+          description: Gacha type not found.
+        '500':
+          description: Internal server error
+  /gacha/pools:
+    get:
+      tags:
+        - gacha
+      summary: Lists available pools.
+      description: Returns a list of available gacha pools.
+      operationId: getPoolInfo
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pool'
+        '500':
+          description: Internal server error
+  /gacha/list:
+    get:
+      tags:
+        - gacha
+      summary: Lists all gachas.
+      description: Returns a list of all gachas.
+      operationId: getGachas
+      parameters:
+        - name: not_owned
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pool'
+        '500':
+          description: Internal server error
+
+
+
+  ############################################
+  ################# CURRENCY #################
+  ############################################
+  /currency/health_check:
+    get:
+      tags:
+      - currency
+      description: Returns 200 if service is healthy.
+      responses:
+        '200':
+          description: Service operational.
+      summary: Gives information on service status.
+  /currency/bundles:
+    get:
+      tags:
+        - currency
+      summary: Lists available bundles to buy currency.
+      description: Returns a list of available bundles
+      operationId: getBundles
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Bundle'
+        '500':
+          description: Internal server error
+  /currency/buy/{bundle_id}:
+    post:
+      tags:
+        - currency
+      summary: Buy in-game credits
+      description: Allows a player to purchase in-game credits using real-world currency.
+      operationId: buyCurrency
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: bundle_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/BundleId'
+      responses:
+        '200':
+          description: Purchase successful.
+        '400':
+          description: Purchase failed.
+        '500':
+          description: Internal server error.
+
+
+
+  ############################################
+  ################# PROFILE ##################
+  ############################################
+  /profile/health_check:
+    get:
+      tags:
+      - profile
+      description: Returns 200 if service is healthy.
+      responses:
+        '200':
+          description: Service operational.
+      summary: Gives information on service status.
+  /profile/{uuid}/info:
+    get:
+      tags:
+        - profile
+      summary: Returns infos about a UUID.
+      description: Allows to retrieve the profile of a user by UUID.
+      operationId: getUserInfo
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UserId'
+      responses:
+        '200':
+          description: User profile.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid username.
+        '404':
+          description: Username not found.
+        '500':
+          description: Internal server error.
+  /profile/delete:
+    post:
+      tags:
+        - profile
+      summary: Deletes this account.
+      description: Allows a user to delete their account.
+      operationId: deleteProfile
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Password"
+      responses:
+        '200':
+          description: Account deleted.
+        '400':
+          description: Invalid password.
+        '403':
+          description: Not logged in.
+        '500':
+          description: Internal server error.
+  /profile/edit:
+    put:
+      tags:
+        - profile
+      summary: Edits properties of the profile.
+      description: Allows a user to edit their profile.
+      operationId: editProfile
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  $ref: "#/components/schemas/Email"
+                username:
+                  $ref: '#/components/schemas/Username'
+                password:
+                  $ref: "#/components/schemas/Password"
+      responses:
+        '200':
+          description: Profile updated.
+        '400':
+          description: Invalid fields.
+        '403':
+          description: Not logged in.
+        '500':
+          description: Internal server error.
+
+
+
+  ############################################
+  ################### AUTH ###################
+  ############################################
+  /auth/health_check:
+    get:
+      tags:
+      - auth
+      description: Returns 200 if service is healthy.
+      summary: Gives information on service status.
+      responses:
+        '200':
+          description: Service operational.
+  /auth/login:
+    post:
+      tags:
+        - auth
+      summary: Log in into an account.
+      description: Logs a user into the game. Accepts username and password.
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  $ref: '#/components/schemas/Username'
+                password:
+                  $ref: "#/components/schemas/Password"
+              required:
+                - username
+                - password
+      responses:
+        '200':
+          description: Login successful.
+        '400':
+          description: Invalid request.
+        '401':
+          description: Invalid credentials.
+        '409':
+          description: You are already logged in.
+        '500':
+          description: Internal server error.
+        '503':
+          description: Service unavailable. Please try again later.
+  /auth/logout:
+    delete:
+      tags:
+        - auth
+      summary: Logs out from an account.
+      description: Allows an account to log out.
+      operationId: logout
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Logout successful.
+        '403':
+          description: Not logged in.
+        '500':
+          description: Internal server error.
+  /auth/register:
+    post:
+      tags:
+        - auth
+      summary: Registers a new account.
+      description: Registers a new user account with username, email, and password.
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  $ref: '#/components/schemas/Username'
+                email:
+                  $ref: '#/components/schemas/Email'
+                password:
+                  $ref: "#/components/schemas/Password"
+              required:
+                - username
+                - email
+                - password
+      responses:
+        '201':
+          description: Registration successful.
+        '400':
+          description: Invalid request.
+        '401':
+          description: You are already logged in.
+        '406':
+          description: The specified email is not valid.
+        '409':
+          description: The provided username / email is already in use.
+        '500':
+          description: Internal server error.
+        '503':
+          description: Service unavailable. Please try again later.
+
+
+
+  ############################################
+  ################### ADMIN ##################
+  ############################################
+  /admin/health_check:
+    get:
+      tags:
+      - admin
+      description: Returns 200 if service is healthy.
+      responses:
+        '200':
+          description: Service operational.
+      summary: Gives information on service status.
+  /admin/profile/list:
+    get:
+      tags:
+        - admin
+      summary: Returns all profiles.
+      description: Allows to retrieve all profiles, paginated.
+      operationId: getAllProfiles
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: page_number
+          in: query
+          description: Page number of the list.
+          required: false
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+      responses:
+        '200':
+          description: User profile.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid username.
+        '401':
+          description: This account is not authorized to perform this action.
+        '404':
+          description: Username not found.
+        '500':
+          description: Internal server error.
+  /admin/profile/{user_uuid}/edit:
+    put:
+      tags:
+        - admin
+      summary: Edits properties of a profile.
+      description: Allows an admin to edit a user's profile.
+      operationId: editUserProfile
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: user_uuid
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UserId'
+        - name: email
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Email'
+        - name: username
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Username'
+      responses:
+        '200':
+          description: Profile updated.
+        '400':
+          description: Invalid fields.
+        '401':
+          description: This account is not authorized to perform this action.
+        '403':
+          description: Not logged in.
+        '500':
+          description: Internal server error.
+  /admin/profile/{user_uuid}/ban:
+    delete:
+      tags:
+        - admin
+      summary: Deletes a profile.
+      description: Allows an admin to delete a user's profile.
+      operationId: banProfile
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: user_uuid
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UserId'
+      responses:
+        '200':
+          description: Profile deleted.
+        '400':
+          description: Invalid fields.
+        '401':
+          description: This account is not authorized to perform this action.
+        '403':
+          description: Not logged in.
+        '500':
+          description: Internal server error.
+  /admin/profile/{user_uuid}/history:
+    get:
+      tags:
+        - admin
+      summary: Returns history of a user.
+      description: Allows to retrieve history of a user.
+      operationId: getUserHistory
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: user_uuid
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UserId'
+        - name: history_type
+          in: query
+          description: Type of history to show.
+          required: true
+          schema:
+            enum:
+              - bundle
+              - ingame
+        - name: page_number
+          in: query
+          description: Page number of the list.
+          required: false
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+      responses:
+        '200':
+          description: User transaction history.
+        '400':
+          description: Invalid username.
+        '401':
+          description: This account is not authorized to perform this action.
+        '404':
+          description: Username not found.
+        '500':
+          description: Internal server error.
+  /admin/gacha/create:
+    post:
+      tags:
+        - admin
+      summary: Creates a gacha.
+      description: Allows the creation of a gacha.
+      operationId: createGacha
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Gacha'
+      responses:
+        '200':
+          description: Gacha created.
+        '400':
+          description: Invalid fields.
+        '401':
+          description: This account is not authorized to perform this action.
+        '403':
+          description: Not logged in.
+        '500':
+          description: Internal server error.
+  /admin/gacha/{gacha_uuid}/update:
+    put:
+      tags:
+        - admin
+      summary: Updates a gacha.
+      description: Allows the update of a gacha.
+      operationId: updateGacha
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: gacha_uuid
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/GachaId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Gacha'
+      responses:
+        '200':
+          description: Gacha updated.
+        '400':
+          description: Invalid fields.
+        '401':
+          description: This account is not authorized to perform this action.
+        '403':
+          description: Not logged in.
+        '500':
+          description: Internal server error.
+  /admin/gacha/{gacha_uuid}/delete:
+    delete:
+      tags:
+        - admin
+      summary: Deletes a gacha.
+      description: Allows the deletion of a gacha.
+      operationId: deleteGacha
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: gacha_uuid
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/GachaId'
+      responses:
+        '200':
+          description: Gacha deleted.
+        '400':
+          description: Invalid fields.
+        '401':
+          description: This account is not authorized to perform this action.
+        '403':
+          description: Not logged in.
+        '500':
+          description: Internal server error.
+  /admin/pool/create:
+    post:
+      tags:
+        - admin
+      summary: Creates a pool.
+      description: Allows the creation of a pool.
+      operationId: createPool
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Pool'
+      responses:
+        '200':
+          description: Pool created.
+        '400':
+          description: Invalid fields.
+        '401':
+          description: This account is not authorized to perform this action.
+        '403':
+          description: Not logged in.
+        '500':
+          description: Internal server error.
+  /admin/pool/{pool_id}/update:
+    put:
+      tags:
+        - admin
+      summary: Updates a pool.
+      description: Allows the update of a pool.
+      operationId: updatePool
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: pool_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/PoolId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Pool'
+      responses:
+        '200':
+          description: Pool updated.
+        '400':
+          description: Invalid fields.
+        '401':
+          description: This account is not authorized to perform this action.
+        '403':
+          description: Not logged in.
+        '500':
+          description: Internal server error.
+  /admin/pool/{pool_id}/delete:
+    delete:
+      tags:
+        - admin
+      summary: Deletes a pool.
+      description: Allows the deletion of a pool.
+      operationId: deletePool
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: pool_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/PoolId'
+      responses:
+        '200':
+          description: Pool deleted.
+        '400':
+          description: Invalid fields.
+        '401':
+          description: This account is not authorized to perform this action.
+        '403':
+          description: Not logged in.
+        '500':
+          description: Internal server error.
+  /admin/auctions/{auction_uuid}/update:
+    put:
+      tags:
+        - admin
+      summary: Updates an auction.
+      description: Allows the update of an auction.
+      operationId: updateAuction
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: auction_uuid
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/AuctionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Auction'
+      responses:
+        '200':
+          description: Auction updated.
+        '400':
+          description: Invalid fields.
+        '401':
+          description: This account is not authorized to perform this action.
+        '403':
+          description: Not logged in.
+        '500':
+          description: Internal server error.
+  /admin/logs/:
+    get:
+      tags:
+        - admin
+      summary: Returns the system logs.
+      description: Allows to retrieve logs of the system.
+      operationId: getSystemLogs
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Latest system logs.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+        '401':
+          description: This account is not authorized to perform this action.
+        '500':
+          description: Internal server error.
+  /admin/feedback/list:
+    get:
+      tags:
+      - admin
+      summary: Returns all feedbacks.
+      description: Allows to retrieve all feedbacks, paginated.
+      operationId: get_all_feedbacks
+      parameters:
+      - name: session
+        in: cookie
+        required: true
+        schema:
+          type: string
+      - name: page_number
+        in: query
+        description: Page number of the list.
+        required: false
+        schema:
+          default: 1
+          minimum: 1
+          type: integer
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/FeedbackId'
+                type: array
+          description: Feedback Ids.
+        '400':
+          description: Invalid username.
+        '401':
+          description: This account is not authorized to perform this action.
+        '404':
+          description: Feedbacks not found.
+        '500':
+          description: Internal server error.
+  /admin/feedback/{feedback_id}:
+    get:
+      tags:
+      - admin
+      summary: Shows infos on a feedback.
+      description: Returns infos on a feedback.
+      operationId: get_feedback_info
+      parameters:
+      - name: session
+        in: cookie
+        required: true
+        schema:
+          type: string
+      - name: feedback_id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/FeedbackId'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Feedback'
+          description: Successful operation
+        '404':
+          description: Feedback not found
+        '500':
+          description: Internal server error
+
+components:
+  schemas:
+    FeedbackId:
+      description: Id of feedback.
+      title: id
+      type: integer
+    Feedback:
+      properties:
+        id:
+          $ref: '#/components/schemas/FeedbackId'
+        user_uuid:
+          $ref: '#/components/schemas/UserId'
+        content:
+          description: Actual feedback content.
+          example: I love this game11!
+          title: content
+          type: string
+        timestamp:
+          description: Timestamp when user created feedback
+          format: date-time
+          title: timestamp
+          type: string
+      title: Feedback
+      type: object
+    GachaStat:
+      type: string
+      example: A
+      pattern: ^[A-Ea-e]$
+      description: Stat of a gacha.
+    BundleId:
+      type: string
+      example: bundle_amazing
+      pattern: ^[a-zA-Z0-9_]+$
+      description: Internal code-name for the bundle.
+    CurrencyName:
+      type: string
+      description: Currency code-name
+      pattern: ^[A-Z]{3}$
+      example: EUR
+    CurrencyItem:
+      type: object
+      properties:
+        name:
+          $ref: '#/components/schemas/CurrencyName'
+        value:
+          type: integer
+          default: 10
+          example: 10
+          description: Amount of real currency.
+          minimum: 0
+          maximum: 999
+    Bundle:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/BundleId'
+        name:
+          type: string
+          example: Amazing Bundle
+          description: Visible name of the bundle.
+        amount:
+          type: integer
+          description: No. of credits.
+          example: 5000
+        prices:
+          type: array
+          description: List of prices in different currencies.
+          items:
+            $ref: '#/components/schemas/CurrencyItem'
+    PoolId:
+      type: string
+      example: pool_starter
+      pattern: ^[a-zA-Z0-9_]+$
+      description: Internal code-name for the pool.
+    Pool:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/PoolId'
+        name:
+          type: string
+          example: Starter Pool
+          description: Visible name of the pool.
+        price:
+          type: integer
+          example: 15
+          minimum: 1
+          description: In-game price to pull a gacha from this pool
+        probabilities:
+          $ref: '#/components/schemas/RarityProbability'
+        items:
+          type: array
+          description: List of gacha items in the pool.
+          items:
+            $ref: '#/components/schemas/GachaId'
+    RarityProbability:
+      type: object
+      properties:
+        commonProbability:
+          type: number
+          format: float
+          default: 0.5
+        rareProbability:
+          type: number
+          format: float
+          default: 0.3
+        epicProbability:
+          type: number
+          format: float
+          default: 0.15
+        legendaryProbability:
+          type: number
+          format: float
+          default: 0.05
+    GachaRarity:
+      type: string
+      enum:
+        - common
+        - rare
+        - epic
+        - legendary
+      example: rare
+      description: Rarity level of the gacha
+    UserId:
+      type: string
+      format: uuid
+      description: UUID of user.
+    Username:
+      type: string
+      minLength: 5
+      pattern: ^[a-zA-Z0-9_]+$
+      example: LeoPanta01_
+      description: The user's username. Must be at least 5 characters long and contain only letters, numbers, and underscores.
+    Email:
+      type: string
+      description: The user's email.
+      example: l.pantani5@studenti.unipi.it
+    Password:
+      type: string
+      minLength: 8
+      example: Th1s_c4n_b3_a_good_passw0rd...maybe
+      description: The user's password must be at least 8 characters and can accept all characters.
+    AuctionStatus:
+      type: string
+      default: open
+      enum:
+        - open
+        - closed
+    ItemId:
+      type: string
+      format: uuid
+      description: UUID of single item.
+    AuctionId:
+      type: string
+      format: uuid
+      description: UUID of the auction.
+    Auction:
+      type: object
+      properties:
+        auction_uuid:
+          $ref: '#/components/schemas/AuctionId'
+        status:
+          $ref: '#/components/schemas/AuctionStatus'
+        inventory_item_owner_id:
+          $ref: '#/components/schemas/UserId'
+        inventory_item_id:
+          $ref: '#/components/schemas/ItemId'
+        starting_price:
+          type: number
+          format: float
+          description: Initial price set for the auction
+        current_bid:
+          type: number
+          format: float
+          description: Current highest bid
+        current_bidder:
+          $ref: '#/components/schemas/UserId'
+        end_time:
+          type: string
+          format: date-time
+          description: When the auction ends, in UTC timestamp
+    User:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/UserId'
+        username:
+          $ref: '#/components/schemas/Username'
+        email:
+          $ref: '#/components/schemas/Email'
+        joindate:
+          type: string
+          format: date-time
+          description: Timestamp when user created their account
+    GachaId:
+      type: string
+      format: uuid
+      description: UUID of the gacha
+    Gacha:
+      type: object
+      properties:
+        gacha_uuid:
+          $ref: '#/components/schemas/GachaId'
+        name:
+          type: string
+          description: Name of the gacha
+          example: Tower of Gray
+        rarity:
+          $ref: '#/components/schemas/GachaRarity'
+        attributes:
+          type: object
+          properties:
+            power:
+              $ref: '#/components/schemas/GachaStat'
+            speed:
+              $ref: '#/components/schemas/GachaStat'
+            durability:
+              $ref: '#/components/schemas/GachaStat'
+            precision:
+              $ref: '#/components/schemas/GachaStat'
+            range:
+              $ref: '#/components/schemas/GachaStat'
+            potential:
+              $ref: '#/components/schemas/GachaStat'
+          required:
+            - power
+            - speed
+            - durability
+            - precision
+            - range
+            - potential
+          additionalProperties:
+            type: string
+    Team:
+      type: object
+      properties:
+        gachas:
+          type: array
+          minItems: 7
+          maxItems: 7
+          items:
+            $ref: '#/components/schemas/Gacha'
+      description: Team used by players to battle each others.
+    PvPMatchId:
+      type: string
+      format: uuid
+      description: UUID of the PvP match.
+    MatchPairing:
+      type: object
+      properties:
+        pair:
+          type: string
+          example: player1 StarPlatinum vs player2 GoldenExperience
+        extracted_stat:
+          $ref: "#/components/schemas/GachaStat"
+        player1:
+          type: object
+          properties:
+            stand_stat:
+              type: integer
+              minimum: 1
+              maximum: 5
+              example: 4
+              description: Value of extracted_stat
+        player2:
+          type: object
+          properties:
+            stand_stat:
+              type: integer
+              minimum: 1
+              maximum: 5
+              example: 3
+              description: Value of extracted_stat
+    MatchLog:
+      type: object
+      description: Infos on a specific match
+      properties:
+        pairings:
+          type: array
+          minimum: 7
+          maximum: 7
+          items:
+            $ref: "#/components/schemas/MatchPairing"
+    PvPRequest:
+      type: object
+      properties:
+        pvp_match_uuid:
+          $ref: '#/components/schemas/PvPMatchId'
+        sender_id:
+          $ref: '#/components/schemas/UserId'
+        receiver_id:
+          $ref: '#/components/schemas/UserId'
+        winner_id:
+          $ref: '#/components/schemas/UserId'
+        match_log:
+          $ref: '#/components/schemas/MatchLog'
+        match_timestamp:
+          type: string
+          format: date-time
+          description: Match timestamp.
+      description: Request of a PvP match sent by a player.
+    PendingPvPRequests:
+      type: object
+      properties:
+        requests:
+          type: array
+          minItems: 0
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/PvPRequest'
+      description: List of pending pvp requests.
+    InventoryItem:
+      type: object
+      properties:
+        owner_id:
+          $ref: '#/components/schemas/UserId'
+        item_id:
+          $ref: '#/components/schemas/ItemId'
+        gacha_uuid:
+          type: string
+          format: uuid
+          description: UUID representing a gacha
+        pull_date:
+          type: string
+          format: date-time
+          description: Timestamp of first obtainment
+        obtained_date:
+          type: string
+          format: date-time
+          description: Timestamp of latest obtainment
+        owners_no:
+          type: integer
+          description: Number of previous owners of this item
+        price_paid:
+          type: number
+          format: float
+          description: Game currency used to buy this item

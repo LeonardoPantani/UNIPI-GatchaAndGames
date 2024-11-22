@@ -124,11 +124,13 @@ Ogni servizio contiene:
 Costruire le immagini Docker:
 
 ```bash
+just db
 docker compose build
 ```
 
 Avviare i container Docker:
 
+Per vedere i log di un particolare servizio:
 ```bash
 docker compose up
 ```

@@ -1,32 +1,313 @@
 services:
+  api_gateway_public:
+    image: nginx:alpine
+    container_name: api_gateway_public_gachaandgames
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./api_gateway_public/api_gateway.conf:/etc/nginx/nginx.conf:ro
+      - ./favicon.ico:/usr/share/nginx/html/favicon.ico:ro
+    depends_on:
+      - service_admin
+      - service_auctions
+      - service_auth
+      - service_currency
+      - service_feedback
+      - service_gacha
+      - service_inventory
+      - service_profile
+    #  - service_pvp
+    restart: always
+    networks:
+      - public_gachaandgames_network
+
+  api_gateway_private:
+    image: nginx:alpine
+    container_name: api_gateway_private_gachaandgames
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./api_gateway_private/api_gateway.conf:/etc/nginx/nginx.conf:ro
+      - ./favicon.ico:/usr/share/nginx/html/favicon.ico:ro
+    depends_on:
+      - service_admin
+      - service_auctions
+      - service_auth
+      - service_currency
+      - service_feedback
+      - service_gacha
+      - service_inventory
+      - service_profile
+    #  - service_pvp
+    restart: always
+    networks:
+      - private_gachaandgames_network
+
   db:
     image: db_gachaandgames
-    container_name: mysql_db_gachaandgames
+    container_name: unipi-gatchaandgames-database
     build: ./database/
     ports:
-      - "127.0.0.1:3306:3306"
+      - "3306"
     env_file: "database/db.env"
     volumes:
       - mysql_gatchaandgames_db:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
-      timeout: 1s
-      interval: 1s
-      retries: 20
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      start_period: 35s
+      interval: 5s
+      timeout: 3s
+      retries: 3
+    restart: always
+    networks:
+      - private_gachaandgames_network
+      - public_gachaandgames_network # to remove
 
-  api:
-    image: api_gachaandgames
-    container_name: app_api_gachaandgames
-    build: ./openapi_server/
+  db_manager:
+    image: db_manager_gachaandgames
+    build: ./db_manager/
     ports:
-      - "127.0.0.1:8080:8080"
-    env_file: "openapi_server/api.env"
+      - "8080"
+    env_file: ./db_manager/.env
+    volumes:
+      - ./db_manager:/usr/src/app/
     depends_on:
       db:
         condition: service_healthy
-    links:
-      - db
     tty: true
+    restart: always
+    networks:
+      - private_gachaandgames_network
+      - public_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/db_manager/health_check"]
+      start_period: 5s
+      interval: 15s
+      timeout: 3s
+      retries: 3
+    deploy:
+      replicas: 1
 
+  service_admin:
+    image: service_admin
+    build: ./services/admin/
+    ports:
+      - "8080"
+    env_file: ./services/admin/.env
+    volumes:
+      - ./services/admin:/usr/src/app/
+    depends_on:
+      db_manager:
+        condition: service_healthy
+    tty: true
+    restart: always
+    networks:
+      - private_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/admin/health_check"]
+      start_period: 10s
+      interval: 1m
+      timeout: 3s
+      retries: 3
+    deploy:
+      replicas: 1
+
+  service_auth:
+    image: service_auth
+    build: ./services/auth/
+    ports:
+      - "8080"
+    env_file: ./services/auth/.env
+    volumes:
+      - ./services/auth:/usr/src/app/
+    depends_on:
+      db_manager:
+        condition: service_healthy
+    tty: true
+    restart: always
+    networks:
+      - public_gachaandgames_network
+      - private_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/auth/health_check"]
+      start_period: 10s
+      interval: 1m
+      timeout: 3s
+      retries: 3
+    deploy:
+      replicas: 1
+  
+  service_auctions:
+    image: service_auctions
+    build: ./services/auctions/
+    ports:
+      - "8080"
+    env_file: ./services/auctions/.env
+    volumes:
+      - ./services/auctions:/usr/src/app/
+    depends_on:
+      db_manager:
+        condition: service_healthy
+    tty: true
+    restart: always
+    networks:
+      - public_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/auctions/health_check"]
+      start_period: 10s
+      interval: 1m
+      timeout: 3s
+      retries: 3
+    deploy:
+      replicas: 1
+  
+  service_currency:
+    image: service_currency
+    build: ./services/currency/
+    ports:
+      - "8080"
+    env_file: ./services/currency/.env
+    volumes:
+      - ./services/currency:/usr/src/app/
+    depends_on:
+      db_manager:
+        condition: service_healthy
+    tty: true
+    restart: always
+    networks:
+      - public_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/currency/health_check"]
+      start_period: 10s
+      interval: 1m
+      timeout: 3s
+      retries: 3
+    deploy:
+      replicas: 1
+
+  service_feedback:
+    image: service_feedback
+    build: ./services/feedback/
+    ports:
+      - "8080"
+    env_file: ./services/feedback/.env
+    volumes:
+      - ./services/feedback:/usr/src/app/
+    depends_on:
+      db_manager:
+        condition: service_healthy
+    tty: true
+    restart: always
+    networks:
+      - public_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/feedback/health_check"]
+      start_period: 10s
+      interval: 1m
+      timeout: 3s
+      retries: 3
+    deploy:
+      replicas: 1
+
+  service_gacha:
+    image: service_gacha
+    build: ./services/gacha/
+    ports:
+      - "8080"
+    env_file: ./services/gacha/.env
+    volumes:
+      - ./services/gacha:/usr/src/app/
+    depends_on:
+      db_manager:
+        condition: service_healthy
+    tty: true
+    restart: always
+    networks:
+      - public_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/gacha/health_check"]
+      start_period: 10s
+      interval: 1m
+      timeout: 3s
+      retries: 3
+    deploy:
+      replicas: 1
+
+  service_inventory:
+    image: service_inventory
+    build: ./services/inventory/
+    ports:
+      - "8080"
+    env_file: ./services/inventory/.env
+    volumes:
+      - ./services/inventory:/usr/src/app/
+    depends_on:
+      db_manager:
+        condition: service_healthy
+    tty: true
+    restart: always
+    networks:
+      - public_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/inventory/health_check"]
+      start_period: 10s
+      interval: 1m
+      timeout: 3s
+      retries: 3
+    deploy:
+      replicas: 1
+
+  service_profile:
+    image: service_profile
+    build: ./services/profile/
+    ports:
+      - "8080"
+    env_file: ./services/profile/.env
+    volumes:
+      - ./services/profile:/usr/src/app/
+    depends_on:
+      db_manager:
+        condition: service_healthy
+    tty: true
+    restart: always
+    networks:
+      - public_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/profile/health_check"]
+      start_period: 10s
+      interval: 1m
+      timeout: 3s
+      retries: 3
+    deploy:
+      replicas: 1
+
+  # 22/11/2024: Suspended because still WIP
+  # service_pvp:
+  #   image: service_pvp
+  #   build: ./services/pvp/
+  #   ports:
+  #     - "8080"
+  #   env_file: ./services/pvp/.env
+  #   volumes:
+  #     - ./services/pvp:/usr/src/app/
+  #   depends_on:
+  #     db_manager:
+  #       condition: service_healthy
+  #   tty: true
+  #   restart: always
+  #   networks:
+  #     - public_gachaandgames_network
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:8080/pvp/health_check"]
+  #     start_period: 10s
+  #     interval: 1m
+  #     timeout: 3s
+  #     retries: 3
+  #   deploy:
+  #     replicas: 1
+
+networks:
+  private_gachaandgames_network:
+  public_gachaandgames_network:
 volumes:
   mysql_gatchaandgames_db:

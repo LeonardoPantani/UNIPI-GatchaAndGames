@@ -1,109 +1,138 @@
 USE gacha_test_db;
 
-CREATE TABLE USERS (
-    ID INT AUTO_INCREMENT PRIMARY KEY,
-    EMAIL VARCHAR(255) NOT NULL UNIQUE,
-    PASSWORD_HASH VARCHAR(255) NOT NULL,
-    ROLE ENUM('USER', 'ADMIN') NOT NULL,
-    UUID CHAR(36) UNIQUE NOT NULL
+CREATE TABLE users (
+    uuid BINARY(16),
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    role ENUM('USER', 'ADMIN') NOT NULL,
+    PRIMARY KEY (uuid)
 );
 
-CREATE TABLE PROFILE (
-    UUID CHAR(36) PRIMARY KEY,
-    USERNAME VARCHAR(100) NOT NULL,
-    CURRENCY INT DEFAULT 0,
-    PVP_SCORE INT DEFAULT 0,
-    CREATED_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (UUID) REFERENCES USERS(UUID)
+CREATE TABLE profiles (
+    uuid BINARY(16),
+    username VARCHAR(100) NOT NULL UNIQUE,
+    currency INT DEFAULT 0,
+    pvp_score INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (uuid),
+    FOREIGN KEY (uuid) REFERENCES users(uuid)
 );
 
-CREATE TABLE PACKET_TRANSACTIONS (
-    USER_ID INT,
-    TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    PACKET_ID INT,
-    FOREIGN KEY (USER_ID) REFERENCES USERS(ID)
+CREATE TABLE bundles (
+    codename VARCHAR(100),
+    currency_name VARCHAR(3),
+    public_name VARCHAR(200) NOT NULL, 
+    credits_obtained INT NOT NULL,
+    price DECIMAL(15,2) NOT NULL,
+    PRIMARY KEY (codename, currency_name)
 );
 
-CREATE TABLE CURRENCY_TRANSACTIONS (
-    TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    USER_ID INT,
-    AMOUNT DECIMAL(10, 2) NOT NULL,
-    TYPE ENUM('DEBIT', 'CREDIT') NOT NULL,
-    FOREIGN KEY (USER_ID) REFERENCES USERS(ID)
+-- users can buy ingame currency with predefined ingame currency bundles like:
+-- launch_event_bundle_novice [100 EUR or 110 USD or 450 PLN] -> 1000 coins
+-- launch_event_bundle_pro [300 EUR or 350 USD or 1300 PLN]  -> 100000 coins
+CREATE TABLE bundles_transactions (
+    bundle_codename VARCHAR(100),
+    bundle_currency_name VARCHAR(3),
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    user_uuid BINARY(16),
+    PRIMARY KEY (bundle_codename, bundle_currency_name, timestamp, user_uuid),
+    FOREIGN KEY (bundle_codename, bundle_currency_name) REFERENCES bundles(codename, currency_name),
+    FOREIGN KEY (user_uuid) REFERENCES profiles(uuid)
 );
 
-CREATE TABLE PURCHASABLE_PACKETS (
-    ID INT AUTO_INCREMENT PRIMARY KEY,
-    AMOUNT_OF_GAME_CURRENCY INT NOT NULL,
-    PRICE_IN_REAL_MONEY DECIMAL(10, 2) NOT NULL,
-    NAME VARCHAR(255) NOT NULL
+-- transactions can be of 4 types:
+-- > user buys a bundle (credits obtained, +)
+-- > user sells something on the market (credits obtained, +)
+-- > user buys something from the market (credits deduced, -)
+-- > user pulls a gacha from a pool (credits deduced, -)
+CREATE TABLE ingame_transactions (
+    user_uuid BINARY(16),
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    credits INT NOT NULL,
+    transaction_type ENUM('bought_bundle', 'sold_market', 'bought_market', 'gacha_pull') NOT NULL,
+    PRIMARY KEY (user_uuid, timestamp),
+    FOREIGN KEY (user_uuid) REFERENCES profiles(uuid)
 );
 
-CREATE TABLE PVP_MATCHES (
-    MATCH_ID INT AUTO_INCREMENT PRIMARY KEY,
-    PLAYER_1_ID INT,
-    PLAYER_2_ID INT,
-    WINNER_ID INT,
-    MATCH_LOG JSON,
-    TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    STANDS_USED JSON,
-    FOREIGN KEY (PLAYER_1_ID) REFERENCES USERS(ID),
-    FOREIGN KEY (PLAYER_2_ID) REFERENCES USERS(ID),
-    FOREIGN KEY (WINNER_ID) REFERENCES USERS(ID)
+CREATE TABLE pvp_matches (
+    match_uuid BINARY(16),
+    player_1_uuid BINARY(16),
+    player_2_uuid BINARY(16),
+    winner BINARY(1),
+    match_log JSON,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    gachas_types_used JSON,
+    PRIMARY KEY (match_uuid),
+    FOREIGN KEY (player_1_uuid) REFERENCES profiles(uuid),
+    FOREIGN KEY (player_2_uuid) REFERENCES profiles(uuid)
 );
 
-CREATE TABLE INVENTORY (
-    ID INT AUTO_INCREMENT PRIMARY KEY,
-    ITEM_ID INT,
-    USER_ID INT,
-    STAND_ID INT,
-    OBTAINED_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    NUMBER_OF_OWNERS INT NOT NULL,
-    PRICE_PAID DECIMAL(10, 2),
-    FOREIGN KEY (USER_ID) REFERENCES USERS(ID)
+CREATE TABLE gachas_types (
+    uuid BINARY(16),
+    name VARCHAR(255) NOT NULL,
+    stat_power INT NOT NULL,
+    stat_speed INT NOT NULL,
+    stat_durability INT NOT NULL,
+    stat_precision INT NOT NULL,
+    stat_range INT NOT NULL,
+    stat_potential INT NOT NULL,
+    rarity ENUM('COMMON', 'RARE', 'EPIC', 'LEGENDARY') NOT NULL,
+    release_date DATE NOT NULL,
+    PRIMARY KEY (uuid)
 );
 
-CREATE TABLE AUCTION_TABLE (
-    ID INT AUTO_INCREMENT PRIMARY KEY,
-    ITEM_ID INT,
-    STARTING_PRICE DECIMAL(10, 2) NOT NULL,
-    CURRENT_BID DECIMAL(10, 2),
-    CURRENT_BIDDER_ID INT,
-    END_TIME TIMESTAMP,
-    FOREIGN KEY (CURRENT_BIDDER_ID) REFERENCES USERS(ID)
+CREATE TABLE inventories (
+    item_uuid BINARY(16),
+    owner_uuid BINARY(16) NOT NULL,
+    stand_uuid BINARY(16) NOT NULL,
+    obtained_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    owners_no INT NOT NULL,
+    currency_spent INT NOT NULL,
+    PRIMARY KEY (item_uuid),
+    FOREIGN KEY (owner_uuid) REFERENCES profiles(uuid),
+    FOREIGN KEY (stand_uuid) REFERENCES gachas_types(uuid)
 );
 
-CREATE TABLE GACHA_TYPES (
-    ID INT AUTO_INCREMENT PRIMARY KEY,
-    NAME VARCHAR(255) NOT NULL,
-    POWER INT NOT NULL,
-    SPEED INT NOT NULL,
-    DURABILITY INT NOT NULL,
-    PREC INT NOT NULL,
-    RANG INT NOT NULL,
-    POTENTIAL INT NOT NULL,
-    RARITY ENUM('COMMON', 'RARE', 'EPIC', 'LEGENDARY') NOT NULL,
-    IMAGE_URL VARCHAR(255),
-    TIER INT NOT NULL,
-    RELEASE_DATE DATE
+CREATE TABLE auctions (
+    uuid BINARY(16),
+    item_uuid BINARY(16) NOT NULL,
+    starting_price INT NOT NULL,
+    current_bid INT,
+    current_bidder BINARY(16),
+    end_time TIMESTAMP NOT NULL,
+    PRIMARY KEY (uuid),
+    FOREIGN KEY (item_uuid) REFERENCES inventories(item_uuid),
+    FOREIGN KEY (current_bidder) REFERENCES profiles(uuid)
 );
 
-CREATE TABLE LOGS (
-    TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    REQUEST TEXT NOT NULL,
-    RESPONSE TEXT NOT NULL
+CREATE TABLE logs (
+    id INT AUTO_INCREMENT,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    value TEXT NOT NULL,
+    PRIMARY KEY (id)
 );
 
-CREATE TABLE FEEDBACKS (
-    UUID CHAR(36) PRIMARY KEY,
-    USER_ID INT,
-    CONTENT TEXT NOT NULL,
-    FOREIGN KEY (USER_ID) REFERENCES USERS(ID)
+CREATE TABLE feedbacks (
+    id INT AUTO_INCREMENT,
+    user_uuid BINARY(16) NOT NULL,
+    content TEXT NOT NULL,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    FOREIGN KEY (user_uuid) REFERENCES users(uuid)
 );
 
-CREATE TABLE GACHA_POOLS (
-    ID INT AUTO_INCREMENT PRIMARY KEY,
-    NAME VARCHAR(255) NOT NULL,
-    PROBABILITIES JSON,
-    ITEMS JSON
+CREATE TABLE gacha_pools (
+    codename VARCHAR(100),
+    public_name VARCHAR(200) NOT NULL,
+    probabilities JSON NOT NULL,
+    price INT NOT NULL,
+    PRIMARY KEY (codename)
+);
+
+CREATE TABLE gacha_pools_items (
+    codename VARCHAR(100),
+    gacha_uuid BINARY(16),
+    PRIMARY KEY (codename, gacha_uuid),
+    FOREIGN KEY (codename) REFERENCES gacha_pools(codename),
+    FOREIGN KEY (gacha_uuid) REFERENCES gachas_types(uuid)
 );

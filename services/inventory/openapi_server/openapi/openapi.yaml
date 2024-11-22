@@ -1,0 +1,196 @@
+openapi: 3.0.0
+info:
+  contact:
+    email: support@gachaandgames.it
+  description: |-
+    API for managing gacha items, auctions, PVP battles, currency, and user authentication.
+
+    Useful links:
+    - [Project repository](https://github.com/LeonardoPantani/UNIPI-GachaAndGames)
+  license:
+    name: GPL-3.0
+    url: https://www.gnu.org/licenses/gpl-3.0.html#license-text
+  title: Gacha System - OpenAPI 3.0
+  version: 1.0.0
+servers:
+- description: Local server
+  url: http://localhost:8080
+paths:
+  /inventory/health_check:
+    get:
+      description: Returns 200 if service is healthy.
+      operationId: health_check
+      responses:
+        "200":
+          description: Service OK
+      summary: Gives information on service status.
+      tags:
+      - inventory
+      x-openapi-router-controller: openapi_server.controllers.inventory_controller
+  /inventory/:
+    delete:
+      description: Returns a list of gacha items currently owned by the player.
+      operationId: remove_inventory_item
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: inventory_item_owner_id
+        required: false
+        schema:
+          $ref: '#/components/schemas/UserId'
+        style: form
+      - explode: true
+        in: query
+        name: inventory_item_id
+        required: false
+        schema:
+          $ref: '#/components/schemas/ItemId'
+        style: form
+      responses:
+        "200":
+          description: Item removed from inventory
+        "404":
+          description: Item not found.
+        "500":
+          description: Internal server error
+      summary: Removes an item from player's inventory
+      tags:
+      - inventory
+      x-openapi-router-controller: openapi_server.controllers.inventory_controller
+    get:
+      description: Returns a list of gacha items currently owned by the player.
+      operationId: get_inventory
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: Page number of the list.
+        explode: true
+        in: query
+        name: page_number
+        required: false
+        schema:
+          default: 1
+          minimum: 1
+          type: integer
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/InventoryItem'
+                type: array
+          description: Successful operation
+        "400":
+          description: Invalid request.
+        "500":
+          description: Internal server error
+      summary: Retrieve player's inventory
+      tags:
+      - inventory
+      x-openapi-router-controller: openapi_server.controllers.inventory_controller
+  /inventory/{inventory_item_id}:
+    get:
+      description: Returns infos on my inventory item.
+      operationId: get_inventory_item_info
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: path
+        name: inventory_item_id
+        required: true
+        schema:
+          $ref: '#/components/schemas/ItemId'
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/InventoryItem'
+                type: array
+          description: Successful operation
+        "500":
+          description: Internal server error
+      summary: Shows infos on my inventory item.
+      tags:
+      - inventory
+      x-openapi-router-controller: openapi_server.controllers.inventory_controller
+components:
+  schemas:
+    UserId:
+      description: UUID of user.
+      format: uuid
+      title: owner_id
+      type: string
+    ItemId:
+      description: UUID of single item.
+      format: uuid
+      title: item_id
+      type: string
+    InventoryItem:
+      example:
+        item_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        obtained_date: 2000-01-23T04:56:07.000+00:00
+        price_paid: 6.0274563
+        owner_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        gacha_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        pull_date: 2000-01-23T04:56:07.000+00:00
+        owners_no: 0
+      properties:
+        owner_id:
+          description: UUID of user.
+          format: uuid
+          title: owner_id
+          type: string
+        item_id:
+          description: UUID of single item.
+          format: uuid
+          title: item_id
+          type: string
+        gacha_uuid:
+          description: UUID representing a gacha
+          format: uuid
+          title: gacha_uuid
+          type: string
+        pull_date:
+          description: Timestamp of first obtainment
+          format: date-time
+          title: pull_date
+          type: string
+        obtained_date:
+          description: Timestamp of latest obtainment
+          format: date-time
+          title: obtained_date
+          type: string
+        owners_no:
+          description: Number of previous owners of this item
+          title: owners_no
+          type: integer
+        price_paid:
+          description: Game currency used to buy this item
+          format: float
+          title: price_paid
+          type: number
+      title: InventoryItem
+      type: object

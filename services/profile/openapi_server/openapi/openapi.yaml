@@ -1,0 +1,195 @@
+openapi: 3.0.0
+info:
+  contact:
+    email: support@gachaandgames.it
+  description: |-
+    API for managing gacha items, auctions, PVP battles, currency, and user authentication.
+
+    Useful links:
+    - [Project repository](https://github.com/LeonardoPantani/UNIPI-GachaAndGames)
+  license:
+    name: GPL-3.0
+    url: https://www.gnu.org/licenses/gpl-3.0.html#license-text
+  title: Gacha System - OpenAPI 3.0
+  version: 1.0.0
+servers:
+- description: Local server
+  url: http://localhost:8080
+paths:
+  /profile/health_check:
+    get:
+      description: Returns 200 if service is healthy.
+      operationId: health_check
+      responses:
+        "200":
+          description: Service OK
+      summary: Gives information on service status.
+      tags:
+      - profile
+      x-openapi-router-controller: openapi_server.controllers.profile_controller
+  /profile/delete:
+    post:
+      description: Allows a user to delete their account.
+      operationId: delete_profile
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/deleteProfile_request'
+        required: true
+      responses:
+        "200":
+          description: Account deleted.
+        "400":
+          description: Invalid password.
+        "403":
+          description: Not logged in.
+        "500":
+          description: Internal server error.
+      summary: Deletes this account.
+      tags:
+      - profile
+      x-openapi-router-controller: openapi_server.controllers.profile_controller
+  /profile/edit:
+    put:
+      description: Allows a user to edit their profile.
+      operationId: edit_profile
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/editProfile_request'
+        required: true
+      responses:
+        "200":
+          description: Profile updated.
+        "400":
+          description: Invalid fields.
+        "403":
+          description: Not logged in.
+        "500":
+          description: Internal server error.
+      summary: Edits properties of the profile.
+      tags:
+      - profile
+      x-openapi-router-controller: openapi_server.controllers.profile_controller
+  /profile/{uuid}/info:
+    get:
+      description: Allows to retrieve the profile of a user by UUID.
+      operationId: get_user_info
+      parameters:
+      - explode: false
+        in: path
+        name: uuid
+        required: true
+        schema:
+          $ref: '#/components/schemas/UserId'
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: User profile.
+        "400":
+          description: Invalid username.
+        "404":
+          description: Username not found.
+        "500":
+          description: Internal server error.
+      summary: Returns infos about a UUID.
+      tags:
+      - profile
+      x-openapi-router-controller: openapi_server.controllers.profile_controller
+components:
+  schemas:
+    UserId:
+      description: UUID of user.
+      format: uuid
+      title: id
+      type: string
+    Username:
+      description: The username of the user
+      example: LeoPanta01_
+      minLength: 5
+      pattern: "^[a-zA-Z0-9_]+$"
+      title: username
+      type: string
+    Email:
+      description: The user's email.
+      example: l.pantani5@studenti.unipi.it/
+      format: email
+      title: email
+      type: string
+    User:
+      example:
+        joindate: 2000-01-23T04:56:07.000+00:00
+        id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        email: l.pantani5@studenti.unipi.it/
+        username: LeoPanta01_
+      properties:
+        id:
+          description: UUID of user.
+          format: uuid
+          title: id
+          type: string
+        username:
+          description: The username of the user
+          example: LeoPanta01_
+          minLength: 5
+          pattern: "^[a-zA-Z0-9_]+$"
+          title: username
+          type: string
+        email:
+          description: The user's email.
+          example: l.pantani5@studenti.unipi.it/
+          format: email
+          title: email
+          type: string
+        joindate:
+          description: Timestamp when user created their account
+          format: date-time
+          title: joindate
+          type: string
+      title: User
+      type: object
+    deleteProfile_request:
+      properties:
+        password:
+          title: password
+          type: string
+      title: deleteProfile_request
+    editProfile_request:
+      properties:
+        email:
+          title: email
+          type: string
+        username:
+          description: The username of the user
+          example: LeoPanta01_
+          minLength: 5
+          pattern: "^[a-zA-Z0-9_]+$"
+          title: username
+          type: string
+        password:
+          title: password
+          type: string
+      title: editProfile_request
+      type: object
