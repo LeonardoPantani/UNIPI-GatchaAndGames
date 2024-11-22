@@ -276,15 +276,21 @@ def delete_gacha_pool(body=None): # TODO controllare dipendenze tra elementi nel
             connection = mysql.connect()
             cursor = connection.cursor()
 
-            query = "DELETE FROM gacha_pools WHERE codename = %s"
-            cursor.execute(query, (pool_id,))
+            cursor.execute(
+                "DELETE FROM gacha_pools_items WHERE codename = %s",
+                (pool_id,)
+            )
+            cursor.execute(
+                "DELETE FROM gacha_pools WHERE codename = %s",
+                (pool_id,)
+            )
             connection.commit()
             return cursor.rowcount
 
         if make_request_to_db() == 0:
             return jsonify({"error": "Pool not found."}), 404
 
-        return "", 201
+        return "", 200
     except OperationalError: # if connect to db fails means there is an error in the db
         logging.error("Query ["+ pool_id +"]: Operational error.")
         return "", 500
@@ -323,6 +329,28 @@ def delete_gacha_type(): # TODO controllare dipendenze tra elementi nel db
         def make_request_to_db():
             connection = mysql.connect()
             cursor = connection.cursor()
+
+            cursor.execute('''
+                            UPDATE profiles SET currency = currency + (
+                                SELECT current_bid
+                                FROM auctions
+                                WHERE item_uuid IN (
+                                    SELECT item_uuid FROM inventories WHERE owner_uuid = UUID_TO_BIN(%s)
+                                )
+                            )
+                            WHERE uuid IN (
+                                SELECT current_bidder
+                                FROM auctions
+                                WHERE item_uuid IN (
+                                    SELECT item_uuid FROM inventories WHERE owner_uuid = UUID_TO_BIN(%s)
+                                )
+                            )
+                            ''',
+                            (gacha_uuid, gacha_uuid)
+            )
+
+            cursor.execute('DELETE FROM auctions WHERE item_uuid IN (SELECT item_uuid FROM inventories WHERE stand_uuid = UUID_TO_BIN(%s))', (gacha_uuid,))
+
 
             delete_query = "DELETE FROM gacha_pools_items WHERE gacha_uuid = UUID_TO_BIN(%s)"
             cursor.execute(delete_query, (gacha_uuid,))
