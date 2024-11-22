@@ -1,24 +1,31 @@
+import logging
 import connexion
+import uuid
+import bcrypt
+import json
+import requests
+import random
 from typing import Dict
 from typing import Tuple
 from typing import Union
 
-from openapi_server.models.pending_pv_p_requests import PendingPvPRequests  # noqa: E501
-from openapi_server.models.pv_p_request import PvPRequest  # noqa: E501
-from openapi_server.models.team import Team  # noqa: E501
+from openapi_server.models.pending_pv_p_requests import PendingPvPRequests
+from openapi_server.models.pv_p_request import PvPRequest
+from openapi_server.models.team import Team
 from openapi_server import util
 
 from flask import current_app, jsonify, request, session
-from flaskext.mysql import MySQL
-import uuid
-import random
-import json
+from pybreaker import CircuitBreaker, CircuitBreakerError
 
-def health_check():  # noqa: E501
+
+circuit_breaker = CircuitBreaker(fail_max=5, reset_timeout=5, exclude=[requests.HTTPError])
+
+
+def health_check():
     return jsonify({"message": "Service operational."}), 200
 
-def accept_pvp_request(pvp_match_uuid):  # noqa: E501
-    
+
+def accept_pvp_request(pvp_match_uuid): # TODO
     if 'username' not in session:
         return jsonify({"error": "Not logged in"}), 403
 
@@ -157,205 +164,165 @@ def accept_pvp_request(pvp_match_uuid):  # noqa: E501
         cursor.close()
         connection.close()
 
-def check_pending_pvp_requests():  # noqa: E501
-    # Step 1: Ensure user is logged in
+
+def check_pending_pvp_requests(): # TODO done, but waiting for new mock data for test
+    if 'username' not in session:
+        return jsonify({"error": "Not logged in"}), 403
+    
+    payload = {
+        "user_uuid": session["uuid"]
+    } 
+
+    # valid request from now on
+    try:
+
+        @circuit_breaker
+        def make_request_to_dbmanager():
+            url = "http://db_manager:8080/db_manager/pvp/check_pending_pvp_requests"
+            response = requests.post(url, json=payload)
+            response.raise_for_status()  # if response is obtained correctly
+            return response.json()
+
+        requests_list = make_request_to_dbmanager()
+
+        return requests_list, 200
+    except requests.HTTPError:  # if request is sent to dbmanager correctly and it answers an application error (to be managed here) [error expected by us]
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
+        return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:  # if request already failed multiple times, the circuit breaker is open and this code gets executed
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
+
+
+def get_pvp_status(pvp_match_uuid):
     if 'username' not in session:
         return jsonify({"error": "Not logged in"}), 403
 
-    try:
-        # Step 2: Get the MySQL connection from the application context
-        mysql = current_app.extensions.get('mysql')
-        if not mysql:
-            return jsonify({"error": "Database not initialized"}), 500
+    payload = {
+        "pvp_match_uuid": pvp_match_uuid
+    }
 
-        connection = mysql.connect()
-        cursor = connection.cursor()
-
-        # Step 3: Fetch pending PvP requests for the logged-in user
-        # /db_manager/pvp/check_pending_pvp_requests
-        logged_in_user_uuid = session['uuid']
-        check_query = '''
-            SELECT BIN_TO_UUID(match_uuid), BIN_TO_UUID(player_1_uuid), BIN_TO_UUID(player_2_uuid)
-            FROM pvp_matches
-            WHERE BIN_TO_UUID(player_2_uuid) = %s AND winner IS NULL;
-        '''
-        cursor.execute(check_query, (logged_in_user_uuid,))
-        pending_requests = cursor.fetchall()
-
-        # Step 4: Construct the response with pending requests
-        requests_list = []
-        for request in pending_requests:
-            match_uuid, sender_id, _ = request
-            requests_list.append({
-                "pvp_match_uuid": match_uuid,
-                "from": sender_id
-            })
-
-        return jsonify({"requests": requests_list}), 200
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-    finally:
-        cursor.close()
-        connection.close()
-
-def get_pvp_status(pvp_match_uuid):  # noqa: E501
-    if 'username' not in session:
-        return jsonify({"error": "Not logged in"}), 403
-
+    # valid request from now on
     try:
 
-        mysql = current_app.extensions.get('mysql')
-        if not mysql:
-            return jsonify({"error": "Database not initialized"}), 500
+        @circuit_breaker
+        def make_request_to_dbmanager():
+            url = "http://db_manager:8080/db_manager/pvp/get_pvp_status"
+            response = requests.post(url, json=payload)
+            response.raise_for_status()  # if response is obtained correctly
+            return response.json()
 
-        connection = mysql.connect()
-        cursor = connection.cursor()
-        
-        # /db_manager/pvp/get_pvp_status
-        cursor.execute(
-            'SELECT match_uuid, BIN_TO_UUID(player_1_uuid), BIN_TO_UUID(player_2_uuid), winner, match_log, timestamp FROM pvp_matches WHERE match_uuid = UUID_TO_BIN(%s)',
-            (pvp_match_uuid,)
-        )
-        _ , player1_uuid, player2_uuid, winner, match_log, timestamp = cursor.fetchone()
-        
-        if winner is not None:
-            if winner == 0:
-                winner_uuid = player1_uuid
-            else:
-                winner_uuid = player2_uuid
-            response = {
-                "pvp_match_uuid": pvp_match_uuid,
-                "sender_id": player1_uuid,
-                "receiver_id": player2_uuid,
-                "winner_id": winner_uuid,
-                "match_log": match_log,
-                "match_timestamp": timestamp
-            }
+        requests_list = make_request_to_dbmanager()
+
+        return requests_list, 200
+    except requests.HTTPError as e:  # if request is sent to dbmanager correctly and it answers an application error (to be managed here) [error expected by us]
+        if e.response.status_code == 404:
+            return jsonify({"error": "Match not found."}), 404
         else:
-            response = {
-                "pvp_match_uuid": pvp_match_uuid,
-                "sender_id": player1_uuid,
-                "receiver_id": player2_uuid,
-                "winner_id": "No winner yet",
-                "match_log": "Nothing to show here",
-                "match_timestamp": timestamp
-            }
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
+        return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:  # if request already failed multiple times, the circuit breaker is open and this code gets executed
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
-        return jsonify(response), 200
 
-    except Exception as e:
-        return jsonify({"error":str(e)}), 500
-
-    finally:
-        cursor.close()
-        connection.close()
-
-def reject_pv_prequest(pvp_match_uuid):  # noqa: E501
-    # Step 1: Ensure user is logged in
+def reject_pv_prequest(pvp_match_uuid): # TODO done, but waiting for new mock data for test
     if 'username' not in session:
         return jsonify({"error": "Not logged in"}), 403
 
+    payload = {
+        "pvp_match_uuid": pvp_match_uuid,
+        "user_uuid": session["uuid"]
+    }
+
+    # valid request from now on
     try:
-        # Step 2: Get the MySQL connection from the application context
-        mysql = current_app.extensions.get('mysql')
-        if not mysql:
-            return jsonify({"error": "Database not initialized"}), 500
 
-        connection = mysql.connect()
-        cursor = connection.cursor()
+        @circuit_breaker
+        def make_request_to_dbmanager():
+            url = "http://db_manager:8080/db_manager/pvp/reject_pvp_request"
+            response = requests.post(url, json=payload)
+            response.raise_for_status()  # if response is obtained correctly
+            return response.json()
 
-        # Delete the pending match request from the database
-        # /db_manager/pvp/reject_pvp_request
-        delete_query = '''
-            DELETE FROM pvp_matches 
-            WHERE BIN_TO_UUID(match_uuid) = %s AND player_2_uuid = UUID_TO_BIN(%s) AND winner IS NULL;
-        '''
-        cursor.execute(delete_query, (pvp_match_uuid, session['uuid']))
-        connection.commit()
-
-        if cursor.rowcount == 0:
-            return jsonify({"error": "Cannot reject this PvP request."}), 404
+        make_request_to_dbmanager()
 
         return jsonify({"message": "Battle rejected successfully."}), 200
+    except requests.HTTPError as e:  # if request is sent to dbmanager correctly and it answers an application error (to be managed here) [error expected by us]
+        if e.response.status_code == 404:
+            return jsonify({"error": "Cannot reject this PvP request."}), 404
+        else:
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
+        return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:  # if request already failed multiple times, the circuit breaker is open and this code gets executed
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
 
-    finally:
-        cursor.close()
-        connection.close()
-
-def send_pvp_request(user_uuid):  # noqa: E501
-    
+def send_pvp_request(user_uuid):
     if 'username' not in session:
-        return jsonify({"error": "Not logged in"}), 403
-    
+        return jsonify({"error": "Not logged in."}), 403
+
     if session['uuid'] == user_uuid:
         return jsonify({"error": "You cannot start a match with yourself."}), 406
 
-    # Extract gacha UUIDs from the team parameter
-    if connexion.request.is_json:
-        body_request = connexion.request.get_json()
-        team = body_request.get("gachas")
-    
-    if len(team) != 7:
-        return jsonify({"error": "Exactly 7 gacha items required"}), 400
+    team = connexion.request.get_json().get("gachas")
+
+    # valid request from now on
+    payload = {
+        "team": "(" + ",".join(team) + ")"
+    }
 
     try:
 
-        mysql = current_app.extensions.get('mysql')
-        if not mysql:
-            return jsonify({"error": "Database not initialized"}), 500
+        @circuit_breaker
+        def make_request_to_dbmanager():
+            url = "http://db_manager:8080/db_manager/pvp/verify_gacha_item_ownership"
+            response = requests.post(url, json=payload)
+            response.raise_for_status()  # if response is obtained correctly
+            return response.json()
 
-        connection = mysql.connect()
-        cursor = connection.cursor()
-
-        # Construct query with placeholders for the 7 UUIDs
-        # /db_manager/pvp/verify_gacha_item_ownership
-        placeholders = ', '.join(['%s'] * len(team))
-
-        query = f'SELECT DISTINCT BIN_TO_UUID(owner_uuid) FROM inventories WHERE BIN_TO_UUID(item_uuid) IN ({placeholders})'
-        # Execute query with the gacha UUIDs
-        cursor.execute(query, tuple(team))
-        owner_uuids = cursor.fetchall()
-        
-        if len(owner_uuids) != 1:
-            return jsonify({"error": "Gacha items do not belong to you"}), 401
-        
-        player1_uuid=owner_uuids[0][0]
+        player1_uuid = make_request_to_dbmanager()
         
         if player1_uuid != session['uuid']:
             return jsonify({"error": "Gacha items do not belong to you"}), 401
 
-        check_query = '''
-            SELECT COUNT(*) 
-            FROM profiles 
-            WHERE BIN_TO_UUID(uuid) = %s;
-        '''
-        cursor.execute(check_query, (user_uuid,))
-        result = cursor.fetchone()
+    except requests.HTTPError as e:  # if request is sent to dbmanager correctly and it answers an application error (to be managed here) [error expected by us]
+        if e.response.status_code == 401:
+            return jsonify({"error": "Gacha items do not belong to you."}), 404
+        else:
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
+        return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:  # if request already failed multiple times, the circuit breaker is open and this code gets executed
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
-        if result[0] != 1:
-            return jsonify({"error": "Player 2 not found in profiles"}), 404
-
-        # Step 2: Insert the new match into the pvp_matches table
-        # /db_manager/pvp/finalize_pvp_request_sending
-        insert_query = '''
-            INSERT INTO pvp_matches (match_uuid, player_1_uuid, player_2_uuid, winner, match_log, gachas_types_used)
-            VALUES (UUID_TO_BIN(%s), UUID_TO_BIN(%s), UUID_TO_BIN(%s), %s, %s, %s);
-        '''
+    
+    try:
         match_uuid = uuid.uuid4()
-        cursor.execute(insert_query, (match_uuid, player1_uuid, user_uuid, None, None, jsonify(team).get_data(as_text=True)))
+        payload = {
+            "pvp_match_uuid": match_uuid,
+            "sender_id": session['uuid'],
+            "receiver_id": user_uuid,
+            "teams": {
+                "team1": team,
+                "team2": None
+            },
+            "winner": None,
+            "match_log": None
+        }
 
-        connection.commit()
+        @circuit_breaker
+        def make_request_to_dbmanager():
+            url = "http://db_manager:8080/db_manager/pvp/finalize_pvp_request_sending"
+            response = requests.post(url, json=payload)
+            response.raise_for_status()  # if response is obtained correctly
+            return response.json()
 
-        return jsonify({"message":"Match request sent successfully " + str(match_uuid)}), 200
-
-    except Exception as e:
-        return jsonify({"error":str(e)}), 500
-
-    finally:
-        cursor.close()
-        connection.close()
+        player1_uuid = make_request_to_dbmanager()
+    except requests.HTTPError:  # if request is sent to dbmanager correctly and it answers an application error (to be managed here) [error expected by us]
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
+        return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:  # if request already failed multiple times, the circuit breaker is open and this code gets executed
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503

@@ -32,10 +32,10 @@ def admin_health_check_get():
 
 def ban_profile(user_uuid):
     if 'username' not in session or session.get('role') != 'ADMIN':
-        return jsonify({"error": "This account is not authorized to perform this action"}), 403
+        return jsonify({"error": "This account is not authorized to perform this action."}), 403
     
     if session.get('uuid') == user_uuid:
-        return jsonify({"error": "You cannot delete your account like this"}), 406
+        return jsonify({"error": "You cannot delete your account like this."}), 406
     
     try:
 
@@ -403,7 +403,6 @@ def update_auction(auction_uuid):
     
 
     # valid request from now on
-
     try:
         @circuit_breaker
         def make_request_to_dbmanager():
