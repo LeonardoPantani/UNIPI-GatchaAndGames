@@ -38,7 +38,7 @@ def delete_profile():
     payload = {
         "user_uuid": session["uuid"]
     }
-    print(payload)
+    
     user_password = ""
     try:
         @circuit_breaker

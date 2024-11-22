@@ -319,7 +319,7 @@ def get_pools_list():  # noqa: E501
             return "", code
         pools = []
         for pool in pool_list:
-            print(pool)
+
             def make_request_to_db():
                 connection = mysql.connect()
                 cursor = connection.cursor()

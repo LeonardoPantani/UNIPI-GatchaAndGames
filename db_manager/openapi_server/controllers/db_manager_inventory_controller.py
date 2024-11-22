@@ -173,8 +173,7 @@ def remove_item(get_inventory_item_request=None):  # noqa: E501
 
     user_uuid = get_inventory_item_request.user_uuid
     item_id = get_inventory_item_request.inventory_item_id
-    print(user_uuid)
-    print(item_id)
+
     mysql = current_app.extensions.get('mysql')
     try:
         @circuit_breaker
