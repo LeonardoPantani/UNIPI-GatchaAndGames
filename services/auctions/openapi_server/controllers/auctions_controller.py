@@ -247,7 +247,7 @@ def get_auction_status(auction_uuid):
                 payload = {
                     "item_uuid": auction['inventory_item_id'],
                     "current_bid": auction['current_bid'],
-                    "user_uuid": session["uuid"]
+                    "user_uuid": auction['current_bidder']
                 }
                 url = "http://db_manager:8080/db_manager/auctions/complete_sale"
                 response = requests.post(url, json=payload)

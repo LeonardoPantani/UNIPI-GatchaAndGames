@@ -38,7 +38,6 @@ def complete_auction_sale(complete_auction_sale_request=None):  # noqa: E501
     bidder_uuid = complete_auction_sale_request.user_uuid
 
     mysql = current_app.extensions.get('mysql')
-    connection = None
 
     try:
         @circuit_breaker
@@ -51,26 +50,27 @@ def complete_auction_sale(complete_auction_sale_request=None):  # noqa: E501
             )
             old_owner_uuid = cursor.fetchone()[0]
 
-            cursor.execute(
-                'UPDATE profiles SET currency = currency + %s WHERE uuid = UUID_TO_BIN(%s)',
-                (current_bid, old_owner_uuid)
-            )
+            if old_owner_uuid != bidder_uuid:
+                cursor.execute(
+                    'UPDATE profiles SET currency = currency + %s WHERE uuid = UUID_TO_BIN(%s)',
+                    (current_bid, old_owner_uuid)
+                )
+                
+                cursor.execute(
+                    'INSERT INTO ingame_transactions (user_uuid, credits, transaction_type) VALUES (UUID_TO_BIN(%s), %s, "sold_market")',
+                    (old_owner_uuid,current_bid)
+                )
 
-            cursor.execute(
-                'INSERT INTO ingame_transactions (user_uuid, credits, transaction_type) VALUES (UUID_TO_BIN(%s), %s, "sold_market")',
-                (old_owner_uuid,current_bid)
-            )
+                cursor.execute(
+                    'UPDATE inventories SET owner_uuid = UUID_TO_BIN(%s) WHERE item_uuid = UUID_TO_BIN(%s)',
+                    (bidder_uuid, item_uuid)
+                )
 
-            cursor.execute(
-                'UPDATE inventories SET owner_uuid = UUID_TO_BIN(%s) WHERE item_uuid = UUID_TO_BIN(%s)',
-                (bidder_uuid, item_uuid)
-            )
-
-            cursor.execute(
-                'INSERT INTO ingame_transactions (user_uuid, credits, transaction_type) VALUES (UUID_TO_BIN(%s), %s, "bought_market")',
-                (bidder_uuid, current_bid*(-1))
-            )
-            
+                cursor.execute(
+                    'INSERT INTO ingame_transactions (user_uuid, credits, transaction_type) VALUES (UUID_TO_BIN(%s), %s, "bought_market")',
+                    (bidder_uuid, current_bid*(-1))
+                )
+                connection.commit()
             return
         
         make_request_to_db()
@@ -84,8 +84,8 @@ def complete_auction_sale(complete_auction_sale_request=None):  # noqa: E501
         return "", 400
     except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
         logging.error("Query ["+ bidder_uuid + ", " + item_uuid +"]: Integrity error.")
-        if connection:
-            connection.rollback()
+        # if connection:
+        #     connection.rollback()
         return "", 409
     except DataError: # if data format is invalid or out of range or size
         logging.error("Query ["+ bidder_uuid + ", " + item_uuid +"]: Data error.")
