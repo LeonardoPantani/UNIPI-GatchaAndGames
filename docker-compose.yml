@@ -3,8 +3,9 @@ services:
     image: nginx:alpine
     container_name: api_gateway_public_gachaandgames
     ports:
-      - "8080:8080"
+      - "443:443"
     volumes:
+      - ./api_gateway_public/ssl:/etc/nginx/ssl/:ro
       - ./api_gateway_public/api_gateway.conf:/etc/nginx/nginx.conf:ro
       - ./favicon.ico:/usr/share/nginx/html/favicon.ico:ro
     depends_on:
@@ -25,8 +26,9 @@ services:
     image: nginx:alpine
     container_name: api_gateway_private_gachaandgames
     ports:
-      - "8081:8081"
+      - "444:444"
     volumes:
+      - ./api_gateway_private/ssl:/etc/nginx/ssl/:ro
       - ./api_gateway_private/api_gateway.conf:/etc/nginx/nginx.conf:ro
       - ./favicon.ico:/usr/share/nginx/html/favicon.ico:ro
     depends_on:
@@ -54,10 +56,10 @@ services:
       - mysql_gatchaandgames_db:/var/lib/mysql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      start_period: 35s
+      start_period: 10s
       interval: 5s
-      timeout: 3s
-      retries: 3
+      timeout: 2s
+      retries: 10
     restart: always
     networks:
       - private_gachaandgames_network
@@ -81,10 +83,10 @@ services:
       - public_gachaandgames_network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/db_manager/health_check"]
-      start_period: 5s
-      interval: 15s
-      timeout: 3s
-      retries: 3
+      start_period: 10s
+      interval: 10s
+      timeout: 2s
+      retries: 5
     deploy:
       replicas: 1
 
@@ -107,7 +109,7 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:8080/admin/health_check"]
       start_period: 10s
       interval: 1m
-      timeout: 3s
+      timeout: 2s
       retries: 3
     deploy:
       replicas: 1
@@ -132,7 +134,7 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:8080/auth/health_check"]
       start_period: 10s
       interval: 1m
-      timeout: 3s
+      timeout: 2s
       retries: 3
     deploy:
       replicas: 1
@@ -156,7 +158,7 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:8080/auctions/health_check"]
       start_period: 10s
       interval: 1m
-      timeout: 3s
+      timeout: 2s
       retries: 3
     deploy:
       replicas: 1
@@ -180,7 +182,7 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:8080/currency/health_check"]
       start_period: 10s
       interval: 1m
-      timeout: 3s
+      timeout: 2s
       retries: 3
     deploy:
       replicas: 1
@@ -204,7 +206,7 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:8080/feedback/health_check"]
       start_period: 10s
       interval: 1m
-      timeout: 3s
+      timeout: 2s
       retries: 3
     deploy:
       replicas: 1
@@ -228,7 +230,7 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:8080/gacha/health_check"]
       start_period: 10s
       interval: 1m
-      timeout: 3s
+      timeout: 2s
       retries: 3
     deploy:
       replicas: 1
@@ -252,7 +254,7 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:8080/inventory/health_check"]
       start_period: 10s
       interval: 1m
-      timeout: 3s
+      timeout: 2s
       retries: 3
     deploy:
       replicas: 1
@@ -276,7 +278,7 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:8080/profile/health_check"]
       start_period: 10s
       interval: 1m
-      timeout: 3s
+      timeout: 2s
       retries: 3
     deploy:
       replicas: 1
@@ -301,7 +303,7 @@ services:
   #     test: ["CMD", "curl", "-f", "http://localhost:8080/pvp/health_check"]
   #     start_period: 10s
   #     interval: 1m
-  #     timeout: 3s
+  #     timeout: 2s
   #     retries: 3
   #   deploy:
   #     replicas: 1

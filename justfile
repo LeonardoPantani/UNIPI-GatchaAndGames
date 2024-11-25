@@ -1,5 +1,5 @@
 db_container_name  := "unipi-gatchaandgames-database"
-allowed_services := "admin auctions auth currency feedback gacha inventory profile pvp dbmanager"
+allowed_services := "admin auctions auth currency feedback gacha inventory profile pvp dbmanager gwprivate gwpublic"
 
 default: up
 
@@ -93,12 +93,39 @@ logs service_name replica_number='1':
 	if [[ " $allowed_services " =~ (^|[[:space:]])"$service_name"($|[[:space:]]) ]]; then
 		if [[ "$service_name" == "dbmanager" ]]; then
 			container_name="unipi-gatchaandgames-db_manager-${replica_number}"
+		elif [[ "$service_name" == "gwprivate" ]]; then
+			container_name="api_gateway_private_gachaandgames"
+		elif [[ "$service_name" == "gwpublic" ]]; then
+			container_name="api_gateway_public_gachaandgames"
 		else
 			container_name="unipi-gatchaandgames-service_${service_name}-${replica_number}"
 		fi
 		echo "Showing logs for $container_name..."
-		echo "Press CTRL+C to exit."
+		echo "Press CTRL/CMD+C to exit."
 		docker logs -f $container_name
+	else
+		echo "Invalid service name. Must be one of: $allowed_services"
+		exit 1
+	fi
+
+shell service_name replica_number='1':
+	#!/bin/bash
+	allowed_services="{{allowed_services}}"
+	service_name="{{service_name}}"
+	replica_number="{{replica_number}}"
+	if [[ " $allowed_services " =~ (^|[[:space:]])"$service_name"($|[[:space:]]) ]]; then
+		if [[ "$service_name" == "dbmanager" ]]; then
+			container_name="unipi-gatchaandgames-db_manager-${replica_number}"
+		elif [[ "$service_name" == "gwprivate" ]]; then
+			container_name="api_gateway_private_gachaandgames"
+		elif [[ "$service_name" == "gwpublic" ]]; then
+			container_name="api_gateway_public_gachaandgames"
+		else
+			container_name="unipi-gatchaandgames-service_${service_name}-${replica_number}"
+		fi
+		echo "Opening shell for $container_name..."
+		echo "Type 'exit' to close it."
+		docker exec -it $container_name /bin/sh
 	else
 		echo "Invalid service name. Must be one of: $allowed_services"
 		exit 1

@@ -1,4 +1,4 @@
-from flask import g
+from flask import g, current_app
 import mysql.connector
 
 def get_db():
