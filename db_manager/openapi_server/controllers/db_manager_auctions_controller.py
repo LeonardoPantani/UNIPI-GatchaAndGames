@@ -493,9 +493,10 @@ def list_auctions(list_auctions_request=None):
             # Determine the auction status
             status = "closed" if end_time < now else "open"
 
-            auctions.append({"auction_uuid": auction_uuid})
+            auctions.append(auction_uuid)
         
-        return jsonify(auctions), 200
+        payload = {"auctions":auctions}
+        return jsonify(payload), 200
 
     except OperationalError:
         logging.error("Query: Operational error.")

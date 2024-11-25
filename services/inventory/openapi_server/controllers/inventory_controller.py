@@ -87,7 +87,7 @@ def remove_inventory_item():
     item_id = connexion.request.args.get('inventory_item_id')
     if not item_id:
         return jsonify({"error": "Missing inventory_item_id parameter"}), 400
-        
+    
     user_uuid = session.get('uuid')
     if not user_uuid:
         return jsonify({"error": "Not logged in"}), 403

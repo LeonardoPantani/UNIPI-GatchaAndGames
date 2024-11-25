@@ -107,7 +107,7 @@ def pull_gacha(pool_id):
     
 
     if currency["currency"] < price:
-        return jsonify({"error": "Not enough credits"}), 403
+        return jsonify({"error": "Not enough credits"}), 401
 
     item_list = pool["items"]
     if item_list == []:

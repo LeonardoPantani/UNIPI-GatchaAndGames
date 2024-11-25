@@ -162,7 +162,7 @@ def create_auction():
         
         item = make_request_to_dbmanager()
         if item['owner_id'] != session['uuid']:
-            return jsonify({"error": "This item is not yours."}), 403
+            return jsonify({"error": "This item is not yours."}), 401
         
     except requests.HTTPError as e:
         if e.response.status_code == 404:
@@ -203,7 +203,7 @@ def create_auction():
     
     except requests.HTTPError as e:
         if e.response.status_code == 409:
-            return jsonify({"error": "Another auction on the same item is still active"}), 409
+            return jsonify({"error": "Another auction on the same item is still active."}), 409
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
     except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
         return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
@@ -270,7 +270,7 @@ def get_auction_status(auction_uuid):
 def get_auctions_history(page_number=None):  
     
     if 'username' not in session:
-        return jsonify({"error": "Not logged in"}), 403
+        return jsonify({"error": "Not logged in."}), 403
     
     user_uuid=session['uuid']
     page_number = int(request.args.get('page_number', 1))
