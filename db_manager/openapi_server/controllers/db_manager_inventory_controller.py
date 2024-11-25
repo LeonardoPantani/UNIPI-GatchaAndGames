@@ -8,9 +8,13 @@ from openapi_server.models.get_user_involved_auctions_request import GetUserInvo
 from openapi_server.models.inventory_item import InventoryItem
 from openapi_server import util
 
-from flask import current_app, jsonify
-from pymysql.err import OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError
+from flask import jsonify
+from mysql.connector.errors import (
+    OperationalError, DataError, DatabaseError, IntegrityError,
+    InterfaceError, InternalError, ProgrammingError
+)
 from pybreaker import CircuitBreaker, CircuitBreakerError
+from openapi_server.helpers.db import get_db
 import logging
 
 # circuit breaker to stop requests when dbmanager fails
@@ -26,11 +30,10 @@ def get_inventory_item(get_inventory_item_request=None):
     user_uuid = get_inventory_item_request.user_uuid
     item_id = get_inventory_item_request.inventory_item_id
 
-    mysql = current_app.extensions.get('mysql')
     try:
         @circuit_breaker
         def make_request_to_db():
-            connection = mysql.connect()
+            connection = get_db()
             cursor = connection.cursor()
             cursor.execute('''
                 SELECT 
@@ -62,28 +65,28 @@ def get_inventory_item(get_inventory_item_request=None):
 
         return jsonify(payload), 200
     
-    except OperationalError: # if connect to db fails means there is an error in the db
+    except OperationalError:
         logging.error("Query ["+ item_id +"]: Operational error.")
         return "", 500
-    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+    except ProgrammingError:
         logging.error("Query ["+ item_id +"]: Programming error.")
         return "", 500
-    except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
+    except IntegrityError:
         logging.error("Query ["+ item_id +"]: Integrity error.")
         return "", 500
     except DataError: # if data format is invalid or out of range or size
         logging.error("Query ["+ item_id +"]: Data error.")
         return "", 500
-    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+    except InternalError:
         logging.error("Query ["+ item_id +"]: Internal error.")
         return "", 500
-    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+    except InterfaceError:
         logging.error("Query ["+ item_id +"]: Interface error.")
         return "", 500
-    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+    except DatabaseError:
         logging.error("Query ["+ item_id +"]: Database error.")
         return "", 500
-    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError:
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return "", 503
 
@@ -96,11 +99,10 @@ def get_user_inventory_items(get_user_involved_auctions_request=None):
     user_uuid = get_user_inventory_request.user_uuid
     page_number = get_user_inventory_request.page_number
 
-    mysql = current_app.extensions.get('mysql')
     try:
         @circuit_breaker
         def make_request_to_db():
-            connection = mysql.connect()
+            connection = get_db()
             cursor = connection.cursor()
 
             items_per_page = 10
@@ -137,28 +139,28 @@ def get_user_inventory_items(get_user_involved_auctions_request=None):
             
         return jsonify(inventory_items), 200
 
-    except OperationalError: # if connect to db fails means there is an error in the db
+    except OperationalError:
         logging.error("Query ["+ user_uuid +"]: Operational error.")
         return "", 500
-    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+    except ProgrammingError:
         logging.error("Query ["+ user_uuid +"]: Programming error.")
         return "", 500
-    except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
+    except IntegrityError:
         logging.error("Query ["+ user_uuid +"]: Integrity error.")
         return "", 500
     except DataError: # if data format is invalid or out of range or size
         logging.error("Query ["+ user_uuid +"]: Data error.")
         return "", 500
-    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+    except InternalError:
         logging.error("Query ["+ user_uuid +"]: Internal error.")
         return "", 500
-    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+    except InterfaceError:
         logging.error("Query ["+ user_uuid +"]: Interface error.")
         return "", 500
-    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+    except DatabaseError:
         logging.error("Query ["+ user_uuid +"]: Database error.")
         return "", 500
-    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError:
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return "", 503       
 
@@ -172,11 +174,10 @@ def remove_item(get_inventory_item_request=None):
     user_uuid = get_inventory_item_request.user_uuid
     item_id = get_inventory_item_request.inventory_item_id
 
-    mysql = current_app.extensions.get('mysql')
     try:
         @circuit_breaker
         def make_request_to_db():
-            connection = mysql.connect()
+            connection = get_db()
             cursor = connection.cursor()
 
             cursor.execute('''
@@ -209,27 +210,27 @@ def remove_item(get_inventory_item_request=None):
         
         return "", 200
         
-    except OperationalError: # if connect to db fails means there is an error in the db
+    except OperationalError:
         logging.error("Query ["+ item_id +"]: Operational error.")
         return "", 500
-    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+    except ProgrammingError:
         logging.error("Query ["+ item_id +"]: Programming error.")
         return "", 500
-    except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
+    except IntegrityError:
         logging.error("Query ["+ item_id +"]: Integrity error.")
         return "", 500
     except DataError: # if data format is invalid or out of range or size
         logging.error("Query ["+ item_id +"]: Data error.")
         return "", 500
-    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+    except InternalError:
         logging.error("Query ["+ item_id +"]: Internal error.")
         return "", 500
-    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+    except InterfaceError:
         logging.error("Query ["+ item_id +"]: Interface error.")
         return "", 500
-    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+    except DatabaseError:
         logging.error("Query ["+ item_id +"]: Database error.")
         return "", 500
-    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError:
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return "", 503

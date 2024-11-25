@@ -3,7 +3,7 @@ import connexion
 from typing import Dict
 from typing import Tuple
 from typing import Union
-from flask import current_app, session, jsonify
+from flask import session, jsonify
 import logging
 import requests
 

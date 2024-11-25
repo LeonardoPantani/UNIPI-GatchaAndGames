@@ -1,11 +1,19 @@
 import connexion
 import logging
-from flask import current_app, jsonify
-from pymysql.err import OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError
+from flask import jsonify
+from mysql.connector.errors import (
+    OperationalError, DataError, DatabaseError, IntegrityError,
+    InterfaceError, InternalError, ProgrammingError
+)
 from pybreaker import CircuitBreaker, CircuitBreakerError
 
+from openapi_server.helpers.db import get_db
 
-circuit_breaker = CircuitBreaker(fail_max=5, reset_timeout=5, exclude=[OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError])
+circuit_breaker = CircuitBreaker(
+    fail_max=5,
+    reset_timeout=5,
+    exclude=[OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError]
+)
 
 
 def login():
@@ -16,13 +24,10 @@ def login():
     login_request = connexion.request.get_json()
     username = login_request.get("username")
 
-    mysql = current_app.extensions.get('mysql')
-
     try:
         @circuit_breaker
         def make_request_to_db():
-            # Query the database for user based on username in PROFILE and hash in USERS
-            connection = mysql.connect()
+            connection = get_db()
             cursor = connection.cursor()
             query = """
                 SELECT BIN_TO_UUID(u.uuid), u.uuid, u.email, p.username, u.role, u.password
@@ -48,22 +53,23 @@ def login():
             return jsonify(payload), 200
         else:
             return "", 404
-    except OperationalError: # if connect to db fails means there is an error in the db
+    except OperationalError:
         logging.error("Query ["+ username +"]: Operational error.")
         return "", 500
-    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+    except ProgrammingError:
         logging.error("Query ["+ username +"]: Programming error.")
         return "", 500
-    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+    except InternalError:
         logging.error("Query ["+ username +"]: Internal error.")
         return "", 500
-    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+    except InterfaceError as e:
         logging.error("Query ["+ username +"]: Interface error.")
+        print(e)
         return "", 500
-    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+    except DatabaseError:
         logging.error("Query ["+ username +"]: Database error.")
         return "", 500
-    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError:
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return "", 503
 
@@ -80,12 +86,11 @@ def register():
     password_hash = login_request.get("password")
     role = login_request.get("role")
 
-    mysql = current_app.extensions.get('mysql')
     connection = None
     try:
         @circuit_breaker
         def make_request_to_db():
-            connection = mysql.connect()
+            connection = get_db()
             cursor = connection.cursor()
             # Insert user in USERS table
             cursor.execute(
@@ -102,13 +107,13 @@ def register():
 
         make_request_to_db()
         return "", 201
-    except OperationalError: # if connect to db fails means there is an error in the db
+    except OperationalError:
         logging.error("Query ["+ user_uuid +", "+ username +"]: Operational error.")
         return "", 500
-    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+    except ProgrammingError:
         logging.error("Query ["+ user_uuid +", "+ username +"]: Programming error.")
         return "", 500
-    except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
+    except IntegrityError:
         logging.error("Query ["+ user_uuid +", "+ username +"]: Integrity error.")
         if connection:
             connection.rollback()
@@ -116,15 +121,15 @@ def register():
     except DataError: # if data format is invalid or out of range or size
         logging.error("Query ["+ user_uuid +", "+ username +"]: Data error.")
         return "", 500
-    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+    except InternalError:
         logging.error("Query ["+ user_uuid +", "+ username +"]: Internal error.")
         return "", 500
-    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+    except InterfaceError:
         logging.error("Query ["+ user_uuid +", "+ username +"]: Interface error.")
         return "", 500
-    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+    except DatabaseError:
         logging.error("Query ["+ user_uuid +", "+ username +"]: Database error.")
         return "", 401
-    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError:
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return "", 503

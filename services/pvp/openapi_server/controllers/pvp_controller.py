@@ -1,7 +1,6 @@
 import logging
 import connexion
 import uuid
-import bcrypt
 import json
 import requests
 import random
@@ -14,7 +13,7 @@ from openapi_server.models.pv_p_request import PvPRequest
 from openapi_server.models.team import Team
 from openapi_server import util
 
-from flask import current_app, jsonify, request, session
+from flask import jsonify, request, session
 from pybreaker import CircuitBreaker, CircuitBreakerError
 
 
@@ -48,7 +47,7 @@ def accept_pvp_request(pvp_match_uuid):
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
     except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
         return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
-    except CircuitBreakerError:  # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError: 
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
     player1_uuid = match_request["sender_id"]
@@ -86,7 +85,7 @@ def accept_pvp_request(pvp_match_uuid):
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
     except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
         return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
-    except CircuitBreakerError:  # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError: 
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
         
     if player2_uuid != user_uuid:
@@ -131,7 +130,7 @@ def accept_pvp_request(pvp_match_uuid):
             return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
         except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
             return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
-        except CircuitBreakerError:  # if request already failed multiple times, the circuit breaker is open and this code gets executed
+        except CircuitBreakerError: 
             return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
         # Store data in variables for comparison
@@ -203,7 +202,7 @@ def accept_pvp_request(pvp_match_uuid):
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
     except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
         return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
-    except CircuitBreakerError:  # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError: 
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
 
@@ -236,7 +235,7 @@ def check_pending_pvp_requests():
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
     except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
         return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
-    except CircuitBreakerError:  # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError: 
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
 
@@ -268,7 +267,7 @@ def get_pvp_status(pvp_match_uuid):
             return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
     except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
         return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
-    except CircuitBreakerError:  # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError: 
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
 
@@ -301,7 +300,7 @@ def reject_pv_prequest(pvp_match_uuid):
             return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
     except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
         return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
-    except CircuitBreakerError:  # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError: 
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
 
@@ -340,7 +339,7 @@ def send_pvp_request(user_uuid):
             return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
     except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
         return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
-    except CircuitBreakerError:  # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError: 
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
     try:
@@ -372,5 +371,5 @@ def send_pvp_request(user_uuid):
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
     except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
         return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
-    except CircuitBreakerError:  # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError: 
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503

@@ -69,7 +69,7 @@ def login():  # noqa: E501
             return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
     except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
         return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
-    except CircuitBreakerError:  # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError: 
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
 

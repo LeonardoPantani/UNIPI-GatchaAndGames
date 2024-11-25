@@ -59,7 +59,7 @@ def ban_profile(user_uuid):
         return jsonify(
             {"error": "Service unavailable. Please try again later. [RequestError]"}
         ), 503
-    except CircuitBreakerError:  # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError: 
         return jsonify(
             {
                 "error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"
@@ -108,7 +108,7 @@ def create_gacha():
         return jsonify(
             {"error": "Service unavailable. Please try again later. [RequestError]"}
         ), 503
-    except CircuitBreakerError:  # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError: 
         return jsonify(
             {
                 "error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"
@@ -150,7 +150,7 @@ def delete_gacha(gacha_uuid):  # TODO vanno rimosse le cose nel modo corretto
         return jsonify(
             {"error": "Service unavailable. Please try again later. [RequestError]"}
         ), 503
-    except CircuitBreakerError:  # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError: 
         return jsonify(
             {
                 "error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"
@@ -222,7 +222,7 @@ def create_pool():
         return jsonify(
             {"error": "Service unavailable. Please try again later. [RequestError]"}
         ), 503
-    except CircuitBreakerError:  # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError: 
         return jsonify(
             {
                 "error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"
@@ -264,7 +264,7 @@ def delete_pool(pool_id):  # TODO controllare dipendenze
         return jsonify(
             {"error": "Service unavailable. Please try again later. [RequestError]"}
         ), 503
-    except CircuitBreakerError:  # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError: 
         return jsonify(
             {
                 "error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"
@@ -309,7 +309,7 @@ def edit_user_profile(user_uuid, email=None, username=None):
         return jsonify(
             {"error": "Service unavailable. Please try again later. [RequestError]"}
         ), 503
-    except CircuitBreakerError:  # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError: 
         return jsonify(
             {
                 "error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"
@@ -353,7 +353,7 @@ def get_all_feedbacks(page_number=None):
         return jsonify(
             {"error": "Service unavailable. Please try again later. [RequestError]"}
         ), 503
-    except CircuitBreakerError:  # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError: 
         return jsonify(
             {
                 "error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"
@@ -397,7 +397,7 @@ def get_all_profiles(page_number=None):
         return jsonify(
             {"error": "Service unavailable. Please try again later. [RequestError]"}
         ), 503
-    except CircuitBreakerError:  # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError: 
         return jsonify(
             {
                 "error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"
@@ -445,7 +445,7 @@ def get_feedback_info(feedback_id=None):
         return jsonify(
             {"error": "Service unavailable. Please try again later. [RequestError]"}
         ), 503
-    except CircuitBreakerError:  # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError: 
         return jsonify(
             {
                 "error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"
@@ -505,7 +505,7 @@ def get_user_history(user_uuid, history_type, page_number=None):
         return jsonify(
             {"error": "Service unavailable. Please try again later. [RequestError]"}
         ), 503
-    except CircuitBreakerError:  # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError: 
         return jsonify(
             {
                 "error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"
@@ -576,7 +576,7 @@ def update_auction(auction_uuid):
         return jsonify(
             {"error": "Service unavailable. Please try again later. [RequestError]"}
         ), 503
-    except CircuitBreakerError:  # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError: 
         return jsonify(
             {
                 "error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"
@@ -631,7 +631,7 @@ def update_gacha(gacha_uuid):
         return jsonify(
             {"error": "Service unavailable. Please try again later. [RequestError]"}
         ), 503
-    except CircuitBreakerError:  # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError: 
         return jsonify(
             {
                 "error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"
@@ -712,7 +712,7 @@ def update_pool(pool_id):
         return jsonify(
             {"error": "Service unavailable. Please try again later. [RequestError]"}
         ), 503
-    except CircuitBreakerError:  # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError: 
         return jsonify(
             {
                 "error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"

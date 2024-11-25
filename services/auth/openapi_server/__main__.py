@@ -6,7 +6,7 @@ import time
 
 from openapi_server import encoder
 
-from flask import current_app, Flask
+from flask import Flask
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 

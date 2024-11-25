@@ -2,9 +2,13 @@ import connexion
 import logging
 from openapi_server.models.get_bundle_info_request import GetBundleInfoRequest
 from openapi_server.models.purchase_bundle_request import PurchaseBundleRequest
-from flask import current_app, jsonify
-from pymysql.err import OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError
+from flask import jsonify
+from mysql.connector.errors import (
+    OperationalError, DataError, DatabaseError, IntegrityError,
+    InterfaceError, InternalError, ProgrammingError
+)
 from pybreaker import CircuitBreaker, CircuitBreakerError
+from openapi_server.helpers.db import get_db
 
 
 
@@ -21,11 +25,10 @@ def get_bundle_info(get_bundle_info_request=None):
     # valid json request
     bundle_id = get_bundle_info_request.bundle_id
     
-    mysql = current_app.extensions.get('mysql')
     try:
         @circuit_breaker
         def make_request_to_db():
-            connection = mysql.connect()
+            connection = get_db()
             cursor = connection.cursor()
             # Get the bundle details from the database
             cursor.execute(
@@ -48,38 +51,37 @@ def get_bundle_info(get_bundle_info_request=None):
         }
 
         return payload, 200
-    except OperationalError: # if connect to db fails means there is an error in the db
+    except OperationalError:
         logging.error("Query ["+ bundle_id +"]: Operational error.")
         return "", 500
-    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+    except ProgrammingError:
         logging.error("Query ["+ bundle_id +"]: Programming error.")
         return "", 500
-    except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
+    except IntegrityError:
         logging.error("Query ["+ bundle_id +"]: Integrity error.")
         return "", 500
     except DataError: # if data format is invalid or out of range or size
         logging.error("Query ["+ bundle_id +"]: Data error.")
         return "", 500
-    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+    except InternalError:
         logging.error("Query ["+ bundle_id +"]: Internal error.")
         return "", 500
-    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+    except InterfaceError:
         logging.error("Query ["+ bundle_id +"]: Interface error.")
         return "", 500
-    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+    except DatabaseError:
         logging.error("Query ["+ bundle_id +"]: Database error.")
         return "", 500
-    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError:
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return "", 503
 
 
 def list_bundles():
-    mysql = current_app.extensions.get('mysql')
     try:
         @circuit_breaker
         def make_request_to_db():
-            connection = mysql.connect()
+            connection = get_db()
             cursor = connection.cursor()
             cursor.execute(""" 
                 SELECT codename, currency_name, public_name, credits_obtained, price
@@ -90,28 +92,28 @@ def list_bundles():
         ret = make_request_to_db()
 
         return ret, 200
-    except OperationalError: # if connect to db fails means there is an error in the db
+    except OperationalError:
         logging.error("Query: Operational error.")
         return "", 500
-    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+    except ProgrammingError:
         logging.error("Query: Programming error.")
         return "", 400
-    except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
+    except IntegrityError:
         logging.error("Query: Integrity error.")
         return "", 409
     except DataError: # if data format is invalid or out of range or size
         logging.error("Query: Data error.")
         return "", 400
-    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+    except InternalError:
         logging.error("Query: Internal error.")
         return "", 500
-    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+    except InterfaceError:
         logging.error("Query: Interface error.")
         return "", 500
-    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+    except DatabaseError:
         logging.error("Query: Database error.")
         return "", 500
-    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError:
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return "", 503
 
@@ -129,12 +131,11 @@ def purchase_bundle(purchase_bundle_request=None):
     credits_obtained = purchase_bundle_request.credits_obtained
     transaction_type_bundle_code = purchase_bundle_request.transaction_type_bundle_code
     
-    mysql = current_app.extensions.get('mysql')
     connection = None
     try:
         @circuit_breaker
         def make_request_to_db():
-            connection = mysql.connect()
+            connection = get_db()
             cursor = connection.cursor()
             cursor.execute(
                 'UPDATE profiles SET currency = currency + %s WHERE uuid = UUID_TO_BIN(%s)',
@@ -156,13 +157,13 @@ def purchase_bundle(purchase_bundle_request=None):
         make_request_to_db()
 
         return "", 200
-    except OperationalError: # if connect to db fails means there is an error in the db
+    except OperationalError:
         logging.error("Query ["+ user_uuid + ", " + bundle_codename +"]: Operational error.")
         return "", 500
-    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+    except ProgrammingError:
         logging.error("Query ["+ user_uuid + ", " + bundle_codename +"]: Programming error.")
         return "", 400
-    except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
+    except IntegrityError:
         logging.error("Query ["+ user_uuid + ", " + bundle_codename +"]: Integrity error.")
         if connection:
             connection.rollback()
@@ -170,15 +171,15 @@ def purchase_bundle(purchase_bundle_request=None):
     except DataError: # if data format is invalid or out of range or size
         logging.error("Query ["+ user_uuid + ", " + bundle_codename +"]: Data error.")
         return "", 400
-    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+    except InternalError:
         logging.error("Query ["+ user_uuid + ", " + bundle_codename +"]: Internal error.")
         return "", 500
-    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+    except InterfaceError:
         logging.error("Query ["+ user_uuid + ", " + bundle_codename +"]: Interface error.")
         return "", 500
-    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+    except DatabaseError:
         logging.error("Query ["+ user_uuid + ", " + bundle_codename +"]: Database error.")
         return "", 401
-    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError:
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return "", 503

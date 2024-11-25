@@ -1,6 +1,5 @@
 import connexion
 import uuid
-import bcrypt
 import requests
 import json
 import logging
@@ -13,12 +12,13 @@ from typing import Union
 from openapi_server.models.submit_feedback_request import SubmitFeedbackRequest  # noqa: E501
 from openapi_server import util
 
-from flask import current_app, jsonify, request, session
-from flaskext.mysql import MySQL
-
-from pymysql.err import OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError
-
+from flask import jsonify, request, session
+from mysql.connector.errors import (
+    OperationalError, DataError, DatabaseError, IntegrityError,
+    InterfaceError, InternalError, ProgrammingError
+)
 from pybreaker import CircuitBreaker, CircuitBreakerError
+from openapi_server.helpers.db import get_db
 
 
 
@@ -36,12 +36,11 @@ def submit_feedback(submit_feedback_request=None):
     feedback_request = submit_feedback_request.string
     user_uuid = submit_feedback_request.user_uuid
 
-    mysql = current_app.extensions.get('mysql')
 
     try:
         @circuit_breaker
         def make_request_to_db():
-            connection = mysql.connect()
+            connection = get_db()
             cursor = connection.cursor()
             cursor.execute(
                 'INSERT INTO feedbacks (user_uuid, content) VALUES (UUID_TO_BIN(%s), %s)',
@@ -52,15 +51,15 @@ def submit_feedback(submit_feedback_request=None):
         make_request_to_db()
         return "", 201
         
-    except OperationalError: # if connect to db fails means there is an error in the db
+    except OperationalError:
         return "", 500
-    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+    except ProgrammingError:
         return "", 500
-    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+    except InternalError:
         return "", 500
-    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+    except InterfaceError:
         return "", 500
-    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+    except DatabaseError:
         return "", 500
-    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError:
         return "", 503
