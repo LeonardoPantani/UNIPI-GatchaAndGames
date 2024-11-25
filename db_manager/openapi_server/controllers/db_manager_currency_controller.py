@@ -37,7 +37,7 @@ def get_bundle_info(get_bundle_info_request=None):
         bundle = make_request_to_db()
 
         if not bundle:
-            return jsonify({"error": "Bundle not found for the given codename."}), 404
+            return "", 404
         
         payload = {
             "codename": bundle[0],
@@ -53,13 +53,13 @@ def get_bundle_info(get_bundle_info_request=None):
         return "", 500
     except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
         logging.error("Query ["+ bundle_id +"]: Programming error.")
-        return "", 400
+        return "", 500
     except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
         logging.error("Query ["+ bundle_id +"]: Integrity error.")
-        return "", 409
+        return "", 500
     except DataError: # if data format is invalid or out of range or size
         logging.error("Query ["+ bundle_id +"]: Data error.")
-        return "", 400
+        return "", 500
     except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
         logging.error("Query ["+ bundle_id +"]: Internal error.")
         return "", 500
@@ -68,7 +68,7 @@ def get_bundle_info(get_bundle_info_request=None):
         return "", 500
     except DatabaseError: # default for any MySQL error which does not fit the other exceptions
         logging.error("Query ["+ bundle_id +"]: Database error.")
-        return "", 401
+        return "", 500
     except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return "", 503
@@ -110,7 +110,7 @@ def list_bundles():
         return "", 500
     except DatabaseError: # default for any MySQL error which does not fit the other exceptions
         logging.error("Query: Database error.")
-        return "", 401
+        return "", 500
     except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return "", 503
@@ -140,10 +140,12 @@ def purchase_bundle(purchase_bundle_request=None):
                 'UPDATE profiles SET currency = currency + %s WHERE uuid = UUID_TO_BIN(%s)',
                 (credits_obtained, user_uuid)
             )
+            # aggiungi 404
             cursor.execute(
                 'INSERT INTO bundles_transactions (bundle_codename, bundle_currency_name, user_uuid) VALUES (%s, %s, UUID_TO_BIN(%s))',
                 (bundle_codename, currency_name, user_uuid)
             )
+            # probabile integrity error, eventualmente restituire 409
             cursor.execute(
                 'INSERT INTO ingame_transactions (user_uuid, credits, transaction_type) VALUES (UUID_TO_BIN(%s), %s, %s)',
                 (user_uuid, credits_obtained, transaction_type_bundle_code)

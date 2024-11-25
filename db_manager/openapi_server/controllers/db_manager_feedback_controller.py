@@ -55,7 +55,7 @@ def submit_feedback(submit_feedback_request=None):
     except OperationalError: # if connect to db fails means there is an error in the db
         return "", 500
     except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
-        return "", 400
+        return "", 500
     except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
         return "", 500
     except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server

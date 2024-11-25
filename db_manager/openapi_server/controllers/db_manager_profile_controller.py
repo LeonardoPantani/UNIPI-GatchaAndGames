@@ -69,10 +69,10 @@ def delete_user_profile(ban_user_profile_request=None):
         return "", 500
     except ProgrammingError:
         logging.error(f"Query [{user_uuid}]: Programming error.")
-        return "", 400
+        return "", 500
     except IntegrityError:
         logging.error(f"Query [{user_uuid}]: Integrity error.")
-        return "", 409
+        return "", 500
     except InternalError:
         logging.error(f"Query [{user_uuid}]: Internal error.")
         return "", 500
@@ -115,7 +115,7 @@ def edit_user_info(edit_user_info_request=None):
                 return None
             
             # Update user information if provided
-            updates=0
+            updates = 0
 
             if email:
                 cursor.execute(
@@ -140,7 +140,7 @@ def edit_user_info(edit_user_info_request=None):
             return "", 404
             
         if result == 0:
-            return "", 304  # No changes made
+            return "", 304  # No changes applied
             
         return "", 200
 
@@ -149,10 +149,10 @@ def edit_user_info(edit_user_info_request=None):
         return "", 500
     except ProgrammingError:
         logging.error(f"Query [{user_uuid}]: Programming error.")
-        return "", 400
+        return "", 500
     except IntegrityError:
         logging.error(f"Query [{user_uuid}]: Integrity error.")
-        return "", 409
+        return "", 500
     except InternalError:
         logging.error(f"Query [{user_uuid}]: Internal error.")
         return "", 500
@@ -194,7 +194,7 @@ def get_user_hash_psw(ban_user_profile_request=None):
         if not result:
             return "", 404
         
-        return jsonify({"password": result[0]}), 200
+        return jsonify({"hashed_password": result[0]}), 200
 
     except OperationalError: # if connect to db fails means there is an error in the db
         logging.error("Query ["+ user_uuid +"]: Operational error.")
@@ -245,7 +245,7 @@ def get_user_info(ban_user_profile_request=None):
         if not result:
             return "", 404
 
-        user = User(
+        user = User( # aggiungere pvp score e currency
             id=result[0],
             username=result[1],
             email=result[2], 

@@ -70,7 +70,7 @@ def check_pending_pvp_requests(ban_user_profile_request=None):
         return "", 500
     except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
         logging.error("Query 1 ["+ user_uuid +"]: Programming error.")
-        return "", 400
+        return "", 500
     except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
         logging.error("Query 1 ["+ user_uuid +"]: Internal error.")
         return "", 500
@@ -113,14 +113,14 @@ def finalize_pvp_request_sending(pv_p_request_full=None):
         
         result = make_request_to_db()
         if result[0] != 1:
-            return jsonify({"error": "Player 2 not found in profiles"}), 404
+            return "", 404
         
     except OperationalError:  # if connect to db fails means there is an error in the db
         logging.error("Query 1 ["+ user_uuid + "]: Operational error.")
         return "", 500
     except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
         logging.error("Query 1 ["+ user_uuid +"]: Programming error.")
-        return "", 400
+        return "", 500
     except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
         logging.error("Query 1 ["+ user_uuid +"]: Internal error.")
         return "", 500
@@ -154,12 +154,12 @@ def finalize_pvp_request_sending(pv_p_request_full=None):
         return "", 500
     except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
         logging.error("Query 2 ["+ user_uuid +"]: Programming error.")
-        return "", 400
+        return "", 500
     except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
         logging.error("Query 2 ["+ user_uuid +"]: Integrity error.")
         if connection:
             connection.rollback()
-        return "", 409
+        return "", 500
     except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
         logging.error("Query 2 ["+ user_uuid +"]: Internal error.")
         return "", 500
@@ -216,7 +216,7 @@ def get_gacha_stat(get_gacha_stat_request=None):
         return "", 500
     except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
         logging.error("Query : Programming error.")
-        return "", 400
+        return "", 500
     except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
         logging.error("Query : Internal error.")
         return "", 500
@@ -297,7 +297,7 @@ def get_pvp_status(get_pvp_status_request=None):
         return "", 500
     except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
         logging.error("Query ["+ pvp_match_uuid +"]: Programming error.")
-        return "", 400
+        return "", 500
     except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
         logging.error("Query ["+ pvp_match_uuid +"]: Internal error.")
         return "", 500
@@ -424,6 +424,7 @@ def set_match_results(set_match_results_request=None):
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return "", 503
 
+
 def verify_gacha_item_ownership(verify_gacha_item_ownership_request=None):
     if not connexion.request.is_json:
         return "", 400
@@ -459,7 +460,7 @@ def verify_gacha_item_ownership(verify_gacha_item_ownership_request=None):
         return "", 500
     except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
         logging.error("Query ["+ team + "]: Programming error.")
-        return "", 400
+        return "", 500
     except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
         logging.error("Query ["+ team + "]: Internal error.")
         return "", 500
