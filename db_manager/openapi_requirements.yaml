@@ -49,13 +49,37 @@ paths:
           description: Invalid request format.
         '404':
           description: User not found.
-        '409':
+        '406':
           description: Cannot ban a user with the ADMIN role.
         '500':
           description: Internal server error.
         '503':
-          description: Circuit breaker open.          
-  /db_manager/admin/create_gacha:
+          description: Circuit breaker open.
+  /db_manager/admin/create_gacha_pool:
+    post:
+      tags:
+        - db_manager_admin
+      description: 'Creates a gacha pool.'
+      operationId: create_gacha_pool
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Pool'
+      responses:
+        '201':
+          description: Pool successfully created.
+        '400':
+          description: Invalid request format.
+        '404':
+          description: Invalid item UUID.
+        '409':
+          description: The provided pool codename is already in use.
+        '500':
+          description: Internal server error.
+        '503':
+          description: Circuit breaker open.
+  /db_manager/admin/create_gacha_type:
     post:
       tags:
         - db_manager_admin
@@ -72,56 +96,12 @@ paths:
         '400':
           description: Invalid request format.
         '409':
-          description: The provided gacha uuid is already in use.
-        '500':
-          description: Internal server error.
-        '503':
-          description: Circuit breaker open.          
-  /db_manager/admin/delete_gacha:
-    post:
-      tags:
-        - db_manager_admin
-      description: 'Deletes a gacha type.'
-      operationId: delete_gacha_type
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/GachaId'
-      responses:
-        '200':
-          description: Gacha successfully deleted.
-        '400':
-          description: Invalid request format.
-        '404':
-          description: Gacha not found.
-        '500':
-          description: Internal server error.
-  /db_manager/admin/create_pool:
-    post:
-      tags:
-        - db_manager_admin
-      description: 'Creates a gacha pool.'
-      operationId: create_gacha_pool
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Pool'
-      responses:
-        '201':
-          description: Gacha successfully created.
-        '400':
-          description: Invalid request format.
-        '404':
-          description: 'Item UUID not found in database: {gacha_type_uuid}'
-        '409':
-          description: The provided pool id is already in use.
+          description: The provided gacha UUID is already in use.
         '500':
           description: Internal server error.
         '503':
           description: Circuit breaker open.
-  /db_manager/admin/delete_pool:
+  /db_manager/admin/delete_gacha_pool:
     post:
       tags:
         - db_manager_admin
@@ -131,14 +111,42 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PoolId'
+              type: object
+              properties:
+                codename:
+                  $ref: '#/components/schemas/PoolId'
       responses:
         '200':
-          description: Pool successfully created.
+          description: Pool successfully deleted.
         '400':
           description: Invalid request format.
         '404':
           description: Pool not found.
+        '500':
+          description: Internal server error.
+        '503':
+          description: Circuit breaker open.
+  /db_manager/admin/delete_gacha_type:
+    post:
+      tags:
+        - db_manager_admin
+      description: 'Deletes a gacha type.'
+      operationId: delete_gacha_type
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                gacha_uuid:
+                  $ref: '#/components/schemas/GachaId'
+      responses:
+        '200':
+          description: Gacha successfully deleted.
+        '400':
+          description: Invalid request format.
+        '404':
+          description: Gacha not found.
         '500':
           description: Internal server error.
         '503':
@@ -174,7 +182,7 @@ paths:
           description: Internal server error.
         '503':
           description: Circuit breaker open.
-  /db_manager/admin/get_all_feedbacks:
+  /db_manager/admin/get_feedback_list:
     post:
       tags:
         - db_manager_admin
@@ -197,35 +205,6 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/FeedbackPreview'
-        '400':
-          description: Invalid request format.
-        '500':
-          description: Internal server error.
-        '503':
-          description: Circuit breaker open.
-  /db_manager/admin/get_all_profiles:
-    post:
-      tags:
-        - db_manager_admin
-      description: 'Gets a profile list'
-      operationId: get_profile_list
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                page_number:
-                  $ref: '#/components/schemas/PageNumber'
-      responses:
-        '200':
-          description: User profile list.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/User'
         '400':
           description: Invalid request format.
         '500':
@@ -261,6 +240,35 @@ paths:
           description: Internal server error.
         '503':
           description: Circuit breaker open.
+  /db_manager/admin/get_profile_list:
+    post:
+      tags:
+        - db_manager_admin
+      description: 'Gets a profile list'
+      operationId: get_profile_list
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                page_number:
+                  $ref: '#/components/schemas/PageNumber'
+      responses:
+        '200':
+          description: User profile list.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserFull'
+        '400':
+          description: Invalid request format.
+        '500':
+          description: Internal server error.
+        '503':
+          description: Circuit breaker open.
   /db_manager/admin/get_user_history:
     post:
       tags:
@@ -285,6 +293,12 @@ paths:
       responses:
         '200':
           description: User's history, based on history_type chosen.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/HistoryListINGAME"
+                  - $ref: "#/components/schemas/HistoryListBUNDLE"
         '400':
           description: Invalid request format.
         '404':
@@ -309,10 +323,14 @@ paths:
       responses:
         '200':
           description: Auction successfully updated.
+        '304':
+          description: No changes were applied.
         '400':
           description: Invalid request format.
         '404':
           description: Some checks on the auction update failed.
+        '417':
+          description: Invalid date format.
         '500':
           description: Internal server error.
         '503':
@@ -331,6 +349,8 @@ paths:
       responses:
         '200':
           description: Gacha successfully updated.
+        '304':
+          description: No changes were applied.
         '400':
           description: Invalid request format.
         '404':
@@ -355,6 +375,8 @@ paths:
           description: Pool successfully updated.
         '400':
           description: Invalid request format.
+        '304':
+          description: No changes were applied.
         '404':
           description: Some checks on the pool failed.
         '500':
@@ -363,9 +385,61 @@ paths:
           description: Circuit breaker open.
 
 
+
   ############################################
   ################ AUCTIONS ##################
   ############################################
+  /db_manager/auctions/complete_auction_sale:
+    post:
+      tags:
+        - db_manager_auctions
+      description: 'Completes the sale of an auctioned item by transferring ownership, updating balances, and logging transactions for the buyer and the seller.'
+      operationId: complete_auction_sale
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                item_uuid:
+                  $ref: '#/components/schemas/ItemId'
+                current_bid:
+                  type: integer
+                user_uuid:
+                  $ref: '#/components/schemas/UserId'
+      responses:
+        '200':
+          description: Sale successfully completed, ownership transferred, balances updated, and transactions logged.
+        '400':
+          description: Invalid request format.
+        '404':
+          description: Item or user not found.
+        '500':
+          description: Internal server error.
+        '503':
+          description: Circuit breaker open.
+  /db_manager/auctions/create_auction:
+    post:
+      tags:
+        - db_manager_auctions
+      description: 'Creates a new auction by inserting the auction details into the database.'
+      operationId: create_auction
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Auction'
+      responses:
+        '201':
+          description: Auction created.
+        '400':
+          description: Invalid request format.
+        '409':
+          description: Auction with the given UUID already exists.
+        '500':
+          description: Internal server error.
+        '503':
+          description: Circuit breaker open.
   /db_manager/auctions/get_auction_status:
     post:
       tags:
@@ -378,7 +452,7 @@ paths:
             schema:
               type: object
               properties:
-                uuid:
+                auction_uuid:
                   $ref: '#/components/schemas/AuctionId'
       responses:
         '200':
@@ -386,10 +460,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  auction:
-                    $ref: '#/components/schemas/Auction'
+                $ref: '#/components/schemas/Auction'
         '400':
           description: Invalid request format.
         '404':
@@ -420,10 +491,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  item:
-                    $ref: '#/components/schemas/InventoryItem'
+                $ref: '#/components/schemas/InventoryItem'
         '400':
           description: Invalid request format.
         '404':
@@ -432,7 +500,7 @@ paths:
           description: Internal server error.
         '503':
           description: Circuit breaker open.
-  /db_manager/auctions/get_currency:
+  /db_manager/auctions/get_user_currency:
     post:
       tags:
         - db_manager_auctions
@@ -462,62 +530,6 @@ paths:
           description: Invalid request format.
         '404':
           description: User not found.
-        '500':
-          description: Internal server error.
-        '503':
-          description: Circuit breaker open.
-  /db_manager/auctions/place_bid:        
-    post:
-      tags:
-        - db_manager_auctions
-      description: Places a bid on an auction, updates the current bid and subtracts the user's currency
-      operationId: place_bid
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                user_uuid:
-                  $ref: '#/components/schemas/UserId'
-                auction_uuid:
-                  $ref: '#/components/schemas/AuctionId'
-                new_bid:
-                  type: integer
-                  minimum: 0
-                  description: 'The new bid amount.'
-      responses:
-        '200':
-          description: Successful bid placement.
-        '400':
-          description: Invalid request format.
-        '404':
-          description: Auction or user not found.
-        '500':
-          description: Internal server error.
-        '503':
-          description: Circuit breaker open.
-  /db_manager/auctions/create:
-    post:
-      tags:
-        - db_manager_auctions
-      description: 'Creates a new auction by inserting the auction details into the database.'
-      operationId: create_auction
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                auction:
-                  $ref: '#/components/schemas/Auction'
-      responses:
-        '201':
-          description: Successful creation of a new auction.
-        '400':
-          description: Invalid request format.
-        '409':
-          description: Auction with the given UUID already exists.
         '500':
           description: Internal server error.
         '503':
@@ -556,7 +568,7 @@ paths:
           description: Internal server error.
         '503':
           description: Circuit breaker open.
-  /db_manager/auctions/list:
+  /db_manager/auctions/list_auctions:
     post:
       tags:
         - db_manager_auctions
@@ -594,35 +606,38 @@ paths:
           description: Internal server error.
         '503':
           description: Circuit breaker open.
-  /db_manager/auctions/complete_sale:
+  /db_manager/auctions/place_bid:
     post:
       tags:
         - db_manager_auctions
-      description: 'Completes the sale of an auctioned item by transferring ownership, updating balances, and logging transactions for the buyer and the seller.'
-      operationId: complete_auction_sale
+      description: Places a bid on an auction, updates the current bid and subtracts the user's currency
+      operationId: place_bid
       requestBody:
         content:
           application/json:
             schema:
               type: object
               properties:
-                item_uuid:
-                  $ref: '#/components/schemas/ItemId'
-                current_bid:
-                  type: integer
                 user_uuid:
                   $ref: '#/components/schemas/UserId'
+                auction_uuid:
+                  $ref: '#/components/schemas/AuctionId'
+                new_bid:
+                  type: integer
+                  minimum: 0
+                  description: 'The new bid amount.'
       responses:
         '200':
-          description: Sale successfully completed, ownership transferred, balances updated, and transactions logged.
+          description: Successful bid placement.
         '400':
           description: Invalid request format.
         '404':
-          description: Item or user not found.
+          description: Auction or user not found.
         '500':
           description: Internal server error.
         '503':
           description: Circuit breaker open.
+
 
 
   ############################################
@@ -659,8 +674,7 @@ paths:
                   username:
                     $ref: '#/components/schemas/Username'
                   role:
-                    type: string
-                    description: User's role in the system.
+                    $ref: "#/components/schemas/Roles"
                   password:
                     $ref: '#/components/schemas/Password'
         '400':
@@ -722,7 +736,7 @@ paths:
             schema:
               type: object
               properties:
-                bundle_id:
+                codename:
                   type: string
                   description: 'Codename of the bundle to retrieve.'
       responses:
@@ -731,14 +745,32 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  bundle:
-                    $ref: '#/components/schemas/Bundle'
+                $ref: '#/components/schemas/Bundle'
         '400':
           description: Invalid request format.
         '404':
           description: Bundle not found for the given codename.
+        '500':
+          description: Internal server error.
+        '503':
+          description: Circuit breaker open.
+  /db_manager/currency/list_bundles:
+    post:
+      tags:
+        - db_manager_currency
+      description: 'Returns a list of all available bundles with their details.'
+      operationId: list_bundles
+      responses:
+        '200':
+          description: List of all bundles.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Bundle'
+        '400':
+          description: Invalid request format.
         '500':
           description: Internal server error.
         '503':
@@ -763,7 +795,7 @@ paths:
                   $ref: '#/components/schemas/CurrencyName'
                 credits_obtained:
                   type: integer
-                transaction_type_bundle_code:
+                transaction_type:
                   type: string
                   example: 'bought_bundle'
       responses:
@@ -772,28 +804,9 @@ paths:
         '400':
           description: Invalid request format.
         '404':
-          description: User or bundle not found.
-        '500':
-          description: Internal server error.
-  /db_manager/currency/list_bundles:
-    post:
-      tags:
-        - db_manager_currency
-      description: 'Returns a list of all available bundles with their details.'
-      operationId: list_bundles
-      responses:
-        '200':
-          description: List of all bundles.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Bundle'
-        '400':
-          description: Invalid request format.
-        '404':
-          description: No bundles found.
+          description: User not found.
+        '409':
+          description: Bundle not found.
         '500':
           description: Internal server error.
         '503':
@@ -804,7 +817,7 @@ paths:
   ############################################
   ################# FEEDBACK #################
   ############################################
-  /db_manager/feedback/submit:
+  /db_manager/feedback/submit_feedback:
     post:
       tags:
         - db_manager_feedback
@@ -863,7 +876,41 @@ paths:
         '400':
           description: Invalid request format.
         '404':
-          description: Gacha not found for the given UUID.
+          description: Gacha not found.
+        '500':
+          description: Internal server error.
+        '503':
+          description: Circuit breaker open.
+  /db_manager/gachas/get_gacha_list:
+    post:
+      tags:
+        - db_manager_gachas
+      description: Inserts the given item into user's inventory
+      operationId: get_gacha_list
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_uuid:
+                  $ref: '#/components/schemas/UserId'
+                filter_notowned:
+                  type: boolean
+                  description: 'Filters item list based on user ownership.'
+      responses:
+        '200':
+          description: Detailed information about the requested pool.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Gacha'
+        '400':
+          description: Invalid request format.
+        '404':
+          description: User not found.
         '500':
           description: Internal server error.
         '503':
@@ -878,7 +925,10 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PoolId'
+              type: object
+              properties:
+                codename:
+                  $ref: '#/components/schemas/PoolId'
       responses:
         '200':
           description: Detailed information about the requested pool.
@@ -889,15 +939,36 @@ paths:
         '400':
           description: Invalid request format.
         '404':
-          description: Pool not found for the given codename.
+          description: Pool not found.
         '500':
           description: Internal server error.
         '503':
           description: Circuit breaker open.
+  /db_manager/gachas/get_pool_list:
+    post:
+      tags:
+          - db_manager_gachas
+      description: "Inserts the given item into user's inventory"
+      operationId: get_pool_list
+      responses:
+        "200":
+          description: Detailed information about all the pools.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pool'
+        "400":
+          description: Invalid request format.
+        "500":
+          description: Internal server error.
+        "503":
+          description: Circuit breaker open.
   /db_manager/gachas/get_currency:
     post:
       tags:
-        - db_manager_gacha
+        - db_manager_gachas
       description: 'Returns the currency of a user given the user UUID.'
       operationId: get_currency
       requestBody:
@@ -954,17 +1025,25 @@ paths:
         '400':
           description: Invalid request format.
         '404':
-          description: User or Gacha type not found.
+          description: User not found.
+        '409':
+          description: Gacha not found.
         '500':
           description: Internal server error.
         '503':
           description: Circuit breaker open. 
-  /db_manager/gachas/get_gacha_list:
+
+
+
+  ############################################
+  ################ INVENTORY #################
+  ############################################
+  /db_manager/inventory/get_inventory_item:
     post:
       tags:
-        - db_manager_gachas
-      description: Inserts the given item into user's inventory
-      operationId: get_gacha_list
+        - db_manager_inventory
+      description: 'Returns detailed information of a specific inventory item for a given user by username and inventory item UUID.'
+      operationId: get_inventory_item
       requestBody:
         content:
           application/json:
@@ -973,61 +1052,29 @@ paths:
               properties:
                 user_uuid:
                   $ref: '#/components/schemas/UserId'
-                owned_filter:
-                  type: boolean
-                  description: 'Filters item list based on user ownership.'
+                inventory_item_uuid:
+                  $ref: '#/components/schemas/ItemId'
       responses:
         '200':
-          description: Detailed information about the requested pool.
+          description: Detailed information of the specified inventory item.
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Gacha'
+                $ref: '#/components/schemas/InventoryItem'
         '400':
           description: Invalid request format.
         '404':
-          description: User not found.
+          description: Item not found for the given user UUID and item UUID.
         '500':
           description: Internal server error.
         '503':
           description: Circuit breaker open.
-  /db_manager/gachas/get_pools:
-    post:
-      tags:
-          - db_manager_gachas
-      description: "Inserts the given item into user's inventory"
-      operationId: get_pools_list
-      responses:
-        "200":
-          description: Detailed information about all the pools.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Pool'
-        "400":
-          description: Invalid request format.
-        "404":
-          description: User not found.
-        "500":
-          description: Internal server error.
-        "503":
-          description: Circuit breaker open.
-
-
-
-  ############################################
-  ################ INVENTORY #################
-  ############################################
-  /db_manager/inventory/get_user_inventory_items:
+  /db_manager/inventory/get_user_inventory:
     post:
       tags:
         - db_manager_inventory
       description: 'Returns the inventory items of a specific user by user UUID, paginated.'
-      operationId: get_user_inventory_items
+      operationId: get_user_inventory
       requestBody:
         content:
           application/json:
@@ -1057,38 +1104,7 @@ paths:
           description: Internal server error.
         '503':
           description: Circuit breaker open.
-  /db_manager/inventory/get_user_item_info:
-    post:
-      tags:
-        - db_manager_inventory
-      description: 'Returns detailed information of a specific inventory item for a given user by username and inventory item UUID.'
-      operationId: get_inventory_item
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                user_uuid:
-                  $ref: '#/components/schemas/UserId'
-                inventory_item_id:
-                  $ref: '#/components/schemas/ItemId'
-      responses:
-        '200':
-          description: Detailed information of the specified inventory item.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/InventoryItem'
-        '400':
-          description: Invalid request format.
-        '404':
-          description: Item not found for the given user and item UUID.
-        '500':
-          description: Internal server error.
-        '503':
-          description: Circuit breaker open.
-  /db_manager/inventory/remove_user_item:
+  /db_manager/inventory/remove_item:
     post:
       tags:
         - db_manager_inventory
@@ -1102,7 +1118,7 @@ paths:
               properties:
                 user_uuid:
                   $ref: '#/components/schemas/UserId'
-                inventory_item_id:
+                inventory_item_uuid:
                   $ref: '#/components/schemas/ItemId'
       responses:
         '200':
@@ -1112,7 +1128,7 @@ paths:
         '404':
           description: Item not found.
         '409':
-          description: Cannot remove item that is in an open auction.
+          description: Cannot remove an item that is in an open auction.
         '500':
           description: Internal server error.
         '503':
@@ -1123,98 +1139,7 @@ paths:
   ############################################
   ################# PROFILE ##################
   ############################################
-  /db_manager/profile/get_user_info:
-    post:
-      tags:
-        - db_manager_profile
-      description: 'Returns info about a specific user given his UUID'
-      operationId: get_user_info
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                user_uuid:
-                  $ref: '#/components/schemas/UserId'
-      responses:
-        '200':
-          description: Detailed information of the requested user.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-        '400':
-          description: Invalid request format.
-        '404':
-          description: User not found.
-        '500':
-          description: Internal server error.
-        '503':
-          description: Circuit breaker open.
-  /db_manager/profile/get_user_hashed_psw:
-    post:
-      tags:
-        - db_manager_profile
-      description: Returns user's hashed password
-      operationId: get_user_hash_psw
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                user_uuid:
-                  $ref: '#/components/schemas/UserId'
-      responses:
-        '200':
-          description: Profile updated.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  password:
-                    type: string
-                    description: The user's password.
-        '400':
-          description: Invalid request format.
-        '404':
-          description: User not found;
-        '500':
-          description: Internal server error.
-        '503':
-          description: Circuit breaker open.
-  /db_manager/profile/edit:
-    post:
-      tags:
-        - db_manager_profile
-      description: 'Modifies user information'
-      operationId: edit_user_info
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                user_uuid:
-                  $ref: '#/components/schemas/UserId'
-                username:
-                  $ref: '#/components/schemas/Username'
-                email:
-                  $ref: '#/components/schemas/Email'
-      responses:
-        '200':
-          description: Profile updated.
-        '400':
-          description: Invalid request format.
-        '404':
-          description: User not found;
-        '500':
-          description: Internal server error.
-        '503':
-          description: Circuit breaker open.
-  /db_manager/profile/delete:
+  /db_manager/profile/delete_user_profile:
     post:
       tags:
         - db_manager_profile
@@ -1239,39 +1164,106 @@ paths:
           description: Internal server error.
         '503':
           description: Circuit breaker open.
-
-  ############################################
-  ################### PVP ####################
-  ############################################
-  /db_manager/pvp/get_pvp_status:
+  /db_manager/profile/edit_user_info:
     post:
       tags:
-        - db_manager_pvp
-      description: 'Obtains information regarding a pvp match.'
-      operationId: get_pvp_status
+        - db_manager_profile
+      description: 'Modifies user information.'
+      operationId: edit_user_info
       requestBody:
         content:
           application/json:
             schema:
               type: object
               properties:
-                pvp_match_uuid:
-                  $ref: '#/components/schemas/PvPMatchId'
+                user_uuid:
+                  $ref: '#/components/schemas/UserId'
+                username:
+                  $ref: '#/components/schemas/Username'
+                email:
+                  $ref: '#/components/schemas/Email'
       responses:
         '200':
-          description: PvP Match.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PvPRequestFull'
+          description: Profile updated.
+        '304':
+          description: No changes applied.
         '400':
-          description: Invalid request.
+          description: Invalid request format.
         '404':
-          description: Match not found.
+          description: User not found;
         '500':
           description: Internal server error.
         '503':
           description: Circuit breaker open.
+  /db_manager/profile/get_user_hash_psw:
+    post:
+      tags:
+        - db_manager_profile
+      description: Returns user's hashed password
+      operationId: get_user_hash_psw
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_uuid:
+                  $ref: '#/components/schemas/UserId'
+      responses:
+        '200':
+          description: The user's hashed password, bcrypt format.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  hashed_password:
+                    type: string
+                    description: The user's password.
+                    example: "$2a$12$Io8F/0QZ8hLSZ.CtqUvM0uK/jhmdXohCFXiby/nHk3ePmzNf1wRhe"
+        '400':
+          description: Invalid request format.
+        '404':
+          description: User not found.
+        '500':
+          description: Internal server error.
+        '503':
+          description: Circuit breaker open.
+  /db_manager/profile/get_user_info:
+    post:
+      tags:
+        - db_manager_profile
+      description: 'Returns info about a specific user given their UUID'
+      operationId: get_user_info
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_uuid:
+                  $ref: '#/components/schemas/UserId'
+      responses:
+        '200':
+          description: Detailed information of the requested user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid request format.
+        '404':
+          description: User not found.
+        '500':
+          description: Internal server error.
+        '503':
+          description: Circuit breaker open.
+
+
+
+  ############################################
+  ################### PVP ####################
+  ############################################
   /db_manager/pvp/check_pending_pvp_requests:
     post:
       tags:
@@ -1295,65 +1287,8 @@ paths:
                 $ref: '#/components/schemas/MatchRequests'
         '400':
           description: Invalid request.
-        '500':
-          description: Internal server error.
-        '503':
-          description: Circuit breaker open.
-  /db_manager/pvp/reject_pvp_request:
-    post:
-      tags:
-        - db_manager_pvp
-      description: 'Rejects a pending pvp request.'
-      operationId: reject_pvp_prequest
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                pvp_match_uuid:
-                  $ref: '#/components/schemas/PvPMatchId'
-                user_uuid:
-                  $ref: '#/components/schemas/UserId'
-      responses:
-        '200':
-          description: Battle rejected successfully.
-        '400':
-          description: Invalid request.
         '404':
-          description: Cannot reject this PvP request.
-        '500':
-          description: Internal server error.
-        '503':
-          description: Circuit breaker open.
-  /db_manager/pvp/verify_gacha_item_ownership:
-    post:
-      tags:
-        - db_manager_pvp
-      description: Verifies that a list of gachas separated by a comma is entirely contained in player's inventory, before letting them send a pvp request.
-      operationId: verify_gacha_item_ownership
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                team:
-                  type: string
-                  pattern: ^\(\s*[a-zA-Z]+\s*(,\s*[a-zA-Z]+\s*){6}\)$
-                  example: '(3fa85f64-5717-4562-b3fc-2c963f66afa6, 3fa85f64-5717-4562-b3fc-2c963f66afa6, 3fa85f64-5717-4562-b3fc-2c963f66afa6, 3fa85f64-5717-4562-b3fc-2c963f66afa6, 3fa85f64-5717-4562-b3fc-2c963f66afa6, 3fa85f64-5717-4562-b3fc-2c963f66afa6, 3fa85f64-5717-4562-b3fc-2c963f66afa6)'
-                  description: 'List (surrounded by round brackets) of gacha uuids separated by a comma'
-      responses:
-        '200':
-          description: Owner UUID.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserId'
-        '400':
-          description: Invalid request.
-        '401':
-          description: Gacha items do not belong to you.
+          description: Player 2 (receiver) not found.
         '500':
           description: Internal server error.
         '503':
@@ -1394,6 +1329,15 @@ paths:
                   $ref: '#/components/schemas/ItemId'
                 player2_stand:
                   $ref: '#/components/schemas/ItemId'
+                extracted_stat:
+                  type: string
+                  enum:
+                  - stat_power
+                  - stat_speed
+                  - stat_durability
+                  - stat_precision
+                  - stat_range
+                  description: 'Stat name with prefix stat_'
       responses:
         '200':
           description: Gacha stats retrieved.
@@ -1402,20 +1346,104 @@ paths:
               schema:
                 type: object
                 properties:
-                  player1_stat:
-                    type: integer
-                    minimum: 1
-                    maximum: 5
-                    example: 4
-                    description: Value gacha stat.
-                  player2_stat:
-                    type: integer
-                    minimum: 1
-                    maximum: 5
-                    example: 4
-                    description: Value gacha stat.
+                  player1:
+                    type: object
+                    properties:
+                      stat:
+                        type: integer
+                        minimum: 1
+                        maximum: 5
+                        example: 4
+                        description: Value gacha stat.
+                      stand_name:
+                        type: string
+                        example: "Star Platinum"
+                        description: Name of the stand
+                      potential:
+                        type: integer
+                        minimum: 1
+                        maximum: 5
+                        example: 3
+                        description: Potential stat value
+                  player2:
+                    type: object
+                    properties:
+                      stat:
+                        type: integer
+                        minimum: 1
+                        maximum: 5
+                        example: 4
+                        description: Value gacha stat.
+                      stand_name:
+                        type: string
+                        example: "Star Platinum"
+                        description: Name of the stand
+                      potential:
+                        type: integer
+                        minimum: 1
+                        maximum: 5
+                        example: 3
+                        description: Potential stat value
         '400':
           description: Invalid request.
+        '404':
+          description: Gacha not found.
+        '500':
+          description: Internal server error.
+        '503':
+          description: Circuit breaker open.
+  /db_manager/pvp/get_pvp_status:
+    post:
+      tags:
+        - db_manager_pvp
+      description: 'Obtains information regarding a pvp match.'
+      operationId: get_pvp_status
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pvp_match_uuid:
+                  $ref: '#/components/schemas/PvPMatchId'
+      responses:
+        '200':
+          description: PvP Match.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PvPRequestFull'
+        '400':
+          description: Invalid request.
+        '404':
+          description: Match not found.
+        '500':
+          description: Internal server error.
+        '503':
+          description: Circuit breaker open.
+  /db_manager/pvp/reject_pvp_request:
+    post:
+      tags:
+        - db_manager_pvp
+      description: 'Rejects a pending pvp request.'
+      operationId: reject_pvp_request
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pvp_match_uuid:
+                  $ref: '#/components/schemas/PvPMatchId'
+                user_uuid:
+                  $ref: '#/components/schemas/UserId'
+      responses:
+        '200':
+          description: Battle rejected successfully.
+        '400':
+          description: Invalid request.
+        '404':
+          description: Cannot reject this PvP request.
         '500':
           description: Internal server error.
         '503':
@@ -1443,11 +1471,46 @@ paths:
           '400':
             description: Invalid request.
           '404':
-            description: Match or User not found
+            description: Match or user not found
           '500':
             description: Internal server error.
           '503':
             description: Circuit breaker open.
+  /db_manager/pvp/verify_gacha_item_ownership:
+    post:
+      tags:
+        - db_manager_pvp
+      description: Verifies that a list of gachas separated by a comma is entirely contained in player's inventory, before letting them send a pvp request.
+      operationId: verify_gacha_item_ownership
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                team:
+                  $ref: "#/components/schemas/Team"
+      responses:
+        '200':
+          description: Owner UUID.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  owner_uuid:
+                    $ref: '#/components/schemas/UserId'
+        '400':
+          description: Invalid request.
+        '401':
+          description: Gacha items do not belong to you.
+        '500':
+          description: Internal server error.
+        '503':
+          description: Circuit breaker open.
+
+
+
 components:
   schemas:
     Team:
@@ -1608,6 +1671,43 @@ components:
           type: string
           format: date-time
           description: Timestamp when user created their account
+        currency:
+          type: integer
+          description: In-game currency of the user.
+          example: 100
+        pvp_score:
+          type: integer
+          description: PvP score of the user.
+          example: 5
+    Roles:
+      type: string
+      enum:
+        - USER
+        - ADMIN
+      description: User's role in the system.
+    UserFull:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/UserId'
+        username:
+          $ref: '#/components/schemas/Username'
+        email:
+          $ref: '#/components/schemas/Email'
+        joindate:
+          type: string
+          format: date-time
+          description: Timestamp when user created their account
+        currency:
+          type: integer
+          description: In-game currency of the user.
+          example: 100
+        pvp_score:
+          type: integer
+          description: PvP score of the user.
+          example: 5
+        role:
+          $ref: "#/components/schemas/Roles"
     AuctionId:
       type: string
       format: uuid
@@ -1656,10 +1756,6 @@ components:
           type: string
           format: uuid
           description: UUID representing a gacha
-        pull_date:
-          type: string
-          format: date-time
-          description: Timestamp of first obtainment
         obtained_date:
           type: string
           format: date-time
@@ -1704,9 +1800,9 @@ components:
     Bundle:
       type: object
       properties:
-        id:
+        codename:
           $ref: '#/components/schemas/BundleId'
-        name:
+        public_name:
           type: string
           example: Amazing Bundle
           description: Visible name of the bundle.
@@ -1768,9 +1864,9 @@ components:
     Pool:
       type: object
       properties:
-        id:
+        codename:
           $ref: '#/components/schemas/PoolId'
-        name:
+        public_name:
           type: string
           example: Starter Pool
           description: Visible name of the pool.
@@ -1779,33 +1875,63 @@ components:
           example: 15
           description: In-game price to pull a gacha from this pool
           minimum: 1
-        probabilities:
-          $ref: '#/components/schemas/RarityProbability'
+        probability_common:
+          type: number
+          format: float
+          default: 0.5
+        probability_rare:
+          type: number
+          format: float
+          default: 0.3
+        probability_epic:
+          type: number
+          format: float
+          default: 0.15
+        probability_legendary:
+          type: number
+          format: float
+          default: 0.05
         items:
           type: array
           description: List of gacha items in the pool.
           items:
             $ref: '#/components/schemas/GachaId'
-    RarityProbability:
-      type: object
-      properties:
-        commonProbability:
-          type: number
-          format: float
-          default: 0.5
-        rareProbability:
-          type: number
-          format: float
-          default: 0.3
-        epicProbability:
-          type: number
-          format: float
-          default: 0.15
-        legendaryProbability:
-          type: number
-          format: float
-          default: 0.05
     PvPMatchId:
       type: string
       format: uuid
       description: UUID of the PvP match.
+    HistoryListINGAME:
+      type: object
+      properties:
+        user_uuid:
+          $ref: "#/components/schemas/UserId"
+        username:
+          $ref: "#/components/schemas/Username"
+        timestamp:
+          description: Timestamp when user created feedback
+          format: date-time
+          title: timestamp
+          type: string
+        credits:
+          type: integer
+          description: No. of credits.
+          example: 5000
+        transaction_type:
+          type: string
+          example: 'bought_bundle'
+    HistoryListBUNDLE:
+      type: object
+      properties:
+        user_uuid:
+          $ref: "#/components/schemas/UserId"
+        username:
+          $ref: "#/components/schemas/Username"
+        timestamp:
+          description: Timestamp when user created feedback
+          format: date-time
+          title: timestamp
+          type: string
+        codename:
+          type: string
+        currency_name:
+          $ref: '#/components/schemas/CurrencyName'
