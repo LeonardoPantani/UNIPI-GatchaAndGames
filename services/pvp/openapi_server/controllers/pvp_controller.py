@@ -55,12 +55,12 @@ def accept_pvp_request(pvp_match_uuid):
     receiver_uuid = match_request["receiver_id"]
 
     if receiver_uuid != user_uuid:
-        return jsonify({"error": "This request is not for you"}), 403
+        return jsonify({"error": "This request is not for you"}), 401
     
     winner = match_request["winner"]
 
     if winner is not None:
-        return jsonify({"error": "Match already ended"}), 403
+        return jsonify({"error": "Match already ended"}), 406
 
     if connexion.request.is_json:
         body_request = connexion.request.get_json()
@@ -296,7 +296,7 @@ def reject_pv_prequest(pvp_match_uuid):
         return jsonify({"message": "Battle rejected successfully."}), 200
     except requests.HTTPError as e:  # if request is sent to dbmanager correctly and it answers an application error (to be managed here) [error expected by us]
         if e.response.status_code == 404:
-            return jsonify({"error": "Cannot reject this PvP request."}), 404
+            return jsonify({"error": "Cannot reject this PvP request."}), 401
         else:
             return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
     except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
@@ -335,7 +335,7 @@ def send_pvp_request(user_uuid):
 
     except requests.HTTPError as e:  # if request is sent to dbmanager correctly and it answers an application error (to be managed here) [error expected by us]
         if e.response.status_code == 401:
-            return jsonify({"error": "Gacha items do not belong to you."}), 404
+            return jsonify({"error": "Gacha items do not belong to you."}), 401
         else:
             return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
     except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
@@ -366,7 +366,7 @@ def send_pvp_request(user_uuid):
 
         make_request_to_dbmanager()
 
-        return jsonify({"message":"Match request sent successfully."}), 200
+        return jsonify({"message":"Match request sent successfully. UUID: "+ match_uuid}), 200
     
     except requests.HTTPError:  # if request is sent to dbmanager correctly and it answers an application error (to be managed here) [error expected by us]
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503

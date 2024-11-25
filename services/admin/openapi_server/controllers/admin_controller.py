@@ -94,9 +94,7 @@ def create_gacha():
             {"message": "Gacha successfully created.", "gacha_uuid": gacha.gacha_uuid}
         ), 201
     except requests.HTTPError as e:  # if request is sent to dbmanager correctly and it answers an application error (to be managed here) [error expected by us]
-        if e.response.status_code == 400:  # programming error
-            return jsonify({"error": "User not found."}), 404
-        elif e.response.status_code == 409:  # conflict
+        if e.response.status_code == 409:  # conflict
             return jsonify({"error": "The provided gacha uuid is already in use."}), 409
         else:  # other errors
             return jsonify(
@@ -209,7 +207,7 @@ def create_pool():
         return jsonify({"message": "Pool successfully created."}), 201
     except requests.HTTPError as e:  # if request is sent to dbmanager correctly and it answers an application error (to be managed here) [error expected by us]
         if e.response.status_code == 404:
-            return jsonify({"error": "Item UUID not found in database."}), 409
+            return jsonify({"error": "Item UUID not found in database."}), 404
         elif e.response.status_code == 409:
             return jsonify({"error": "The provided pool id is already in use."}), 409
         else:  # other errors
@@ -293,7 +291,7 @@ def edit_user_profile(user_uuid, email=None, username=None):
 
         response = make_request_to_dbmanager()
         if response.status_code == 203:
-            return jsonify({"message": "No changes to profile applied."}), 203
+            return jsonify({"message": "No changes to profile applied."}), 304
 
         return jsonify({"message": "User profile successfully updated."}), 200
     except requests.HTTPError as e:  # if request is sent to dbmanager correctly and it answers an application error (to be managed here) [error expected by us]
@@ -494,7 +492,7 @@ def get_user_history(user_uuid, history_type, page_number=None):
         if e.response.status_code == 404:
             return jsonify({"error": "User not found."}), 404
         elif e.response.status_code == 405:
-            return jsonify({"error": "Invalid history type."}), 404
+            return jsonify({"error": "Invalid history type."}), 400
         else:  # other errors
             return jsonify(
                 {

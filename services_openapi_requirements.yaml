@@ -53,9 +53,11 @@ paths:
             type: string
       responses:
         '201':
-          description: Feedback submitted successfully.
+          description: Feedback successfully submitted.
         '400':
-          description: Invalid query parameters.
+          description: Invalid request.
+        '403':
+          description: Not logged in.
         '503':
           description: Service temporarily unavailable. Please try again later.
 
@@ -102,11 +104,13 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/AuctionId'
+                  $ref: '#/components/schemas/Auction'
         '400':
-          description: Invalid query parameters
-        '500':
-          description: Internal server error
+          description: Invalid request.
+        '403':
+          description: Not logged in.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
   /auctions/list:
     get:
       tags:
@@ -150,13 +154,18 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/AuctionId'
+                type: object
+                properties:
+                  auctions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AuctionId'
         '400':
-          description: Invalid query parameters
-        '500':
-          description: Internal server error
+          description: Invalid request.
+        '403':
+          description: Not logged in.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
   /auctions/status/{auction_uuid}:
     get:
       tags:
@@ -178,15 +187,19 @@ paths:
             $ref: '#/components/schemas/AuctionId'
       responses:
         '200':
-          description: The auction required
+          description: The auction required.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Auction'
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not logged in.
         '404':
-          description: Auction not found
-        '500':
-          description: Internal server error
+          description: Auction not found.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
   /auctions/create:
     post:
       tags:
@@ -222,14 +235,20 @@ paths:
           schema:
             $ref: '#/components/schemas/ItemId'
       responses:
-        '200':
+        '201':
           description: Auction created successfully.
         '400':
-          description: Invalid query parameters.
+          description: Invalid request.
+        '401':
+          description: This item is not yours.
+        '403':
+          description: Not logged in.
         '404':
-          description: Item in player's inventory not found.
-        '500':
-          description: Internal server error.
+          description: Item not found.
+        '409':
+          description: Another auction on the same item is still active.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
   /auctions/bid/{auction_uuid}:
     post:
       tags:
@@ -264,10 +283,12 @@ paths:
           description: Invalid query parameters.
         '403':
           description: Auction is closed.
+        '404':
+          description: Auction or user not found.
         '406':
           description: Insufficient funds.
-        '500':
-          description: Internal server error.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
 
 
 
@@ -311,15 +332,17 @@ paths:
               $ref: '#/components/schemas/Team'
       responses:
         '200':
-          description: Request to fight sent successfully.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PvPRequest'
+          description: Match request sent successfully.
         '400':
           description: Player's UUID not found.
-        '500':
-          description: Internal server error.
+        '401':
+          description: Gacha items do not belong to you.
+        '403':
+          description: Not logged in.
+        '406':
+          description: You cannot start a match with yourself.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
   /pvp/checkPendingPvPRequests:
     get:
       tags:
@@ -342,10 +365,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PendingPvPRequests'
-        '400':
-          description: Invalid input data
-        '500':
-          description: Internal server error
+        '403':
+          description: Not logged in.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
   /pvp/acceptPvPRequest/{pvp_match_uuid}:
     post:
       tags:
@@ -374,11 +397,19 @@ paths:
               $ref: '#/components/schemas/Team'
       responses:
         '200':
-          description: Battle started successfully.
+          description: Match accepted and performed successfully.
         '400':
           description: Invalid pvp match id or team data.
-        '500':
-          description: Internal server error.
+        '401':
+          description: This request is not for you.
+        '403':
+          description: Not logged in.
+        '404':
+          description: User not found.
+        '406':
+          description: Match already ended.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
   /pvp/rejectPvPRequest/{pvp_match_uuid}:
     post:
       tags:
@@ -403,8 +434,12 @@ paths:
           description: Battle rejected successfully.
         '400':
           description: Invalid pvp match id.
-        '500':
-          description: Internal server error.
+        '401':
+          description: Cannot reject this PvP request.
+        '403':
+          description: Not logged in.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
   /pvp/status/{pvp_match_uuid}:
     get:
       tags:
@@ -431,10 +466,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PvPRequest'
-        '400':
-          description: Invalid match id.
-        '500':
-          description: Internal server error.
+        '403':
+          description: Not logged in.
+        '404':
+          description: Match not found.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
 
 
 
@@ -480,10 +517,10 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/InventoryItem'
-        '400':
-          description: Invalid request.
-        '500':
-          description: Internal server error
+        '403':
+          description: Not logged in.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
     delete:
       tags:
         - inventory
@@ -507,10 +544,14 @@ paths:
       responses:
         '200':
           description: Item removed from inventory
+        '403':
+          description: Not logged in.
         '404':
           description: Item not found.
-        '500':
-          description: Internal server error
+        '409':
+          description: Cannot remove item that is in an active auction.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
   /inventory/{inventory_item_id}:
     get:
       tags:
@@ -538,8 +579,12 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/InventoryItem'
-        '500':
-          description: Internal server error
+        '403':
+          description: Not logged in.
+        '404':
+          description: Item not found.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
 
 
 
@@ -582,10 +627,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Gacha'
+        '401':
+          description: Not enough credits.
         '403':
-          description: Insufficient funds.
-        '500':
-          description: Internal server error.
+          description: Not logged in.
+        '404':
+          description: Pool not found.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
   /gacha/{gacha_uuid}:
     get:
       tags:
@@ -613,8 +662,8 @@ paths:
                 $ref: '#/components/schemas/Gacha'
         '404':
           description: Gacha type not found.
-        '500':
-          description: Internal server error
+        '503':
+          description: Service temporarily unavailable. Please try again later.
   /gacha/pools:
     get:
       tags:
@@ -631,8 +680,8 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Pool'
-        '500':
-          description: Internal server error
+        '503':
+          description: Service temporarily unavailable. Please try again later.
   /gacha/list:
     get:
       tags:
@@ -656,8 +705,10 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Pool'
-        '500':
-          description: Internal server error
+        '403':
+          description: Not logged in.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
 
 
 
@@ -689,8 +740,8 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Bundle'
-        '500':
-          description: Internal server error
+        '503':
+          description: Service temporarily unavailable. Please try again later.
   /currency/buy/{bundle_id}:
     post:
       tags:
@@ -712,10 +763,14 @@ paths:
       responses:
         '200':
           description: Purchase successful.
-        '400':
-          description: Purchase failed.
-        '500':
-          description: Internal server error.
+        '403':
+          description: Not logged in.
+        '404':
+          description: Bundle not found.
+        '412':
+          description: You cannot afford this bundle.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
 
 
 
@@ -753,10 +808,12 @@ paths:
                 $ref: '#/components/schemas/User'
         '400':
           description: Invalid username.
+        '403':
+          description: Not logged in.
         '404':
-          description: Username not found.
-        '500':
-          description: Internal server error.
+          description: User not found.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
   /profile/delete:
     post:
       tags:
@@ -778,13 +835,13 @@ paths:
               $ref: "#/components/schemas/Password"
       responses:
         '200':
-          description: Account deleted.
-        '400':
+          description: Profile deleted successfully.
+        '401':
           description: Invalid password.
         '403':
           description: Not logged in.
-        '500':
-          description: Internal server error.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
   /profile/edit:
     put:
       tags:
@@ -814,12 +871,18 @@ paths:
       responses:
         '200':
           description: Profile updated.
+        '304':
+          description: No changes needed.
         '400':
-          description: Invalid fields.
+          description: Invalid request.
+        '401':
+          description: Invalid password.
         '403':
           description: Not logged in.
-        '500':
-          description: Internal server error.
+        '404':
+          description: User not found.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
 
 
 
@@ -865,8 +928,6 @@ paths:
           description: Invalid credentials.
         '409':
           description: You are already logged in.
-        '500':
-          description: Internal server error.
         '503':
           description: Service unavailable. Please try again later.
   /auth/logout:
@@ -887,8 +948,8 @@ paths:
           description: Logout successful.
         '403':
           description: Not logged in.
-        '500':
-          description: Internal server error.
+        '503':
+          description: Service unavailable. Please try again later.
   /auth/register:
     post:
       tags:
@@ -924,8 +985,6 @@ paths:
           description: The specified email is not valid.
         '409':
           description: The provided username / email is already in use.
-        '500':
-          description: Internal server error.
         '503':
           description: Service unavailable. Please try again later.
 
@@ -973,14 +1032,10 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/User'
-        '400':
-          description: Invalid username.
-        '401':
+        '403':
           description: This account is not authorized to perform this action.
-        '404':
-          description: Username not found.
-        '500':
-          description: Internal server error.
+        '503':
+          description: Service unavailable. Please try again later.
   /admin/profile/{user_uuid}/edit:
     put:
       tags:
@@ -1011,15 +1066,17 @@ paths:
             $ref: '#/components/schemas/Username'
       responses:
         '200':
-          description: Profile updated.
-        '400':
-          description: Invalid fields.
+          description: Profile successfully updated.
+        '304':
+          description: No changes to profile applied.
         '401':
           description: This account is not authorized to perform this action.
         '403':
-          description: Not logged in.
-        '500':
-          description: Internal server error.
+          description: Not authorized to perform this action.
+        '404':
+          description: User not found.
+        '503':
+          description: Service unavailable. Please try again later.
   /admin/profile/{user_uuid}/ban:
     delete:
       tags:
@@ -1043,12 +1100,16 @@ paths:
           description: Profile deleted.
         '400':
           description: Invalid fields.
-        '401':
-          description: This account is not authorized to perform this action.
+        '404':
+          description: User not found.
         '403':
-          description: Not logged in.
-        '500':
-          description: Internal server error.
+          description: This account is not authorized to perform this action.
+        '406':
+          description: You cannot delete your account like this.
+        '409':
+          description: Cannot ban a user with the ADMIN role.
+        '503':
+          description: Service unavailable. Please try again later.
   /admin/profile/{user_uuid}/history:
     get:
       tags:
@@ -1086,14 +1147,20 @@ paths:
       responses:
         '200':
           description: User transaction history.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/HistoryListINGAME"
+                  - $ref: "#/components/schemas/HistoryListBUNDLE"
         '400':
-          description: Invalid username.
-        '401':
+          description: Invalid history type.
+        '403':
           description: This account is not authorized to perform this action.
         '404':
-          description: Username not found.
-        '500':
-          description: Internal server error.
+          description: User not found.
+        '503':
+          description: Service unavailable. Please try again later.
   /admin/gacha/create:
     post:
       tags:
@@ -1114,16 +1181,16 @@ paths:
             schema:
               $ref: '#/components/schemas/Gacha'
       responses:
-        '200':
+        '201':
           description: Gacha created.
         '400':
-          description: Invalid fields.
-        '401':
-          description: This account is not authorized to perform this action.
+          description: Invalid request.
         '403':
-          description: Not logged in.
-        '500':
-          description: Internal server error.
+          description: This account is not authorized to perform this action.
+        '409':
+          description: The provided gacha uuid is already in use.
+        '503':
+          description: Service unavailable. Please try again later.
   /admin/gacha/{gacha_uuid}/update:
     put:
       tags:
@@ -1152,13 +1219,15 @@ paths:
         '200':
           description: Gacha updated.
         '400':
-          description: Invalid fields.
-        '401':
-          description: This account is not authorized to perform this action.
+          description: Invalid request.
         '403':
-          description: Not logged in.
-        '500':
-          description: Internal server error.
+          description: This account is not authorized to perform this action.
+        '404':
+          description: Gacha not found.
+        '406':
+          description: Gacha UUID in request is different from the one inside the gacha object.
+        '503':
+          description: Service unavailable. Please try again later.
   /admin/gacha/{gacha_uuid}/delete:
     delete:
       tags:
@@ -1181,13 +1250,13 @@ paths:
         '200':
           description: Gacha deleted.
         '400':
-          description: Invalid fields.
-        '401':
-          description: This account is not authorized to perform this action.
+          description: Invalid request.
         '403':
-          description: Not logged in.
-        '500':
-          description: Internal server error.
+          description: This account is not authorized to perform this action.
+        '404':
+          description: Gacha not found.
+        '503':
+          description: Service unavailable. Please try again later.
   /admin/pool/create:
     post:
       tags:
@@ -1208,16 +1277,22 @@ paths:
             schema:
               $ref: '#/components/schemas/Pool'
       responses:
-        '200':
+        '201':
           description: Pool created.
         '400':
-          description: Invalid fields.
-        '401':
-          description: This account is not authorized to perform this action.
+          description: Invalid request.
         '403':
-          description: Not logged in.
-        '500':
-          description: Internal server error.
+          description: This account is not authorized to perform this action.
+        '404':
+          description: Item UUID not found in database.
+        '409':
+          description: The provided pool id is already in use.
+        '412':
+          description: Invalid probabilities.
+        '416':
+          description: Price should be a positive number.
+        '503':
+          description: Service unavailable. Please try again later.
   /admin/pool/{pool_id}/update:
     put:
       tags:
@@ -1246,13 +1321,19 @@ paths:
         '200':
           description: Pool updated.
         '400':
-          description: Invalid fields.
-        '401':
-          description: This account is not authorized to perform this action.
+          description: Invalid request.
         '403':
-          description: Not logged in.
-        '500':
-          description: Internal server error.
+          description: This account is not authorized to perform this action.
+        '404':
+          description: Pool not found.
+        '406':
+          description: ool UUID in request is different from the one inside the pool object.
+        '412':
+          description: Invalid probabilities.
+        '416':
+          description: Price should be a positive number.
+        '503':
+          description: Service unavailable. Please try again later.
   /admin/pool/{pool_id}/delete:
     delete:
       tags:
@@ -1276,12 +1357,12 @@ paths:
           description: Pool deleted.
         '400':
           description: Invalid fields.
-        '401':
-          description: This account is not authorized to perform this action.
         '403':
-          description: Not logged in.
-        '500':
-          description: Internal server error.
+          description: This account is not authorized to perform this action.
+        '404':
+          description: Pool not found.
+        '503':
+          description: Service unavailable. Please try again later.
   /admin/auctions/{auction_uuid}/update:
     put:
       tags:
@@ -1310,13 +1391,21 @@ paths:
         '200':
           description: Auction updated.
         '400':
-          description: Invalid fields.
+          description: Invalid request.
         '401':
-          description: This account is not authorized to perform this action.
+          description: Current bid cannot be lower than starting price.
         '403':
-          description: Not logged in.
-        '500':
-          description: Internal server error.
+          description: This account is not authorized to perform this action.
+        '404':
+          description: Auction not found.
+        '412':
+          description: Starting price cannot be lower or equal to 0.
+        '416':
+          description: Current bid cannot be lower than 0.
+        '417':
+          description: Invalid date format.
+        '503':
+          description: Service unavailable. Please try again later.
   /admin/logs/:
     get:
       tags:
@@ -1339,10 +1428,10 @@ paths:
                 type: array
                 items:
                   type: string
-        '401':
+        '403':
           description: This account is not authorized to perform this action.
-        '500':
-          description: Internal server error.
+        '503':
+          description: Service unavailable. Please try again later.
   /admin/feedback/list:
     get:
       tags:
@@ -1370,17 +1459,15 @@ paths:
             application/json:
               schema:
                 items:
-                  $ref: '#/components/schemas/FeedbackId'
+                  $ref: '#/components/schemas/FeedbackPreview'
                 type: array
           description: Feedback Ids.
         '400':
-          description: Invalid username.
-        '401':
+          description: Invalid request.
+        '403':
           description: This account is not authorized to perform this action.
-        '404':
-          description: Feedbacks not found.
-        '500':
-          description: Internal server error.
+        '503':
+          description: Service unavailable. Please try again later.
   /admin/feedback/{feedback_id}:
     get:
       tags:
@@ -1404,37 +1491,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Feedback'
-          description: Successful operation
+                $ref: '#/components/schemas/FeedbackWithUsername'
+          description: Successful operation.
+        '400':
+          description: Invalid request.
+        '403':
+          description: This account is not authorized to perform this action.
         '404':
-          description: Feedback not found
-        '500':
-          description: Internal server error
+          description: Feedback not found.
+        '503':
+          description: Service unavailable. Please try again later.
 
 components:
   schemas:
-    FeedbackId:
-      description: Id of feedback.
-      title: id
-      type: integer
-    Feedback:
-      properties:
-        id:
-          $ref: '#/components/schemas/FeedbackId'
-        user_uuid:
-          $ref: '#/components/schemas/UserId'
-        content:
-          description: Actual feedback content.
-          example: I love this game11!
-          title: content
-          type: string
-        timestamp:
-          description: Timestamp when user created feedback
-          format: date-time
-          title: timestamp
-          type: string
-      title: Feedback
-      type: object
     GachaStat:
       type: string
       example: A
@@ -1450,18 +1519,6 @@ components:
       description: Currency code-name
       pattern: ^[A-Z]{3}$
       example: EUR
-    CurrencyItem:
-      type: object
-      properties:
-        name:
-          $ref: '#/components/schemas/CurrencyName'
-        value:
-          type: integer
-          default: 10
-          example: 10
-          description: Amount of real currency.
-          minimum: 0
-          maximum: 999
     Bundle:
       type: object
       properties:
@@ -1476,10 +1533,18 @@ components:
           description: No. of credits.
           example: 5000
         prices:
-          type: array
+          type: object
           description: List of prices in different currencies.
-          items:
-            $ref: '#/components/schemas/CurrencyItem'
+          properties:
+            name:
+              $ref: '#/components/schemas/CurrencyName'
+            value:
+              type: integer
+              default: 10
+              example: 10
+              description: Amount of real currency.
+              minimum: 0
+              maximum: 999
     PoolId:
       type: string
       example: pool_starter
@@ -1605,6 +1670,12 @@ components:
           type: string
           format: date-time
           description: Timestamp when user created their account
+        currency:
+          type: integer
+          description: Ingame currency of the user
+        pvp_score:
+          type: integer
+          description: Pvp score of the user
     GachaId:
       type: string
       format: uuid
@@ -1652,7 +1723,7 @@ components:
           minItems: 7
           maxItems: 7
           items:
-            $ref: '#/components/schemas/Gacha'
+            $ref: '#/components/schemas/GachaId'
       description: Team used by players to battle each others.
     PvPMatchId:
       type: string
@@ -1720,7 +1791,12 @@ components:
           minItems: 0
           maxItems: 100
           items:
-            $ref: '#/components/schemas/PvPRequest'
+            type: object
+            properties:
+              "pvp_match_id":
+                $ref: '#/components/schemas/PvPMatchId'
+              "from":
+                $ref: '#/components/schemas/UserId'
       description: List of pending pvp requests.
     InventoryItem:
       type: object
@@ -1733,10 +1809,6 @@ components:
           type: string
           format: uuid
           description: UUID representing a gacha
-        pull_date:
-          type: string
-          format: date-time
-          description: Timestamp of first obtainment
         obtained_date:
           type: string
           format: date-time
@@ -1748,3 +1820,80 @@ components:
           type: number
           format: float
           description: Game currency used to buy this item
+    FeedbackPreview:
+      properties:
+        id:
+          $ref: '#/components/schemas/FeedbackId'
+        user_uuid:
+          $ref: '#/components/schemas/UserId'
+        timestamp:
+          description: Timestamp when user created feedback
+          format: date-time
+          title: timestamp
+          type: string
+      title: Feedback preview, without content
+      type: object
+    FeedbackId:
+      description: Id of feedback.
+      title: FeedbackId
+      type: integer
+      example: 7
+    FeedbackWithUsername:
+      properties:
+        id:
+          $ref: '#/components/schemas/FeedbackId'
+        user_uuid:
+          $ref: '#/components/schemas/UserId'
+        username:
+          $ref: '#/components/schemas/Username'
+        content:
+          description: Actual feedback content.
+          example: I love this game11!
+          title: content
+          type: string
+        timestamp:
+          description: Timestamp when user created feedback
+          format: date-time
+          title: timestamp
+          type: string
+      title: Feedback preview, including content
+      type: object
+    HistoryListINGAME:
+      type: array
+      items:
+        type: object
+        properties:
+          user_uuid:
+            $ref: "#/components/schemas/UserId"
+          username:
+            $ref: "#/components/schemas/Username"
+          timestamp:
+            description: Timestamp when user created feedback
+            format: date-time
+            title: timestamp
+            type: string
+          credits:
+            type: integer
+            description: No. of credits.
+            example: 5000
+          transaction_type:
+            type: string
+            example: 'bought_bundle'
+    HistoryListBUNDLE:
+      type: array
+      items:
+        type: object
+        properties:
+          user_uuid:
+            $ref: "#/components/schemas/UserId"
+          username:
+            $ref: "#/components/schemas/Username"
+          timestamp:
+            description: Timestamp when user created feedback
+            format: date-time
+            title: timestamp
+            type: string
+          codename:
+            type: string
+          currency_name:
+            $ref: '#/components/schemas/CurrencyName'

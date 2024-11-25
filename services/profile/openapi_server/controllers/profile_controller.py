@@ -60,7 +60,7 @@ def delete_profile():
         return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503
 
     if not bcrypt.checkpw(password.encode('utf-8'), user_password.encode('utf-8')):
-        return jsonify({"error": "Invalid password."}), 400
+        return jsonify({"error": "Invalid password."}), 401
 
 
     # /db_manager/profile/delete
@@ -98,7 +98,7 @@ def edit_profile():
         logging.info(f"Request data: {edit_request}")
     except Exception as e:
         logging.error(f"Error parsing request: {str(e)}")
-        return jsonify({"error": "Invalid request format"}), 400
+        return jsonify({"error": "Invalid request."}), 400
 
     # First verify the password like in delete_profile
     # /db_manager/profile/get_user_hashed_psw
@@ -117,7 +117,7 @@ def edit_profile():
     edit_request.password.encode('utf-8'),
     hashed_password.encode('utf-8')
     ):
-        return jsonify({"error": "Invalid password"}), 403
+        return jsonify({"error": "Invalid password"}), 401
 
     # If password verified, proceed with updates
     updates = []
