@@ -1536,12 +1536,14 @@ components:
               $ref: '#/components/schemas/Team'
             team2:
               $ref: '#/components/schemas/Team'
-        winner:
-          type: boolean
-          description: True if winner is player1, False if winner is player2, empty if there is no winner yet
+        winner_id:
+          $ref: '#/components/schemas/UserId'
         match_log:
           $ref: '#/components/schemas/MatchLog'
-        
+        match_timestamp:
+          type: string
+          format: date-time
+          description: Match timestamp.
       description: Request of a PvP match sent by a player.
     MatchRequests:
       type: array
@@ -1555,34 +1557,39 @@ components:
     MatchPairing:
       type: object
       properties:
-        pair:
-          type: string
-          example: player1 StarPlatinum vs player2 GoldenExperience
         extracted_stat:
-          $ref: '#/components/schemas/GachaStat'
+          enum:
+            - power
+            - speed
+            - durability
+            - precision
+            - range
         player1:
           type: object
           properties:
+            stand_name:
+              type: string
+              description: Name of the gacha
+              example: Tower of Gray
             stand_stat:
-              type: integer
-              minimum: 1
-              maximum: 5
-              example: 4
-              description: Value of extracted_stat
+              $ref: '#/components/schemas/GachaStat' 
         player2:
           type: object
           properties:
+            stand_name:
+              type: string
+              description: Name of the gacha
+              example: Tower of Gray
             stand_stat:
-              type: integer
-              minimum: 1
-              maximum: 5
-              example: 3
-              description: Value of extracted_stat
+              $ref: '#/components/schemas/GachaStat' 
+        round_winner:
+          type: string
+          example: Player1's Tower of Gray
     MatchLog:
       type: object
       description: Infos on a specific match
       properties:
-        pairings:
+        rounds:
           type: array
           minItems: 7
           maxItems: 7
@@ -1661,7 +1668,7 @@ components:
     User:
       type: object
       properties:
-        id:
+        uuid:
           $ref: '#/components/schemas/UserId'
         username:
           $ref: '#/components/schemas/Username'
@@ -1810,8 +1817,15 @@ components:
           type: integer
           description: No. of credits.
           example: 5000
-        prices:
-            $ref: '#/components/schemas/CurrencyItem'
+        currency:
+          $ref: '#/components/schemas/CurrencyName'
+        value:
+          type: integer
+          default: 10
+          example: 10
+          description: Amount of real currency.
+          minimum: 0
+          maximum: 999
     GachaId:
       type: string
       format: uuid
@@ -1854,8 +1868,6 @@ components:
             - precision
             - range
             - potential
-          additionalProperties:
-            type: string
     PoolId:
       type: string
       example: pool_starter
