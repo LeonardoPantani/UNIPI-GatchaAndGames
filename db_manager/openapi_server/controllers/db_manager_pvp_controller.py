@@ -18,9 +18,13 @@ from openapi_server.models.set_match_results_request import SetMatchResultsReque
 from openapi_server.models.verify_gacha_item_ownership_request import VerifyGachaItemOwnershipRequest
 from openapi_server import util
 
-from flask import current_app, jsonify
-from pymysql.err import OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError
+from flask import jsonify
+from mysql.connector.errors import (
+    OperationalError, DataError, DatabaseError, IntegrityError,
+    InterfaceError, InternalError, ProgrammingError
+)
 from pybreaker import CircuitBreaker, CircuitBreakerError
+from openapi_server.helpers.db import get_db
 
 
 circuit_breaker = CircuitBreaker(fail_max=5, reset_timeout=5, exclude=[OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError])
@@ -34,11 +38,10 @@ def check_pending_pvp_requests(ban_user_profile_request=None):
     ban_user_profile_request = BanUserProfileRequest.from_dict(connexion.request.get_json())
     user_uuid = ban_user_profile_request.user_uuid
 
-    mysql = current_app.extensions.get('mysql')
     try:
         @circuit_breaker
         def make_request_to_db():
-            connection = mysql.connect()
+            connection = get_db()
             cursor = connection.cursor()
             check_query = '''
             SELECT BIN_TO_UUID(match_uuid), BIN_TO_UUID(player_1_uuid), BIN_TO_UUID(player_2_uuid)
@@ -65,22 +68,22 @@ def check_pending_pvp_requests(ban_user_profile_request=None):
         
         return formatted_results, 200
 
-    except OperationalError:  # if connect to db fails means there is an error in the db
+    except OperationalError: 
         logging.error("Query 1 [" + user_uuid + "]: Operational error.")
         return "", 500
-    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+    except ProgrammingError:
         logging.error("Query 1 ["+ user_uuid +"]: Programming error.")
         return "", 500
-    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+    except InternalError:
         logging.error("Query 1 ["+ user_uuid +"]: Internal error.")
         return "", 500
-    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+    except InterfaceError:
         logging.error("Query 1 ["+ user_uuid +"]: Interface error.")
         return "", 500
-    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+    except DatabaseError:
         logging.error("Query 1 ["+ user_uuid +"]: Database error.")
         return "", 500
-    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError:
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return "", 503
 
@@ -96,12 +99,11 @@ def finalize_pvp_request_sending(pv_p_request_full=None):
     user_uuid = pv_p_request_full.receiver_id
     teams = pv_p_request_full.teams
 
-    mysql = current_app.extensions.get('mysql')
     connection = None
     try:
         @circuit_breaker
         def make_request_to_db():
-            connection = mysql.connect()
+            connection = get_db()
             cursor = connection.cursor()
             check_query = '''
                 SELECT COUNT(*) 
@@ -115,29 +117,29 @@ def finalize_pvp_request_sending(pv_p_request_full=None):
         if result[0] != 1:
             return "", 404
         
-    except OperationalError:  # if connect to db fails means there is an error in the db
+    except OperationalError: 
         logging.error("Query 1 ["+ user_uuid + "]: Operational error.")
         return "", 500
-    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+    except ProgrammingError:
         logging.error("Query 1 ["+ user_uuid +"]: Programming error.")
         return "", 500
-    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+    except InternalError:
         logging.error("Query 1 ["+ user_uuid +"]: Internal error.")
         return "", 500
-    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+    except InterfaceError:
         logging.error("Query 1 ["+ user_uuid +"]: Interface error.")
         return "", 500
-    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+    except DatabaseError:
         logging.error("Query 1 ["+ user_uuid +"]: Database error.")
         return "", 500
-    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError:
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return "", 503
     
     try:
         @circuit_breaker
         def make_request_to_db():
-            connection = mysql.connect()
+            connection = get_db()
             cursor = connection.cursor()
             insert_query = '''
                 INSERT INTO pvp_matches (match_uuid, player_1_uuid, player_2_uuid, winner, match_log, gachas_types_used)
@@ -149,27 +151,27 @@ def finalize_pvp_request_sending(pv_p_request_full=None):
         make_request_to_db()
         return "", 200
 
-    except OperationalError:  # if connect to db fails means there is an error in the db
+    except OperationalError: 
         logging.error("Query 2 ["+ user_uuid + "]: Operational error.")
         return "", 500
-    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+    except ProgrammingError:
         logging.error("Query 2 ["+ user_uuid +"]: Programming error.")
         return "", 500
-    except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
+    except IntegrityError:
         logging.error("Query 2 ["+ user_uuid +"]: Integrity error.")
         if connection:
             connection.rollback()
         return "", 500
-    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+    except InternalError:
         logging.error("Query 2 ["+ user_uuid +"]: Internal error.")
         return "", 500
-    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+    except InterfaceError:
         logging.error("Query 2 ["+ user_uuid +"]: Interface error.")
         return "", 500
-    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+    except DatabaseError:
         logging.error("Query 2 ["+ user_uuid +"]: Database error.")
         return "", 500
-    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError:
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return "", 503
 
@@ -184,11 +186,10 @@ def get_gacha_stat(get_gacha_stat_request=None):
     player2_item_uuid = get_gacha_stat_request.player2_stand
     extracted_stat = get_gacha_stat_request.extracted_stat
     
-    mysql = current_app.extensions.get('mysql')
     try:
         @circuit_breaker
         def make_request_to_db():
-            connection = mysql.connect()
+            connection = get_db()
             cursor = connection.cursor()
             cursor.execute(
                 f'SELECT gt.name, gt.{extracted_stat}, gt.stat_potential FROM inventories i JOIN gachas_types gt ON i.stand_uuid = gt.uuid WHERE i.item_uuid IN (UUID_TO_BIN(%s), UUID_TO_BIN(%s))',
@@ -211,22 +212,22 @@ def get_gacha_stat(get_gacha_stat_request=None):
         
         return jsonify(response), 200
 
-    except OperationalError:  # if connect to db fails means there is an error in the db
+    except OperationalError: 
         logging.error("Query : Operational error.")
         return "", 500
-    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+    except ProgrammingError:
         logging.error("Query : Programming error.")
         return "", 500
-    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+    except InternalError:
         logging.error("Query : Internal error.")
         return "", 500
-    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+    except InterfaceError:
         logging.error("Query : Interface error.")
         return "", 500
-    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+    except DatabaseError:
         logging.error("Query : Database error.")
         return "", 500
-    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError:
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return "", 503
 
@@ -239,7 +240,6 @@ def get_pvp_status(get_pvp_status_request=None):
     get_pvp_status_request = GetPvpStatusRequest.from_dict(connexion.request.get_json())
     pvp_match_uuid = get_pvp_status_request.pvp_match_uuid
 
-    mysql = current_app.extensions.get('mysql')
     try:
         @circuit_breaker
         def make_request_to_db():
@@ -249,7 +249,7 @@ def get_pvp_status(get_pvp_status_request=None):
             match_log = None
             timestamp = None
 
-            connection = mysql.connect()
+            connection = get_db()
             cursor = connection.cursor()
             cursor.execute(
                 'SELECT BIN_TO_UUID(player_1_uuid), BIN_TO_UUID(player_2_uuid), winner, match_log, timestamp FROM pvp_matches WHERE match_uuid = UUID_TO_BIN(%s)',
@@ -292,22 +292,22 @@ def get_pvp_status(get_pvp_status_request=None):
         
         return response, 200
 
-    except OperationalError:  # if connect to db fails means there is an error in the db
+    except OperationalError: 
         logging.error("Query [" + pvp_match_uuid + "]: Operational error.")
         return "", 500
-    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+    except ProgrammingError:
         logging.error("Query ["+ pvp_match_uuid +"]: Programming error.")
         return "", 500
-    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+    except InternalError:
         logging.error("Query ["+ pvp_match_uuid +"]: Internal error.")
         return "", 500
-    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+    except InterfaceError:
         logging.error("Query ["+ pvp_match_uuid +"]: Interface error.")
         return "", 500
-    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+    except DatabaseError:
         logging.error("Query ["+ pvp_match_uuid +"]: Database error.")
         return "", 500
-    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError:
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return "", 503
 
@@ -321,11 +321,10 @@ def reject_pvp_prequest(reject_pvp_prequest_request=None):
     pvp_match_uuid = reject_pvp_prequest_request.pvp_match_uuid
     user_uuid = reject_pvp_prequest_request.user_uuid
     
-    mysql = current_app.extensions.get('mysql')
     try:
         @circuit_breaker
         def make_request_to_db():
-            connection = mysql.connect()
+            connection = get_db()
             cursor = connection.cursor()
             delete_query = '''
                 DELETE FROM pvp_matches 
@@ -340,22 +339,22 @@ def reject_pvp_prequest(reject_pvp_prequest_request=None):
     
         return "", 200
 
-    except OperationalError:  # if connect to db fails means there is an error in the db
+    except OperationalError: 
         logging.error("Query [" + pvp_match_uuid + ", " + user_uuid + "]: Operational error.")
         return "", 500
-    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+    except ProgrammingError:
         logging.error("Query ["+ pvp_match_uuid + ", " + user_uuid + "]: Programming error.")
         return "", 400
-    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+    except InternalError:
         logging.error("Query ["+ pvp_match_uuid + ", " + user_uuid + "]: Internal error.")
         return "", 500
-    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+    except InterfaceError:
         logging.error("Query ["+ pvp_match_uuid + ", " + user_uuid + "]: Interface error.")
         return "", 500
-    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+    except DatabaseError:
         logging.error("Query ["+ pvp_match_uuid + ", " + user_uuid + "]: Database error.")
         return "", 500
-    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError:
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return "", 503
 
@@ -376,11 +375,10 @@ def set_match_results(set_match_results_request=None):
     player1_uuid = pvp_match["sender_id"]
     player2_uuid = pvp_match["receiver_id"]
 
-    mysql = current_app.extensions.get('mysql')
     try:
         @circuit_breaker
         def make_request_to_db():
-            connection = mysql.connect()
+            connection = get_db()
             cursor = connection.cursor()
             cursor.execute(
                 'UPDATE pvp_matches SET winner = %s, match_log = %s, timestamp = CURRENT_TIMESTAMP, gachas_types_used = %s WHERE match_uuid = UUID_TO_BIN(%s)',
@@ -405,22 +403,22 @@ def set_match_results(set_match_results_request=None):
 
         return "", 200
         
-    except OperationalError:  # if connect to db fails means there is an error in the db
+    except OperationalError: 
         logging.error("Query : Operational error.")
         return "", 500
-    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+    except ProgrammingError:
         logging.error("Query : Programming error.")
         return "", 400
-    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+    except InternalError:
         logging.error("Query : Internal error.")
         return "", 500
-    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+    except InterfaceError:
         logging.error("Query : Interface error.")
         return "", 500
-    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+    except DatabaseError:
         logging.error("Query : Database error.")
         return "", 500
-    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError:
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return "", 503
 
@@ -433,11 +431,10 @@ def verify_gacha_item_ownership(verify_gacha_item_ownership_request=None):
     verify_gacha_item_ownership_request = VerifyGachaItemOwnershipRequest.from_dict(connexion.request.get_json())
     team = verify_gacha_item_ownership_request.team
     team = tuple(team.strip('()').split(','))
-    mysql = current_app.extensions.get('mysql')
     try:
         @circuit_breaker
         def make_request_to_db():
-            connection = mysql.connect()
+            connection = get_db()
             cursor = connection.cursor()
             placeholders = ', '.join(['%s'] * len(team))
             query = f'SELECT DISTINCT BIN_TO_UUID(owner_uuid) FROM inventories WHERE BIN_TO_UUID(item_uuid) IN ({placeholders})'
@@ -455,21 +452,21 @@ def verify_gacha_item_ownership(verify_gacha_item_ownership_request=None):
         
         return player1_uuid, 200
 
-    except OperationalError:  # if connect to db fails means there is an error in the db
+    except OperationalError: 
         logging.error("Query [" + team + "]: Operational error.")
         return "", 500
-    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+    except ProgrammingError:
         logging.error("Query ["+ team + "]: Programming error.")
         return "", 500
-    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+    except InternalError:
         logging.error("Query ["+ team + "]: Internal error.")
         return "", 500
-    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+    except InterfaceError:
         logging.error("Query ["+ team + "]: Interface error.")
         return "", 500
-    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+    except DatabaseError:
         logging.error("Query ["+ team + "]: Database error.")
         return "", 500
-    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError:
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return "", 503

@@ -1,7 +1,6 @@
 import traceback
 import connexion
 import bcrypt
-import pymysql
 import logging
 import requests
 
@@ -14,7 +13,7 @@ from openapi_server.models.edit_profile_request import EditProfileRequest
 from openapi_server.models.user import User
 from openapi_server import util
 
-from flask import session, current_app, jsonify
+from flask import session, jsonify
 
 from pybreaker import CircuitBreaker, CircuitBreakerError
 
@@ -112,7 +111,7 @@ def edit_profile():
 
     hashed_password = response.json().get('password') 
 
-            # Verify password
+    # Verify password
     if not edit_request.password or not bcrypt.checkpw(
     edit_request.password.encode('utf-8'),
     hashed_password.encode('utf-8')

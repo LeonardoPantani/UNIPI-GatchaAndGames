@@ -13,7 +13,5 @@ setuptools >= 21.0.0
 Flask == 2.1.1
 tox == 4.23.2
 python-dotenv == 1.0.1
-flask-mysql == 1.5.2
 cryptography == 43.0.3
-bcrypt == 4.2.0
 pybreaker == 1.2.0

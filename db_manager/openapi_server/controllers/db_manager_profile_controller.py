@@ -9,9 +9,13 @@ from openapi_server.models.get_user_hash_psw200_response import GetUserHashPsw20
 from openapi_server.models.user import User
 from openapi_server import util
 
-from flask import current_app, jsonify
-from pymysql.err import OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError
+from flask import jsonify
+from mysql.connector.errors import (
+    OperationalError, DataError, DatabaseError, IntegrityError,
+    InterfaceError, InternalError, ProgrammingError
+)
 from pybreaker import CircuitBreaker, CircuitBreakerError
+from openapi_server.helpers.db import get_db
 import logging
 
 # circuit breaker to stop requests when dbmanager fails
@@ -25,11 +29,10 @@ def delete_user_profile(ban_user_profile_request=None):
     ban_user_profile_request = BanUserProfileRequest.from_dict(connexion.request.get_json())
     user_uuid = ban_user_profile_request.user_uuid
 
-    mysql = current_app.extensions.get('mysql')
     try:
         @circuit_breaker
         def make_request_to_db():
-            connection = mysql.connect()
+            connection = get_db()
             cursor = connection.cursor()
             cursor.execute('DELETE FROM feedbacks WHERE user_uuid = UUID_TO_BIN(%s)', (user_uuid,))
             cursor.execute('DELETE FROM ingame_transactions WHERE user_uuid = UUID_TO_BIN(%s)', (user_uuid,)) 
@@ -97,13 +100,12 @@ def edit_user_info(edit_user_info_request=None):
     email = edit_user_info_request.email
     username = edit_user_info_request.username
 
-    mysql = current_app.extensions.get('mysql')
 
     try:
         @circuit_breaker
         def make_request_to_db():
             updates = 0
-            connection = mysql.connect()
+            connection = get_db()
             cursor = connection.cursor()
             
             # Check if user exists
@@ -175,12 +177,11 @@ def get_user_hash_psw(ban_user_profile_request=None):
     ban_user_profile_request = BanUserProfileRequest.from_dict(connexion.request.get_json())
     user_uuid = ban_user_profile_request.user_uuid
 
-    mysql = current_app.extensions.get('mysql')
 
     try:
         @circuit_breaker
         def make_request_to_db():
-            connection = mysql.connect()
+            connection = get_db()
             cursor = connection.cursor()
             cursor.execute(
                 'SELECT password FROM users WHERE uuid = UUID_TO_BIN(%s)',
@@ -196,22 +197,22 @@ def get_user_hash_psw(ban_user_profile_request=None):
         
         return jsonify({"hashed_password": result[0]}), 200
 
-    except OperationalError: # if connect to db fails means there is an error in the db
+    except OperationalError:
         logging.error("Query ["+ user_uuid +"]: Operational error.")
         return "", 500
-    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+    except ProgrammingError:
         logging.error("Query ["+ user_uuid +"]: Programming error.")
         return "", 400
-    except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
+    except IntegrityError:
         logging.error("Query ["+ user_uuid +"]: Integrity error.") 
         return "", 409
-    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+    except InternalError:
         logging.error("Query ["+ user_uuid +"]: Internal error.")
         return "", 500
-    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server 
+    except InterfaceError: 
         logging.error("Query ["+ user_uuid +"]: Interface error.")
         return "", 500
-    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+    except DatabaseError:
         logging.error("Query ["+ user_uuid +"]: Database error.")
         return "", 500
     except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open
@@ -226,11 +227,10 @@ def get_user_info(ban_user_profile_request=None):
     ban_user_profile_request = BanUserProfileRequest.from_dict(connexion.request.get_json())
     user_uuid = ban_user_profile_request.user_uuid
 
-    mysql = current_app.extensions.get('mysql')
     try:
         @circuit_breaker
         def make_request_to_db():
-            connection = mysql.connect()
+            connection = get_db()
             cursor = connection.cursor()
             cursor.execute('''
                 SELECT BIN_TO_UUID(u.uuid) as id, p.username, u.email, p.created_at 
@@ -254,21 +254,21 @@ def get_user_info(ban_user_profile_request=None):
 
         return user, 200
 
-    except OperationalError: # if connect to db fails means there is an error in the db
+    except OperationalError:
         logging.error("Query ["+ user_uuid +"]: Operational error.")
         return "", 500
-    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+    except ProgrammingError:
         logging.error("Query ["+ user_uuid +"]: Programming error.")
         return "", 400
-    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+    except InternalError:
         logging.error("Query ["+ user_uuid +"]: Internal error.")
         return "", 500
-    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+    except InterfaceError:
         logging.error("Query ["+ user_uuid +"]: Interface error.")
         return "", 500
-    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+    except DatabaseError:
         logging.error("Query ["+ user_uuid +"]: Database error.")
         return "", 500
-    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError:
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return "", 503

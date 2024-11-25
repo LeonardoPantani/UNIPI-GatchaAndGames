@@ -16,9 +16,13 @@ from openapi_server.models.list_auctions_request import ListAuctionsRequest
 from openapi_server.models.place_bid_request import PlaceBidRequest
 from openapi_server import util
 
-from flask import current_app, jsonify
-from pymysql.err import OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError
+from flask import jsonify
+from mysql.connector.errors import (
+    OperationalError, DataError, DatabaseError, IntegrityError,
+    InterfaceError, InternalError, ProgrammingError
+)
 from pybreaker import CircuitBreaker, CircuitBreakerError
+from openapi_server.helpers.db import get_db
 import logging
 from datetime import datetime
 
@@ -37,12 +41,11 @@ def complete_auction_sale(complete_auction_sale_request=None):
     current_bid = complete_auction_sale_request.current_bid
     bidder_uuid = complete_auction_sale_request.user_uuid
 
-    mysql = current_app.extensions.get('mysql')
 
     try:
         @circuit_breaker
         def make_request_to_db():
-            connection = mysql.connect()
+            connection = get_db()
             cursor = connection.cursor()
             cursor.execute(
                 'SELECT BIN_TO_UUID(owner_uuid) FROM inventories WHERE item_uuid = UUID_TO_BIN(%s)',
@@ -76,13 +79,13 @@ def complete_auction_sale(complete_auction_sale_request=None):
         make_request_to_db()
 
         return "", 200
-    except OperationalError: # if connect to db fails means there is an error in the db
+    except OperationalError:
         logging.error("Query ["+ bidder_uuid + ", " + item_uuid +"]: Operational error.")
         return "", 500
-    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+    except ProgrammingError:
         logging.error("Query ["+ bidder_uuid + ", " + item_uuid +"]: Programming error.")
         return "", 400
-    except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
+    except IntegrityError:
         logging.error("Query ["+ bidder_uuid + ", " + item_uuid +"]: Integrity error.")
         # if connection:
         #     connection.rollback()
@@ -90,16 +93,16 @@ def complete_auction_sale(complete_auction_sale_request=None):
     except DataError: # if data format is invalid or out of range or size
         logging.error("Query ["+ bidder_uuid + ", " + item_uuid +"]: Data error.")
         return "", 400
-    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+    except InternalError:
         logging.error("Query ["+ bidder_uuid + ", " + item_uuid +"]: Internal error.")
         return "", 500
-    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+    except InterfaceError:
         logging.error("Query ["+ bidder_uuid + ", " + item_uuid +"]: Interface error.")
         return "", 500
-    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+    except DatabaseError:
         logging.error("Query ["+ bidder_uuid + ", " + item_uuid +"]: Database error.")
         return "", 500
-    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError:
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return "", 503
 
@@ -117,12 +120,11 @@ def create_auction(get_auction_status200_response=None):
     starting_price = auction_request.starting_price
     end_time = auction_request.end_time
 
-    mysql = current_app.extensions.get('mysql')
     connection = None
     try:
         @circuit_breaker
         def make_request_to_db():
-            connection = mysql.connect()
+            connection = get_db()
             cursor = connection.cursor()
             cursor.execute(
                 'SELECT BIN_TO_UUID(uuid) FROM auctions WHERE item_uuid = UUID_TO_BIN(%s) AND end_time > %s',
@@ -144,13 +146,13 @@ def create_auction(get_auction_status200_response=None):
 
         return "", code
     
-    except OperationalError: # if connect to db fails means there is an error in the db
+    except OperationalError:
         logging.error("Query ["+ auction_uuid + ", " + item_uuid +"]: Operational error.")
         return "", 500
-    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+    except ProgrammingError:
         logging.error("Query ["+ auction_uuid + ", " + item_uuid +"]: Programming error.")
         return "", 500
-    except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
+    except IntegrityError:
         logging.error("Query ["+ auction_uuid + ", " + item_uuid +"]: Integrity error.")
         if connection:
             connection.rollback()
@@ -158,16 +160,16 @@ def create_auction(get_auction_status200_response=None):
     except DataError: # if data format is invalid or out of range or size
         logging.error("Query ["+ auction_uuid + ", " + item_uuid +"]: Data error.")
         return "", 500
-    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+    except InternalError:
         logging.error("Query ["+ auction_uuid + ", " + item_uuid +"]: Internal error.")
         return "", 500
-    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+    except InterfaceError:
         logging.error("Query ["+ auction_uuid + ", " + item_uuid +"]: Interface error.")
         return "", 500
-    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+    except DatabaseError:
         logging.error("Query ["+ auction_uuid + ", " + item_uuid +"]: Database error.")
         return "", 500
-    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError:
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return "", 503
 
@@ -181,11 +183,10 @@ def get_auction_status(get_auction_status_request=None):
 
     auction_uuid = get_auction_status_request.uuid
 
-    mysql = current_app.extensions.get('mysql')
     try:
         @circuit_breaker
         def make_request_to_db():
-            connection = mysql.connect()
+            connection = get_db()
             cursor = connection.cursor()
             #Get auction status from database
             cursor.execute(
@@ -213,28 +214,28 @@ def get_auction_status(get_auction_status_request=None):
         }
 
         return payload, 200
-    except OperationalError: # if connect to db fails means there is an error in the db
+    except OperationalError:
         logging.error("Query ["+ auction_uuid +"]: Operational error.")
         return "", 500
-    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+    except ProgrammingError:
         logging.error("Query ["+ auction_uuid +"]: Programming error.")
         return "", 400
-    except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
+    except IntegrityError:
         logging.error("Query ["+ auction_uuid +"]: Integrity error.")
         return "", 500
     except DataError: # if data format is invalid or out of range or size
         logging.error("Query ["+ auction_uuid +"]: Data error.")
         return "", 500
-    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+    except InternalError:
         logging.error("Query ["+ auction_uuid +"]: Internal error.")
         return "", 500
-    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+    except InterfaceError:
         logging.error("Query ["+ auction_uuid +"]: Interface error.")
         return "", 500
-    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+    except DatabaseError:
         logging.error("Query ["+ auction_uuid +"]: Database error.")
         return "", 500
-    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError:
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return "", 503
 
@@ -248,11 +249,10 @@ def get_item_with_owner(get_item_with_owner_request=None):
     user_uuid = get_item_with_owner_request.user_uuid
     item_uuid = get_item_with_owner_request.item_uuid
 
-    mysql = current_app.extensions.get('mysql')
     try:
         @circuit_breaker
         def make_request_to_db():
-            connection = mysql.connect()
+            connection = get_db()
             cursor = connection.cursor()
             cursor.execute(
                 'SELECT BIN_TO_UUID(owner_uuid), BIN_TO_UUID(item_uuid), BIN_TO_UUID(stand_uuid), obtained_at, owners_no, currency_spent FROM inventories WHERE BIN_TO_UUID(owner_uuid) = %s AND BIN_TO_UUID(item_uuid) = %s',
@@ -276,28 +276,28 @@ def get_item_with_owner(get_item_with_owner_request=None):
         
         return jsonify(payload), 200
     
-    except OperationalError: # if connect to db fails means there is an error in the db
+    except OperationalError:
         logging.error("Query ["+ item_uuid +"]: Operational error.")
         return "", 500
-    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+    except ProgrammingError:
         logging.error("Query ["+ item_uuid +"]: Programming error.")
         return "", 500
-    except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
+    except IntegrityError:
         logging.error("Query ["+ item_uuid +"]: Integrity error.")
         return "", 500
     except DataError: # if data format is invalid or out of range or size
         logging.error("Query ["+ item_uuid +"]: Data error.")
         return "", 500
-    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+    except InternalError:
         logging.error("Query ["+ item_uuid +"]: Internal error.")
         return "", 500
-    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+    except InterfaceError:
         logging.error("Query ["+ item_uuid +"]: Interface error.")
         return "", 500
-    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+    except DatabaseError:
         logging.error("Query ["+ item_uuid +"]: Database error.")
         return "", 500
-    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError:
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return "", 503
 
@@ -311,11 +311,10 @@ def get_user_currency(ban_user_profile_request=None):
     
     user_uuid = user_currency_request.user_uuid
 
-    mysql = current_app.extensions.get('mysql')
     try:
         @circuit_breaker
         def make_request_to_db():
-            connection = mysql.connect()
+            connection = get_db()
             cursor = connection.cursor()
             #Get user's currency from the database
             cursor.execute(
@@ -335,28 +334,28 @@ def get_user_currency(ban_user_profile_request=None):
 
         return payload, 200
     
-    except OperationalError: # if connect to db fails means there is an error in the db
+    except OperationalError:
         logging.error("Query ["+user_uuid +"]: Operational error.")
         return "", 500
-    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+    except ProgrammingError:
         logging.error("Query ["+ user_uuid +"]: Programming error.")
         return "", 500
-    except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
+    except IntegrityError:
         logging.error("Query ["+ user_uuid +"]: Integrity error.")
         return "", 500
     except DataError: # if data format is invalid or out of range or size
         logging.error("Query ["+ user_uuid +"]: Data error.")
         return "", 500
-    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+    except InternalError:
         logging.error("Query ["+ user_uuid +"]: Internal error.")
         return "", 500
-    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+    except InterfaceError:
         logging.error("Query ["+ user_uuid +"]: Interface error.")
         return "", 500
-    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+    except DatabaseError:
         logging.error("Query ["+ user_uuid +"]: Database error.")
         return "", 500
-    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError:
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return "", 503
 
@@ -373,11 +372,10 @@ def get_user_involved_auctions(get_user_involved_auctions_request=None):
     items_per_page = 10
     offset = (page_number-1)*10
 
-    mysql = current_app.extensions.get('mysql')
     try:
         @circuit_breaker
         def make_request_to_db():
-            connection = mysql.connect()
+            connection = get_db()
             cursor = connection.cursor()
             cursor.execute( 
                 'SELECT BIN_TO_UUID(a.uuid), BIN_TO_UUID(a.item_uuid), BIN_TO_UUID(i.owner_uuid), a.starting_price, a.current_bid, BIN_TO_UUID(a.current_bidder), end_time FROM auctions a JOIN inventories i ON a.item_uuid = i.item_uuid WHERE i.owner_uuid = UUID_TO_BIN(%s) OR a.current_bidder = UUID_TO_BIN(%s) LIMIT %s OFFSET %s',
@@ -387,28 +385,28 @@ def get_user_involved_auctions(get_user_involved_auctions_request=None):
         
         auction_list = make_request_to_db()
 
-    except OperationalError: # if connect to db fails means there is an error in the db
+    except OperationalError:
         logging.error("Query: Operational error.")
         return "", 500
-    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+    except ProgrammingError:
         logging.error("Query: Programming error.")
         return "", 500
-    except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
+    except IntegrityError:
         logging.error("Query: Integrity error.")
         return "", 500
     except DataError: # if data format is invalid or out of range or size
         logging.error("Query: Data error.")
         return "", 500
-    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+    except InternalError:
         logging.error("Query: Internal error.")
         return "", 500
-    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+    except InterfaceError:
         logging.error("Query: Interface error.")
         return "", 500
-    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+    except DatabaseError:
         logging.error("Query: Database error.")
         return "", 500
-    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError:
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return "", 503
     
@@ -452,12 +450,11 @@ def list_auctions(list_auctions_request=None):
     offset = (page_number-1)*10
     now = datetime.now()
 
-    mysql = current_app.extensions.get('mysql')
 
     try:
         @circuit_breaker
         def make_request_to_db():
-            connection = mysql.connect()
+            connection = get_db()
             cursor = connection.cursor()
 
             query = '''
@@ -500,28 +497,28 @@ def list_auctions(list_auctions_request=None):
         
         return jsonify(auctions), 200
 
-    except OperationalError: # if connect to db fails means there is an error in the db
+    except OperationalError:
         logging.error("Query: Operational error.")
         return "", 500
-    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+    except ProgrammingError:
         logging.error("Query: Programming error.")
         return "", 500
-    except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
+    except IntegrityError:
         logging.error("Query: Integrity error.")
         return "", 500
     except DataError: # if data format is invalid or out of range or size
         logging.error("Query: Data error.")
         return "", 500
-    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+    except InternalError:
         logging.error("Query: Internal error.")
         return "", 500
-    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+    except InterfaceError:
         logging.error("Query: Interface error.")
         return "", 500
-    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+    except DatabaseError:
         logging.error("Query: Database error.")
         return "", 500
-    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError:
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return "", 503
 
@@ -536,12 +533,11 @@ def place_bid(place_bid_request=None):
     auction_uuid = place_bid_request.auction_uuid
     new_bid = place_bid_request.new_bid
 
-    mysql = current_app.extensions.get('mysql')
     connection = None
     try:
         @circuit_breaker
         def make_request_to_db():
-            connection = mysql.connect()
+            connection = get_db()
             cursor = connection.cursor()
             # Updates auction bid details in the database
             cursor.execute(
@@ -571,13 +567,13 @@ def place_bid(place_bid_request=None):
         make_request_to_db()
 
         return "", 200
-    except OperationalError: # if connect to db fails means there is an error in the db
+    except OperationalError:
         logging.error("Query ["+ user_uuid + ", " + auction_uuid +"]: Operational error.")
         return "", 500
-    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+    except ProgrammingError:
         logging.error("Query ["+ user_uuid + ", " + auction_uuid +"]: Programming error.")
         return "", 500
-    except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
+    except IntegrityError:
         logging.error("Query ["+ user_uuid + ", " + auction_uuid +"]: Integrity error.")
         if connection:
             connection.rollback()
@@ -585,15 +581,15 @@ def place_bid(place_bid_request=None):
     except DataError: # if data format is invalid or out of range or size
         logging.error("Query ["+ user_uuid + ", " + auction_uuid +"]: Data error.")
         return "", 500
-    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+    except InternalError:
         logging.error("Query ["+ user_uuid + ", " + auction_uuid +"]: Internal error.")
         return "", 500
-    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+    except InterfaceError:
         logging.error("Query ["+ user_uuid + ", " + auction_uuid +"]: Interface error.")
         return "", 500
-    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+    except DatabaseError:
         logging.error("Query ["+ user_uuid + ", " + auction_uuid +"]: Database error.")
         return "", 500
-    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+    except CircuitBreakerError:
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return "", 503

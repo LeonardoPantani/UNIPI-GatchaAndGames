@@ -1,7 +1,6 @@
 import connexion
 import requests
 import uuid
-import bcrypt
 import random
 import logging
 import json

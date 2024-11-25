@@ -45,12 +45,13 @@ INSERT INTO gachas_types (uuid, name, stat_power, stat_speed, stat_durability, s
 
 
 -- Insert into `gacha_pools` table
-INSERT INTO gacha_pools (codename, public_name, probabilities, price) VALUES
-('pool_joestar', 'Joestar Legacy Pool', '{"commonProbability": 0.5, "rareProbability": 0.3, "epicProbability": 0.15, "legendaryProbability": 0.05}', 1000),
-('pool_passione', 'Passione Gang Pool', '{"commonProbability": 0.45, "rareProbability": 0.35, "epicProbability": 0.15, "legendaryProbability": 0.05}', 1200),
-('pool_duwang', 'Morioh Pool', '{"commonProbability": 0.4, "rareProbability": 0.35, "epicProbability": 0.2, "legendaryProbability": 0.05}', 1500),
-('pool_pucci', 'Heaven Pool', '{"commonProbability": 0.3, "rareProbability": 0.3, "epicProbability": 0.3, "legendaryProbability": 0.1}', 2000),
-('pool_valentine', 'Patriot Pool', '{"commonProbability": 0.4, "rareProbability": 0.3, "epicProbability": 0.2, "legendaryProbability": 0.1}', 1800);
+INSERT INTO gacha_pools (codename, public_name, probability_common, probability_rare, probability_epic, probability_legendary, price) VALUES
+('pool_joestar', 'Joestar Legacy Pool', 0.50, 0.30, 0.15, 0.05, 1000),
+('pool_passione', 'Passione Gang Pool', 0.45, 0.35, 0.15, 0.05, 1200),
+('pool_duwang', 'Morioh Pool', 0.40, 0.35, 0.20, 0.05, 1500),
+('pool_pucci', 'Heaven Pool', 0.30, 0.30, 0.30, 0.10, 2000),
+('pool_valentine', 'Patriot Pool', 0.40, 0.30, 0.20, 0.10, 1800);
+
 
 -- Insert into `gacha_pools_items` table (linking stands to their appropriate pools)
 INSERT INTO gacha_pools_items (codename, gacha_uuid) VALUES

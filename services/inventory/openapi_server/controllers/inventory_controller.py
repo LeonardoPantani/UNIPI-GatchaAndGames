@@ -3,7 +3,7 @@ import connexion
 from typing import Dict
 from typing import Tuple
 from typing import Union
-from flask import current_app, session, jsonify
+from flask import session, jsonify
 import logging
 import requests
 
@@ -87,10 +87,6 @@ def remove_inventory_item():
     item_id = connexion.request.args.get('inventory_item_id')
     if not item_id:
         return jsonify({"error": "Missing inventory_item_id parameter"}), 400
-
-    mysql = current_app.extensions.get('mysql')
-    if not mysql:
-        return jsonify({"error": "Database connection not initialized"}), 500
         
     user_uuid = session.get('uuid')
     if not user_uuid:
