@@ -26,6 +26,7 @@ from datetime import datetime
 # circuit breaker to stop requests when dbmanager fails
 circuit_breaker = CircuitBreaker(fail_max=5, reset_timeout=5, exclude=[OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError])
 
+MAX_PAGE_NUMBER = 10000
 
 def complete_auction_sale(complete_auction_sale_request=None):
     if not connexion.request.is_json:
@@ -370,6 +371,8 @@ def get_user_involved_auctions(get_user_involved_auctions_request=None):
     user_uuid = get_user_involved_auctions_request.user_uuid
     page_number = get_user_involved_auctions_request.page_number
 
+
+    page_number = min(page_number, MAX_PAGE_NUMBER)
     items_per_page = 10
     offset = (page_number-1)*10
 
@@ -448,6 +451,7 @@ def list_auctions(list_auctions_request=None):
     rarity = list_auctions_request.rarity
     page_number = list_auctions_request.page_number
 
+    page_number = min(page_number, MAX_PAGE_NUMBER)
     items_per_page = 10
     offset = (page_number-1)*10
     now = datetime.now()
