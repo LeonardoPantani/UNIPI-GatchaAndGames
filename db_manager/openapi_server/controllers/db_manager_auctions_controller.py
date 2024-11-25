@@ -3,17 +3,17 @@ from typing import Dict
 from typing import Tuple
 from typing import Union
 
-from openapi_server.models.auction import Auction  # noqa: E501
-from openapi_server.models.ban_user_profile_request import BanUserProfileRequest  # noqa: E501
-from openapi_server.models.complete_auction_sale_request import CompleteAuctionSaleRequest  # noqa: E501
-from openapi_server.models.get_auction_status200_response import GetAuctionStatus200Response  # noqa: E501
-from openapi_server.models.get_auction_status_request import GetAuctionStatusRequest  # noqa: E501
-from openapi_server.models.get_item_with_owner200_response import GetItemWithOwner200Response  # noqa: E501
-from openapi_server.models.get_item_with_owner_request import GetItemWithOwnerRequest  # noqa: E501
-from openapi_server.models.get_user_currency200_response import GetUserCurrency200Response  # noqa: E501
-from openapi_server.models.get_user_involved_auctions_request import GetUserInvolvedAuctionsRequest  # noqa: E501
-from openapi_server.models.list_auctions_request import ListAuctionsRequest  # noqa: E501
-from openapi_server.models.place_bid_request import PlaceBidRequest  # noqa: E501
+from openapi_server.models.auction import Auction
+from openapi_server.models.ban_user_profile_request import BanUserProfileRequest
+from openapi_server.models.complete_auction_sale_request import CompleteAuctionSaleRequest
+from openapi_server.models.get_auction_status200_response import GetAuctionStatus200Response
+from openapi_server.models.get_auction_status_request import GetAuctionStatusRequest
+from openapi_server.models.get_item_with_owner200_response import GetItemWithOwner200Response
+from openapi_server.models.get_item_with_owner_request import GetItemWithOwnerRequest
+from openapi_server.models.get_user_currency200_response import GetUserCurrency200Response
+from openapi_server.models.get_user_involved_auctions_request import GetUserInvolvedAuctionsRequest
+from openapi_server.models.list_auctions_request import ListAuctionsRequest
+from openapi_server.models.place_bid_request import PlaceBidRequest
 from openapi_server import util
 
 from flask import current_app, jsonify
@@ -27,11 +27,11 @@ from datetime import datetime
 circuit_breaker = CircuitBreaker(fail_max=5, reset_timeout=5, exclude=[OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError])
 
 
-def complete_auction_sale(complete_auction_sale_request=None):  # noqa: E501
+def complete_auction_sale(complete_auction_sale_request=None):
     if not connexion.request.is_json:
         return "", 400
     
-    complete_auction_sale_request = CompleteAuctionSaleRequest.from_dict(connexion.request.get_json())  # noqa: E501
+    complete_auction_sale_request = CompleteAuctionSaleRequest.from_dict(connexion.request.get_json())
     
     item_uuid = complete_auction_sale_request.item_uuid
     current_bid = complete_auction_sale_request.current_bid
@@ -75,7 +75,7 @@ def complete_auction_sale(complete_auction_sale_request=None):  # noqa: E501
         
         make_request_to_db()
 
-        return jsonify({"message": "Item redeemed successfully."}), 200
+        return "", 200
     except OperationalError: # if connect to db fails means there is an error in the db
         logging.error("Query ["+ bidder_uuid + ", " + item_uuid +"]: Operational error.")
         return "", 500
@@ -86,7 +86,7 @@ def complete_auction_sale(complete_auction_sale_request=None):  # noqa: E501
         logging.error("Query ["+ bidder_uuid + ", " + item_uuid +"]: Integrity error.")
         # if connection:
         #     connection.rollback()
-        return "", 409
+        return "", 500
     except DataError: # if data format is invalid or out of range or size
         logging.error("Query ["+ bidder_uuid + ", " + item_uuid +"]: Data error.")
         return "", 400
@@ -98,18 +98,19 @@ def complete_auction_sale(complete_auction_sale_request=None):  # noqa: E501
         return "", 500
     except DatabaseError: # default for any MySQL error which does not fit the other exceptions
         logging.error("Query ["+ bidder_uuid + ", " + item_uuid +"]: Database error.")
-        return "", 401
+        return "", 500
     except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return "", 503
 
-def create_auction(get_auction_status200_response=None):  # noqa: E501
+
+def create_auction(get_auction_status200_response=None):
 
     if not connexion.request.is_json:
         return "", 400
     
     #wrong names are still openapi's fault
-    request = GetAuctionStatus200Response.from_dict(connexion.request.get_json())  # noqa: E501
+    request = GetAuctionStatus200Response.from_dict(connexion.request.get_json())
     auction_request = request.auction
     auction_uuid = auction_request.auction_uuid
     item_uuid = auction_request.inventory_item_id
@@ -148,15 +149,15 @@ def create_auction(get_auction_status200_response=None):  # noqa: E501
         return "", 500
     except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
         logging.error("Query ["+ auction_uuid + ", " + item_uuid +"]: Programming error.")
-        return "", 400
+        return "", 500
     except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
         logging.error("Query ["+ auction_uuid + ", " + item_uuid +"]: Integrity error.")
         if connection:
             connection.rollback()
-        return "", 409
+        return "", 500
     except DataError: # if data format is invalid or out of range or size
         logging.error("Query ["+ auction_uuid + ", " + item_uuid +"]: Data error.")
-        return "", 400
+        return "", 500
     except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
         logging.error("Query ["+ auction_uuid + ", " + item_uuid +"]: Internal error.")
         return "", 500
@@ -165,18 +166,18 @@ def create_auction(get_auction_status200_response=None):  # noqa: E501
         return "", 500
     except DatabaseError: # default for any MySQL error which does not fit the other exceptions
         logging.error("Query ["+ auction_uuid + ", " + item_uuid +"]: Database error.")
-        return "", 401
+        return "", 500
     except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return "", 503
 
 
-def get_auction_status(get_auction_status_request=None):  # noqa: E501
+def get_auction_status(get_auction_status_request=None):
     
     if not connexion.request.is_json:
         return "", 400    
     
-    get_auction_status_request = GetAuctionStatusRequest.from_dict(connexion.request.get_json())  # noqa: E501
+    get_auction_status_request = GetAuctionStatusRequest.from_dict(connexion.request.get_json())
 
     auction_uuid = get_auction_status_request.uuid
 
@@ -196,7 +197,7 @@ def get_auction_status(get_auction_status_request=None):  # noqa: E501
         auction = make_request_to_db()
 
         if not auction:
-                return jsonify({"error": "Auction not found for given UUID."}), 404
+            return "", 404
         
         status = "closed" if datetime.now() > auction[6] else "open"
 
@@ -220,10 +221,10 @@ def get_auction_status(get_auction_status_request=None):  # noqa: E501
         return "", 400
     except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
         logging.error("Query ["+ auction_uuid +"]: Integrity error.")
-        return "", 409
+        return "", 500
     except DataError: # if data format is invalid or out of range or size
         logging.error("Query ["+ auction_uuid +"]: Data error.")
-        return "", 400
+        return "", 500
     except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
         logging.error("Query ["+ auction_uuid +"]: Internal error.")
         return "", 500
@@ -232,16 +233,17 @@ def get_auction_status(get_auction_status_request=None):  # noqa: E501
         return "", 500
     except DatabaseError: # default for any MySQL error which does not fit the other exceptions
         logging.error("Query ["+ auction_uuid +"]: Database error.")
-        return "", 401
+        return "", 500
     except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return "", 503
 
-def get_item_with_owner(get_item_with_owner_request=None):  # noqa: E501
+
+def get_item_with_owner(get_item_with_owner_request=None):
     if not connexion.request.is_json:
         return "", 400
     
-    get_item_with_owner_request = GetItemWithOwnerRequest.from_dict(connexion.request.get_json())  # noqa: E501
+    get_item_with_owner_request = GetItemWithOwnerRequest.from_dict(connexion.request.get_json())
 
     user_uuid = get_item_with_owner_request.user_uuid
     item_uuid = get_item_with_owner_request.item_uuid
@@ -261,13 +263,12 @@ def get_item_with_owner(get_item_with_owner_request=None):  # noqa: E501
         item = make_request_to_db()
         
         if not item:
-            return jsonify({"error":"Item not found in user's inventory."}), 404
+            return "", 404
 
         payload = {
             "owner_id": item[0],
             "item_id": item[1],
             "gacha_uuid": item[2],
-            "pull_date": None, #forse si aggiunge
             "obtained_date": item[3].strftime("%Y-%m-%d %H:%M:%S"),
             "owners_no": item[4],
             "price_paid": item[5]
@@ -280,13 +281,13 @@ def get_item_with_owner(get_item_with_owner_request=None):  # noqa: E501
         return "", 500
     except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
         logging.error("Query ["+ item_uuid +"]: Programming error.")
-        return "", 400
+        return "", 500
     except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
         logging.error("Query ["+ item_uuid +"]: Integrity error.")
-        return "", 409
+        return "", 500
     except DataError: # if data format is invalid or out of range or size
         logging.error("Query ["+ item_uuid +"]: Data error.")
-        return "", 400
+        return "", 500
     except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
         logging.error("Query ["+ item_uuid +"]: Internal error.")
         return "", 500
@@ -295,18 +296,18 @@ def get_item_with_owner(get_item_with_owner_request=None):  # noqa: E501
         return "", 500
     except DatabaseError: # default for any MySQL error which does not fit the other exceptions
         logging.error("Query ["+ item_uuid +"]: Database error.")
-        return "", 401
+        return "", 500
     except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return "", 503
 
 
-def get_user_currency(ban_user_profile_request=None):  # noqa: E501
+def get_user_currency(ban_user_profile_request=None):
     if not connexion.request.is_json:
         return "", 400
     
     #wrong name is openapi's fault
-    user_currency_request = BanUserProfileRequest.from_dict(connexion.request.get_json())  # noqa: E501
+    user_currency_request = BanUserProfileRequest.from_dict(connexion.request.get_json())
     
     user_uuid = user_currency_request.user_uuid
 
@@ -326,7 +327,7 @@ def get_user_currency(ban_user_profile_request=None):  # noqa: E501
         currency = make_request_to_db()
 
         if not currency:
-            return jsonify({"error": "User not found for the given UUID."}), 404
+            return "", 404
 
         payload = {
             "currency": currency[0]
@@ -339,13 +340,13 @@ def get_user_currency(ban_user_profile_request=None):  # noqa: E501
         return "", 500
     except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
         logging.error("Query ["+ user_uuid +"]: Programming error.")
-        return "", 400
+        return "", 500
     except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
         logging.error("Query ["+ user_uuid +"]: Integrity error.")
-        return "", 409
+        return "", 500
     except DataError: # if data format is invalid or out of range or size
         logging.error("Query ["+ user_uuid +"]: Data error.")
-        return "", 400
+        return "", 500
     except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
         logging.error("Query ["+ user_uuid +"]: Internal error.")
         return "", 500
@@ -354,18 +355,17 @@ def get_user_currency(ban_user_profile_request=None):  # noqa: E501
         return "", 500
     except DatabaseError: # default for any MySQL error which does not fit the other exceptions
         logging.error("Query ["+ user_uuid +"]: Database error.")
-        return "", 401
+        return "", 500
     except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return "", 503
 
 
-def get_user_involved_auctions(get_user_involved_auctions_request=None):  # noqa: E501
-
+def get_user_involved_auctions(get_user_involved_auctions_request=None):
     if not connexion.request.is_json:
         return "", 400
     
-    get_user_involved_auctions_request = GetUserInvolvedAuctionsRequest.from_dict(connexion.request.get_json())  # noqa: E501
+    get_user_involved_auctions_request = GetUserInvolvedAuctionsRequest.from_dict(connexion.request.get_json())
 
     user_uuid = get_user_involved_auctions_request.user_uuid
     page_number = get_user_involved_auctions_request.page_number
@@ -392,13 +392,13 @@ def get_user_involved_auctions(get_user_involved_auctions_request=None):  # noqa
         return "", 500
     except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
         logging.error("Query: Programming error.")
-        return "", 400
+        return "", 500
     except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
         logging.error("Query: Integrity error.")
-        return "", 409
+        return "", 500
     except DataError: # if data format is invalid or out of range or size
         logging.error("Query: Data error.")
-        return "", 400
+        return "", 500
     except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
         logging.error("Query: Internal error.")
         return "", 500
@@ -407,13 +407,13 @@ def get_user_involved_auctions(get_user_involved_auctions_request=None):  # noqa
         return "", 500
     except DatabaseError: # default for any MySQL error which does not fit the other exceptions
         logging.error("Query: Database error.")
-        return "", 401
+        return "", 500
     except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return "", 503
     
     if not auction_list:
-        return jsonify({"error":"No auctions found for user "+user_uuid}), 404
+        return "", 404
     
     # Prepare the response data
     auctions = []
@@ -438,11 +438,11 @@ def get_user_involved_auctions(get_user_involved_auctions_request=None):  # noqa
     return jsonify(auctions), 200
 
 
-def list_auctions(list_auctions_request=None):  # noqa: E501
+def list_auctions(list_auctions_request=None):
     if not connexion.request.is_json:
         return "", 400
     
-    list_auctions_request = ListAuctionsRequest.from_dict(connexion.request.get_json())  # noqa: E501
+    list_auctions_request = ListAuctionsRequest.from_dict(connexion.request.get_json())
     
     status = list_auctions_request.status
     rarity = list_auctions_request.rarity
@@ -487,8 +487,8 @@ def list_auctions(list_auctions_request=None):  # noqa: E501
         
         auction_list = make_request_to_db()
         
-        if not auction_list:
-            return jsonify({"error": "No auctions found"}), 404
+        if not auction_list: # rimuovere 404, restituire lista vuota
+            return "", 404
         
         auctions = []
         for auction in auction_list:
@@ -505,13 +505,13 @@ def list_auctions(list_auctions_request=None):  # noqa: E501
         return "", 500
     except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
         logging.error("Query: Programming error.")
-        return "", 400
+        return "", 500
     except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
         logging.error("Query: Integrity error.")
-        return "", 409
+        return "", 500
     except DataError: # if data format is invalid or out of range or size
         logging.error("Query: Data error.")
-        return "", 400
+        return "", 500
     except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
         logging.error("Query: Internal error.")
         return "", 500
@@ -520,18 +520,17 @@ def list_auctions(list_auctions_request=None):  # noqa: E501
         return "", 500
     except DatabaseError: # default for any MySQL error which does not fit the other exceptions
         logging.error("Query: Database error.")
-        return "", 401
+        return "", 500
     except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return "", 503
 
 
-def place_bid(place_bid_request=None):  # noqa: E501
-
+def place_bid(place_bid_request=None):
     if not connexion.request.is_json:
         return "", 400
         
-    place_bid_request = PlaceBidRequest.from_dict(connexion.request.get_json())  # noqa: E501
+    place_bid_request = PlaceBidRequest.from_dict(connexion.request.get_json())
 
     user_uuid = place_bid_request._user_uuid
     auction_uuid = place_bid_request.auction_uuid
@@ -577,15 +576,15 @@ def place_bid(place_bid_request=None):  # noqa: E501
         return "", 500
     except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
         logging.error("Query ["+ user_uuid + ", " + auction_uuid +"]: Programming error.")
-        return "", 400
+        return "", 500
     except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
         logging.error("Query ["+ user_uuid + ", " + auction_uuid +"]: Integrity error.")
         if connection:
             connection.rollback()
-        return "", 409
+        return "", 500
     except DataError: # if data format is invalid or out of range or size
         logging.error("Query ["+ user_uuid + ", " + auction_uuid +"]: Data error.")
-        return "", 400
+        return "", 500
     except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
         logging.error("Query ["+ user_uuid + ", " + auction_uuid +"]: Internal error.")
         return "", 500
@@ -594,7 +593,7 @@ def place_bid(place_bid_request=None):  # noqa: E501
         return "", 500
     except DatabaseError: # default for any MySQL error which does not fit the other exceptions
         logging.error("Query ["+ user_uuid + ", " + auction_uuid +"]: Database error.")
-        return "", 401
+        return "", 500
     except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return "", 503

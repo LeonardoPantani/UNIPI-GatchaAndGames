@@ -53,7 +53,7 @@ def ban_user_profile(ban_user_profile_request=None):
         return "", 500
     except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
         logging.error("Query 1 ["+ user_uuid +"]: Programming error.")
-        return "", 400
+        return "", 500
     except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
         logging.error("Query 1 ["+ user_uuid +"]: Internal error.")
         return "", 500
@@ -72,7 +72,7 @@ def ban_user_profile(ban_user_profile_request=None):
 
     if user_role:
         if user_role == "ADMIN":
-            return "", 409
+            return "", 406
     else:
         return "", 404
     
@@ -117,18 +117,19 @@ def ban_user_profile(ban_user_profile_request=None):
             cursor.execute(query, (user_uuid,))
 
             connection.commit()
+            return
 
     except OperationalError: # if connect to db fails means there is an error in the db
         logging.error("Query 2 ["+ user_uuid +"]: Operational error.")
         return "", 500
     except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
         logging.error("Query 2 ["+ user_uuid +"]: Programming error.")
-        return "", 400
+        return "", 500
     except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
         logging.error("Query 2 ["+ user_uuid +"]: Integrity error.")
         if connection:
             connection.rollback()
-        return "", 409
+        return "", 500
     except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
         logging.error("Query 2 ["+ user_uuid +"]: Internal error.")
         return "", 500
@@ -143,8 +144,8 @@ def ban_user_profile(ban_user_profile_request=None):
         return "", 503
 
     make_request_to_db_2()
-    return "", 200
-    
+    return "", 200 
+
 
 def create_gacha_pool(pool=None):
     if not connexion.request.is_json:
@@ -186,7 +187,7 @@ def create_gacha_pool(pool=None):
         return "", 409
     except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
         logging.error("Query ["+ pool.id +"]: Programming error.")
-        return "", 400
+        return "", 500
     except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
         logging.error("Query ["+ pool.id +"]: Internal error.")
         return "", 500
@@ -246,10 +247,10 @@ def create_gacha_type(gacha=None):
         return "", 500
     except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
         logging.error("Query ["+ gacha.gacha_uuid +"]: Integrity error.")
-        return jsonify({"error": "The provided gacha uuid is already in use."}), 409
+        return "", 409
     except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
         logging.error("Query ["+ gacha.gacha_uuid +"]: Programming error.")
-        return "", 400
+        return "", 500
     except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
         logging.error("Query ["+ gacha.gacha_uuid +"]: Internal error.")
         return "", 500
@@ -289,7 +290,7 @@ def delete_gacha_pool(body=None): # TODO controllare dipendenze tra elementi nel
             return cursor.rowcount
 
         if make_request_to_db() == 0:
-            return jsonify({"error": "Pool not found."}), 404
+            return "", 404
 
         return "", 200
     except OperationalError: # if connect to db fails means there is an error in the db
@@ -297,10 +298,10 @@ def delete_gacha_pool(body=None): # TODO controllare dipendenze tra elementi nel
         return "", 500
     except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
         logging.error("Query ["+ pool_id +"]: Integrity error.")
-        return "", 409
+        return "", 500
     except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
         logging.error("Query ["+ pool_id +"]: Programming error.")
-        return "", 400
+        return "", 500
     except DataError:
         logging.error("Query ["+ pool_id +"]: Data error.")
         return "", 400
@@ -363,18 +364,18 @@ def delete_gacha_type(): # TODO controllare dipendenze tra elementi nel db
             return cursor.rowcount
 
         if make_request_to_db() == 0:
-            return jsonify({"error": "Gacha not found."}), 404
+            return "", 404
 
-        return "", 201
+        return "", 200
     except OperationalError: # if connect to db fails means there is an error in the db
         logging.error("Query ["+ gacha_uuid +"]: Operational error.")
         return "", 500
     except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
         logging.error("Query ["+ gacha_uuid +"]: Integrity error.")
-        return "", 409
+        return "", 500
     except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
         logging.error("Query ["+ gacha_uuid +"]: Programming error.")
-        return "", 400
+        return "", 500
     except DataError:
         logging.error("Query ["+ gacha_uuid +"]: Data error.")
         return "", 400
@@ -440,7 +441,7 @@ def edit_user_profile(edit_user_profile_request=None):
             return "", 404
         
         if updates == 0:
-            return "", 203
+            return "", 304
         
         return "", 200
 
@@ -449,10 +450,10 @@ def edit_user_profile(edit_user_profile_request=None):
         return "", 500
     except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
         logging.error("Query ["+ user_uuid +"]: Programming error.")
-        return "", 400
+        return "", 500
     except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
         logging.error("Query ["+ user_uuid +"]: Integrity error.")
-        return "", 409
+        return "", 500
     except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
         logging.error("Query ["+ user_uuid +"]: Internal error.")
         return "", 500
@@ -461,6 +462,56 @@ def edit_user_profile(edit_user_profile_request=None):
         return "", 500
     except DatabaseError: # default for any MySQL error which does not fit the other exceptions
         logging.error("Query ["+ user_uuid +"]: Database error.")
+        return "", 500
+    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
+        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
+        return "", 503
+
+
+def get_feedback_list(get_feedback_list_request=None):
+    if not connexion.request.is_json:
+        return "", 400
+    
+    # valid json request
+    get_feedback_list_request = GetFeedbackListRequest.from_dict(connexion.request.get_json())
+    page_number = get_feedback_list_request.page_number
+    offset = (page_number - 1) * 10 if page_number else 0
+    
+    mysql = current_app.extensions.get('mysql')
+
+    try:
+        @circuit_breaker
+        def make_request_to_db():
+            connection = mysql.connect()
+            cursor = connection.cursor()
+            query = "SELECT f.id, BIN_TO_UUID(f.user_uuid), f.timestamp FROM feedbacks f LIMIT 10 OFFSET %s"
+            cursor.execute(query, (offset,))
+            return cursor.fetchall()
+
+        feedbacks = make_request_to_db()
+        feedback_list = [
+            {"id": feedback[0], "user_uuid": feedback[1], "timestamp": str(feedback[2])}
+            for feedback in feedbacks
+        ]
+        return jsonify(feedback_list), 200
+
+    except OperationalError: # if connect to db fails means there is an error in the db
+        logging.error("Query ["+ page_number +"]: Operational error.")
+        return "", 500
+    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
+        logging.error("Query ["+ page_number +"]: Programming error.")
+        return "", 500
+    except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
+        logging.error("Query ["+ page_number +"]: Integrity error.")
+        return "", 500
+    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
+        logging.error("Query ["+ page_number +"]: Internal error.")
+        return "", 500
+    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
+        logging.error("Query ["+ page_number +"]: Interface error.")
+        return "", 500
+    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
+        logging.error("Query ["+ page_number +"]: Database error.")
         return "", 500
     except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
@@ -499,7 +550,7 @@ def get_feedback_info(get_feedback_info_request=None):
         return "", 500
     except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
         logging.error("Query ["+ feedback_id +"]: Programming error.")
-        return "", 400
+        return "", 500
     except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
         logging.error("Query ["+ feedback_id +"]: Integrity error.")
         return "", 409
@@ -511,58 +562,6 @@ def get_feedback_info(get_feedback_info_request=None):
         return "", 500
     except DatabaseError: # default for any MySQL error which does not fit the other exceptions
         logging.error("Query ["+ feedback_id +"]: Database error.")
-        return "", 500
-    except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
-        logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
-        return "", 503
-
-    return 'do some magic!'
-
-
-def get_feedback_list(get_feedback_list_request=None):
-    if not connexion.request.is_json:
-        return "", 400
-    
-    # valid json request
-    get_feedback_list_request = GetFeedbackListRequest.from_dict(connexion.request.get_json())
-    page_number = get_feedback_list_request.page_number
-    offset = (page_number - 1) * 10 if page_number else 0
-    
-    mysql = current_app.extensions.get('mysql')
-
-    try:
-        @circuit_breaker
-        def make_request_to_db():
-            connection = mysql.connect()
-            cursor = connection.cursor()
-            query = "SELECT f.id, BIN_TO_UUID(f.user_uuid), f.timestamp FROM feedbacks f LIMIT 10 OFFSET %s"
-            cursor.execute(query, (offset,))
-            return cursor.fetchall()
-
-        feedbacks = make_request_to_db()
-        feedback_list = [
-            {"id": feedback[0], "user_uuid": feedback[1], "timestamp": str(feedback[2])}
-            for feedback in feedbacks
-        ]
-        return jsonify(feedback_list), 200
-
-    except OperationalError: # if connect to db fails means there is an error in the db
-        logging.error("Query ["+ page_number +"]: Operational error.")
-        return "", 500
-    except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
-        logging.error("Query ["+ page_number +"]: Programming error.")
-        return "", 400
-    except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
-        logging.error("Query ["+ page_number +"]: Integrity error.")
-        return "", 409
-    except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
-        logging.error("Query ["+ page_number +"]: Internal error.")
-        return "", 500
-    except InterfaceError: # errors originating from Connector/Python itself, not related to the MySQL server
-        logging.error("Query ["+ page_number +"]: Interface error.")
-        return "", 500
-    except DatabaseError: # default for any MySQL error which does not fit the other exceptions
-        logging.error("Query ["+ page_number +"]: Database error.")
         return "", 500
     except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
@@ -601,10 +600,10 @@ def get_profile_list(get_feedback_list_request=None):
         return "", 500
     except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
         logging.error("Query ["+ page_number +"]: Programming error.")
-        return "", 400
+        return "", 500
     except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
         logging.error("Query ["+ page_number +"]: Integrity error.")
-        return "", 409
+        return "", 500
     except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
         logging.error("Query ["+ page_number +"]: Internal error.")
         return "", 500
@@ -685,10 +684,10 @@ def get_user_history(get_user_history_request=None):
         return "", 500
     except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
         logging.error("Query ["+ user_uuid +"]: Programming error.")
-        return "", 400
+        return "", 500
     except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
         logging.error("Query ["+ user_uuid +"]: Integrity error.")
-        return "", 409
+        return "", 500
     except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
         logging.error("Query ["+ user_uuid +"]: Internal error.")
         return "", 500
@@ -768,7 +767,7 @@ def update_auction(auction=None):
             return jsonify({"error": "Current bidder user profile not found."}), 404
 
         if rows_updated == 0:
-            return jsonify({"error": "No changes were applied."}), 404
+            return jsonify({"error": "No changes were applied."}), 304
 
         return "", 200
     except OperationalError: # if connect to db fails means there is an error in the db
@@ -776,10 +775,10 @@ def update_auction(auction=None):
         return "", 417
     except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
         logging.error("Query ["+ auction.auction_uuid +"]: Programming error.")
-        return "", 400
+        return "", 500
     except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
         logging.error("Query ["+ auction.auction_uuid +"]: Integrity error.")
-        return "", 409
+        return "", 500
     except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
         logging.error("Query ["+ auction.auction_uuid +"]: Internal error.")
         return "", 500
@@ -848,7 +847,7 @@ def update_gacha(gacha=None):
             return jsonify({"error": "Gacha not found."}), 404
 
         if rows_updated == 0:
-            return jsonify({"error": "No changes were applied."}), 404
+            return jsonify({"error": "No changes were applied."}), 304
         
         return "", 200
     except OperationalError: # if connect to db fails means there is an error in the db
@@ -856,10 +855,10 @@ def update_gacha(gacha=None):
         return "", 500
     except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
         logging.error("Query ["+ gacha.gacha_uuid +"]: Programming error.")
-        return "", 400
+        return "", 500
     except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
         logging.error("Query ["+ gacha.gacha_uuid +"]: Integrity error.")
-        return "", 409
+        return "", 500
     except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
         logging.error("Query ["+ gacha.gacha_uuid +"]: Internal error.")
         return "", 500
@@ -906,7 +905,7 @@ def update_pool(pool=None):
         rows_updated = make_request_to_db() 
 
         if rows_updated == 0:
-            return jsonify({"error": "No changes were applied."}), 404
+            return jsonify({"error": "No changes were applied."}), 304
         
         return "", 200
     except OperationalError: # if connect to db fails means there is an error in the db
@@ -914,10 +913,10 @@ def update_pool(pool=None):
         return "", 500
     except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
         logging.error("Query ["+ pool.id +"]: Programming error.")
-        return "", 400
+        return "", 500
     except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
         logging.error("Query ["+ pool.id +"]: Integrity error.")
-        return "", 409
+        return "", 500
     except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
         logging.error("Query ["+ pool.id +"]: Internal error.")
         return "", 500

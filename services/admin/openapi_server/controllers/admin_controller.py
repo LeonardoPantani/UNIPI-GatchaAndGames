@@ -45,7 +45,7 @@ def ban_profile(user_uuid):
     except requests.HTTPError as e:  # if request is sent to dbmanager correctly and it answers an application error (to be managed here) [error expected by us]
         if e.response.status_code == 404:
             return jsonify({"error": "User not found."}), 404
-        elif e.response.status_code == 409:
+        elif e.response.status_code == 406:
             return jsonify({"error": "Cannot ban a user with the ADMIN role."}), 409
         else:  # other errors
             return jsonify(

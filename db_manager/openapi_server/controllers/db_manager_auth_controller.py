@@ -5,11 +5,7 @@ from pymysql.err import OperationalError, DataError, DatabaseError, IntegrityErr
 from pybreaker import CircuitBreaker, CircuitBreakerError
 
 
-
 circuit_breaker = CircuitBreaker(fail_max=5, reset_timeout=5, exclude=[OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError])
-
-
-
 
 
 def login():
@@ -22,8 +18,6 @@ def login():
 
     mysql = current_app.extensions.get('mysql')
 
-    connection = None
-    cursor = None
     try:
         @circuit_breaker
         def make_request_to_db():
@@ -53,13 +47,13 @@ def login():
             }
             return jsonify(payload), 200
         else:
-            return jsonify({"error": "Invalid username."}), 404
+            return "", 404
     except OperationalError: # if connect to db fails means there is an error in the db
         logging.error("Query ["+ username +"]: Operational error.")
         return "", 500
     except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
         logging.error("Query ["+ username +"]: Programming error.")
-        return "", 400
+        return "", 500
     except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
         logging.error("Query ["+ username +"]: Internal error.")
         return "", 500
@@ -72,11 +66,6 @@ def login():
     except CircuitBreakerError: # if request already failed multiple times, the circuit breaker is open and this code gets executed
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return "", 503
-    finally:
-        if connection:
-            connection.close()
-        if cursor:
-            cursor.close()
 
 
 def register():
@@ -118,7 +107,7 @@ def register():
         return "", 500
     except ProgrammingError: # for example when you have a syntax error in your SQL or a table was not found
         logging.error("Query ["+ user_uuid +", "+ username +"]: Programming error.")
-        return "", 400
+        return "", 500
     except IntegrityError: # for constraint violations such as duplicate entries or foreign key constraints
         logging.error("Query ["+ user_uuid +", "+ username +"]: Integrity error.")
         if connection:
@@ -126,7 +115,7 @@ def register():
         return "", 409
     except DataError: # if data format is invalid or out of range or size
         logging.error("Query ["+ user_uuid +", "+ username +"]: Data error.")
-        return "", 400
+        return "", 500
     except InternalError: # when the MySQL server encounters an internal error, for example, when a deadlock occurred
         logging.error("Query ["+ user_uuid +", "+ username +"]: Internal error.")
         return "", 500
