@@ -50,23 +50,28 @@ def complete_auction_sale(complete_auction_sale_request=None):
                 (item_uuid,)
             )
             old_owner_uuid = cursor.fetchone()[0]
-
+            print("After select")
             cursor.execute(
                 'UPDATE profiles SET currency = currency + %s WHERE uuid = UUID_TO_BIN(%s)',
                 (current_bid, old_owner_uuid)
             )
+            print("after update")
             cursor.execute(
                 'INSERT INTO ingame_transactions (user_uuid, credits, transaction_type) VALUES (UUID_TO_BIN(%s), %s, "sold_market")',
                 (old_owner_uuid,current_bid)
             )
+            print("after insert")
             cursor.execute(
                 'UPDATE inventories SET owner_uuid = UUID_TO_BIN(%s) WHERE item_uuid = UUID_TO_BIN(%s)',
                 (bidder_uuid, item_uuid)
             )
+            print(bidder_uuid)
+            print(current_bid*(-1))
             cursor.execute(
                 'INSERT INTO ingame_transactions (user_uuid, credits, transaction_type) VALUES (UUID_TO_BIN(%s), %s, "bought_market")',
-                (bidder_uuid,current_bid*(-1))
+                (bidder_uuid, current_bid*(-1))
             )
+            
             return
         
         make_request_to_db()
