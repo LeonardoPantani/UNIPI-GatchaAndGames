@@ -121,10 +121,14 @@ CREATE TABLE feedbacks (
     FOREIGN KEY (user_uuid) REFERENCES users(uuid)
 );
 
+-- DECIMAL (3, 2) 3: total number of digits, 2: number of digits after comma
 CREATE TABLE gacha_pools (
     codename VARCHAR(100),
-    public_name VARCHAR(200) NOT NULL,
-    probabilities JSON NOT NULL,
+    public_name VARCHAR(200) NOT NULL, 
+    probability_common DECIMAL(3, 2) NOT NULL,
+    probability_rare DECIMAL(3, 2) NOT NULL,
+    probability_epic DECIMAL(3, 2) NOT NULL,
+    probability_legendary DECIMAL(3, 2) NOT NULL,
     price INT NOT NULL,
     PRIMARY KEY (codename)
 );
