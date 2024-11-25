@@ -1901,24 +1901,26 @@ components:
       format: uuid
       description: UUID of the PvP match.
     HistoryListINGAME:
-      type: object
-      properties:
-        user_uuid:
-          $ref: "#/components/schemas/UserId"
-        username:
-          $ref: "#/components/schemas/Username"
-        timestamp:
-          description: Timestamp when user created feedback
-          format: date-time
-          title: timestamp
-          type: string
-        credits:
-          type: integer
-          description: No. of credits.
-          example: 5000
-        transaction_type:
-          type: string
-          example: 'bought_bundle'
+      type: array
+      items:
+        type: object
+        properties:
+          user_uuid:
+            $ref: "#/components/schemas/UserId"
+          username:
+            $ref: "#/components/schemas/Username"
+          timestamp:
+            description: Timestamp when user created feedback
+            format: date-time
+            title: timestamp
+            type: string
+          credits:
+            type: integer
+            description: No. of credits.
+            example: 5000
+          transaction_type:
+            type: string
+            example: 'bought_bundle'
     HistoryListBUNDLE:
       type: object
       properties:
