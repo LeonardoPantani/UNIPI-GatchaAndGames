@@ -123,8 +123,8 @@ services:
     volumes:
       - ./services/auth:/usr/src/app/
     depends_on:
-      db_manager:
-        condition: service_healthy
+      - db_manager
+      - logging_loki
     tty: true
     restart: always
     networks:
@@ -308,8 +308,42 @@ services:
   #   deploy:
   #     replicas: 1
 
+  ######### STACK ELK
+  logging_loki:
+    image: grafana/loki:latest
+    container_name: logging_loki_gachaandgames
+    ports:
+      - "3100:3100"
+    volumes:
+      - loki_data:/loki
+    restart: always
+    networks:
+      - public_gachaandgames_network
+      - private_gachaandgames_network
+
+  logging_grafana:
+    image: grafana/grafana-oss:10.1.2
+    container_name: logging_grafana_gachaandgames
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./logs/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./logs/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+      - ./logs/grafana/dashboards:/var/lib/grafana/dashboards
+      - ./logs/grafana/grafana.ini:/etc/grafana/grafana.ini
+    env_file: ./logs/grafana/.env
+    depends_on:
+      - logging_loki
+    restart: always
+    networks:
+      - private_gachaandgames_network
+
+
 networks:
   private_gachaandgames_network:
   public_gachaandgames_network:
 volumes:
   mysql_gatchaandgames_db:
+  grafana_data:
+  loki_data:

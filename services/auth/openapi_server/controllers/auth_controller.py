@@ -8,9 +8,10 @@ from typing import Dict
 from typing import Tuple
 from typing import Union
 
-from openapi_server.models.login_request import LoginRequest  # noqa: E501
-from openapi_server.models.register_request import RegisterRequest  # noqa: E501
+from openapi_server.models.login_request import LoginRequest
+from openapi_server.models.register_request import RegisterRequest
 from openapi_server import util
+from openapi_server.helpers.logging import send_log
 from flask import jsonify, session, request
 from pybreaker import CircuitBreaker, CircuitBreakerError
 
@@ -24,7 +25,7 @@ def auth_health_check_get():
     return jsonify({"message": "Service operational."}), 200
 
 
-def login():  # noqa: E501
+def login():
     if "username" in session:
         return jsonify({"error": "You are already logged in."}), 409
 
@@ -56,8 +57,11 @@ def login():  # noqa: E501
             session["role"] = response_data["role"]
             session["login_date"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+            send_log("User '" + username_to_login + "' logged in.", endpoint="login", level="general")
             return jsonify({"message": "Login successful."}), 200
+            
         else:
+            send_log("User '" + username_to_login + "' used invalid credentials.", endpoint="login", level="info")
             return jsonify({"error": "Invalid credentials."}), 401
 
     except requests.HTTPError as e:  # if request is sent to dbmanager correctly and it answers an application error (to be managed here) [error expected by us]
@@ -66,10 +70,13 @@ def login():  # noqa: E501
         elif e.response.status_code == 400:  # programming error, we mask as invalid credentials to users
             return jsonify({"error": "Invalid credentials."}), 401
         else:  # other errors
+            send_log("Service unavailable.", endpoint="login", level="warning")
             return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
     except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
+        send_log("RequestException.", endpoint="login", level="error")
         return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
-    except CircuitBreakerError: 
+    except CircuitBreakerError:
+        send_log("CircuitBreakerError.", endpoint="login", level="error")
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
 
@@ -77,6 +84,9 @@ def logout():
     # check if user is logged in
     if "username" not in session:
         return jsonify({"error": "Not logged in."}), 403
+
+    # adding to log
+    send_log("User '" + session['username'] + "' logged out.", endpoint="logout", level="general")
 
     # remove session cookie to log out
     session.clear()
@@ -101,6 +111,7 @@ def register():
     # valid json request
     register_request = RegisterRequest.from_dict(connexion.request.get_json())
     if not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', register_request.email):
+        send_log("Invalid email provided.", endpoint="register", level="info")
         return jsonify({"error": "The specified email is not valid."}), 406
     username_to_register = register_request.username
     email_to_register = register_request.email
@@ -139,13 +150,17 @@ def register():
         session["role"] = "USER"
         session["login_date"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+        send_log("Registration of user '"+ username_to_register +"' completed.", endpoint="register", level="general")
         return jsonify({"message": "Registration successful."}), 201
     except requests.HTTPError as e:
         if e.response.status_code == 409:  # username / email already in use
             return jsonify({"error": "The provided username / email is already in use."}), 409
         else:  # other errors
+            send_log("Service unavailable.", endpoint="login", level="warning")
             return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
     except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
+        send_log("RequestException.", endpoint="login", level="error")
         return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
+        send_log("CircuitBreakerError.", endpoint="login", level="error")
         return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503
