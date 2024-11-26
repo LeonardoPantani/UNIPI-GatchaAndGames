@@ -11,10 +11,10 @@ info:
     name: GPL-3.0
     url: https://www.gnu.org/licenses/gpl-3.0.html#license-text
   title: Gacha System - OpenAPI 3.0
-  version: 1.0.0
+  version: 2.0.0
 servers:
 - description: Local server
-  url: http://localhost:8080
+  url: https://localhost
 paths:
   /db_manager/health_check:
     get:

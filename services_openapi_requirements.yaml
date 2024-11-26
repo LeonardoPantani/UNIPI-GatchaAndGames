@@ -10,15 +10,15 @@ info:
 
     - [Project
     repository](https://github.com/LeonardoPantani/UNIPI-GachaAndGames)
-  version: 1.0.0
+  version: 2.0.0
   license:
     name: GPL-3.0
     url: https://www.gnu.org/licenses/gpl-3.0.html#license-text
   contact:
     email: support@gachaandgames.it
-  termsOfService: http://localhost:8080/tos
+  termsOfService: https://localhost/tos
 servers:
-  - url: http://localhost:8080
+  - url: https://localhost
     description: Local server
 paths:
   ############################################
@@ -1417,6 +1417,41 @@ paths:
           required: true
           schema:
             type: string
+        - name: service_type
+          in: query
+          description: Name of the service whose logs are requested.
+          required: false
+          schema:
+            type: string
+        - name: endpoint
+          in: query
+          description: Name of the endpoint whose logs are requested
+          required: false
+          schema:
+            type: string
+        - name: level
+          in: query
+          description: Level of criticality
+          schema:
+            type: string
+            enum:
+              - general
+              - info
+              - warning
+              - error
+            default: info
+        - name: interval
+          in: query 
+          description: Number of seconds of the interval to look in
+          schema:
+            type: integer
+            default: 3600
+        - name: start_time
+          in: query
+          description: Interval starting time in Unix time (seconds since January 1, 1970).
+          schema:
+            type: integer
+            format: int64
       responses:
         '200':
           description: Latest system logs.
@@ -1425,7 +1460,7 @@ paths:
               schema:
                 type: array
                 items:
-                  type: string
+                  $ref: '#/components/schemas/Log'
         '403':
           description: This account is not authorized to perform this action.
         '503':
@@ -1502,6 +1537,34 @@ paths:
 
 components:
   schemas:
+    Log:
+      type: object
+      properties:
+        timestamp:
+          description: Unix time in seconds since January 1, 1970.
+          type: integer
+          format: int64
+          example: 1325203200
+        message:
+          description: Content of the log
+          type: string
+          example: User 'SpeedwagonAdmin' logged out.
+        service_type:
+          description: Name of the service 
+          type: string
+          example: auth
+        endpoint: 
+          description: Name of the endpoint
+          type: string
+          example: logout
+        level:
+          description: Level of criticality
+          type: string
+          enum:
+          - general
+          - info
+          - warning
+          - error
     UserFull:
       type: object
       properties:
@@ -1851,13 +1914,10 @@ components:
         timestamp:
           description: Timestamp when user created feedback
           format: date-time
-          title: timestamp
           type: string
-      title: Feedback preview, without content
       type: object
     FeedbackId:
       description: Id of feedback.
-      title: FeedbackId
       type: integer
       example: 7
     FeedbackWithUsername:
@@ -1871,14 +1931,11 @@ components:
         content:
           description: Actual feedback content.
           example: I love this game11!
-          title: content
           type: string
         timestamp:
           description: Timestamp when user created feedback
           format: date-time
-          title: timestamp
           type: string
-      title: Feedback preview, including content
       type: object
     HistoryListINGAME:
       type: array
@@ -1892,7 +1949,6 @@ components:
           timestamp:
             description: Timestamp when user created feedback
             format: date-time
-            title: timestamp
             type: string
           credits:
             type: integer
@@ -1913,7 +1969,6 @@ components:
           timestamp:
             description: Timestamp when user created feedback
             format: date-time
-            title: timestamp
             type: string
           codename:
             type: string
