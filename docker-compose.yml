@@ -1,7 +1,7 @@
 services:
   api_gateway_public:
     image: nginx:alpine
-    container_name: api_gateway_public_gachaandgames
+    container_name: unipi-gatchaandgames-api_gateway_public
     ports:
       - "443:443"
     volumes:
@@ -24,7 +24,7 @@ services:
 
   api_gateway_private:
     image: nginx:alpine
-    container_name: api_gateway_private_gachaandgames
+    container_name: unipi-gatchaandgames-api_gateway_private
     ports:
       - "444:444"
     volumes:
@@ -321,7 +321,7 @@ services:
   ######### STACK ELK
   logging_loki:
     image: grafana/loki:latest
-    container_name: logging_loki_gachaandgames
+    container_name: unipi-gatchaandgames-logging_loki
     ports:
       - "3100:3100"
     volumes:
@@ -333,7 +333,7 @@ services:
 
   logging_grafana:
     image: grafana/grafana-oss:10.1.2
-    container_name: logging_grafana_gachaandgames
+    container_name: unipi-gatchaandgames-logging_grafana
     ports:
       - "3000:3000"
     volumes:
