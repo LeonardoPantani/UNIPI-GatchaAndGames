@@ -154,12 +154,9 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  auctions:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/AuctionId'
+                type: array
+                items:
+                  $ref: '#/components/schemas/AuctionId'
         '400':
           description: Invalid request.
         '403':
@@ -270,7 +267,7 @@ paths:
             $ref: '#/components/schemas/AuctionId'
         - name: bid
           in: query
-          description: Bid value.
+          description: Bid increment value. #if no bid is present it will be put a starting price bid, otherwise the current bid will be incremented by the value sent in the request
           required: true
           schema:
             type: integer
@@ -576,9 +573,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/InventoryItem'
+                $ref: '#/components/schemas/InventoryItem'
         '403':
           description: Not logged in.
         '404':
@@ -704,7 +699,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Pool'
+                  $ref: '#/components/schemas/Gacha'
         '403':
           description: Not logged in.
         '503':
@@ -832,7 +827,10 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Password"
+              type: object
+              properties:
+                password:
+                  $ref: "#/components/schemas/Password"
       responses:
         '200':
           description: Profile deleted successfully.
@@ -1031,7 +1029,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/User'
+                  $ref: '#/components/schemas/UserFull'
         '403':
           description: This account is not authorized to perform this action.
         '503':
@@ -1504,6 +1502,35 @@ paths:
 
 components:
   schemas:
+    UserFull:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/UserId'
+        username:
+          $ref: '#/components/schemas/Username'
+        email:
+          $ref: '#/components/schemas/Email'
+        joindate:
+          type: string
+          format: date-time
+          description: Timestamp when user created their account
+        currency:
+          type: integer
+          description: In-game currency of the user.
+          example: 100
+        pvp_score:
+          type: integer
+          description: PvP score of the user.
+          example: 5
+        role:
+          $ref: "#/components/schemas/Roles"
+    Roles:
+      type: string
+      enum:
+        - USER
+        - ADMIN
+      description: User's role in the system.
     GachaStat:
       type: string
       example: A
@@ -1522,9 +1549,9 @@ components:
     Bundle:
       type: object
       properties:
-        id:
+        codename:
           $ref: '#/components/schemas/BundleId'
-        name:
+        public_name:
           type: string
           example: Amazing Bundle
           description: Visible name of the bundle.
@@ -1532,19 +1559,15 @@ components:
           type: integer
           description: No. of credits.
           example: 5000
-        prices:
-          type: object
-          description: List of prices in different currencies.
-          properties:
-            name:
-              $ref: '#/components/schemas/CurrencyName'
-            value:
-              type: integer
-              default: 10
-              example: 10
-              description: Amount of real currency.
-              minimum: 0
-              maximum: 999
+        currency:
+          $ref: '#/components/schemas/CurrencyName'
+        value:
+          type: integer
+          default: 10
+          example: 10
+          description: Amount of real currency.
+          minimum: 0
+          maximum: 999
     PoolId:
       type: string
       example: pool_starter
@@ -1553,9 +1576,9 @@ components:
     Pool:
       type: object
       properties:
-        id:
+        codename:
           $ref: '#/components/schemas/PoolId'
-        name:
+        public_name:
           type: string
           example: Starter Pool
           description: Visible name of the pool.
@@ -1655,7 +1678,7 @@ components:
     User:
       type: object
       properties:
-        id:
+        uuid:
           $ref: '#/components/schemas/UserId'
         username:
           $ref: '#/components/schemas/Username'
@@ -1708,17 +1731,12 @@ components:
             - precision
             - range
             - potential
-          additionalProperties:
-            type: string
     Team:
-      type: object
-      properties:
-        gachas:
-          type: array
-          minItems: 7
-          maxItems: 7
-          items:
-            $ref: '#/components/schemas/GachaId'
+      type: array
+      minItems: 7
+      maxItems: 7
+      items:
+        $ref: '#/components/schemas/GachaId'
       description: Team used by players to battle each others.
     PvPMatchId:
       type: string
@@ -1727,34 +1745,39 @@ components:
     MatchPairing:
       type: object
       properties:
-        pair:
-          type: string
-          example: player1 StarPlatinum vs player2 GoldenExperience
         extracted_stat:
-          $ref: "#/components/schemas/GachaStat"
+          enum:
+            - power
+            - speed
+            - durability
+            - precision
+            - range
         player1:
           type: object
           properties:
+            stand_name:
+              type: string
+              description: Name of the gacha
+              example: Tower of Gray
             stand_stat:
-              type: integer
-              minimum: 1
-              maximum: 5
-              example: 4
-              description: Value of extracted_stat
+              $ref: '#/components/schemas/GachaStat' 
         player2:
           type: object
           properties:
+            stand_name:
+              type: string
+              description: Name of the gacha
+              example: Tower of Gray
             stand_stat:
-              type: integer
-              minimum: 1
-              maximum: 5
-              example: 3
-              description: Value of extracted_stat
+              $ref: '#/components/schemas/GachaStat' 
+        round_winner:
+          type: string
+          example: Player1's Tower of Gray
     MatchLog:
       type: object
       description: Infos on a specific match
       properties:
-        pairings:
+        rounds:
           type: array
           minimum: 7
           maximum: 7
@@ -1769,6 +1792,13 @@ components:
           $ref: '#/components/schemas/UserId'
         receiver_id:
           $ref: '#/components/schemas/UserId'
+        teams:
+          type: object
+          properties:
+            team1:
+              $ref: '#/components/schemas/Team'
+            team2:
+              $ref: '#/components/schemas/Team'
         winner_id:
           $ref: '#/components/schemas/UserId'
         match_log:
@@ -1779,19 +1809,16 @@ components:
           description: Match timestamp.
       description: Request of a PvP match sent by a player.
     PendingPvPRequests:
-      type: object
-      properties:
-        requests:
-          type: array
-          minItems: 0
-          maxItems: 100
-          items:
-            type: object
-            properties:
-              "pvp_match_id":
-                $ref: '#/components/schemas/PvPMatchId'
-              "from":
-                $ref: '#/components/schemas/UserId'
+      type: array
+      minItems: 0
+      maxItems: 100
+      items:
+        type: object
+        properties:
+          "pvp_match_id":
+            $ref: '#/components/schemas/PvPMatchId'
+          "from":
+            $ref: '#/components/schemas/UserId'
       description: List of pending pvp requests.
     InventoryItem:
       type: object
