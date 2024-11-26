@@ -26,7 +26,7 @@ from datetime import datetime
 
 # Circuit breaker to stop requests when dbmanager fails
 circuit_breaker = CircuitBreaker(
-    fail_max=5,
+    fail_max=3,
     reset_timeout=5,
     exclude=[OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError]
 )

@@ -7,6 +7,7 @@ def send_log(message, level="general", service_type="unknown", endpoint="unknown
     if endpoint == "unknown":
         endpoint = inspect.stack()[1][3] # name of function that called send_log
     
+    
     url = 'http://logging_loki:3100/loki/api/v1/push'
     timestamp = str(int(time.time() * 1e9))
     log_entry = {

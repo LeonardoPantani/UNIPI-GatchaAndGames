@@ -31,7 +31,7 @@ from pybreaker import CircuitBreaker, CircuitBreakerError
 from openapi_server.helpers.db import get_db
 
 
-circuit_breaker = CircuitBreaker(fail_max=5, reset_timeout=5, exclude=[OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError])
+circuit_breaker = CircuitBreaker(fail_max=3, reset_timeout=5, exclude=[OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError])
 
 
 def ban_user_profile(ban_user_profile_request=None):

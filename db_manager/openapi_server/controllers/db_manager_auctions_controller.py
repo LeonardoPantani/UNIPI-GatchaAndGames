@@ -29,7 +29,7 @@ from datetime import datetime
 
 
 # circuit breaker to stop requests when dbmanager fails
-circuit_breaker = CircuitBreaker(fail_max=5, reset_timeout=5, exclude=[OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError])
+circuit_breaker = CircuitBreaker(fail_max=3, reset_timeout=5, exclude=[OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError])
 
 MAX_PAGE_NUMBER = 10000
 

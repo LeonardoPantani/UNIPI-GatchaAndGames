@@ -11,7 +11,7 @@ from pybreaker import CircuitBreaker, CircuitBreakerError
 
 
 circuit_breaker = CircuitBreaker(
-    fail_max=5, reset_timeout=5, exclude=[requests.HTTPError]
+    fail_max=3, reset_timeout=5, exclude=[requests.HTTPError]
 )
 
 
