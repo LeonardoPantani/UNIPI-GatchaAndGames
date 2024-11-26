@@ -18,6 +18,7 @@ from openapi_server.models.get_user_history_request import GetUserHistoryRequest
 from openapi_server.models.pool import Pool
 from openapi_server.models.user import User
 from openapi_server import util
+from openapi_server.helpers.logging import send_log
 from openapi_server.helpers.functions import stats_letter_to_number
 
 from flask import jsonify

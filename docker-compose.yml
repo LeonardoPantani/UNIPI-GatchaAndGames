@@ -73,6 +73,7 @@ services:
     env_file: ./db_manager/.env
     volumes:
       - ./db_manager:/usr/src/app/
+      - ./common/logging.py:/usr/src/app/openapi_server/helpers/logging.py
     depends_on:
       db:
         condition: service_healthy
@@ -98,6 +99,7 @@ services:
     env_file: ./services/admin/.env
     volumes:
       - ./services/admin:/usr/src/app/
+      - ./common/:/usr/src/app/openapi_server/helpers/
     depends_on:
       db_manager:
         condition: service_healthy
@@ -122,6 +124,7 @@ services:
     env_file: ./services/auth/.env
     volumes:
       - ./services/auth:/usr/src/app/
+      - ./common/:/usr/src/app/openapi_server/helpers/
     depends_on:
       - db_manager
       - logging_loki
@@ -147,6 +150,7 @@ services:
     env_file: ./services/auctions/.env
     volumes:
       - ./services/auctions:/usr/src/app/
+      - ./common/:/usr/src/app/openapi_server/helpers/
     depends_on:
       db_manager:
         condition: service_healthy
@@ -171,6 +175,7 @@ services:
     env_file: ./services/currency/.env
     volumes:
       - ./services/currency:/usr/src/app/
+      - ./common/:/usr/src/app/openapi_server/helpers/
     depends_on:
       db_manager:
         condition: service_healthy
@@ -195,6 +200,7 @@ services:
     env_file: ./services/feedback/.env
     volumes:
       - ./services/feedback:/usr/src/app/
+      - ./common/:/usr/src/app/openapi_server/helpers/
     depends_on:
       db_manager:
         condition: service_healthy
@@ -219,6 +225,7 @@ services:
     env_file: ./services/gacha/.env
     volumes:
       - ./services/gacha:/usr/src/app/
+      - ./common/:/usr/src/app/openapi_server/helpers/
     depends_on:
       db_manager:
         condition: service_healthy
@@ -243,6 +250,7 @@ services:
     env_file: ./services/inventory/.env
     volumes:
       - ./services/inventory:/usr/src/app/
+      - ./common/:/usr/src/app/openapi_server/helpers/
     depends_on:
       db_manager:
         condition: service_healthy
@@ -267,6 +275,7 @@ services:
     env_file: ./services/profile/.env
     volumes:
       - ./services/profile:/usr/src/app/
+      - ./common/:/usr/src/app/openapi_server/helpers/
     depends_on:
       db_manager:
         condition: service_healthy
@@ -292,6 +301,7 @@ services:
   #   env_file: ./services/pvp/.env
   #   volumes:
   #     - ./services/pvp:/usr/src/app/
+  #     - ./common/:/usr/src/app/openapi_server/helpers/
   #   depends_on:
   #     db_manager:
   #       condition: service_healthy

@@ -2,7 +2,7 @@ import connexion
 import requests
 
 from flask import jsonify, session
-
+from openapi_server.helpers.logging import send_log
 from pybreaker import CircuitBreaker, CircuitBreakerError
 
 # Circuit breaker instance

@@ -15,6 +15,7 @@ from openapi_server.models.get_user_involved_auctions_request import GetUserInvo
 from openapi_server.models.list_auctions_request import ListAuctionsRequest
 from openapi_server.models.place_bid_request import PlaceBidRequest
 from openapi_server import util
+from openapi_server.helpers.logging import send_log
 
 from flask import jsonify
 from mysql.connector.errors import (

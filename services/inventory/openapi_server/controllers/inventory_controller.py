@@ -4,6 +4,7 @@ from typing import Dict
 from typing import Tuple
 from typing import Union
 from flask import session, jsonify
+from openapi_server.helpers.logging import send_log
 import logging
 import requests
 

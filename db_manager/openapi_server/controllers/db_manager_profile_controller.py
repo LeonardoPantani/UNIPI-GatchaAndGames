@@ -8,7 +8,7 @@ from openapi_server.models.edit_user_info_request import EditUserInfoRequest
 from openapi_server.models.get_user_hash_psw200_response import GetUserHashPsw200Response
 from openapi_server.models.user import User
 from openapi_server import util
-
+from openapi_server.helpers.logging import send_log
 from flask import jsonify
 from mysql.connector.errors import (
     OperationalError, DataError, DatabaseError, IntegrityError,
@@ -68,22 +68,22 @@ def delete_user_profile(ban_user_profile_request=None):
         
         return "", 200
     except OperationalError:
-        logging.error(f"Query [{user_uuid}]: Operational error.")
+        logging.error(f"Query delete_user_profile [{user_uuid}]: Operational error.")
         return "", 500
     except ProgrammingError:
-        logging.error(f"Query [{user_uuid}]: Programming error.")
+        logging.error(f"Query delete_user_profile [{user_uuid}]: Programming error.")
         return "", 500
     except IntegrityError:
-        logging.error(f"Query [{user_uuid}]: Integrity error.")
+        logging.error(f"Query delete_user_profile [{user_uuid}]: Integrity error.")
         return "", 500
     except InternalError:
-        logging.error(f"Query [{user_uuid}]: Internal error.")
+        logging.error(f"Query delete_user_profile [{user_uuid}]: Internal error.")
         return "", 500
     except InterfaceError:
-        logging.error(f"Query [{user_uuid}]: Interface error.")
+        logging.error(f"Query delete_user_profile [{user_uuid}]: Interface error.")
         return "", 500
     except DatabaseError:
-        logging.error(f"Query [{user_uuid}]: Database error.")
+        logging.error(f"Query delete_user_profile [{user_uuid}]: Database error.")
         return "", 500
     except CircuitBreakerError:
         logging.error("Circuit Breaker Open: Timeout not elapsed yet")
@@ -176,7 +176,6 @@ def get_user_hash_psw(ban_user_profile_request=None):
     # Parse request
     ban_user_profile_request = BanUserProfileRequest.from_dict(connexion.request.get_json())
     user_uuid = ban_user_profile_request.user_uuid
-
 
     try:
         @circuit_breaker

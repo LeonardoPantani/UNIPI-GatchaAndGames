@@ -12,7 +12,7 @@ from openapi_server.models.give_item_request import GiveItemRequest
 from openapi_server.models.pool import Pool
 from openapi_server import util
 from openapi_server.helpers.functions import stats_number_to_letter
-
+from openapi_server.helpers.logging import send_log
 
 from flask import jsonify, g
 from mysql.connector.errors import (

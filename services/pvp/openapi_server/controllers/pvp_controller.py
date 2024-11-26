@@ -12,6 +12,7 @@ from openapi_server.models.pending_pv_p_requests import PendingPvPRequests
 from openapi_server.models.pv_p_request import PvPRequest
 from openapi_server.models.team import Team
 from openapi_server import util
+from openapi_server.helpers.logging import send_log
 
 from flask import jsonify, request, session
 from pybreaker import CircuitBreaker, CircuitBreakerError

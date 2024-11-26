@@ -5,7 +5,7 @@ import requests
 from openapi_server.models.auction import Auction
 from openapi_server.models.gacha import Gacha
 from openapi_server.models.pool import Pool
-
+from openapi_server.helpers.logging import send_log
 from flask import jsonify, session
 from pybreaker import CircuitBreaker, CircuitBreakerError
 

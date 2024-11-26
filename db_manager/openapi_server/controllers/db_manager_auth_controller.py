@@ -6,7 +6,7 @@ from mysql.connector.errors import (
     InterfaceError, InternalError, ProgrammingError
 )
 from pybreaker import CircuitBreaker, CircuitBreakerError
-
+from openapi_server.helpers.logging import send_log
 from openapi_server.helpers.db import get_db
 
 circuit_breaker = CircuitBreaker(

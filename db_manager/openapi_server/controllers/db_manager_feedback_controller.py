@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import Dict
 from typing import Tuple
 from typing import Union
-
+from openapi_server.helpers.logging import send_log
 from openapi_server.models.submit_feedback_request import SubmitFeedbackRequest  # noqa: E501
 from openapi_server import util
 

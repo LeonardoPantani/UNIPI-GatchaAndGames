@@ -11,7 +11,7 @@ from typing import Union
 from openapi_server.models.login_request import LoginRequest
 from openapi_server.models.register_request import RegisterRequest
 from openapi_server import util
-from openapi_server.helpers.logging import send_log
+from openapi_server.helpers.logging import send_log, query_logs
 from flask import jsonify, session, request
 from pybreaker import CircuitBreaker, CircuitBreakerError
 
@@ -87,6 +87,8 @@ def logout():
 
     # adding to log
     send_log("User '" + session['username'] + "' logged out.", endpoint="logout", level="general")
+
+    print(query_logs("auth", endpoint="logout", level="general", interval=1))
 
     # remove session cookie to log out
     session.clear()

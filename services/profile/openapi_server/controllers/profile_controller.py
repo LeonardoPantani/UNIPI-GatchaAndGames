@@ -12,6 +12,7 @@ from openapi_server.models.delete_profile_request import DeleteProfileRequest
 from openapi_server.models.edit_profile_request import EditProfileRequest
 from openapi_server.models.user import User
 from openapi_server import util
+from openapi_server.helpers.logging import send_log
 
 from flask import session, jsonify
 
@@ -46,8 +47,9 @@ def delete_profile():
             response = requests.post(url, json=payload)
             response.raise_for_status()  # if response is obtained correctly
             return response.json()
-        
-        user_password = make_request_to_dbmanager()["password"]
+
+        user_password = make_request_to_dbmanager()
+        user_password = user_password["hashed_password"]
     except requests.HTTPError as e:
         if e.response.status_code == 404:
             return jsonify({"error": "User not found."}), 404
@@ -109,7 +111,8 @@ def edit_profile():
     if response.status_code == 404:
         return jsonify({"error": "User not found"}), 404
 
-    hashed_password = response.json().get('password') 
+    hashed_password = response.json().get('hashed_password') 
+    
 
     # Verify password
     if not edit_request.password or not bcrypt.checkpw(

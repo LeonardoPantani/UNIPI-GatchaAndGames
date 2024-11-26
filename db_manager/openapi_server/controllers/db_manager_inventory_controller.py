@@ -7,7 +7,7 @@ from openapi_server.models.get_inventory_item_request import GetInventoryItemReq
 from openapi_server.models.get_user_involved_auctions_request import GetUserInvolvedAuctionsRequest
 from openapi_server.models.inventory_item import InventoryItem
 from openapi_server import util
-
+from openapi_server.helpers.logging import send_log
 from flask import jsonify
 from mysql.connector.errors import (
     OperationalError, DataError, DatabaseError, IntegrityError,

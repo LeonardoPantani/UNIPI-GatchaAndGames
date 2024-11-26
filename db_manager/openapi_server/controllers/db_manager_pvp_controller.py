@@ -17,7 +17,7 @@ from openapi_server.models.reject_pvp_prequest_request import RejectPvpPrequestR
 from openapi_server.models.set_match_results_request import SetMatchResultsRequest
 from openapi_server.models.verify_gacha_item_ownership_request import VerifyGachaItemOwnershipRequest
 from openapi_server import util
-
+from openapi_server.helpers.logging import send_log
 from flask import jsonify
 from mysql.connector.errors import (
     OperationalError, DataError, DatabaseError, IntegrityError,
