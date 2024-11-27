@@ -630,9 +630,9 @@ def get_user_history(get_user_history_request=None):
             offset = (page_number - 1) * 10 if page_number else 0
 
             if history_type == 'ingame':
-                query = "SELECT BIN_TO_UUID(t.user_uuid) as user_uuid, t.credits, t.transaction_type, t.timestamp, p.username FROM ingame_transactions t JOIN profiles p ON t.user_uuid = p.uuid WHERE t.user_uuid = UUID_TO_BIN(%s) LIMIT 10 OFFSET %s"
+                query = "SELECT BIN_TO_UUID(t.user_uuid) as user_uuid, t.credits, t.transaction_type, t.timestamp FROM ingame_transactions t JOIN profiles p ON t.user_uuid = p.uuid WHERE t.user_uuid = UUID_TO_BIN(%s) LIMIT 10 OFFSET %s"
             elif history_type == 'bundle':
-                query = "SELECT BIN_TO_UUID(t.user_uuid) as user_uuid, t.bundle_codename, t.bundle_currency_name, t.timestamp, p.username FROM bundles_transactions t JOIN profiles p ON t.user_uuid = p.uuid WHERE t.user_uuid = UUID_TO_BIN(%s) LIMIT 10 OFFSET %s"
+                query = "SELECT BIN_TO_UUID(t.user_uuid) as user_uuid, t.bundle_codename, t.bundle_currency_name, t.timestamp FROM bundles_transactions t JOIN profiles p ON t.user_uuid = p.uuid WHERE t.user_uuid = UUID_TO_BIN(%s) LIMIT 10 OFFSET %s"
             else:
                 return None, False, True  # history, not_found, invalid_history_type
 
@@ -651,12 +651,12 @@ def get_user_history(get_user_history_request=None):
 
         if history_type == "ingame":
             history_list = [
-                {"user_uuid": entry[0], "credits": entry[1], "transaction_type": entry[2], "timestamp": str(entry[3]), "username": entry[4]}
+                {"user_uuid": entry[0], "credits": entry[1], "transaction_type": entry[2], "timestamp": str(entry[3])}
                 for entry in history
             ]
         else:  # history_type == 'bundle'
             history_list = [
-                {"user_uuid": entry[0], "codename": entry[1], "currency_name": entry[2], "timestamp": str(entry[3]), "username": entry[4]}
+                {"user_uuid": entry[0], "codename": entry[1], "currency_name": entry[2], "timestamp": str(entry[3])}
                 for entry in history
             ]
         return jsonify(history_list), 200

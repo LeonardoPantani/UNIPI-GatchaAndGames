@@ -66,4 +66,5 @@ target/
 .ipynb_checkpoints
 
 # custom
-cookies.txt
+*/cookies.txt
+*/__pycache__/
