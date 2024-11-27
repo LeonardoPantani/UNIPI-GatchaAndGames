@@ -128,6 +128,7 @@ def create_auction(get_auction_status200_response=None):
         def make_request_to_db():
             connection = get_db()
             cursor = connection.cursor()
+            # verifies a transaction of that item is still active (and refuses the creation)
             cursor.execute(
                 'SELECT BIN_TO_UUID(uuid) FROM auctions WHERE item_uuid = UUID_TO_BIN(%s) AND end_time > %s',
                 (item_uuid, datetime.now())
