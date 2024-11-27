@@ -105,12 +105,6 @@ CREATE TABLE auctions (
     FOREIGN KEY (current_bidder) REFERENCES profiles(uuid)
 );
 
-CREATE TABLE logs (
-    id INT AUTO_INCREMENT,
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    value TEXT NOT NULL,
-    PRIMARY KEY (id)
-);
 
 CREATE TABLE feedbacks (
     id INT AUTO_INCREMENT,
