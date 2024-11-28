@@ -22,50 +22,112 @@ servers:
     description: Local server
 paths:
   ############################################
-  ################# FEEDBACK #################
+  ################### AUTH ###################
   ############################################
-  /feedback/health_check:
+  /auth/health_check:
     get:
       tags:
-      - feedback
+      - auth
       description: Returns 200 if service is healthy.
       summary: Gives information on service status.
       responses:
         '200':
           description: Service operational.
-  /feedback/:
+  /auth/login:
     post:
       tags:
-        - feedback
-      summary: Sends a feedback.
-      description: Creates a feedback to the admins.
-      operationId: postFeedback
+        - auth
+      summary: Log in into an account.
+      description: Logs a user into the game. Accepts username and password.
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  $ref: '#/components/schemas/Username'
+                password:
+                  $ref: "#/components/schemas/Password"
+              required:
+                - username
+                - password
+      responses:
+        '200':
+          description: Login successful.
+        '400':
+          description: Invalid request.
+        '401':
+          description: Invalid credentials.
+        '409':
+          description: You are already logged in.
+        '503':
+          description: Service unavailable. Please try again later.
+  /auth/logout:
+    delete:
+      tags:
+        - auth
+      summary: Logs out from an account.
+      description: Allows an account to log out.
+      operationId: logout
       parameters:
         - name: session
           in: cookie
           required: false
           schema:
             type: string
-        - name: string
-          in: query
-          required: true
-          schema:
-            type: string
       responses:
-        '201':
-          description: Feedback successfully submitted.
-        '400':
-          description: Invalid request.
+        '200':
+          description: Logout successful.
         '403':
           description: Not logged in.
         '503':
-          description: Service temporarily unavailable. Please try again later.
-  /feedback/internal/delete_user_feedbacks:
-    delete:
+          description: Service unavailable. Please try again later.
+  /auth/register:
+    post:
       tags:
-        - feedback_internal
-      description: Deletes feedbacks made by the user by UUID, if exist.
-      operationId: delete_user_feedbacks
+        - auth
+      summary: Registers a new account.
+      description: Registers a new user account with username, email, and password.
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  $ref: '#/components/schemas/Username'
+                email:
+                  $ref: '#/components/schemas/Email'
+                password:
+                  $ref: "#/components/schemas/Password"
+              required:
+                - username
+                - email
+                - password
+      responses:
+        '201':
+          description: Registration successful.
+        '400':
+          description: Invalid request.
+        '401':
+          description: You are already logged in.
+        '406':
+          description: The specified email is not valid.
+        '409':
+          description: The provided username / email is already in use.
+        '503':
+          description: Service unavailable. Please try again later.
+  /auth/internal/get_role_by_uuid:
+    get:
+      tags:
+        - auth_internal
+      description: Returns role of the user by UUID, if exists.
+      operationId: get_role_by_uuid
       parameters:
       - name: session
         in: cookie
@@ -79,23 +141,185 @@ paths:
           $ref: '#/components/schemas/UserId'
       responses:
         '200':
-          description: Feedbacks deleted.
+          description: User role.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  role:
+                    $ref: '#/components/schemas/Roles'
         '400':
           description: Invalid request.
         '403':
           description: Not authorized.
+        '404':
+          description: Not found.
         '503':
           description: Service unavailable. Please try again later.
-  /feedback/internal/list:
-    get:
+  /auth/internal/delete_user_by_uuid:
+    delete:
       tags:
-        - feedback_internal
-      description: Returns list of feedbacks based on pagenumber.
-      operationId: feedback_list
+        - auth_internal
+      description: Deletes a user.
+      operationId: delete_user_by_uuid
       parameters:
         - name: session
           in: cookie
           required: false
+          schema:
+            type: string
+        - name: uuid
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/UserId'
+      responses:
+        '200':
+          description: User deleted.
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '404':
+          description: Not found.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /auth/internal/edit_email:
+    post:
+      tags:
+        - auth_internal
+      description: Updates a user's email.
+      operationId: edit_email
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+        - name: uuid
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/UserId'
+        - name: email
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Email'
+      responses:
+        '200':
+          description: Email updated.
+        '304':
+          description: No changes applied.
+        '400':
+          description: Invalid request.
+        '404':
+          description: User not found.
+        '403':
+          description: Not authorized.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /auth/internal/get_user:
+    get:
+      tags:
+        - auth_internal
+      description: Returns user info.
+      operationId: get_user
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+        - name: uuid
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/UserId'
+      responses:
+        '200':
+          description: User info.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  uuid:
+                    $ref: '#/components/schemas/UserId'
+                  email:
+                    $ref: '#/components/schemas/Email'
+                  role:
+                    $ref: '#/components/schemas/Roles'
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '404':
+          description: User not found.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /auth/internal/get_hashed_password:
+    get:
+      tags:
+        - auth_internal
+      description: Returns user hashed password.
+      operationId: get_hashed_password
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+        - name: uuid
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/UserId'
+      responses:
+        '200':
+          description: Hashed user's password.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  password:
+                    type: string
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '404':
+          description: User not found.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  
+
+
+  ############################################
+  ################### ADMIN ##################
+  ############################################
+  /admin/health_check:
+    get:
+      tags:
+      - admin
+      description: Returns 200 if service is healthy.
+      responses:
+        '200':
+          description: Service operational.
+      summary: Gives information on service status.
+  /admin/profile/list:
+    get:
+      tags:
+        - admin
+      summary: Returns all profiles.
+      description: Allows to retrieve all profiles, paginated.
+      operationId: getAllProfiles
+      parameters:
+        - name: session
+          in: cookie
+          required: true
           schema:
             type: string
         - name: page_number
@@ -108,89 +332,520 @@ paths:
             minimum: 1
       responses:
         '200':
-          description: Feedbacks list.
+          description: User profile.
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/FeedbackPreview'
-        '400':
-          description: Invalid request.
+                  $ref: '#/components/schemas/UserFull'
         '403':
-          description: Not authorized.
+          description: This account is not authorized to perform this action.
         '503':
           description: Service unavailable. Please try again later.
-  /feedback/internal/info:
-    get:
+  /admin/profile/{user_uuid}/edit:
+    put:
       tags:
-        - feedback_internal
-      description: Returns info of a feedback.
-      operationId: feedback_info
+        - admin
+      summary: Edits properties of a profile.
+      description: Allows an admin to edit a user's profile.
+      operationId: editUserProfile
       parameters:
-      - name: session
-        in: cookie
-        required: false
-        schema:
-          type: string
-      - name: feedback_id
-        in: query
-        required: false
-        schema:
-          $ref: '#/components/schemas/FeedbackId'
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: user_uuid
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UserId'
+        - name: email
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Email'
+        - name: username
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Username'
       responses:
         '200':
-          description: Feedbacks list.
+          description: Profile successfully updated.
+        '304':
+          description: No changes to profile applied.
+        '401':
+          description: This account is not authorized to perform this action.
+        '403':
+          description: Not authorized to perform this action.
+        '404':
+          description: User not found.
+        '503':
+          description: Service unavailable. Please try again later.
+  /admin/profile/{user_uuid}/ban:
+    delete:
+      tags:
+        - admin
+      summary: Deletes a profile.
+      description: Allows an admin to delete a user's profile.
+      operationId: banProfile
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: user_uuid
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UserId'
+      responses:
+        '200':
+          description: Profile deleted.
+        '400':
+          description: Invalid fields.
+        '404':
+          description: User not found.
+        '403':
+          description: This account is not authorized to perform this action.
+        '406':
+          description: You cannot delete your account like this.
+        '409':
+          description: Cannot ban a user with the ADMIN role.
+        '503':
+          description: Service unavailable. Please try again later.
+  /admin/profile/{user_uuid}/history:
+    get:
+      tags:
+        - admin
+      summary: Returns history of a user.
+      description: Allows to retrieve history of a user.
+      operationId: getUserHistory
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: user_uuid
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UserId'
+        - name: history_type
+          in: query
+          description: Type of history to show.
+          required: true
+          schema:
+            enum:
+              - bundle
+              - ingame
+        - name: page_number
+          in: query
+          description: Page number of the list.
+          required: false
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+      responses:
+        '200':
+          description: User transaction history.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FeedbackWithUsername'
+                oneOf:
+                  - $ref: "#/components/schemas/HistoryListINGAME"
+                  - $ref: "#/components/schemas/HistoryListBUNDLE"
         '400':
-          description: Invalid request.
+          description: Invalid history type.
         '403':
-          description: Not authorized.
+          description: This account is not authorized to perform this action.
         '404':
-          description: Feedback not found.
+          description: User not found.
         '503':
           description: Service unavailable. Please try again later.
-  /feedback/internal/submit:
+  /admin/gacha/create:
     post:
       tags:
-        - feedback_internal
-      description: Submits a feedback.
-      operationId: submit_feedback
+        - admin
+      summary: Creates a gacha.
+      description: Allows the creation of a gacha.
+      operationId: createGacha
       parameters:
-      - name: session
-        in: cookie
-        required: false
-        schema:
-          type: string
-      - name: user_uuid
-        in: query
-        required: false
-        schema:
-          $ref: '#/components/schemas/UserId'
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                content:
-                  type: string
+              $ref: '#/components/schemas/Gacha'
       responses:
         '201':
-          description: Feedbacks added.
+          description: Gacha created.
         '400':
           description: Invalid request.
         '403':
-          description: Not authorized.
+          description: This account is not authorized to perform this action.
+        '409':
+          description: The provided gacha uuid is already in use.
         '503':
           description: Service unavailable. Please try again later.
-          
-          
-          
+  /admin/gacha/{gacha_uuid}/update:
+    put:
+      tags:
+        - admin
+      summary: Updates a gacha.
+      description: Allows the update of a gacha.
+      operationId: updateGacha
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: gacha_uuid
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/GachaId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Gacha'
+      responses:
+        '200':
+          description: Gacha updated.
+        '400':
+          description: Invalid request.
+        '403':
+          description: This account is not authorized to perform this action.
+        '404':
+          description: Gacha not found.
+        '406':
+          description: Gacha UUID in request is different from the one inside the gacha object.
+        '503':
+          description: Service unavailable. Please try again later.
+  /admin/gacha/{gacha_uuid}/delete:
+    delete:
+      tags:
+        - admin
+      summary: Deletes a gacha.
+      description: Allows the deletion of a gacha.
+      operationId: deleteGacha
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: gacha_uuid
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/GachaId'
+      responses:
+        '200':
+          description: Gacha deleted.
+        '400':
+          description: Invalid request.
+        '403':
+          description: This account is not authorized to perform this action.
+        '404':
+          description: Gacha not found.
+        '503':
+          description: Service unavailable. Please try again later.
+  /admin/pool/create:
+    post:
+      tags:
+        - admin
+      summary: Creates a pool.
+      description: Allows the creation of a pool.
+      operationId: createPool
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Pool'
+      responses:
+        '201':
+          description: Pool created.
+        '400':
+          description: Invalid request.
+        '403':
+          description: This account is not authorized to perform this action.
+        '404':
+          description: Item UUID not found in database.
+        '409':
+          description: The provided pool id is already in use.
+        '412':
+          description: Invalid probabilities.
+        '416':
+          description: Price should be a positive number.
+        '503':
+          description: Service unavailable. Please try again later.
+  /admin/pool/{pool_id}/update:
+    put:
+      tags:
+        - admin
+      summary: Updates a pool.
+      description: Allows the update of a pool.
+      operationId: updatePool
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: pool_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/PoolId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Pool'
+      responses:
+        '200':
+          description: Pool updated.
+        '400':
+          description: Invalid request.
+        '403':
+          description: This account is not authorized to perform this action.
+        '404':
+          description: Pool not found.
+        '406':
+          description: ool UUID in request is different from the one inside the pool object.
+        '412':
+          description: Invalid probabilities.
+        '416':
+          description: Price should be a positive number.
+        '503':
+          description: Service unavailable. Please try again later.
+  /admin/pool/{pool_id}/delete:
+    delete:
+      tags:
+        - admin
+      summary: Deletes a pool.
+      description: Allows the deletion of a pool.
+      operationId: deletePool
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: pool_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/PoolId'
+      responses:
+        '200':
+          description: Pool deleted.
+        '400':
+          description: Invalid fields.
+        '403':
+          description: This account is not authorized to perform this action.
+        '404':
+          description: Pool not found.
+        '503':
+          description: Service unavailable. Please try again later.
+  /admin/auction/{auction_uuid}/update:
+    put:
+      tags:
+        - admin
+      summary: Updates an auction.
+      description: Allows the update of an auction.
+      operationId: updateAuction
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: auction_uuid
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/AuctionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Auction'
+      responses:
+        '200':
+          description: Auction updated.
+        '400':
+          description: Invalid request.
+        '401':
+          description: Current bid cannot be lower than starting price.
+        '403':
+          description: This account is not authorized to perform this action.
+        '404':
+          description: Auction not found.
+        '412':
+          description: Starting price cannot be lower or equal to 0.
+        '416':
+          description: Current bid cannot be lower than 0.
+        '417':
+          description: Invalid date format.
+        '503':
+          description: Service unavailable. Please try again later.
+  /admin/logs/:
+    get:
+      tags:
+        - admin
+      summary: Returns the system logs.
+      description: Allows to retrieve logs of the system.
+      operationId: getSystemLogs
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: service_type
+          in: query
+          description: Name of the service whose logs are requested.
+          required: false
+          schema:
+            type: string
+        - name: endpoint
+          in: query
+          description: Name of the endpoint whose logs are requested
+          required: false
+          schema:
+            type: string
+        - name: level
+          in: query
+          description: Level of criticality
+          schema:
+            type: string
+            enum:
+              - general
+              - info
+              - warning
+              - error
+            default: info
+        - name: interval
+          in: query 
+          description: Number of seconds of the interval to look in
+          schema:
+            type: integer
+            default: 3600
+        - name: start_time
+          in: query
+          description: Interval starting time in Unix time (seconds since January 1, 1970).
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Latest system logs.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Log'
+        '403':
+          description: This account is not authorized to perform this action.
+        '503':
+          description: Service unavailable. Please try again later.
+  /admin/feedback/list:
+    get:
+      tags:
+      - admin
+      summary: Returns all feedbacks.
+      description: Allows to retrieve all feedbacks, paginated.
+      operationId: get_all_feedbacks
+      parameters:
+      - name: session
+        in: cookie
+        required: true
+        schema:
+          type: string
+      - name: page_number
+        in: query
+        description: Page number of the list.
+        required: false
+        schema:
+          default: 1
+          minimum: 1
+          type: integer
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/FeedbackPreview'
+                type: array
+          description: Feedback Ids.
+        '400':
+          description: Invalid request.
+        '403':
+          description: This account is not authorized to perform this action.
+        '503':
+          description: Service unavailable. Please try again later.
+  /admin/feedback/{feedback_id}:
+    get:
+      tags:
+      - admin
+      summary: Shows infos on a feedback.
+      description: Returns infos on a feedback.
+      operationId: get_feedback_info
+      parameters:
+      - name: session
+        in: cookie
+        required: true
+        schema:
+          type: string
+      - name: feedback_id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/FeedbackId'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeedbackWithUsername'
+          description: Successful operation.
+        '400':
+          description: Invalid request.
+        '403':
+          description: This account is not authorized to perform this action.
+        '404':
+          description: Feedback not found.
+        '503':
+          description: Service unavailable. Please try again later.
+
+
+
   ############################################
   ################ AUCTIONS ##################
   ############################################
@@ -774,279 +1429,101 @@ paths:
           description: Auction not found.
         '503':
           description: Service temporarily unavailable. Please try again later. 
-          
-          
+
+
+
   ############################################
-  ################### PVP ####################
+  ################# CURRENCY #################
   ############################################
-  /pvp/health_check:
+  /currency/health_check:
     get:
       tags:
-      - pvp
+      - currency
       description: Returns 200 if service is healthy.
       responses:
         '200':
           description: Service operational.
       summary: Gives information on service status.
-  /pvp/sendPvPRequest/{user_uuid}:
-    post:
-      tags:
-        - pvp
-      summary: Sends a PvP match request.
-      description: Sends a requests to another player to initiate a PvP battle.
-      operationId: sendPVPRequest
-      parameters:
-        - name: session
-          in: cookie
-          required: true
-          schema:
-            type: string
-        - name: user_uuid
-          in: path
-          description: The player's UUID to send the battle request to.
-          required: true
-          schema:
-            $ref: '#/components/schemas/UserId'
-      requestBody:
-        description: Specify the team to battle the player with.
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Team'
-      responses:
-        '200':
-          description: Match request sent successfully.
-        '400':
-          description: Player's UUID not found.
-        '401':
-          description: Gacha items do not belong to you.
-        '403':
-          description: Not logged in.
-        '406':
-          description: You cannot start a match with yourself.
-        '503':
-          description: Service temporarily unavailable. Please try again later.
-  /pvp/checkPendingPvPRequests:
+  /currency/bundles:
     get:
       tags:
-        - pvp
-      summary: Returns a list of pending PvP requests.
-      description: >-
-        If the current user has one or more pending requests, a list will be
-        returned. The current user's UUID is obtained via session cookie.
-      operationId: checkPendingPVPRequests
-      parameters:
-        - name: session
-          in: cookie
-          required: true
-          schema:
-            type: string
+        - currency
+      summary: Lists available bundles to buy currency.
+      description: Returns a list of available bundles
+      operationId: getBundles
       responses:
         '200':
-          description: The list containing requests for current user.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PendingPvPRequests'
-        '403':
-          description: Not logged in.
-        '503':
-          description: Service temporarily unavailable. Please try again later.
-  /pvp/acceptPvPRequest/{pvp_match_uuid}:
-    post:
-      tags:
-        - pvp
-      summary: Accept a pending PvP request.
-      description: Allows a player to accept a PvP battle with another user.
-      operationId: acceptPVPRequest
-      parameters:
-        - name: session
-          in: cookie
-          required: true
-          schema:
-            type: string
-        - name: pvp_match_uuid
-          in: path
-          description: The pending pvp request's match id.
-          required: true
-          schema:
-            $ref: '#/components/schemas/PvPMatchId'
-      requestBody:
-        description: Specify the team to battle the player with.
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Team'
-      responses:
-        '200':
-          description: Match accepted and performed successfully.
-        '400':
-          description: Invalid pvp match id or team data.
-        '401':
-          description: This request is not for you.
-        '403':
-          description: Not logged in.
-        '404':
-          description: User not found.
-        '406':
-          description: Match already ended.
-        '503':
-          description: Service temporarily unavailable. Please try again later.
-  /pvp/rejectPvPRequest/{pvp_match_uuid}:
-    post:
-      tags:
-        - pvp
-      summary: Rejects a pending PvP request.
-      description: Allows a player to reject a PvP battle with another user.
-      operationId: rejectPVPrequest
-      parameters:
-        - name: session
-          in: cookie
-          required: true
-          schema:
-            type: string
-        - name: pvp_match_uuid
-          in: path
-          description: The pending pvp request's match id.
-          required: true
-          schema:
-            $ref: '#/components/schemas/PvPMatchId'
-      responses:
-        '200':
-          description: Battle rejected successfully.
-        '400':
-          description: Invalid pvp match id.
-        '401':
-          description: Cannot reject this PvP request.
-        '403':
-          description: Not logged in.
-        '503':
-          description: Service temporarily unavailable. Please try again later.
-  /pvp/status/{pvp_match_uuid}:
-    get:
-      tags:
-        - pvp
-      summary: Returns the results of a PvP match.
-      description: Allows a player to view the results of the match.
-      operationId: getPVPStatus
-      parameters:
-        - name: session
-          in: cookie
-          required: true
-          schema:
-            type: string
-        - name: pvp_match_uuid
-          in: path
-          description: The pending pvp request's match id.
-          required: true
-          schema:
-            $ref: '#/components/schemas/PvPMatchId'
-      responses:
-        '200':
-          description: Match results found.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PvPRequest'
-        '403':
-          description: Not logged in.
-        '404':
-          description: Match not found.
-        '503':
-          description: Service temporarily unavailable. Please try again later.
-  /pvp/internal/remove_by_user_uuid:
-    delete:
-      tags:
-        - pvp_internal
-      description: Deletes matches where user with UUID as requested appears.
-      operationId: remove_by_user_uuid
-      parameters:
-        - name: session
-          in: cookie
-          required: false
-          schema:
-            type: string
-        - name: uuid
-          in: query
-          required: false
-          schema:
-            $ref: '#/components/schemas/UserId'
-      responses:
-        '200':
-          description: Matches deleted.
-        '400':
-          description: Invalid request.
-        '403':
-          description: Not authorized.
-        '503':
-          description: Service temporarily unavailable. Please try again later.
-  /pvp/internal/get_pending_list:
-    get:
-      tags:
-        - pvp_internal
-      description: Returns the list of pending pvp requests for the user.
-      operationId: get_pending_list
-      parameters:
-        - name: session
-          in: cookie
-          required: false
-          schema:
-            type: string
-        - name: uuid
-          in: query
-          required: false
-          schema:
-            $ref: '#/components/schemas/UserId'
-      responses:
-        '200':
-          description: Matches.
+          description: Successful operation
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/PendingPvPRequests'
-        '400':
-          description: Invalid request.
-        '403':
-          description: Not authorized.
+                  $ref: '#/components/schemas/Bundle'
         '503':
           description: Service temporarily unavailable. Please try again later.
-  /pvp/internal/insert_match:
+  /currency/buy/{bundle_id}:
     post:
       tags:
-        - pvp_internal
-      description: Inserts a match into the database.
-      operationId: insert_match
+        - currency
+      summary: Buy in-game credits
+      description: Allows a player to purchase in-game credits using real-world currency.
+      operationId: buyCurrency
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: bundle_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/BundleId'
+      responses:
+        '200':
+          description: Purchase successful.
+        '403':
+          description: Not logged in.
+        '404':
+          description: Bundle not found.
+        '412':
+          description: You cannot afford this bundle.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /currency/internal/delete_user_transactions:
+    delete:
+      tags:
+        - currency_internal
+      description: Deletes transaction made by the user by UUID, if exist.
+      operationId: delete_user_transactions
       parameters:
       - name: session
         in: cookie
         required: false
         schema:
           type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PvPRequest'
+      - name: uuid
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/UserId'
       responses:
-        '201':
-          description: Match inserted.
+        '200':
+          description: Transactions deleted.
         '400':
           description: Invalid request.
         '403':
           description: Not authorized.
         '503':
-          description: Service temporarily unavailable. Please try again later.
-  /pvp/internal/get_status:
+          description: Service unavailable. Please try again later.
+  /currency/internal/get_user_history:
     get:
       tags:
-        - pvp_internal
-      description: Returns info on a pvp match.
-      operationId: get_status
+        - currency_internal
+      summary: Returns history of a user.
+      description: Allows to retrieve history of a user.
+      operationId: get_user_history
       parameters:
         - name: session
           in: cookie
@@ -1057,28 +1534,46 @@ paths:
           in: query
           required: false
           schema:
-            $ref: '#/components/schemas/PvPMatchId'
+            $ref: '#/components/schemas/UserId'
+        - name: history_type
+          in: query
+          description: Type of history to show.
+          required: false
+          schema:
+            enum:
+              - bundle
+              - ingame
+        - name: page_number
+          in: query
+          description: Page number of the list.
+          required: false
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
       responses:
         '200':
-          description: Match info.
+          description: User transaction history.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PvPRequest'
+                oneOf:
+                  - $ref: "#/components/schemas/HistoryListINGAME"
+                  - $ref: "#/components/schemas/HistoryListBUNDLE"
         '400':
-          description: Invalid request.
+          description: Invalid history type.
         '403':
           description: Not authorized.
         '404':
-          description: Match not found.
+          description: User not found.
         '503':
-          description: Service temporarily unavailable. Please try again later.
-  /pvp/internal/delete_match:
-    delete:
+          description: Service unavailable. Please try again later.
+  /currency/internal/insert_ingame_transaction:
+    post:
       tags:
-        - pvp_internal
-      description: Deletes a pvp match.
-      operationId: delete_match
+        - currency_internal
+      description: Inserts transaction of ingame currency.
+      operationId: insert_ingame_transaction
       parameters:
         - name: session
           in: cookie
@@ -1089,24 +1584,431 @@ paths:
           in: query
           required: false
           schema:
-            $ref: '#/components/schemas/PvPMatchId'
+            $ref: '#/components/schemas/UserId'
+        - name: current_bid
+          in: query
+          description: Amount of currency spent.
+          required: false
+          schema:
+            type: integer
+        - name: transaction_type
+          in: query
+          description: Type of transaction.
+          required: false
+          schema:
+            enum:
+              - bought_bundle
+              - bought_market
+              - sold_market
+              - gacha_pull
       responses:
         '200':
-          description: Match deleted.
+          description: Transactions inserted.
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '503':
+          description: Service unavailable. Please try again later.
+  /currency/internal/get_bundle:
+    get:
+      tags:
+        - currency_internal
+      description: Returns requested bundle info.
+      operationId: get_bundle
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+        - name: codename
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/BundleId'
+      responses:
+        '200':
+          description: Bundle object.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bundle'
         '400':
           description: Invalid request.
         '403':
           description: Not authorized.
         '404':
-          description: Match not found.
+          description: Bundle not found.
         '503':
-          description: Service temporarily unavailable. Please try again later.
-  /pvp/internal/set_results:
+          description: Service unavailable. Please try again later. 
+  /currency/internal/list_bundles:
+    get:
+      tags:
+        - currency_internal
+      description: Returns bundle list.
+      operationId: list_bundles
+      parameters:
+      - name: session
+        in: cookie
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Bundles list.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Bundle'
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '404':
+          description: Bundle not found.
+        '503':
+          description: Service unavailable. Please try again later. 
+  /currency/internal/insert_bundle_transaction:
     post:
       tags:
-        - pvp_internal
-      description: Inserts match results into the database.
-      operationId: set_results
+        - currency_internal
+      description: Inserts transaction of ingame currency.
+      operationId: insert_bundle_transaction
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+        - name: uuid
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/UserId'
+        - name: bundle_codename
+          in: query
+          description: Codename of the bundle.
+          required: false
+          schema:
+            $ref: '#/components/schemas/BundleId'
+        - name: currency_name
+          in: query
+          description: Type of transaction.
+          required: false
+          schema:
+            $ref: '#/components/schemas/CurrencyName'
+      responses:
+        '200':
+          description: Transactions inserted.
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '503':
+          description: Service unavailable. Please try again later.
+
+
+
+  ############################################
+  ################# FEEDBACK #################
+  ############################################
+  /feedback/health_check:
+    get:
+      tags:
+      - feedback
+      description: Returns 200 if service is healthy.
+      summary: Gives information on service status.
+      responses:
+        '200':
+          description: Service operational.
+  /feedback/:
+    post:
+      tags:
+        - feedback
+      summary: Sends a feedback.
+      description: Creates a feedback to the admins.
+      operationId: postFeedback
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+        - name: string
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Feedback successfully submitted.
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not logged in.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /feedback/internal/delete_user_feedbacks:
+    delete:
+      tags:
+        - feedback_internal
+      description: Deletes feedbacks made by the user by UUID, if exist.
+      operationId: delete_user_feedbacks
+      parameters:
+      - name: session
+        in: cookie
+        required: false
+        schema:
+          type: string
+      - name: uuid
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/UserId'
+      responses:
+        '200':
+          description: Feedbacks deleted.
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '503':
+          description: Service unavailable. Please try again later.
+  /feedback/internal/list:
+    get:
+      tags:
+        - feedback_internal
+      description: Returns list of feedbacks based on pagenumber.
+      operationId: feedback_list
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+        - name: page_number
+          in: query
+          description: Page number of the list.
+          required: false
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+      responses:
+        '200':
+          description: Feedbacks list.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FeedbackPreview'
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '503':
+          description: Service unavailable. Please try again later.
+  /feedback/internal/info:
+    get:
+      tags:
+        - feedback_internal
+      description: Returns info of a feedback.
+      operationId: feedback_info
+      parameters:
+      - name: session
+        in: cookie
+        required: false
+        schema:
+          type: string
+      - name: feedback_id
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/FeedbackId'
+      responses:
+        '200':
+          description: Feedbacks list.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeedbackWithUsername'
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '404':
+          description: Feedback not found.
+        '503':
+          description: Service unavailable. Please try again later.
+  /feedback/internal/submit:
+    post:
+      tags:
+        - feedback_internal
+      description: Submits a feedback.
+      operationId: submit_feedback
+      parameters:
+      - name: session
+        in: cookie
+        required: false
+        schema:
+          type: string
+      - name: user_uuid
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: string
+      responses:
+        '201':
+          description: Feedbacks added.
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '503':
+          description: Service unavailable. Please try again later.
+
+
+
+  ############################################
+  ################## GACHA ###################
+  ############################################
+  /gacha/health_check:
+    get:
+      tags:
+      - gacha
+      description: Returns 200 if service is healthy.
+      responses:
+        '200':
+          description: Service operational.
+      summary: Gives information on service status.
+  /gacha/pull/{pool_id}:
+    post:
+      tags:
+        - gacha
+      summary: Pull a random gacha from a specific pool.
+      description: >-
+        Allows a player to pull a random gacha item from a specified pool.
+        Consumes in-game currency.
+      operationId: pullGacha
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: pool_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/PoolId'
+      responses:
+        '200':
+          description: Successful pull
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Gacha'
+        '401':
+          description: Not enough credits.
+        '403':
+          description: Not logged in.
+        '404':
+          description: Pool not found.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /gacha/{gacha_uuid}:
+    get:
+      tags:
+        - gacha
+      summary: Shows infos on a gacha.
+      description: Returns infos on a gacha.
+      operationId: getGachaInfo
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: gacha_uuid
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/GachaId'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Gacha'
+        '404':
+          description: Gacha type not found.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /gacha/pools:
+    get:
+      tags:
+        - gacha
+      summary: Lists available pools.
+      description: Returns a list of available gacha pools.
+      operationId: getPoolInfo
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pool'
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /gacha/list:
+    get:
+      tags:
+        - gacha
+      summary: Lists all gachas.
+      description: Returns a list of all gachas.
+      operationId: getGachas
+      parameters:
+        - name: not_owned
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Gacha'
+        '403':
+          description: Not logged in.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /gacha/internal/pool/create:
+    post:
+      tags:
+        - gacha_internal
+      description: Creates pool requested.
+      operationId: create_pool
       parameters:
       - name: session
         in: cookie
@@ -1118,16 +2020,393 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PvPRequest'
+              $ref: "#/components/schemas/Pool"
       responses:
         '201':
-          description: Match inserted.
+          description: Pool created.
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '503':
+          description: Service unavailable. Please try again later.
+  /gacha/internal/gacha/create:
+    post:
+      tags:
+        - gacha_internal
+      description: Creates gacha requested.
+      operationId: create_gacha
+      parameters:
+      - name: session
+        in: cookie
+        required: false
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Gacha"
+      responses:
+        '201':
+          description: Gacha created.
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '503':
+          description: Service unavailable. Please try again later.
+  /gacha/internal/pool/delete:
+    delete:
+      tags:
+        - gacha_internal
+      description: Deletes requested pool.
+      operationId: delete_pool
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+        - name: codename
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/PoolId'
+      responses:
+        '200':
+          description: Pool deleted.
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '404':
+          description: Pool not found.
+        '503':
+          description: Service unavailable. Please try again later.
+  /gacha/internal/gacha/delete:
+    delete:
+      tags:
+        - gacha_internal
+      description: Deletes requested gacha, also from pool item list.
+      operationId: delete_gacha
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string 
+        - name: uuid
+          required: false
+          in: query
+          schema:
+            $ref: '#/components/schemas/GachaId'
+      responses:
+        '200':
+          description: Gacha deleted.
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '404':
+          description: Pool not found.
+        '503':
+          description: Service unavailable. Please try again later.
+  /gacha/internal/gacha/exists:
+    get:
+      tags:
+        - gacha_internal
+      description: Returns true if an gacha exists, false otherwise.
+      operationId: exists_gacha
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string 
+        - name: uuid
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/GachaId'
+      responses:
+        '200':
+          description: Result of search.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exists: 
+                    type: boolean
         '400':
           description: Invalid request.
         '403':
           description: Not authorized.
         '503':
           description: Service temporarily unavailable. Please try again later.
+  /gacha/internal/gacha/get:
+    get:
+      tags:
+        - gacha_internal
+      description: Returns the gacha object by gacha uuid.
+      operationId: get_gacha
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+        - name: uuid
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/GachaId'
+      responses:
+        '200':
+          description: Gacha object.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Gacha'
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '404':
+          description: Gacha not found.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /gacha/internal/gacha/update:
+    post:
+      tags:
+        - gacha_internal
+      description: Updates a gacha.
+      operationId: update_gacha
+      parameters:
+      - name: session
+        in: cookie
+        required: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Gacha'
+      responses:
+        '200':
+          description: Gacha updated.
+        '304':
+          description: No changes applied.
+        '400':
+          description: Invalid request.
+        '404':
+          description: Gacha not found.
+        '403':
+          description: Not authorized.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /gacha/internal/pool/exists:
+    get:
+      tags:
+        - gacha_internal
+      description: Returns true if a pool exists, false otherwise.
+      operationId: exists_pool
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string 
+        - name: uuid
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/PoolId'
+      responses:
+        '200':
+          description: Result of search.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exists: 
+                    type: boolean
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /gacha/internal/pool/get:
+    get:
+      tags:
+        - gacha_internal
+      description: Returns true if a pool exists, false otherwise.
+      operationId: get_pool
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string 
+        - name: uuid
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/PoolId'
+      responses:
+        '200':
+          description: Pool requested.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pool'
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '404':
+          description: Pool not found.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /gacha/internal/pool/update:
+    post:
+      tags:
+        - gacha_internal
+      description: Updates a pool.
+      operationId: update_pool
+      parameters:
+      - name: session
+        in: cookie
+        required: false
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Pool'
+      responses:
+        '200':
+          description: Pool updated.
+        '304':
+          description: No changes applied.
+        '400':
+          description: Invalid request.
+        '404':
+          description: Pool not found.
+        '403':
+          description: Not authorized.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /gacha/internal/get_rarity_by_uuid:
+    get:
+      tags:
+        - gacha_internal
+      description: Returns the rarity of a certain gacha identified by its uuid.
+      operationId: get_rarity_by_uuid
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string 
+        - name: uuid
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/GachaId'
+      responses:
+        '200':
+          description: Gacha rarity.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rarity: 
+                    $ref: '#/components/schemas/GachaRarity'
+        '400':
+          description: Invalid request.
+        '404':
+          description: Gacha not found.
+        '403':
+          description: Not authorized.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /gacha/internal/gacha/list:
+    post:
+      tags:
+        - gacha_internal
+      description: Returns list of gachas (not) owned by the user.
+      operationId: list_gachas
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string 
+        - name: not_owned
+          in: query
+          required: false
+          schema:
+            type: boolean
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/GachaId'
+      responses:
+        '200':
+          description: Gacha list.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Gacha'
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /gacha/internal/pool/list:
+    post:
+      tags:
+        - gacha_internal
+      description: Returns list of pools.
+      operationId: list_pools
+      parameters:
+      - name: session
+        in: cookie
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Pool list.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pool'
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+
 
 
   ############################################
@@ -1660,813 +2939,8 @@ paths:
         '503':
           description: Service unavailable. Please try again later.
 
-            
-  ############################################
-  ################## GACHA ###################
-  ############################################
-  /gacha/health_check:
-    get:
-      tags:
-      - gacha
-      description: Returns 200 if service is healthy.
-      responses:
-        '200':
-          description: Service operational.
-      summary: Gives information on service status.
-  /gacha/pull/{pool_id}:
-    post:
-      tags:
-        - gacha
-      summary: Pull a random gacha from a specific pool.
-      description: >-
-        Allows a player to pull a random gacha item from a specified pool.
-        Consumes in-game currency.
-      operationId: pullGacha
-      parameters:
-        - name: session
-          in: cookie
-          required: true
-          schema:
-            type: string
-        - name: pool_id
-          in: path
-          required: true
-          schema:
-            $ref: '#/components/schemas/PoolId'
-      responses:
-        '200':
-          description: Successful pull
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Gacha'
-        '401':
-          description: Not enough credits.
-        '403':
-          description: Not logged in.
-        '404':
-          description: Pool not found.
-        '503':
-          description: Service temporarily unavailable. Please try again later.
-  /gacha/{gacha_uuid}:
-    get:
-      tags:
-        - gacha
-      summary: Shows infos on a gacha.
-      description: Returns infos on a gacha.
-      operationId: getGachaInfo
-      parameters:
-        - name: session
-          in: cookie
-          required: true
-          schema:
-            type: string
-        - name: gacha_uuid
-          in: path
-          required: true
-          schema:
-            $ref: '#/components/schemas/GachaId'
-      responses:
-        '200':
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Gacha'
-        '404':
-          description: Gacha type not found.
-        '503':
-          description: Service temporarily unavailable. Please try again later.
-  /gacha/pools:
-    get:
-      tags:
-        - gacha
-      summary: Lists available pools.
-      description: Returns a list of available gacha pools.
-      operationId: getPoolInfo
-      responses:
-        '200':
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Pool'
-        '503':
-          description: Service temporarily unavailable. Please try again later.
-  /gacha/list:
-    get:
-      tags:
-        - gacha
-      summary: Lists all gachas.
-      description: Returns a list of all gachas.
-      operationId: getGachas
-      parameters:
-        - name: not_owned
-          in: query
-          required: false
-          schema:
-            type: boolean
-            default: false
-      responses:
-        '200':
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Gacha'
-        '403':
-          description: Not logged in.
-        '503':
-          description: Service temporarily unavailable. Please try again later.
-  /gacha/internal/pool/create:
-    post:
-      tags:
-        - gacha_internal
-      description: Creates pool requested.
-      operationId: create_pool
-      parameters:
-      - name: session
-        in: cookie
-        required: false
-        schema:
-          type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/Pool"
-      responses:
-        '201':
-          description: Pool created.
-        '400':
-          description: Invalid request.
-        '403':
-          description: Not authorized.
-        '503':
-          description: Service unavailable. Please try again later.
-  /gacha/internal/gacha/create:
-    post:
-      tags:
-        - gacha_internal
-      description: Creates gacha requested.
-      operationId: create_gacha
-      parameters:
-      - name: session
-        in: cookie
-        required: false
-        schema:
-          type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/Gacha"
-      responses:
-        '201':
-          description: Gacha created.
-        '400':
-          description: Invalid request.
-        '403':
-          description: Not authorized.
-        '503':
-          description: Service unavailable. Please try again later.
-  /gacha/internal/pool/delete:
-    delete:
-      tags:
-        - gacha_internal
-      description: Deletes requested pool.
-      operationId: delete_pool
-      parameters:
-        - name: session
-          in: cookie
-          required: false
-          schema:
-            type: string
-        - name: codename
-          in: query
-          required: false
-          schema:
-            $ref: '#/components/schemas/PoolId'
-      responses:
-        '200':
-          description: Pool deleted.
-        '400':
-          description: Invalid request.
-        '403':
-          description: Not authorized.
-        '404':
-          description: Pool not found.
-        '503':
-          description: Service unavailable. Please try again later.
-  /gacha/internal/gacha/delete:
-    delete:
-      tags:
-        - gacha_internal
-      description: Deletes requested gacha, also from pool item list.
-      operationId: delete_gacha
-      parameters:
-        - name: session
-          in: cookie
-          required: false
-          schema:
-            type: string 
-        - name: uuid
-          required: false
-          in: query
-          schema:
-            $ref: '#/components/schemas/GachaId'
-      responses:
-        '200':
-          description: Gacha deleted.
-        '400':
-          description: Invalid request.
-        '403':
-          description: Not authorized.
-        '404':
-          description: Pool not found.
-        '503':
-          description: Service unavailable. Please try again later.
-  /gacha/internal/gacha/exists:
-    get:
-      tags:
-        - gacha_internal
-      description: Returns true if an gacha exists, false otherwise.
-      operationId: exists_gacha
-      parameters:
-        - name: session
-          in: cookie
-          required: false
-          schema:
-            type: string 
-        - name: uuid
-          in: query
-          required: false
-          schema:
-            $ref: '#/components/schemas/GachaId'
-      responses:
-        '200':
-          description: Result of search.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  exists: 
-                    type: boolean
-        '400':
-          description: Invalid request.
-        '403':
-          description: Not authorized.
-        '503':
-          description: Service temporarily unavailable. Please try again later.
-  /gacha/internal/gacha/get:
-    get:
-      tags:
-        - gacha_internal
-      description: Returns the gacha object by gacha uuid.
-      operationId: get_gacha
-      parameters:
-        - name: session
-          in: cookie
-          required: false
-          schema:
-            type: string
-        - name: uuid
-          in: query
-          required: false
-          schema:
-            $ref: '#/components/schemas/GachaId'
-      responses:
-        '200':
-          description: Gacha object.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Gacha'
-        '400':
-          description: Invalid request.
-        '403':
-          description: Not authorized.
-        '404':
-          description: Gacha not found.
-        '503':
-          description: Service temporarily unavailable. Please try again later.
-  /gacha/internal/gacha/update:
-    post:
-      tags:
-        - gacha_internal
-      description: Updates a gacha.
-      operationId: update_gacha
-      parameters:
-      - name: session
-        in: cookie
-        required: false
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Gacha'
-      responses:
-        '200':
-          description: Gacha updated.
-        '304':
-          description: No changes applied.
-        '400':
-          description: Invalid request.
-        '404':
-          description: Gacha not found.
-        '403':
-          description: Not authorized.
-        '503':
-          description: Service temporarily unavailable. Please try again later.
-  /gacha/internal/pool/exists:
-    get:
-      tags:
-        - gacha_internal
-      description: Returns true if a pool exists, false otherwise.
-      operationId: exists_pool
-      parameters:
-        - name: session
-          in: cookie
-          required: false
-          schema:
-            type: string 
-        - name: uuid
-          in: query
-          required: false
-          schema:
-            $ref: '#/components/schemas/PoolId'
-      responses:
-        '200':
-          description: Result of search.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  exists: 
-                    type: boolean
-        '400':
-          description: Invalid request.
-        '403':
-          description: Not authorized.
-        '503':
-          description: Service temporarily unavailable. Please try again later.
-  /gacha/internal/pool/get:
-    get:
-      tags:
-        - gacha_internal
-      description: Returns true if a pool exists, false otherwise.
-      operationId: get_pool
-      parameters:
-        - name: session
-          in: cookie
-          required: false
-          schema:
-            type: string 
-        - name: uuid
-          in: query
-          required: false
-          schema:
-            $ref: '#/components/schemas/PoolId'
-      responses:
-        '200':
-          description: Pool requested.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Pool'
-        '400':
-          description: Invalid request.
-        '403':
-          description: Not authorized.
-        '404':
-          description: Pool not found.
-        '503':
-          description: Service temporarily unavailable. Please try again later.
-  /gacha/internal/pool/update:
-    post:
-      tags:
-        - gacha_internal
-      description: Updates a pool.
-      operationId: update_pool
-      parameters:
-      - name: session
-        in: cookie
-        required: false
-        schema:
-          type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Pool'
-      responses:
-        '200':
-          description: Pool updated.
-        '304':
-          description: No changes applied.
-        '400':
-          description: Invalid request.
-        '404':
-          description: Pool not found.
-        '403':
-          description: Not authorized.
-        '503':
-          description: Service temporarily unavailable. Please try again later.
-  /gacha/internal/get_rarity_by_uuid:
-    get:
-      tags:
-        - gacha_internal
-      description: Returns the rarity of a certain gacha identified by its uuid.
-      operationId: get_rarity_by_uuid
-      parameters:
-        - name: session
-          in: cookie
-          required: false
-          schema:
-            type: string 
-        - name: uuid
-          in: query
-          required: false
-          schema:
-            $ref: '#/components/schemas/GachaId'
-      responses:
-        '200':
-          description: Gacha rarity.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  rarity: 
-                    $ref: '#/components/schemas/GachaRarity'
-        '400':
-          description: Invalid request.
-        '404':
-          description: Gacha not found.
-        '403':
-          description: Not authorized.
-        '503':
-          description: Service temporarily unavailable. Please try again later.
-  /gacha/internal/gacha/list:
-    post:
-      tags:
-        - gacha_internal
-      description: Returns list of gachas (not) owned by the user.
-      operationId: list_gachas
-      parameters:
-        - name: session
-          in: cookie
-          required: false
-          schema:
-            type: string 
-        - name: not_owned
-          in: query
-          required: false
-          schema:
-            type: boolean
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: array
-              items:
-                $ref: '#/components/schemas/GachaId'
-      responses:
-        '200':
-          description: Gacha list.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Gacha'
-        '400':
-          description: Invalid request.
-        '403':
-          description: Not authorized.
-        '503':
-          description: Service temporarily unavailable. Please try again later.
-  /gacha/internal/pool/list:
-    post:
-      tags:
-        - gacha_internal
-      description: Returns list of pools.
-      operationId: list_pools
-      parameters:
-      - name: session
-        in: cookie
-        required: false
-        schema:
-          type: string
-      responses:
-        '200':
-          description: Pool list.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Pool'
-        '400':
-          description: Invalid request.
-        '403':
-          description: Not authorized.
-        '503':
-          description: Service temporarily unavailable. Please try again later.
 
 
-
-  ############################################
-  ################# CURRENCY #################
-  ############################################
-  /currency/health_check:
-    get:
-      tags:
-      - currency
-      description: Returns 200 if service is healthy.
-      responses:
-        '200':
-          description: Service operational.
-      summary: Gives information on service status.
-  /currency/bundles:
-    get:
-      tags:
-        - currency
-      summary: Lists available bundles to buy currency.
-      description: Returns a list of available bundles
-      operationId: getBundles
-      responses:
-        '200':
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Bundle'
-        '503':
-          description: Service temporarily unavailable. Please try again later.
-  /currency/buy/{bundle_id}:
-    post:
-      tags:
-        - currency
-      summary: Buy in-game credits
-      description: Allows a player to purchase in-game credits using real-world currency.
-      operationId: buyCurrency
-      parameters:
-        - name: session
-          in: cookie
-          required: true
-          schema:
-            type: string
-        - name: bundle_id
-          in: path
-          required: true
-          schema:
-            $ref: '#/components/schemas/BundleId'
-      responses:
-        '200':
-          description: Purchase successful.
-        '403':
-          description: Not logged in.
-        '404':
-          description: Bundle not found.
-        '412':
-          description: You cannot afford this bundle.
-        '503':
-          description: Service temporarily unavailable. Please try again later.
-  /currency/internal/delete_user_transactions:
-    delete:
-      tags:
-        - currency_internal
-      description: Deletes transaction made by the user by UUID, if exist.
-      operationId: delete_user_transactions
-      parameters:
-      - name: session
-        in: cookie
-        required: false
-        schema:
-          type: string
-      - name: uuid
-        in: query
-        required: false
-        schema:
-          $ref: '#/components/schemas/UserId'
-      responses:
-        '200':
-          description: Transactions deleted.
-        '400':
-          description: Invalid request.
-        '403':
-          description: Not authorized.
-        '503':
-          description: Service unavailable. Please try again later.
-  /currency/internal/get_user_history:
-    get:
-      tags:
-        - currency_internal
-      summary: Returns history of a user.
-      description: Allows to retrieve history of a user.
-      operationId: get_user_history
-      parameters:
-        - name: session
-          in: cookie
-          required: false
-          schema:
-            type: string
-        - name: uuid
-          in: query
-          required: false
-          schema:
-            $ref: '#/components/schemas/UserId'
-        - name: history_type
-          in: query
-          description: Type of history to show.
-          required: false
-          schema:
-            enum:
-              - bundle
-              - ingame
-        - name: page_number
-          in: query
-          description: Page number of the list.
-          required: false
-          schema:
-            type: integer
-            default: 1
-            minimum: 1
-      responses:
-        '200':
-          description: User transaction history.
-          content:
-            application/json:
-              schema:
-                oneOf:
-                  - $ref: "#/components/schemas/HistoryListINGAME"
-                  - $ref: "#/components/schemas/HistoryListBUNDLE"
-        '400':
-          description: Invalid history type.
-        '403':
-          description: Not authorized.
-        '404':
-          description: User not found.
-        '503':
-          description: Service unavailable. Please try again later.
-  /currency/internal/insert_ingame_transaction:
-    post:
-      tags:
-        - currency_internal
-      description: Inserts transaction of ingame currency.
-      operationId: insert_ingame_transaction
-      parameters:
-        - name: session
-          in: cookie
-          required: false
-          schema:
-            type: string
-        - name: uuid
-          in: query
-          required: false
-          schema:
-            $ref: '#/components/schemas/UserId'
-        - name: current_bid
-          in: query
-          description: Amount of currency spent.
-          required: false
-          schema:
-            type: integer
-        - name: transaction_type
-          in: query
-          description: Type of transaction.
-          required: false
-          schema:
-            enum:
-              - bought_bundle
-              - bought_market
-              - sold_market
-              - gacha_pull
-      responses:
-        '200':
-          description: Transactions inserted.
-        '400':
-          description: Invalid request.
-        '403':
-          description: Not authorized.
-        '503':
-          description: Service unavailable. Please try again later.
-  /currency/internal/get_bundle:
-    get:
-      tags:
-        - currency_internal
-      description: Returns requested bundle info.
-      operationId: get_bundle
-      parameters:
-        - name: session
-          in: cookie
-          required: false
-          schema:
-            type: string
-        - name: codename
-          in: query
-          required: false
-          schema:
-            $ref: '#/components/schemas/BundleId'
-      responses:
-        '200':
-          description: Bundle object.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Bundle'
-        '400':
-          description: Invalid request.
-        '403':
-          description: Not authorized.
-        '404':
-          description: Bundle not found.
-        '503':
-          description: Service unavailable. Please try again later. 
-  /currency/internal/list_bundles:
-    get:
-      tags:
-        - currency_internal
-      description: Returns bundle list.
-      operationId: list_bundles
-      parameters:
-      - name: session
-        in: cookie
-        required: false
-        schema:
-          type: string
-      responses:
-        '200':
-          description: Bundles list.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Bundle'
-        '400':
-          description: Invalid request.
-        '403':
-          description: Not authorized.
-        '404':
-          description: Bundle not found.
-        '503':
-          description: Service unavailable. Please try again later. 
-  /currency/internal/insert_bundle_transaction:
-    post:
-      tags:
-        - currency_internal
-      description: Inserts transaction of ingame currency.
-      operationId: insert_bundle_transaction
-      parameters:
-        - name: session
-          in: cookie
-          required: false
-          schema:
-            type: string
-        - name: uuid
-          in: query
-          required: false
-          schema:
-            $ref: '#/components/schemas/UserId'
-        - name: bundle_codename
-          in: query
-          description: Codename of the bundle.
-          required: false
-          schema:
-            $ref: '#/components/schemas/BundleId'
-        - name: currency_name
-          in: query
-          description: Type of transaction.
-          required: false
-          schema:
-            $ref: '#/components/schemas/CurrencyName'
-      responses:
-        '200':
-          description: Transactions inserted.
-        '400':
-          description: Invalid request.
-        '403':
-          description: Not authorized.
-        '503':
-          description: Service unavailable. Please try again later.
-
-    
   ############################################
   ################# PROFILE ##################
   ############################################
@@ -2908,826 +3382,362 @@ paths:
         '503':
           description: Service temporarily unavailable. Please try again later. 
 
+
+
   ############################################
-  ################### AUTH ###################
+  ################### PVP ####################
   ############################################
-  /auth/health_check:
+  /pvp/health_check:
     get:
       tags:
-      - auth
+      - pvp
       description: Returns 200 if service is healthy.
-      summary: Gives information on service status.
       responses:
         '200':
           description: Service operational.
-  /auth/login:
+      summary: Gives information on service status.
+  /pvp/sendPvPRequest/{user_uuid}:
     post:
       tags:
-        - auth
-      summary: Log in into an account.
-      description: Logs a user into the game. Accepts username and password.
-      operationId: login
+        - pvp
+      summary: Sends a PvP match request.
+      description: Sends a requests to another player to initiate a PvP battle.
+      operationId: sendPVPRequest
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: user_uuid
+          in: path
+          description: The player's UUID to send the battle request to.
+          required: true
+          schema:
+            $ref: '#/components/schemas/UserId'
       requestBody:
+        description: Specify the team to battle the player with.
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                username:
-                  $ref: '#/components/schemas/Username'
-                password:
-                  $ref: "#/components/schemas/Password"
-              required:
-                - username
-                - password
+              $ref: '#/components/schemas/Team'
       responses:
         '200':
-          description: Login successful.
+          description: Match request sent successfully.
         '400':
-          description: Invalid request.
+          description: Player's UUID not found.
         '401':
-          description: Invalid credentials.
-        '409':
-          description: You are already logged in.
+          description: Gacha items do not belong to you.
+        '403':
+          description: Not logged in.
+        '406':
+          description: You cannot start a match with yourself.
         '503':
-          description: Service unavailable. Please try again later.
-  /auth/logout:
-    delete:
+          description: Service temporarily unavailable. Please try again later.
+  /pvp/checkPendingPvPRequests:
+    get:
       tags:
-        - auth
-      summary: Logs out from an account.
-      description: Allows an account to log out.
-      operationId: logout
+        - pvp
+      summary: Returns a list of pending PvP requests.
+      description: >-
+        If the current user has one or more pending requests, a list will be
+        returned. The current user's UUID is obtained via session cookie.
+      operationId: checkPendingPVPRequests
       parameters:
         - name: session
           in: cookie
-          required: false
+          required: true
           schema:
             type: string
       responses:
         '200':
-          description: Logout successful.
+          description: The list containing requests for current user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PendingPvPRequests'
         '403':
           description: Not logged in.
         '503':
-          description: Service unavailable. Please try again later.
-  /auth/register:
+          description: Service temporarily unavailable. Please try again later.
+  /pvp/acceptPvPRequest/{pvp_match_uuid}:
     post:
       tags:
-        - auth
-      summary: Registers a new account.
-      description: Registers a new user account with username, email, and password.
-      operationId: register
+        - pvp
+      summary: Accept a pending PvP request.
+      description: Allows a player to accept a PvP battle with another user.
+      operationId: acceptPVPRequest
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: pvp_match_uuid
+          in: path
+          description: The pending pvp request's match id.
+          required: true
+          schema:
+            $ref: '#/components/schemas/PvPMatchId'
       requestBody:
+        description: Specify the team to battle the player with.
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                username:
-                  $ref: '#/components/schemas/Username'
-                email:
-                  $ref: '#/components/schemas/Email'
-                password:
-                  $ref: "#/components/schemas/Password"
-              required:
-                - username
-                - email
-                - password
+              $ref: '#/components/schemas/Team'
       responses:
-        '201':
-          description: Registration successful.
+        '200':
+          description: Match accepted and performed successfully.
         '400':
-          description: Invalid request.
+          description: Invalid pvp match id or team data.
         '401':
-          description: You are already logged in.
+          description: This request is not for you.
+        '403':
+          description: Not logged in.
+        '404':
+          description: User not found.
         '406':
-          description: The specified email is not valid.
-        '409':
-          description: The provided username / email is already in use.
+          description: Match already ended.
         '503':
-          description: Service unavailable. Please try again later.
-  /auth/internal/get_role_by_uuid:
+          description: Service temporarily unavailable. Please try again later.
+  /pvp/rejectPvPRequest/{pvp_match_uuid}:
+    post:
+      tags:
+        - pvp
+      summary: Rejects a pending PvP request.
+      description: Allows a player to reject a PvP battle with another user.
+      operationId: rejectPVPrequest
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: pvp_match_uuid
+          in: path
+          description: The pending pvp request's match id.
+          required: true
+          schema:
+            $ref: '#/components/schemas/PvPMatchId'
+      responses:
+        '200':
+          description: Battle rejected successfully.
+        '400':
+          description: Invalid pvp match id.
+        '401':
+          description: Cannot reject this PvP request.
+        '403':
+          description: Not logged in.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /pvp/status/{pvp_match_uuid}:
     get:
       tags:
-        - auth_internal
-      description: Returns role of the user by UUID, if exists.
-      operationId: get_role_by_uuid
+        - pvp
+      summary: Returns the results of a PvP match.
+      description: Allows a player to view the results of the match.
+      operationId: getPVPStatus
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: pvp_match_uuid
+          in: path
+          description: The pending pvp request's match id.
+          required: true
+          schema:
+            $ref: '#/components/schemas/PvPMatchId'
+      responses:
+        '200':
+          description: Match results found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PvPRequest'
+        '403':
+          description: Not logged in.
+        '404':
+          description: Match not found.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /pvp/internal/remove_by_user_uuid:
+    delete:
+      tags:
+        - pvp_internal
+      description: Deletes matches where user with UUID as requested appears.
+      operationId: remove_by_user_uuid
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+        - name: uuid
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/UserId'
+      responses:
+        '200':
+          description: Matches deleted.
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /pvp/internal/get_pending_list:
+    get:
+      tags:
+        - pvp_internal
+      description: Returns the list of pending pvp requests for the user.
+      operationId: get_pending_list
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+        - name: uuid
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/UserId'
+      responses:
+        '200':
+          description: Matches.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PendingPvPRequests'
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /pvp/internal/insert_match:
+    post:
+      tags:
+        - pvp_internal
+      description: Inserts a match into the database.
+      operationId: insert_match
       parameters:
       - name: session
         in: cookie
         required: false
         schema:
           type: string
-      - name: uuid
-        in: query
-        required: false
-        schema:
-          $ref: '#/components/schemas/UserId'
-      responses:
-        '200':
-          description: User role.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  role:
-                    $ref: '#/components/schemas/Roles'
-        '400':
-          description: Invalid request.
-        '403':
-          description: Not authorized.
-        '404':
-          description: Not found.
-        '503':
-          description: Service unavailable. Please try again later.
-  /auth/internal/delete_user_by_uuid:
-    delete:
-      tags:
-        - auth_internal
-      description: Deletes a user.
-      operationId: delete_user_by_uuid
-      parameters:
-        - name: session
-          in: cookie
-          required: false
-          schema:
-            type: string
-        - name: uuid
-          in: query
-          required: false
-          schema:
-            $ref: '#/components/schemas/UserId'
-      responses:
-        '200':
-          description: User deleted.
-        '400':
-          description: Invalid request.
-        '403':
-          description: Not authorized.
-        '404':
-          description: Not found.
-        '503':
-          description: Service temporarily unavailable. Please try again later.
-  /auth/internal/edit_email:
-    post:
-      tags:
-        - auth_internal
-      description: Updates a user's email.
-      operationId: edit_email
-      parameters:
-        - name: session
-          in: cookie
-          required: false
-          schema:
-            type: string
-        - name: uuid
-          in: query
-          required: false
-          schema:
-            $ref: '#/components/schemas/UserId'
-        - name: email
-          in: query
-          required: false
-          schema:
-            $ref: '#/components/schemas/Email'
-      responses:
-        '200':
-          description: Email updated.
-        '304':
-          description: No changes applied.
-        '400':
-          description: Invalid request.
-        '404':
-          description: User not found.
-        '403':
-          description: Not authorized.
-        '503':
-          description: Service temporarily unavailable. Please try again later.
-  /auth/internal/get_user:
-    get:
-      tags:
-        - auth_internal
-      description: Returns user info.
-      operationId: get_user
-      parameters:
-        - name: session
-          in: cookie
-          required: false
-          schema:
-            type: string
-        - name: uuid
-          in: query
-          required: false
-          schema:
-            $ref: '#/components/schemas/UserId'
-      responses:
-        '200':
-          description: User info.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  uuid:
-                    $ref: '#/components/schemas/UserId'
-                  email:
-                    $ref: '#/components/schemas/Email'
-                  role:
-                    $ref: '#/components/schemas/Roles'
-        '400':
-          description: Invalid request.
-        '403':
-          description: Not authorized.
-        '404':
-          description: User not found.
-        '503':
-          description: Service temporarily unavailable. Please try again later.
-  /auth/internal/get_hashed_password:
-    get:
-      tags:
-        - auth_internal
-      description: Returns user hashed password.
-      operationId: get_hashed_password
-      parameters:
-        - name: session
-          in: cookie
-          required: false
-          schema:
-            type: string
-        - name: uuid
-          in: query
-          required: false
-          schema:
-            $ref: '#/components/schemas/UserId'
-      responses:
-        '200':
-          description: Hashed user's password.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  password:
-                    type: string
-        '400':
-          description: Invalid request.
-        '403':
-          description: Not authorized.
-        '404':
-          description: User not found.
-        '503':
-          description: Service temporarily unavailable. Please try again later.
-  
-  ############################################
-  ################### ADMIN ##################
-  ############################################
-  /admin/health_check:
-    get:
-      tags:
-      - admin
-      description: Returns 200 if service is healthy.
-      responses:
-        '200':
-          description: Service operational.
-      summary: Gives information on service status.
-  /admin/profile/list:
-    get:
-      tags:
-        - admin
-      summary: Returns all profiles.
-      description: Allows to retrieve all profiles, paginated.
-      operationId: getAllProfiles
-      parameters:
-        - name: session
-          in: cookie
-          required: true
-          schema:
-            type: string
-        - name: page_number
-          in: query
-          description: Page number of the list.
-          required: false
-          schema:
-            type: integer
-            default: 1
-            minimum: 1
-      responses:
-        '200':
-          description: User profile.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/UserFull'
-        '403':
-          description: This account is not authorized to perform this action.
-        '503':
-          description: Service unavailable. Please try again later.
-  /admin/profile/{user_uuid}/edit:
-    put:
-      tags:
-        - admin
-      summary: Edits properties of a profile.
-      description: Allows an admin to edit a user's profile.
-      operationId: editUserProfile
-      parameters:
-        - name: session
-          in: cookie
-          required: true
-          schema:
-            type: string
-        - name: user_uuid
-          in: path
-          required: true
-          schema:
-            $ref: '#/components/schemas/UserId'
-        - name: email
-          in: query
-          required: false
-          schema:
-            $ref: '#/components/schemas/Email'
-        - name: username
-          in: query
-          required: false
-          schema:
-            $ref: '#/components/schemas/Username'
-      responses:
-        '200':
-          description: Profile successfully updated.
-        '304':
-          description: No changes to profile applied.
-        '401':
-          description: This account is not authorized to perform this action.
-        '403':
-          description: Not authorized to perform this action.
-        '404':
-          description: User not found.
-        '503':
-          description: Service unavailable. Please try again later.
-  /admin/profile/{user_uuid}/ban:
-    delete:
-      tags:
-        - admin
-      summary: Deletes a profile.
-      description: Allows an admin to delete a user's profile.
-      operationId: banProfile
-      parameters:
-        - name: session
-          in: cookie
-          required: true
-          schema:
-            type: string
-        - name: user_uuid
-          in: path
-          required: true
-          schema:
-            $ref: '#/components/schemas/UserId'
-      responses:
-        '200':
-          description: Profile deleted.
-        '400':
-          description: Invalid fields.
-        '404':
-          description: User not found.
-        '403':
-          description: This account is not authorized to perform this action.
-        '406':
-          description: You cannot delete your account like this.
-        '409':
-          description: Cannot ban a user with the ADMIN role.
-        '503':
-          description: Service unavailable. Please try again later.
-  /admin/profile/{user_uuid}/history:
-    get:
-      tags:
-        - admin
-      summary: Returns history of a user.
-      description: Allows to retrieve history of a user.
-      operationId: getUserHistory
-      parameters:
-        - name: session
-          in: cookie
-          required: true
-          schema:
-            type: string
-        - name: user_uuid
-          in: path
-          required: true
-          schema:
-            $ref: '#/components/schemas/UserId'
-        - name: history_type
-          in: query
-          description: Type of history to show.
-          required: true
-          schema:
-            enum:
-              - bundle
-              - ingame
-        - name: page_number
-          in: query
-          description: Page number of the list.
-          required: false
-          schema:
-            type: integer
-            default: 1
-            minimum: 1
-      responses:
-        '200':
-          description: User transaction history.
-          content:
-            application/json:
-              schema:
-                oneOf:
-                  - $ref: "#/components/schemas/HistoryListINGAME"
-                  - $ref: "#/components/schemas/HistoryListBUNDLE"
-        '400':
-          description: Invalid history type.
-        '403':
-          description: This account is not authorized to perform this action.
-        '404':
-          description: User not found.
-        '503':
-          description: Service unavailable. Please try again later.
-  /admin/gacha/create:
-    post:
-      tags:
-        - admin
-      summary: Creates a gacha.
-      description: Allows the creation of a gacha.
-      operationId: createGacha
-      parameters:
-        - name: session
-          in: cookie
-          required: true
-          schema:
-            type: string
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Gacha'
+              $ref: '#/components/schemas/PvPRequest'
       responses:
         '201':
-          description: Gacha created.
+          description: Match inserted.
         '400':
           description: Invalid request.
         '403':
-          description: This account is not authorized to perform this action.
-        '409':
-          description: The provided gacha uuid is already in use.
+          description: Not authorized.
         '503':
-          description: Service unavailable. Please try again later.
-  /admin/gacha/{gacha_uuid}/update:
-    put:
-      tags:
-        - admin
-      summary: Updates a gacha.
-      description: Allows the update of a gacha.
-      operationId: updateGacha
-      parameters:
-        - name: session
-          in: cookie
-          required: true
-          schema:
-            type: string
-        - name: gacha_uuid
-          in: path
-          required: true
-          schema:
-            $ref: '#/components/schemas/GachaId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Gacha'
-      responses:
-        '200':
-          description: Gacha updated.
-        '400':
-          description: Invalid request.
-        '403':
-          description: This account is not authorized to perform this action.
-        '404':
-          description: Gacha not found.
-        '406':
-          description: Gacha UUID in request is different from the one inside the gacha object.
-        '503':
-          description: Service unavailable. Please try again later.
-  /admin/gacha/{gacha_uuid}/delete:
-    delete:
-      tags:
-        - admin
-      summary: Deletes a gacha.
-      description: Allows the deletion of a gacha.
-      operationId: deleteGacha
-      parameters:
-        - name: session
-          in: cookie
-          required: true
-          schema:
-            type: string
-        - name: gacha_uuid
-          in: path
-          required: true
-          schema:
-            $ref: '#/components/schemas/GachaId'
-      responses:
-        '200':
-          description: Gacha deleted.
-        '400':
-          description: Invalid request.
-        '403':
-          description: This account is not authorized to perform this action.
-        '404':
-          description: Gacha not found.
-        '503':
-          description: Service unavailable. Please try again later.
-  /admin/pool/create:
-    post:
-      tags:
-        - admin
-      summary: Creates a pool.
-      description: Allows the creation of a pool.
-      operationId: createPool
-      parameters:
-        - name: session
-          in: cookie
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Pool'
-      responses:
-        '201':
-          description: Pool created.
-        '400':
-          description: Invalid request.
-        '403':
-          description: This account is not authorized to perform this action.
-        '404':
-          description: Item UUID not found in database.
-        '409':
-          description: The provided pool id is already in use.
-        '412':
-          description: Invalid probabilities.
-        '416':
-          description: Price should be a positive number.
-        '503':
-          description: Service unavailable. Please try again later.
-  /admin/pool/{pool_id}/update:
-    put:
-      tags:
-        - admin
-      summary: Updates a pool.
-      description: Allows the update of a pool.
-      operationId: updatePool
-      parameters:
-        - name: session
-          in: cookie
-          required: true
-          schema:
-            type: string
-        - name: pool_id
-          in: path
-          required: true
-          schema:
-            $ref: '#/components/schemas/PoolId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Pool'
-      responses:
-        '200':
-          description: Pool updated.
-        '400':
-          description: Invalid request.
-        '403':
-          description: This account is not authorized to perform this action.
-        '404':
-          description: Pool not found.
-        '406':
-          description: ool UUID in request is different from the one inside the pool object.
-        '412':
-          description: Invalid probabilities.
-        '416':
-          description: Price should be a positive number.
-        '503':
-          description: Service unavailable. Please try again later.
-  /admin/pool/{pool_id}/delete:
-    delete:
-      tags:
-        - admin
-      summary: Deletes a pool.
-      description: Allows the deletion of a pool.
-      operationId: deletePool
-      parameters:
-        - name: session
-          in: cookie
-          required: true
-          schema:
-            type: string
-        - name: pool_id
-          in: path
-          required: true
-          schema:
-            $ref: '#/components/schemas/PoolId'
-      responses:
-        '200':
-          description: Pool deleted.
-        '400':
-          description: Invalid fields.
-        '403':
-          description: This account is not authorized to perform this action.
-        '404':
-          description: Pool not found.
-        '503':
-          description: Service unavailable. Please try again later.
-  /admin/auction/{auction_uuid}/update:
-    put:
-      tags:
-        - admin
-      summary: Updates an auction.
-      description: Allows the update of an auction.
-      operationId: updateAuction
-      parameters:
-        - name: session
-          in: cookie
-          required: true
-          schema:
-            type: string
-        - name: auction_uuid
-          in: path
-          required: true
-          schema:
-            $ref: '#/components/schemas/AuctionId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Auction'
-      responses:
-        '200':
-          description: Auction updated.
-        '400':
-          description: Invalid request.
-        '401':
-          description: Current bid cannot be lower than starting price.
-        '403':
-          description: This account is not authorized to perform this action.
-        '404':
-          description: Auction not found.
-        '412':
-          description: Starting price cannot be lower or equal to 0.
-        '416':
-          description: Current bid cannot be lower than 0.
-        '417':
-          description: Invalid date format.
-        '503':
-          description: Service unavailable. Please try again later.
-  /admin/logs/:
+          description: Service temporarily unavailable. Please try again later.
+  /pvp/internal/get_status:
     get:
       tags:
-        - admin
-      summary: Returns the system logs.
-      description: Allows to retrieve logs of the system.
-      operationId: getSystemLogs
+        - pvp_internal
+      description: Returns info on a pvp match.
+      operationId: get_status
       parameters:
         - name: session
           in: cookie
-          required: true
-          schema:
-            type: string
-        - name: service_type
-          in: query
-          description: Name of the service whose logs are requested.
           required: false
           schema:
             type: string
-        - name: endpoint
+        - name: uuid
           in: query
-          description: Name of the endpoint whose logs are requested
           required: false
           schema:
-            type: string
-        - name: level
-          in: query
-          description: Level of criticality
-          schema:
-            type: string
-            enum:
-              - general
-              - info
-              - warning
-              - error
-            default: info
-        - name: interval
-          in: query 
-          description: Number of seconds of the interval to look in
-          schema:
-            type: integer
-            default: 3600
-        - name: start_time
-          in: query
-          description: Interval starting time in Unix time (seconds since January 1, 1970).
-          schema:
-            type: integer
-            format: int64
+            $ref: '#/components/schemas/PvPMatchId'
       responses:
         '200':
-          description: Latest system logs.
+          description: Match info.
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Log'
+                $ref: '#/components/schemas/PvPRequest'
+        '400':
+          description: Invalid request.
         '403':
-          description: This account is not authorized to perform this action.
+          description: Not authorized.
+        '404':
+          description: Match not found.
         '503':
-          description: Service unavailable. Please try again later.
-  /admin/feedback/list:
-    get:
+          description: Service temporarily unavailable. Please try again later.
+  /pvp/internal/delete_match:
+    delete:
       tags:
-      - admin
-      summary: Returns all feedbacks.
-      description: Allows to retrieve all feedbacks, paginated.
-      operationId: get_all_feedbacks
+        - pvp_internal
+      description: Deletes a pvp match.
+      operationId: delete_match
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+        - name: uuid
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/PvPMatchId'
+      responses:
+        '200':
+          description: Match deleted.
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '404':
+          description: Match not found.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /pvp/internal/set_results:
+    post:
+      tags:
+        - pvp_internal
+      description: Inserts match results into the database.
+      operationId: set_results
       parameters:
       - name: session
         in: cookie
-        required: true
-        schema:
-          type: string
-      - name: page_number
-        in: query
-        description: Page number of the list.
         required: false
         schema:
-          default: 1
-          minimum: 1
-          type: integer
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                items:
-                  $ref: '#/components/schemas/FeedbackPreview'
-                type: array
-          description: Feedback Ids.
-        '400':
-          description: Invalid request.
-        '403':
-          description: This account is not authorized to perform this action.
-        '503':
-          description: Service unavailable. Please try again later.
-  /admin/feedback/{feedback_id}:
-    get:
-      tags:
-      - admin
-      summary: Shows infos on a feedback.
-      description: Returns infos on a feedback.
-      operationId: get_feedback_info
-      parameters:
-      - name: session
-        in: cookie
-        required: true
-        schema:
           type: string
-      - name: feedback_id
-        in: path
+      requestBody:
         required: true
-        schema:
-          $ref: '#/components/schemas/FeedbackId'
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PvPRequest'
       responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FeedbackWithUsername'
-          description: Successful operation.
+        '201':
+          description: Match inserted.
         '400':
           description: Invalid request.
         '403':
-          description: This account is not authorized to perform this action.
-        '404':
-          description: Feedback not found.
+          description: Not authorized.
         '503':
-          description: Service unavailable. Please try again later.
+          description: Service temporarily unavailable. Please try again later.
+
+
 
 components:
   schemas:
