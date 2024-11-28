@@ -12,7 +12,7 @@ from openapi_server.helpers.db import get_db
 from openapi_server.helpers.logging import send_log
 
 
-circuit_breaker = CircuitBreaker(fail_max=3, reset_timeout=5, exclude=[OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError])
+circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5, exclude=[OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError])
 
 
 

@@ -27,7 +27,7 @@ from pybreaker import CircuitBreaker, CircuitBreakerError
 from openapi_server.helpers.db import get_db
 
 
-circuit_breaker = CircuitBreaker(fail_max=3, reset_timeout=5, exclude=[OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError])
+circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5, exclude=[OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError])
 
 
 def check_pending_pvp_requests(ban_user_profile_request=None):
@@ -63,8 +63,6 @@ def check_pending_pvp_requests(ban_user_profile_request=None):
             }
             for match_uuid, player_1_uuid, _ in results
         ]
-
-        print(formatted_results)
         
         return formatted_results, 200
 

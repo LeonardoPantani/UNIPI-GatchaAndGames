@@ -71,7 +71,7 @@ class LoginRequest(Model):
         if username is not None and len(username) < 5:
             raise ValueError("Invalid value for `username`, length must be greater than or equal to `5`")  # noqa: E501
         if username is not None and not re.search(r'^[a-zA-Z0-9_]+$', username):  # noqa: E501
-            raise ValueError("Invalid value for `username`, must be a follow pattern or equal to `/^[a-zA-Z0-9_]+$/`")  # noqa: E501
+            raise ValueError(r"Invalid value for `username`, must be a follow pattern or equal to `/^[a-zA-Z0-9_]+$/`")  # noqa: E501
 
         self._username = username
 

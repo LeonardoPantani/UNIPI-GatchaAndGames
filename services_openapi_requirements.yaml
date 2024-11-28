@@ -33,58 +33,6 @@ paths:
       responses:
         '200':
           description: Service operational.
-  /auth/userinfo/:
-    get:
-      tags:
-        - auth
-      summary: Returns User Info.
-      description: This endpoint receives an Access Token from another service and returns information regarding that user.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                AccessToken:
-                  type: string
-      responses:
-        '200':
-          description: User Info.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-        '400':
-          description: Invalid request.
-        '401':
-          description: Unauthorized.
-        '503':
-          description: Service unavailable. Please try again later.
-  /auth/introspect/:
-    post:
-      tags:
-        - auth
-      summary: Validates a Token.
-      description: This endpoint validates the Access Token received by another service from the client.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                AccessToken:
-                  type: string
-      responses:
-        '200':
-          description: Valid Token.
-        '400':
-          description: Invalid request.
-        '401':
-          description: Unauthorized.
-        '503':
-          description: Service unavailable. Please try again later.
   /auth/login:
     post:
       tags:
@@ -172,6 +120,62 @@ paths:
           description: The specified email is not valid.
         '409':
           description: The provided username / email is already in use.
+        '503':
+          description: Service unavailable. Please try again later.
+  /auth/internal/userinfo/:
+    post:
+      tags:
+        - auth_internal
+      summary: Returns User Info.
+      description: This endpoint receives an Access Token from another service and returns information regarding that user.
+      operationId: userinfo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                AccessToken:
+                  type: string
+      responses:
+        '200':
+          description: User Info.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid request.
+        '401':
+          description: Unauthorized.
+        '503':
+          description: Service unavailable. Please try again later.
+  /auth/internal/introspect/:
+    post:
+      tags:
+        - auth_internal
+      summary: Validates a Token.
+      description: This endpoint validates the Access Token received by another service from the client.
+      operationId: introspect
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                AccessToken:
+                  type: string
+      responses:
+        '200':
+          description: Valid Token.
+        '400':
+          description: Invalid request.
+        '401':
+          description: Unauthorized.
+        '402':
+          description: Token expired.
         '503':
           description: Service unavailable. Please try again later.
   /auth/internal/get_role_by_uuid:
@@ -350,7 +354,7 @@ paths:
 
 
   ############################################
-  ################### ADMIN ##################
+  ###################ADMIN ##################
   ############################################
   /admin/health_check:
     get:

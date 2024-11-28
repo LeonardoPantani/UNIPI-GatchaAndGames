@@ -64,8 +64,6 @@ def get_gacha_info(get_gacha_info_request=None):
         if not gacha_data:
             return "", 404
         
-        print(gacha_data)
-        return "",200
 
         # Create a Gacha object with the retrieved data
         gacha_attributes = { 
