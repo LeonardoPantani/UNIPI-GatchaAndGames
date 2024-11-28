@@ -23,7 +23,7 @@ import logging
 from pybreaker import CircuitBreaker, CircuitBreakerError
 
 # Circuit breaker instance
-circuit_breaker = CircuitBreaker(fail_max=3, reset_timeout=5, exclude=[requests.HTTPError])
+circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5, exclude=[requests.HTTPError])
 
 def gacha_health_check_get():  # noqa: E501
     return jsonify({"message": "Service operational."}), 200

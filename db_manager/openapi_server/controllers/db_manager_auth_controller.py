@@ -64,7 +64,6 @@ def login():
         return "", 500
     except InterfaceError as e:
         logging.error("Query ["+ username +"]: Interface error.")
-        print(e)
         return "", 500
     except DatabaseError:
         logging.error("Query ["+ username +"]: Database error.")

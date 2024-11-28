@@ -70,6 +70,5 @@ def query_logs(service_type, endpoint="unknown", interval=3600, level="info", st
                 })
         
         return log_values
-    except requests.exceptions.RequestException as e:
-        print(f"Error querying logs: {e}")
+    except requests.exceptions.RequestException:
         return None

@@ -4,19 +4,29 @@ import requests
 from flask import jsonify, session
 from openapi_server.helpers.logging import send_log
 from pybreaker import CircuitBreaker, CircuitBreakerError
+from typing import Dict
+from typing import Tuple
+from typing import Union
 
-# Circuit breaker instance
-circuit_breaker = CircuitBreaker(fail_max=3, reset_timeout=30)
+from openapi_server import util
+from openapi_server.helpers.authorization import verify_login
+
+
+circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5)
 
 
 def feedback_health_check_get():
     return jsonify({"message": "Service operational."}), 200
 
 
-@circuit_breaker
-def post_feedback():
-    if 'username' not in session:
-        return jsonify({"error": "Not logged in."}), 403
+def post_feedback(string=None, session=None):
+    session = verify_login(connexion.request.headers.get('Authorization'))
+    if session[1] != 200: # se dà errore, il risultato della verify_login è: (messaggio, codice_errore)
+        return session
+    else: # altrimenti, va preso il primo valore (0) per i dati di sessione già pronti
+        session = session[0]
+    # fine controllo autenticazione
+    
 
     if not connexion.request.is_json:
         return jsonify({"message": "Invalid request."}), 400

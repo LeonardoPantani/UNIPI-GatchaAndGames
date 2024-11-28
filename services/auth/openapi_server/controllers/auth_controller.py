@@ -1,9 +1,11 @@
 import uuid
 import re
-from datetime import datetime
+import datetime
 import bcrypt
 import connexion
 import requests
+import jwt
+import redis
 from typing import Dict
 from typing import Tuple
 from typing import Union
@@ -16,21 +18,15 @@ from flask import jsonify, session, request
 from pybreaker import CircuitBreaker, CircuitBreakerError
 
 SERVICE_TYPE = "auth"
-
-
-circuit_breaker = CircuitBreaker(fail_max=3, reset_timeout=5, exclude=[requests.HTTPError])
-
-
+circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5, exclude=[requests.HTTPError])
+redis_client = redis.Redis(host='redis', port=6379, db=0)
 
 
 def auth_health_check_get():
     return jsonify({"message": "Service operational."}), 200
 
 
-def login():
-    if "username" in session:
-        return jsonify({"error": "You are already logged in."}), 409
-
+def login(login_request=None):
     if not connexion.request.is_json:
         return jsonify({"message": "Invalid request."}), 400
 
@@ -40,7 +36,6 @@ def login():
     password_to_login = login_request.password
 
     try:
-
         @circuit_breaker
         def make_request_to_dbmanager():
             payload = {"username": username_to_login}
@@ -51,54 +46,89 @@ def login():
 
         response_data = make_request_to_dbmanager()
 
-        if bcrypt.checkpw(password_to_login.encode("utf-8"), response_data["password"].encode("utf-8")):  # wrong password
-            session["uuid"] = response_data["uuid"]
-            session["uuid_hex"] = response_data["uuid_hex"]
-            session["email"] = response_data["email"]
-            session["username"] = response_data["username"]
-            session["role"] = response_data["role"]
-            session["login_date"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        # Verifica se l'utente è già loggato (a questo punto le credenziali sono già ok)
+        user_id = response_data["uuid"]
+        if redis_client.exists(user_id):
+            redis_client.delete(user_id) # se l'utente è già loggato lo scolleghiamo e gli diamo errore, ma così potrà rifare il login a modo
+            return jsonify({"message": "Previous session invalidated successfully. Login again."}), 409
 
-            send_log("User '" + username_to_login + "' logged in.", level="general", service_type=SERVICE_TYPE)
-            return jsonify({"message": "Login successful."}), 200
+        # Verifica la password
+        if bcrypt.checkpw(password_to_login.encode("utf-8"), response_data["password"].encode("utf-8")):
+            # Crea i payload JWT
+            access_token_payload = {
+                "iss": "http://service_auth:8080",
+                "sub": user_id,
+                "email": response_data["email"],
+                "username": response_data["username"],
+                "uuid": response_data["uuid"],
+                "uuidhex": response_data["uuid_hex"],
+                "role": response_data["role"],
+                "logindate": datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S'),
+                "aud": "public_services",
+                "iat": datetime.datetime.now(datetime.timezone.utc),
+                "exp": (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=1)), # 3600 secondi
+                "scope": "access",
+            }
+
             
+            # Genera il token
+            access_token = jwt.encode(access_token_payload, "prova", algorithm="HS256")
+
+            # Aggiungi il token a redis
+            redis_client.set(user_id, access_token, ex=3600)
+
+            # Logga l'azione
+            send_log(f"User '{username_to_login}' logged in.", level="general", service_type=SERVICE_TYPE)
+
+            # Invia i token negli header
+            response = jsonify({"message": "Login successful."})
+            response.headers["Authorization"] = f'Bearer {access_token}'
+            return response, 200
         else:
-            send_log("User '" + username_to_login + "' used invalid credentials.", level="info", service_type=SERVICE_TYPE)
+            send_log(f"User '{username_to_login}' used invalid credentials.", level="info", service_type=SERVICE_TYPE)
             return jsonify({"error": "Invalid credentials."}), 401
 
-    except requests.HTTPError as e:  # if request is sent to dbmanager correctly and it answers an application error (to be managed here) [error expected by us]
-        if e.response.status_code == 404:  # username not found
+    except requests.HTTPError as e:
+        if e.response.status_code == 404:
             return jsonify({"error": "Invalid credentials."}), 401
-        elif e.response.status_code == 400:  # programming error, we mask as invalid credentials to users
-            return jsonify({"error": "Invalid credentials."}), 401
-        else:  # other errors
-            send_log("Service unavailable.", level="warning", service_type=SERVICE_TYPE)
-            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
-    except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
-        send_log("RequestException.", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. [HTTPError]"}), 503
+    except requests.RequestException:
         return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
-        send_log("CircuitBreakerError.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
 
+
 def logout():
-    # check if user is logged in
-    if "username" not in session:
-        return jsonify({"error": "Not logged in."}), 403
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        return jsonify({"error": "Missing or invalid Authorization header"}), 403
 
-    # adding to log
-    send_log("User '" + session['username'] + "' logged out.", level="general", service_type=SERVICE_TYPE)
+    token = auth_header.split(" ")[1]
+
+    try:
+        # Decodifica il token per ottenere l'user_id
+        decoded_token = jwt.decode(token, "prova", algorithms=["HS256"], audience="public_services")
+        user_id = decoded_token["sub"]
+
+        # Controlla se la chiave esiste in Redis
+        if not redis_client.exists(user_id):
+            return jsonify({"error": "Invalid request. User is not logged in."}), 400
+
+        # Rimuovi l'associazione da Redis e verifica se è stata rimossa
+        deleted = redis_client.delete(user_id)
+        if deleted == 0:
+            return jsonify({"error": "Invalid request. User is not logged in."}), 400
+
+        send_log(f"User '{decoded_token['sub']}' logged out.", level="general", service_type=SERVICE_TYPE)
+        return jsonify({"message": "Logout successful."}), 200
+
+    except jwt.InvalidTokenError:
+        return jsonify({"error": "Invalid token."}), 403
 
 
-    # remove session cookie to log out
-    session.clear()
 
-    # send response to user
-    return jsonify({"message": "Logout successful."}), 200
-
-
-def register():
+def register(register_request):
     if "username" in session:
         return jsonify({"error": "You are already logged in."}), 401
 

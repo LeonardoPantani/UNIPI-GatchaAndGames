@@ -18,7 +18,7 @@ from openapi_server.helpers.db import get_db
 import logging
 
 # circuit breaker to stop requests when dbmanager fails
-circuit_breaker = CircuitBreaker(fail_max=3, reset_timeout=5, exclude=[OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError])
+circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5, exclude=[OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError])
 
 
 def get_inventory_item(get_inventory_item_request=None):

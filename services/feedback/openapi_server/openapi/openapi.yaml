@@ -3,15 +3,15 @@ info:
   contact:
     email: support@gachaandgames.it
   description: |-
-    API for managing gacha items, auctions, PVP battles, currency, and user authentication.
+    API for managing authentication.
 
     Useful links:
-    - [Project repository](https://github.com/LeonardoPantani/UNIPI-GachaAndGames)
+    - [Project repository](https://github.com/LeonardoPantani/UNIPI-GatchaAndGames)
   license:
     name: GPL-3.0
     url: https://www.gnu.org/licenses/gpl-3.0.html#license-text
   termsOfService: https://localhost/tos
-  title: Gacha System - OpenAPI 3.0
+  title: Gacha System - Auth Service - OpenAPI 3.0
   version: 2.0.0
 servers:
 - description: Local server

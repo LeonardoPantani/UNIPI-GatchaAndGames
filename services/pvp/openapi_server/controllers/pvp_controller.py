@@ -19,7 +19,7 @@ from flask import jsonify, request, session
 from pybreaker import CircuitBreaker, CircuitBreakerError
 
 
-circuit_breaker = CircuitBreaker(fail_max=3, reset_timeout=5, exclude=[requests.HTTPError])
+circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5, exclude=[requests.HTTPError])
 
 
 def pvp_health_check_get():

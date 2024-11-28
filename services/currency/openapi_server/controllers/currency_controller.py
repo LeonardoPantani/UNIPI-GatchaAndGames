@@ -8,7 +8,7 @@ from pybreaker import CircuitBreaker, CircuitBreakerError
 from openapi_server.helpers.logging import send_log
 
 circuit_breaker = CircuitBreaker(
-    fail_max=3, reset_timeout=5, exclude=[requests.HTTPError]
+    fail_max=1000, reset_timeout=5, exclude=[requests.HTTPError]
 )
 
 TRANSACTION_TYPE_BUNDLE_CODE = "bought_bundle"
