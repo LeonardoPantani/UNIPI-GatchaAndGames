@@ -649,7 +649,7 @@ components:
         $ref: '#/components/schemas/GachaId'
       maxItems: 7
       minItems: 7
-      title: team
+      title: Team
       type: array
     InventoryItem:
       example:
@@ -714,12 +714,6 @@ components:
     check_owner_of_team_request:
       properties:
         team:
-          description: Team used by players to battle each others.
-          items:
-            $ref: '#/components/schemas/GachaId'
-          maxItems: 7
-          minItems: 7
-          title: team
-          type: array
+          $ref: '#/components/schemas/Team'
       title: check_owner_of_team_request
       type: object

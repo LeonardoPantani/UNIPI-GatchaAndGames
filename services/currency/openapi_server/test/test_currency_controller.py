@@ -9,19 +9,6 @@ from openapi_server.test import BaseTestCase
 class TestCurrencyController(BaseTestCase):
     """CurrencyController integration test stubs"""
 
-    def test_health_check(self):
-        """Test case for health_check
-
-        Gives information on service status.
-        """
-        response = self.client.open(
-            '/currency/health_check',
-            method='GET',
-            headers=headers,
-            content_type='application/json')
-        self.assert200(response,
-                       'Response body is : ' + response.data.decode('utf-8'))
-
     def test_buy_currency(self):
         """Test case for buy_currency
 
@@ -32,6 +19,20 @@ class TestCurrencyController(BaseTestCase):
         response = self.client.open(
             '/currency/buy/{bundle_id}'.format(bundle_id='bundle_id_example'),
             method='POST',
+            headers=headers)
+        self.assert200(response,
+                       'Response body is : ' + response.data.decode('utf-8'))
+
+    def test_currency_health_check_get(self):
+        """Test case for currency_health_check_get
+
+        Gives information on service status.
+        """
+        headers = { 
+        }
+        response = self.client.open(
+            '/currency/health_check',
+            method='GET',
             headers=headers)
         self.assert200(response,
                        'Response body is : ' + response.data.decode('utf-8'))

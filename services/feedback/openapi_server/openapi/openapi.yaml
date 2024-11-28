@@ -10,55 +10,286 @@ info:
   license:
     name: GPL-3.0
     url: https://www.gnu.org/licenses/gpl-3.0.html#license-text
+  termsOfService: https://localhost/tos
   title: Gacha System - OpenAPI 3.0
-  version: 1.0.0
+  version: 2.0.0
 servers:
 - description: Local server
-  url: http://localhost:8080
+  url: https://localhost
 paths:
-  /feedback/health_check:
-    get:
-      description: Returns 200 if service is healthy.
-      operationId: health_check
-      responses:
-        "200":
-          description: Service OK
-      summary: Gives information on service status.
-      tags:
-      - feedback
-      x-openapi-router-controller: openapi_server.controllers.feedback_controller
   /feedback/:
     post:
-      description: Crea un feedback per gli amministratori.
+      description: Creates a feedback to the admins.
       operationId: post_feedback
       parameters:
-      - in: cookie
+      - explode: true
+        in: cookie
         name: session
         required: false
         schema:
           type: string
-      requestBody:
+        style: form
+      - explode: true
+        in: query
+        name: string
         required: true
+        schema:
+          type: string
+        style: form
+      responses:
+        "201":
+          description: Feedback successfully submitted.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not logged in.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      summary: Sends a feedback.
+      tags:
+      - feedback
+      x-openapi-router-controller: openapi_server.controllers.feedback_controller
+  /feedback/health_check:
+    get:
+      description: Returns 200 if service is healthy.
+      operationId: feedback_health_check_get
+      responses:
+        "200":
+          description: Service operational.
+      summary: Gives information on service status.
+      tags:
+      - feedback
+      x-openapi-router-controller: openapi_server.controllers.feedback_controller
+  /feedback/internal/delete_user_feedbacks:
+    delete:
+      description: "Deletes feedbacks made by the user by UUID, if exist."
+      operationId: delete_user_feedbacks
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/UserId'
+        style: form
+      responses:
+        "200":
+          description: Feedbacks deleted.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "503":
+          description: Service unavailable. Please try again later.
+      tags:
+      - feedback_internal
+      x-openapi-router-controller: openapi_server.controllers.feedback_internal_controller
+  /feedback/internal/info:
+    get:
+      description: Returns info of a feedback.
+      operationId: feedback_info
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: feedback_id
+        required: false
+        schema:
+          $ref: '#/components/schemas/FeedbackId'
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeedbackWithUsername'
+          description: Feedbacks list.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "404":
+          description: Feedback not found.
+        "503":
+          description: Service unavailable. Please try again later.
+      tags:
+      - feedback_internal
+      x-openapi-router-controller: openapi_server.controllers.feedback_internal_controller
+  /feedback/internal/list:
+    get:
+      description: Returns list of feedbacks based on pagenumber.
+      operationId: feedback_list
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: Page number of the list.
+        explode: true
+        in: query
+        name: page_number
+        required: false
+        schema:
+          default: 1
+          minimum: 1
+          type: integer
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/FeedbackPreview'
+                type: array
+          description: Feedbacks list.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "503":
+          description: Service unavailable. Please try again later.
+      tags:
+      - feedback_internal
+      x-openapi-router-controller: openapi_server.controllers.feedback_internal_controller
+  /feedback/internal/submit:
+    post:
+      description: Submits a feedback.
+      operationId: submit_feedback
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: user_uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/UserId'
+        style: form
+      requestBody:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                string:
-                  type: string
-                  description: Il contenuto del feedback.
-              required:
-                - string
+              $ref: '#/components/schemas/submit_feedback_request'
+        required: true
       responses:
-        "200":
-          description: Feedback creato con successo.
+        "201":
+          description: Feedbacks added.
         "400":
-          description: Input non valido.
-        "500":
-          description: Errore interno del server.
-      summary: Invia un feedback.
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "503":
+          description: Service unavailable. Please try again later.
       tags:
-        - feedback
-      x-openapi-router-controller: openapi_server.controllers.feedback_controller
+      - feedback_internal
+      x-openapi-router-controller: openapi_server.controllers.feedback_internal_controller
 components:
-  schemas: {}
+  schemas:
+    UserId:
+      description: UUID of user.
+      format: uuid
+      title: user_uuid
+      type: string
+    Username:
+      description: "The user's username. Must be at least 5 characters long and contain\
+        \ only letters, numbers, and underscores."
+      example: LeoPanta01_
+      minLength: 5
+      pattern: "^[a-zA-Z0-9_]+$"
+      title: username
+      type: string
+    FeedbackPreview:
+      example:
+        user_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        id: 7
+        timestamp: 2000-01-23T04:56:07.000+00:00
+      properties:
+        id:
+          description: Id of feedback.
+          example: 7
+          title: id
+          type: integer
+        user_uuid:
+          description: UUID of user.
+          format: uuid
+          title: user_uuid
+          type: string
+        timestamp:
+          description: Timestamp when user created feedback
+          format: date-time
+          title: timestamp
+          type: string
+      title: FeedbackPreview
+      type: object
+    FeedbackId:
+      description: Id of feedback.
+      example: 7
+      title: id
+      type: integer
+    FeedbackWithUsername:
+      example:
+        user_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        id: 7
+        content: I love this game11!
+        username: LeoPanta01_
+        timestamp: 2000-01-23T04:56:07.000+00:00
+      properties:
+        id:
+          description: Id of feedback.
+          example: 7
+          title: id
+          type: integer
+        user_uuid:
+          description: UUID of user.
+          format: uuid
+          title: user_uuid
+          type: string
+        username:
+          description: "The user's username. Must be at least 5 characters long and\
+            \ contain only letters, numbers, and underscores."
+          example: LeoPanta01_
+          minLength: 5
+          pattern: "^[a-zA-Z0-9_]+$"
+          title: username
+          type: string
+        content:
+          description: Actual feedback content.
+          example: I love this game11!
+          title: content
+          type: string
+        timestamp:
+          description: Timestamp when user created feedback
+          format: date-time
+          title: timestamp
+          type: string
+      title: FeedbackWithUsername
+      type: object
+    submit_feedback_request:
+      properties:
+        content:
+          title: content
+          type: string
+      title: submit_feedback_request
+      type: object

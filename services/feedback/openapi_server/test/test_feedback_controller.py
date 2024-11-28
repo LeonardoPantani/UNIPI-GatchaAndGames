@@ -8,16 +8,17 @@ from openapi_server.test import BaseTestCase
 class TestFeedbackController(BaseTestCase):
     """FeedbackController integration test stubs"""
 
-    def test_health_check(self):
-        """Test case for health_check
+    def test_feedback_health_check_get(self):
+        """Test case for feedback_health_check_get
 
         Gives information on service status.
         """
+        headers = { 
+        }
         response = self.client.open(
             '/feedback/health_check',
             method='GET',
-            headers=headers,
-            content_type='application/json')
+            headers=headers)
         self.assert200(response,
                        'Response body is : ' + response.data.decode('utf-8'))
 
@@ -30,7 +31,7 @@ class TestFeedbackController(BaseTestCase):
         headers = { 
         }
         response = self.client.open(
-            '/feedback',
+            '/feedback/',
             method='POST',
             headers=headers,
             query_string=query_string)

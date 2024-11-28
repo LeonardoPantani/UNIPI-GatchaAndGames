@@ -22,7 +22,7 @@ from pybreaker import CircuitBreaker, CircuitBreakerError
 circuit_breaker = CircuitBreaker(fail_max=3, reset_timeout=5, exclude=[requests.HTTPError])
 
 
-def health_check():
+def pvp_health_check_get():
     return jsonify({"message": "Service operational."}), 200
 
 

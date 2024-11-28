@@ -3,7 +3,7 @@
 1. Il sistema di logging al momento non è implementato (WIP).
 2. I test sono principalmente integration tests eseguiti con postman, il cui json si trova, come richiesto, nella cartella docs. Attualmente non coprono ogni test case, ma almeno il codice 200 per ogni metodo di ogni microservizio. Gli unit tests insieme al performance testing saranno consegnati successivamente.
 3. Il servizio PVP è stato temporaneamente disattivato, a causa della mancata conformità con le specifiche richieste (WIP).
-4. Per registrarsi come amministratore ed effettuare le relative operazioni, la richiesta di registrazione (al servizio auth) va inviata alla porta 8081 di localhost. Le funzioni amministrative devono essere inviate sulla stessa porta 8081, tutte le altre richieste (auth, auctions, currency, ...) devono essere inviate sulla 8080. Il servizio auth fa parte sia della rete privata che pubblica. Il servizio admin è esclusivo della rete privata.
+4. Per registrarsi come amministratore ed effettuare le relative operazioni, la richiesta di registrazione (al servizio auth) va inviata alla porta 8081 di localhost. Le funzioni amministrative devono essere inviate sulla stessa porta 8081, tutte le altre richieste (auth, auction, currency, ...) devono essere inviate sulla 8080. Il servizio auth fa parte sia della rete privata che pubblica. Il servizio admin è esclusivo della rete privata.
 
 Per fare i test si possono usare i seguenti admin (la prima riga è l'username, la seconda la password):
 ```
@@ -91,7 +91,7 @@ I servizi sono organizzati nella directory **services**, ognuno con la propria d
 - **profile/**: Gestione dei profili utente.
 - **gacha/**: Meccaniche del gioco Gacha.
 - **inventory/**: Gestione degli inventari degli utenti.
-- **auctions/**: Gestione delle aste tra utenti.
+- **auction/**: Gestione delle aste tra utenti.
 - **currency/**: Gestione della valuta di gioco.
 - **pvp/**: Funzionalità Player vs Player.
 - **feedback/**: Raccolta dei feedback dagli utenti.

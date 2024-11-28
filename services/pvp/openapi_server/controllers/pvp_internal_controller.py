@@ -3,7 +3,7 @@ from typing import Dict
 from typing import Tuple
 from typing import Union
 
-from openapi_server.models.pending_pv_p_requests_inner import PendingPvPRequestsInner  # noqa: E501
+from openapi_server.models.pending_pv_p_requests import PendingPvPRequests  # noqa: E501
 from openapi_server.models.pv_p_request import PvPRequest  # noqa: E501
 from openapi_server import util
 
@@ -35,7 +35,7 @@ def get_pending_list(session=None, uuid=None):  # noqa: E501
     :type uuid: str
     :type uuid: str
 
-    :rtype: Union[List[List[PendingPvPRequestsInner]], Tuple[List[List[PendingPvPRequestsInner]], int], Tuple[List[List[PendingPvPRequestsInner]], int, Dict[str, str]]
+    :rtype: Union[List[PendingPvPRequests], Tuple[List[PendingPvPRequests], int], Tuple[List[PendingPvPRequests], int, Dict[str, str]]
     """
     return 'do some magic!'
 

@@ -9,19 +9,6 @@ from openapi_server.test import BaseTestCase
 class TestInventoryController(BaseTestCase):
     """InventoryController integration test stubs"""
 
-    def test_health_check(self):
-        """Test case for health_check
-
-        Gives information on service status.
-        """
-        response = self.client.open(
-            '/inventory/health_check',
-            method='GET',
-            headers=headers,
-            content_type='application/json')
-        self.assert200(response,
-                       'Response body is : ' + response.data.decode('utf-8'))
-
     def test_get_inventory(self):
         """Test case for get_inventory
 
@@ -49,6 +36,20 @@ class TestInventoryController(BaseTestCase):
         }
         response = self.client.open(
             '/inventory/{inventory_item_id}'.format(inventory_item_id='inventory_item_id_example'),
+            method='GET',
+            headers=headers)
+        self.assert200(response,
+                       'Response body is : ' + response.data.decode('utf-8'))
+
+    def test_inventory_health_check_get(self):
+        """Test case for inventory_health_check_get
+
+        Gives information on service status.
+        """
+        headers = { 
+        }
+        response = self.client.open(
+            '/inventory/health_check',
             method='GET',
             headers=headers)
         self.assert200(response,

@@ -1019,10 +1019,12 @@ components:
     HistoryListINGAME:
       items:
         $ref: '#/components/schemas/HistoryListINGAME_inner'
+      title: HistoryListINGAME
       type: array
     HistoryListBUNDLE:
       items:
         $ref: '#/components/schemas/HistoryListBUNDLE_inner'
+      title: HistoryListBUNDLE
       type: array
     getUserHistory_200_response:
       oneOf:

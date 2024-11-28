@@ -10,7 +10,7 @@ services:
       - ./favicon.ico:/usr/share/nginx/html/favicon.ico:ro
     depends_on:
       - service_admin
-      - service_auctions
+      - service_auction
       - service_auth
       - service_currency
       - service_feedback
@@ -33,7 +33,7 @@ services:
       - ./favicon.ico:/usr/share/nginx/html/favicon.ico:ro
     depends_on:
       - service_admin
-      - service_auctions
+      - service_auction
       - service_auth
       - service_currency
       - service_feedback
@@ -142,14 +142,14 @@ services:
     deploy:
       replicas: 1
   
-  service_auctions:
-    image: service_auctions
-    build: ./services/auctions/
+  service_auction:
+    image: service_auction
+    build: ./services/auction/
     ports:
       - "8080"
-    env_file: ./services/auctions/.env
+    env_file: ./services/auction/.env
     volumes:
-      - ./services/auctions:/usr/src/app/
+      - ./services/auction:/usr/src/app/
       - ./common/:/usr/src/app/openapi_server/helpers/
     depends_on:
       db_manager:
@@ -159,7 +159,7 @@ services:
     networks:
       - public_gachaandgames_network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/auctions/health_check"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/auction/health_check"]
       start_period: 10s
       interval: 1m
       timeout: 2s
@@ -292,31 +292,30 @@ services:
     deploy:
       replicas: 1
 
-  # 22/11/2024: Suspended because still WIP
-  # service_pvp:
-  #   image: service_pvp
-  #   build: ./services/pvp/
-  #   ports:
-  #     - "8080"
-  #   env_file: ./services/pvp/.env
-  #   volumes:
-  #     - ./services/pvp:/usr/src/app/
-  #     - ./common/:/usr/src/app/openapi_server/helpers/
-  #   depends_on:
-  #     db_manager:
-  #       condition: service_healthy
-  #   tty: true
-  #   restart: always
-  #   networks:
-  #     - public_gachaandgames_network
-  #   healthcheck:
-  #     test: ["CMD", "curl", "-f", "http://localhost:8080/pvp/health_check"]
-  #     start_period: 10s
-  #     interval: 1m
-  #     timeout: 2s
-  #     retries: 3
-  #   deploy:
-  #     replicas: 1
+  service_pvp:
+    image: service_pvp
+    build: ./services/pvp/
+    ports:
+      - "8080"
+    env_file: ./services/pvp/.env
+    volumes:
+      - ./services/pvp:/usr/src/app/
+      - ./common/:/usr/src/app/openapi_server/helpers/
+    depends_on:
+      db_manager:
+        condition: service_healthy
+    tty: true
+    restart: always
+    networks:
+      - public_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/pvp/health_check"]
+      start_period: 10s
+      interval: 1m
+      timeout: 2s
+      retries: 3
+    deploy:
+      replicas: 1
 
   ######### STACK ELK
   logging_loki:

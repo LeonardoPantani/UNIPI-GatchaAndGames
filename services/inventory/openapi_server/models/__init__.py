@@ -4,3 +4,4 @@ from openapi_server.models.check_owner_of_team_request import CheckOwnerOfTeamRe
 from openapi_server.models.exists_inventory200_response import ExistsInventory200Response
 from openapi_server.models.get_stand_uuid_by_item_uuid200_response import GetStandUuidByItemUuid200Response
 from openapi_server.models.inventory_item import InventoryItem
+from openapi_server.models.team import Team

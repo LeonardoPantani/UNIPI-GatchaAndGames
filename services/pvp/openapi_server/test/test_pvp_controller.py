@@ -10,26 +10,13 @@ from openapi_server.test import BaseTestCase
 
 class TestPvpController(BaseTestCase):
     """PvpController integration test stubs"""
-    def test_health_check(self):
-        """Test case for health_check
-
-        Gives information on service status.
-        """
-        response = self.client.open(
-            '/pvp/health_check',
-            method='GET',
-            headers=headers,
-            content_type='application/json')
-        self.assert200(response,
-                       'Response body is : ' + response.data.decode('utf-8'))
-
 
     def test_accept_pvp_request(self):
         """Test case for accept_pvp_request
 
         Accept a pending PvP request.
         """
-        team = {"gachas":[null,null,null,null,null]}
+        team = [ null, null, null, null, null ]
         headers = { 
             'Content-Type': 'application/json',
         }
@@ -72,6 +59,20 @@ class TestPvpController(BaseTestCase):
         self.assert200(response,
                        'Response body is : ' + response.data.decode('utf-8'))
 
+    def test_pvp_health_check_get(self):
+        """Test case for pvp_health_check_get
+
+        Gives information on service status.
+        """
+        headers = { 
+        }
+        response = self.client.open(
+            '/pvp/health_check',
+            method='GET',
+            headers=headers)
+        self.assert200(response,
+                       'Response body is : ' + response.data.decode('utf-8'))
+
     def test_reject_pv_prequest(self):
         """Test case for reject_pv_prequest
 
@@ -91,9 +92,8 @@ class TestPvpController(BaseTestCase):
 
         Sends a PvP match request.
         """
-        team = {"gachas":[null,null,null,null,null]}
+        team = [ null, null, null, null, null ]
         headers = { 
-            'Accept': 'application/json',
             'Content-Type': 'application/json',
         }
         response = self.client.open(

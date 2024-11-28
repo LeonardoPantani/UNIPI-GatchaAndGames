@@ -427,12 +427,12 @@ components:
     UserId:
       description: UUID of user.
       format: uuid
-      title: from
+      title: UserId
       type: string
     PvPMatchId:
       description: UUID of the PvP match.
       format: uuid
-      title: pvp_match_id
+      title: PvPMatchId
       type: string
     MatchPairing:
       example:
@@ -504,12 +504,7 @@ components:
           - null
           - null
           - null
-          team2:
-          - null
-          - null
-          - null
-          - null
-          - null
+          team2: null
         match_log:
           rounds:
           - player1:
@@ -537,24 +532,24 @@ components:
         pvp_match_uuid:
           description: UUID of the PvP match.
           format: uuid
-          title: pvp_match_id
+          title: PvPMatchId
           type: string
         sender_id:
           description: UUID of user.
           format: uuid
-          title: from
+          title: UserId
           type: string
         receiver_id:
           description: UUID of user.
           format: uuid
-          title: from
+          title: UserId
           type: string
         teams:
           $ref: '#/components/schemas/PvPRequest_teams'
         winner_id:
           description: UUID of user.
           format: uuid
-          title: from
+          title: UserId
           type: string
         match_log:
           $ref: '#/components/schemas/MatchLog'
@@ -612,29 +607,12 @@ components:
         - null
         - null
         - null
-        team2:
-        - null
-        - null
-        - null
-        - null
-        - null
+        team2: null
       properties:
         team1:
-          description: Team used by players to battle each others.
-          items:
-            $ref: '#/components/schemas/ItemId'
-          maxItems: 7
-          minItems: 7
-          title: Team
-          type: array
+          $ref: '#/components/schemas/Team'
         team2:
-          description: Team used by players to battle each others.
-          items:
-            $ref: '#/components/schemas/ItemId'
-          maxItems: 7
-          minItems: 7
-          title: Team
-          type: array
+          $ref: '#/components/schemas/Team'
       title: PvPRequest_teams
       type: object
     PendingPvPRequests_inner:
@@ -645,12 +623,12 @@ components:
         pvp_match_id:
           description: UUID of the PvP match.
           format: uuid
-          title: pvp_match_id
+          title: PvPMatchId
           type: string
         from:
           description: UUID of user.
           format: uuid
-          title: from
+          title: UserId
           type: string
       title: PendingPvPRequests_inner
       type: object

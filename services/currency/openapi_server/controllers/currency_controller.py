@@ -60,7 +60,7 @@ global_mock_accounts = {
 }
 
 
-def health_check():
+def currency_health_check_get():
     return jsonify({"message": "Service operational."}), 200
 
 

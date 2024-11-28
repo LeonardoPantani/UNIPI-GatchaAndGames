@@ -9,7 +9,7 @@ from pybreaker import CircuitBreaker, CircuitBreakerError
 circuit_breaker = CircuitBreaker(fail_max=3, reset_timeout=30)
 
 
-def health_check():
+def feedback_health_check_get():
     return jsonify({"message": "Service operational."}), 200
 
 

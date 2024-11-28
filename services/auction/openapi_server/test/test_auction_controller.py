@@ -7,32 +7,33 @@ from openapi_server.models.gacha_rarity import GachaRarity  # noqa: E501
 from openapi_server.test import BaseTestCase
 
 
-class TestAuctionsController(BaseTestCase):
-    """AuctionsController integration test stubs"""
+class TestAuctionController(BaseTestCase):
+    """AuctionController integration test stubs"""
 
-    def test_health_check(self):
-        """Test case for health_check
+    def test_auction_health_check_get(self):
+        """Test case for auction_health_check_get
 
         Gives information on service status.
         """
+        headers = { 
+        }
         response = self.client.open(
-            '/auctions/health_check',
+            '/auction/health_check',
             method='GET',
-            headers=headers,
-            content_type='application/json')
+            headers=headers)
         self.assert200(response,
                        'Response body is : ' + response.data.decode('utf-8'))
 
     def test_bid_on_auction(self):
         """Test case for bid_on_auction
 
-        Bids on an active auction
+        Bids on an open auction
         """
         query_string = [('bid', 1)]
         headers = { 
         }
         response = self.client.open(
-            '/auctions/bid/{auction_uuid}'.format(auction_uuid='auction_uuid_example'),
+            '/auction/bid/{auction_uuid}'.format(auction_uuid='auction_uuid_example'),
             method='POST',
             headers=headers,
             query_string=query_string)
@@ -50,7 +51,7 @@ class TestAuctionsController(BaseTestCase):
         headers = { 
         }
         response = self.client.open(
-            '/auctions/create',
+            '/auction/create',
             method='POST',
             headers=headers,
             query_string=query_string)
@@ -66,7 +67,7 @@ class TestAuctionsController(BaseTestCase):
             'Accept': 'application/json',
         }
         response = self.client.open(
-            '/auctions/status/{auction_uuid}'.format(auction_uuid='auction_uuid_example'),
+            '/auction/status/{auction_uuid}'.format(auction_uuid='auction_uuid_example'),
             method='GET',
             headers=headers)
         self.assert200(response,
@@ -82,7 +83,7 @@ class TestAuctionsController(BaseTestCase):
             'Accept': 'application/json',
         }
         response = self.client.open(
-            '/auctions/history',
+            '/auction/history',
             method='GET',
             headers=headers,
             query_string=query_string)
@@ -94,14 +95,14 @@ class TestAuctionsController(BaseTestCase):
 
         Retrieve the list of auctions.
         """
-        query_string = [('status', active),
+        query_string = [('status', open),
                         ('rarity', openapi_server.GachaRarity()),
                         ('page_number', 1)]
         headers = { 
             'Accept': 'application/json',
         }
         response = self.client.open(
-            '/auctions/list',
+            '/auction/list',
             method='GET',
             headers=headers,
             query_string=query_string)
