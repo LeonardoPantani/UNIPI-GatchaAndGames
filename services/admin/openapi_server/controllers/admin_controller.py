@@ -2,9 +2,16 @@ import connexion
 import json
 import requests
 
-from openapi_server.models.auction import Auction
-from openapi_server.models.gacha import Gacha
-from openapi_server.models.pool import Pool
+from openapi_server.models.auction import Auction  # noqa: E501
+from openapi_server.models.feedback_preview import FeedbackPreview  # noqa: E501
+from openapi_server.models.feedback_with_username import FeedbackWithUsername  # noqa: E501
+from openapi_server.models.gacha import Gacha  # noqa: E501
+from openapi_server.models.get_user_history200_response import GetUserHistory200Response  # noqa: E501
+from openapi_server.models.log import Log  # noqa: E501
+from openapi_server.models.pool import Pool  # noqa: E501
+from openapi_server.models.user_full import UserFull  # noqa: E501
+from openapi_server import util
+
 from openapi_server.helpers.logging import send_log
 from flask import jsonify, session
 from pybreaker import CircuitBreaker, CircuitBreakerError

@@ -55,6 +55,7 @@ class EditProfileRequest(Model):
     def email(self) -> str:
         """Gets the email of this EditProfileRequest.
 
+        The user's email.  # noqa: E501
 
         :return: The email of this EditProfileRequest.
         :rtype: str
@@ -65,6 +66,7 @@ class EditProfileRequest(Model):
     def email(self, email: str):
         """Sets the email of this EditProfileRequest.
 
+        The user's email.  # noqa: E501
 
         :param email: The email of this EditProfileRequest.
         :type email: str
@@ -76,7 +78,7 @@ class EditProfileRequest(Model):
     def username(self) -> str:
         """Gets the username of this EditProfileRequest.
 
-        The username of the user  # noqa: E501
+        The user's username. Must be at least 5 characters long and contain only letters, numbers, and underscores.  # noqa: E501
 
         :return: The username of this EditProfileRequest.
         :rtype: str
@@ -87,7 +89,7 @@ class EditProfileRequest(Model):
     def username(self, username: str):
         """Sets the username of this EditProfileRequest.
 
-        The username of the user  # noqa: E501
+        The user's username. Must be at least 5 characters long and contain only letters, numbers, and underscores.  # noqa: E501
 
         :param username: The username of this EditProfileRequest.
         :type username: str
@@ -95,7 +97,7 @@ class EditProfileRequest(Model):
         if username is not None and len(username) < 5:
             raise ValueError("Invalid value for `username`, length must be greater than or equal to `5`")  # noqa: E501
         if username is not None and not re.search(r'^[a-zA-Z0-9_]+$', username):  # noqa: E501
-            raise ValueError("Invalid value for `username`, must be a follow pattern or equal to `/^[a-zA-Z0-9_]+$/`")  # noqa: E501
+            raise ValueError(r"Invalid value for `username`, must be a follow pattern or equal to `/^[a-zA-Z0-9_]+$/`")  # noqa: E501
 
         self._username = username
 
@@ -103,6 +105,7 @@ class EditProfileRequest(Model):
     def password(self) -> str:
         """Gets the password of this EditProfileRequest.
 
+        The user's password must be at least 8 characters and can accept all characters.  # noqa: E501
 
         :return: The password of this EditProfileRequest.
         :rtype: str
@@ -113,9 +116,12 @@ class EditProfileRequest(Model):
     def password(self, password: str):
         """Sets the password of this EditProfileRequest.
 
+        The user's password must be at least 8 characters and can accept all characters.  # noqa: E501
 
         :param password: The password of this EditProfileRequest.
         :type password: str
         """
+        if password is not None and len(password) < 8:
+            raise ValueError("Invalid value for `password`, length must be greater than or equal to `8`")  # noqa: E501
 
         self._password = password

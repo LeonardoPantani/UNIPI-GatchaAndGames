@@ -5,8 +5,12 @@ from typing import Tuple
 from typing import Union
 
 from openapi_server.models.auction import Auction  # noqa: E501
+from openapi_server.models.auction_status import AuctionStatus  # noqa: E501
+from openapi_server.models.exists_auctions200_response import ExistsAuctions200Response  # noqa: E501
 from openapi_server.models.gacha_rarity import GachaRarity  # noqa: E501
+from openapi_server.models.is_open_by_item_uuid200_response import IsOpenByItemUuid200Response  # noqa: E501
 from openapi_server import util
+
 from openapi_server.helpers.logging import send_log
 from flask import jsonify, request, session, current_app
 from werkzeug.exceptions import BadRequest, NotFound, InternalServerError

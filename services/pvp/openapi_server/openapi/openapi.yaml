@@ -10,24 +10,13 @@ info:
   license:
     name: GPL-3.0
     url: https://www.gnu.org/licenses/gpl-3.0.html#license-text
-  termsOfService: http://localhost:8080/tos
+  termsOfService: https://localhost/tos
   title: Gacha System - OpenAPI 3.0
-  version: 1.0.0
+  version: 2.0.0
 servers:
 - description: Local server
-  url: http://localhost:8080
+  url: https://localhost
 paths:
-  /pvp/health_check:
-    get:
-      description: Returns 200 if service is healthy.
-      operationId: health_check
-      responses:
-        "200":
-          description: Service OK
-      summary: Gives information on service status.
-      tags:
-      - pvp
-      x-openapi-router-controller: openapi_server.controllers.pvp_controller
   /pvp/acceptPvPRequest/{pvp_match_uuid}:
     post:
       description: Allows a player to accept a PvP battle with another user.
@@ -57,11 +46,19 @@ paths:
         required: true
       responses:
         "200":
-          description: Battle started successfully.
+          description: Match accepted and performed successfully.
         "400":
           description: Invalid pvp match id or team data.
-        "500":
-          description: Internal server error.
+        "401":
+          description: This request is not for you.
+        "403":
+          description: Not logged in.
+        "404":
+          description: User not found.
+        "406":
+          description: Match already ended.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
       summary: Accept a pending PvP request.
       tags:
       - pvp
@@ -86,14 +83,223 @@ paths:
               schema:
                 $ref: '#/components/schemas/PendingPvPRequests'
           description: The list containing requests for current user.
-        "400":
-          description: Invalid input data
-        "500":
-          description: Internal server error
+        "403":
+          description: Not logged in.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
       summary: Returns a list of pending PvP requests.
       tags:
       - pvp
       x-openapi-router-controller: openapi_server.controllers.pvp_controller
+  /pvp/health_check:
+    get:
+      description: Returns 200 if service is healthy.
+      operationId: pvp_health_check_get
+      responses:
+        "200":
+          description: Service operational.
+      summary: Gives information on service status.
+      tags:
+      - pvp
+      x-openapi-router-controller: openapi_server.controllers.pvp_controller
+  /pvp/internal/delete_match:
+    delete:
+      description: Deletes a pvp match.
+      operationId: delete_match
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/PvPMatchId'
+        style: form
+      responses:
+        "200":
+          description: Match deleted.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "404":
+          description: Match not found.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - pvp_internal
+      x-openapi-router-controller: openapi_server.controllers.pvp_internal_controller
+  /pvp/internal/get_pending_list:
+    get:
+      description: Returns the list of pending pvp requests for the user.
+      operationId: get_pending_list
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/UserId'
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/PendingPvPRequests'
+                type: array
+          description: Matches.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - pvp_internal
+      x-openapi-router-controller: openapi_server.controllers.pvp_internal_controller
+  /pvp/internal/get_status:
+    get:
+      description: Returns info on a pvp match.
+      operationId: get_status
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/PvPMatchId'
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PvPRequest'
+          description: Match info.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "404":
+          description: Match not found.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - pvp_internal
+      x-openapi-router-controller: openapi_server.controllers.pvp_internal_controller
+  /pvp/internal/insert_match:
+    post:
+      description: Inserts a match into the database.
+      operationId: insert_match
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PvPRequest'
+        required: true
+      responses:
+        "201":
+          description: Match inserted.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - pvp_internal
+      x-openapi-router-controller: openapi_server.controllers.pvp_internal_controller
+  /pvp/internal/remove_by_user_uuid:
+    delete:
+      description: Deletes matches where user with UUID as requested appears.
+      operationId: remove_by_user_uuid
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/UserId'
+        style: form
+      responses:
+        "200":
+          description: Matches deleted.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - pvp_internal
+      x-openapi-router-controller: openapi_server.controllers.pvp_internal_controller
+  /pvp/internal/set_results:
+    post:
+      description: Inserts match results into the database.
+      operationId: set_results
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PvPRequest'
+        required: true
+      responses:
+        "201":
+          description: Match inserted.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - pvp_internal
+      x-openapi-router-controller: openapi_server.controllers.pvp_internal_controller
   /pvp/rejectPvPRequest/{pvp_match_uuid}:
     post:
       description: Allows a player to reject a PvP battle with another user.
@@ -119,8 +325,12 @@ paths:
           description: Battle rejected successfully.
         "400":
           description: Invalid pvp match id.
-        "500":
-          description: Internal server error.
+        "401":
+          description: Cannot reject this PvP request.
+        "403":
+          description: Not logged in.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
       summary: Rejects a pending PvP request.
       tags:
       - pvp
@@ -154,15 +364,17 @@ paths:
         required: true
       responses:
         "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PvPRequest'
-          description: Request to fight sent successfully.
+          description: Match request sent successfully.
         "400":
           description: Player's UUID not found.
-        "500":
-          description: Internal server error.
+        "401":
+          description: Gacha items do not belong to you.
+        "403":
+          description: Not logged in.
+        "406":
+          description: You cannot start a match with yourself.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
       summary: Sends a PvP match request.
       tags:
       - pvp
@@ -194,164 +406,251 @@ paths:
               schema:
                 $ref: '#/components/schemas/PvPRequest'
           description: Match results found.
-        "400":
-          description: Invalid match id.
-        "500":
-          description: Internal server error.
+        "403":
+          description: Not logged in.
+        "404":
+          description: Match not found.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
       summary: Returns the results of a PvP match.
       tags:
       - pvp
       x-openapi-router-controller: openapi_server.controllers.pvp_controller
 components:
   schemas:
+    GachaStat:
+      description: Stat of a gacha.
+      example: A
+      pattern: "^[A-Ea-e]$"
+      title: GachaStat
+      type: string
     UserId:
       description: UUID of user.
       format: uuid
-      title: sender_id
+      title: from
       type: string
-    ItemId:
-      description: UUID of single item.
-      format: uuid
-      title: ItemId
-      type: string
-    Team:
-      description: Team used by players to battle each others.
-      example:
-        gachas:
-        - null
-        - null
-        - null
-        - null
-        - null
-      properties:
-        gachas:
-          items:
-            $ref: '#/components/schemas/ItemId'
-          maxItems: 7
-          minItems: 7
-          title: gachas
-          type: array
-      title: Team
-      type: object
     PvPMatchId:
       description: UUID of the PvP match.
       format: uuid
-      title: pvp_match_uuid
+      title: pvp_match_id
       type: string
-    MatchLog:
+    MatchPairing:
       example:
-      - Battle between Player A and Player B starts NOW.
-      - x uses Quick Attack!
-      - Player A has won the match.
-      items:
-        type: string
-      title: match_log
-      type: array
+        player1:
+          stand_name: Tower of Gray
+          stand_stat: A
+        player2:
+          stand_name: Tower of Gray
+          stand_stat: A
+        extracted_stat: power
+        round_winner: Player1's Tower of Gray
+      properties:
+        extracted_stat:
+          enum:
+          - power
+          - speed
+          - durability
+          - precision
+          - range
+          title: extracted_stat
+          type: string
+        player1:
+          $ref: '#/components/schemas/MatchPairing_player1'
+        player2:
+          $ref: '#/components/schemas/MatchPairing_player1'
+        round_winner:
+          example: Player1's Tower of Gray
+          title: round_winner
+          type: string
+      title: MatchPairing
+      type: object
+    MatchLog:
+      description: Infos on a specific match
+      example:
+        rounds:
+        - player1:
+            stand_name: Tower of Gray
+            stand_stat: A
+          player2:
+            stand_name: Tower of Gray
+            stand_stat: A
+          extracted_stat: power
+          round_winner: Player1's Tower of Gray
+        - player1:
+            stand_name: Tower of Gray
+            stand_stat: A
+          player2:
+            stand_name: Tower of Gray
+            stand_stat: A
+          extracted_stat: power
+          round_winner: Player1's Tower of Gray
+      properties:
+        rounds:
+          items:
+            $ref: '#/components/schemas/MatchPairing'
+          maximum: 7
+          minimum: 7
+          title: rounds
+          type: array
+      title: MatchLog
+      type: object
     PvPRequest:
       description: Request of a PvP match sent by a player.
       example:
+        teams:
+          team1:
+          - null
+          - null
+          - null
+          - null
+          - null
+          team2:
+          - null
+          - null
+          - null
+          - null
+          - null
         match_log:
-        - Battle between Player A and Player B starts NOW.
-        - x uses Quick Attack!
-        - Player A has won the match.
+          rounds:
+          - player1:
+              stand_name: Tower of Gray
+              stand_stat: A
+            player2:
+              stand_name: Tower of Gray
+              stand_stat: A
+            extracted_stat: power
+            round_winner: Player1's Tower of Gray
+          - player1:
+              stand_name: Tower of Gray
+              stand_stat: A
+            player2:
+              stand_name: Tower of Gray
+              stand_stat: A
+            extracted_stat: power
+            round_winner: Player1's Tower of Gray
         receiver_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        match_timestamp: 2000-01-23T04:56:07.000+00:00
         pvp_match_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
         winner_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
-        sent_timestamp: 2000-01-23T04:56:07.000+00:00
         sender_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
       properties:
         pvp_match_uuid:
           description: UUID of the PvP match.
           format: uuid
-          title: pvp_match_uuid
+          title: pvp_match_id
           type: string
         sender_id:
           description: UUID of user.
           format: uuid
-          title: sender_id
+          title: from
           type: string
         receiver_id:
           description: UUID of user.
           format: uuid
-          title: sender_id
+          title: from
           type: string
+        teams:
+          $ref: '#/components/schemas/PvPRequest_teams'
         winner_id:
           description: UUID of user.
           format: uuid
-          title: sender_id
+          title: from
           type: string
         match_log:
-          example:
-          - Battle between Player A and Player B starts NOW.
-          - x uses Quick Attack!
-          - Player A has won the match.
-          items:
-            type: string
-          title: match_log
-          type: array
-        sent_timestamp:
-          description: Request sent timestamp.
+          $ref: '#/components/schemas/MatchLog'
+        match_timestamp:
+          description: Match timestamp.
           format: date-time
-          title: sent_timestamp
+          title: match_timestamp
           type: string
       title: PvPRequest
       type: object
     PendingPvPRequests:
       description: List of pending pvp requests.
-      example:
-        requests:
-        - match_log:
-          - Battle between Player A and Player B starts NOW.
-          - x uses Quick Attack!
-          - Player A has won the match.
-          receiver_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
-          pvp_match_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
-          winner_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
-          sent_timestamp: 2000-01-23T04:56:07.000+00:00
-          sender_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
-        - match_log:
-          - Battle between Player A and Player B starts NOW.
-          - x uses Quick Attack!
-          - Player A has won the match.
-          receiver_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
-          pvp_match_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
-          winner_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
-          sent_timestamp: 2000-01-23T04:56:07.000+00:00
-          sender_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
-        - match_log:
-          - Battle between Player A and Player B starts NOW.
-          - x uses Quick Attack!
-          - Player A has won the match.
-          receiver_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
-          pvp_match_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
-          winner_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
-          sent_timestamp: 2000-01-23T04:56:07.000+00:00
-          sender_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
-        - match_log:
-          - Battle between Player A and Player B starts NOW.
-          - x uses Quick Attack!
-          - Player A has won the match.
-          receiver_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
-          pvp_match_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
-          winner_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
-          sent_timestamp: 2000-01-23T04:56:07.000+00:00
-          sender_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
-        - match_log:
-          - Battle between Player A and Player B starts NOW.
-          - x uses Quick Attack!
-          - Player A has won the match.
-          receiver_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
-          pvp_match_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
-          winner_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
-          sent_timestamp: 2000-01-23T04:56:07.000+00:00
-          sender_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
-      properties:
-        requests:
-          items:
-            $ref: '#/components/schemas/PvPRequest'
-          maxItems: 100
-          minItems: 0
-          title: requests
-          type: array
+      items:
+        $ref: '#/components/schemas/PendingPvPRequests_inner'
+      maxItems: 100
+      minItems: 0
       title: PendingPvPRequests
+      type: array
+    Team:
+      description: Team used by players to battle each others.
+      items:
+        $ref: '#/components/schemas/ItemId'
+      maxItems: 7
+      minItems: 7
+      title: Team
+      type: array
+    ItemId:
+      description: UUID of single item.
+      format: uuid
+      title: ItemId
+      type: string
+    MatchPairing_player1:
+      example:
+        stand_name: Tower of Gray
+        stand_stat: A
+      properties:
+        stand_name:
+          description: Name of the gacha
+          example: Tower of Gray
+          title: stand_name
+          type: string
+        stand_stat:
+          description: Stat of a gacha.
+          example: A
+          pattern: "^[A-Ea-e]$"
+          title: GachaStat
+          type: string
+      title: MatchPairing_player1
+      type: object
+    PvPRequest_teams:
+      example:
+        team1:
+        - null
+        - null
+        - null
+        - null
+        - null
+        team2:
+        - null
+        - null
+        - null
+        - null
+        - null
+      properties:
+        team1:
+          description: Team used by players to battle each others.
+          items:
+            $ref: '#/components/schemas/ItemId'
+          maxItems: 7
+          minItems: 7
+          title: Team
+          type: array
+        team2:
+          description: Team used by players to battle each others.
+          items:
+            $ref: '#/components/schemas/ItemId'
+          maxItems: 7
+          minItems: 7
+          title: Team
+          type: array
+      title: PvPRequest_teams
+      type: object
+    PendingPvPRequests_inner:
+      example:
+        pvp_match_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        from: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+      properties:
+        pvp_match_id:
+          description: UUID of the PvP match.
+          format: uuid
+          title: pvp_match_id
+          type: string
+        from:
+          description: UUID of user.
+          format: uuid
+          title: from
+          type: string
+      title: PendingPvPRequests_inner
       type: object

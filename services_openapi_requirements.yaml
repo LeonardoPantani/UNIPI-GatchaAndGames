@@ -4003,7 +4003,7 @@ components:
       minItems: 7
       maxItems: 7
       items:
-        $ref: '#/components/schemas/GachaId'
+        $ref: '#/components/schemas/ItemId'
       description: Team used by players to battle each others.
     PvPMatchId:
       type: string

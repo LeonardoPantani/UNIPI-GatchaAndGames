@@ -10,23 +10,13 @@ info:
   license:
     name: GPL-3.0
     url: https://www.gnu.org/licenses/gpl-3.0.html#license-text
+  termsOfService: https://localhost/tos
   title: Gacha System - OpenAPI 3.0
-  version: 1.0.0
+  version: 2.0.0
 servers:
 - description: Local server
-  url: http://localhost:8080
+  url: https://localhost
 paths:
-  /currency/health_check:
-    get:
-      description: Returns 200 if service is healthy.
-      operationId: health_check
-      responses:
-        "200":
-          description: Service OK
-      summary: Gives information on service status.
-      tags:
-      - currency
-      x-openapi-router-controller: openapi_server.controllers.currency_controller
   /currency/bundles:
     get:
       description: Returns a list of available bundles
@@ -40,8 +30,8 @@ paths:
                   $ref: '#/components/schemas/Bundle'
                 type: array
           description: Successful operation
-        "500":
-          description: Internal server error
+        "503":
+          description: Service temporarily unavailable. Please try again later.
       summary: Lists available bundles to buy currency.
       tags:
       - currency
@@ -54,7 +44,7 @@ paths:
       - explode: true
         in: cookie
         name: session
-        required: false
+        required: true
         schema:
           type: string
         style: form
@@ -68,38 +58,330 @@ paths:
       responses:
         "200":
           description: Purchase successful.
-        "400":
-          description: Purchase failed.
-        "500":
-          description: Internal server error.
+        "403":
+          description: Not logged in.
+        "404":
+          description: Bundle not found.
+        "412":
+          description: You cannot afford this bundle.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
       summary: Buy in-game credits
       tags:
       - currency
       x-openapi-router-controller: openapi_server.controllers.currency_controller
+  /currency/health_check:
+    get:
+      description: Returns 200 if service is healthy.
+      operationId: currency_health_check_get
+      responses:
+        "200":
+          description: Service operational.
+      summary: Gives information on service status.
+      tags:
+      - currency
+      x-openapi-router-controller: openapi_server.controllers.currency_controller
+  /currency/internal/delete_user_transactions:
+    delete:
+      description: "Deletes transaction made by the user by UUID, if exist."
+      operationId: delete_user_transactions
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/UserId'
+        style: form
+      responses:
+        "200":
+          description: Transactions deleted.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "503":
+          description: Service unavailable. Please try again later.
+      tags:
+      - currency_internal
+      x-openapi-router-controller: openapi_server.controllers.currency_internal_controller
+  /currency/internal/get_bundle:
+    get:
+      description: Returns requested bundle info.
+      operationId: get_bundle
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: codename
+        required: false
+        schema:
+          $ref: '#/components/schemas/BundleId'
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bundle'
+          description: Bundle object.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "404":
+          description: Bundle not found.
+        "503":
+          description: Service unavailable. Please try again later.
+      tags:
+      - currency_internal
+      x-openapi-router-controller: openapi_server.controllers.currency_internal_controller
+  /currency/internal/get_user_history:
+    get:
+      description: Allows to retrieve history of a user.
+      operationId: get_user_history
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/UserId'
+        style: form
+      - description: Type of history to show.
+        explode: true
+        in: query
+        name: history_type
+        required: false
+        schema:
+          enum:
+          - bundle
+          - ingame
+          type: string
+        style: form
+      - description: Page number of the list.
+        explode: true
+        in: query
+        name: page_number
+        required: false
+        schema:
+          default: 1
+          minimum: 1
+          type: integer
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/get_user_history_200_response'
+          description: User transaction history.
+        "400":
+          description: Invalid history type.
+        "403":
+          description: Not authorized.
+        "404":
+          description: User not found.
+        "503":
+          description: Service unavailable. Please try again later.
+      summary: Returns history of a user.
+      tags:
+      - currency_internal
+      x-openapi-router-controller: openapi_server.controllers.currency_internal_controller
+  /currency/internal/insert_bundle_transaction:
+    post:
+      description: Inserts transaction of ingame currency.
+      operationId: insert_bundle_transaction
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/UserId'
+        style: form
+      - description: Codename of the bundle.
+        explode: true
+        in: query
+        name: bundle_codename
+        required: false
+        schema:
+          $ref: '#/components/schemas/BundleId'
+        style: form
+      - description: Type of transaction.
+        explode: true
+        in: query
+        name: currency_name
+        required: false
+        schema:
+          $ref: '#/components/schemas/CurrencyName'
+        style: form
+      responses:
+        "200":
+          description: Transactions inserted.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "503":
+          description: Service unavailable. Please try again later.
+      tags:
+      - currency_internal
+      x-openapi-router-controller: openapi_server.controllers.currency_internal_controller
+  /currency/internal/insert_ingame_transaction:
+    post:
+      description: Inserts transaction of ingame currency.
+      operationId: insert_ingame_transaction
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/UserId'
+        style: form
+      - description: Amount of currency spent.
+        explode: true
+        in: query
+        name: current_bid
+        required: false
+        schema:
+          type: integer
+        style: form
+      - description: Type of transaction.
+        explode: true
+        in: query
+        name: transaction_type
+        required: false
+        schema:
+          enum:
+          - bought_bundle
+          - bought_market
+          - sold_market
+          - gacha_pull
+          type: string
+        style: form
+      responses:
+        "200":
+          description: Transactions inserted.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "503":
+          description: Service unavailable. Please try again later.
+      tags:
+      - currency_internal
+      x-openapi-router-controller: openapi_server.controllers.currency_internal_controller
+  /currency/internal/list_bundles:
+    get:
+      description: Returns bundle list.
+      operationId: list_bundles
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Bundle'
+                type: array
+          description: Bundles list.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "404":
+          description: Bundle not found.
+        "503":
+          description: Service unavailable. Please try again later.
+      tags:
+      - currency_internal
+      x-openapi-router-controller: openapi_server.controllers.currency_internal_controller
 components:
   schemas:
     BundleId:
       description: Internal code-name for the bundle.
       example: bundle_amazing
       pattern: "^[a-zA-Z0-9_]+$"
-      title: id
+      title: codename
       type: string
     CurrencyName:
       description: Currency code-name
       example: EUR
       pattern: "^[A-Z]{3}$"
-      title: name
+      title: CurrencyName
       type: string
-    CurrencyItem:
+    Bundle:
       example:
-        name: EUR
+        amount: 5000
+        codename: bundle_amazing
+        currency: EUR
+        public_name: Amazing Bundle
         value: 10
       properties:
-        name:
+        codename:
+          description: Internal code-name for the bundle.
+          example: bundle_amazing
+          pattern: "^[a-zA-Z0-9_]+$"
+          title: codename
+          type: string
+        public_name:
+          description: Visible name of the bundle.
+          example: Amazing Bundle
+          title: public_name
+          type: string
+        amount:
+          description: No. of credits.
+          example: 5000
+          title: amount
+          type: integer
+        currency:
           description: Currency code-name
           example: EUR
           pattern: "^[A-Z]{3}$"
-          title: name
+          title: CurrencyName
           type: string
         value:
           default: 10
@@ -109,40 +391,74 @@ components:
           minimum: 0
           title: value
           type: integer
-      title: CurrencyItem
+      title: Bundle
       type: object
-    Bundle:
+    UserId:
+      description: UUID of user.
+      format: uuid
+      title: UserId
+      type: string
+    HistoryListINGAME:
+      items:
+        $ref: '#/components/schemas/HistoryListINGAME_inner'
+      type: array
+    HistoryListBUNDLE:
+      items:
+        $ref: '#/components/schemas/HistoryListBUNDLE_inner'
+      type: array
+    get_user_history_200_response:
+      oneOf:
+      - $ref: '#/components/schemas/HistoryListINGAME'
+      - $ref: '#/components/schemas/HistoryListBUNDLE'
+      title: get_user_history_200_response
+    HistoryListINGAME_inner:
       example:
-        amount: 5000
-        name: Amazing Bundle
-        id: bundle_amazing
-        prices:
-        - name: EUR
-          value: 10
-        - name: EUR
-          value: 10
+        user_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        credits: 5000
+        transaction_type: bought_bundle
+        timestamp: 2000-01-23T04:56:07.000+00:00
       properties:
-        id:
-          description: Internal code-name for the bundle.
-          example: bundle_amazing
-          pattern: "^[a-zA-Z0-9_]+$"
-          title: id
+        user_uuid:
+          description: UUID of user.
+          format: uuid
+          title: UserId
           type: string
-        name:
-          description: Visible name of the bundle.
-          example: Amazing Bundle
-          title: name
+        timestamp:
+          description: Timestamp when user created feedback
+          format: date-time
+          title: timestamp
           type: string
-        amount:
+        credits:
           description: No. of credits.
           example: 5000
-          title: amount
+          title: credits
           type: integer
-        prices:
-          description: List of prices in different currencies.
-          items:
-            $ref: '#/components/schemas/CurrencyItem'
-          title: prices
-          type: array
-      title: Bundle
+        transaction_type:
+          example: bought_bundle
+          title: transaction_type
+          type: string
+      title: HistoryListINGAME_inner
+      type: object
+    HistoryListBUNDLE_inner:
+      properties:
+        user_uuid:
+          description: UUID of user.
+          format: uuid
+          title: UserId
+          type: string
+        timestamp:
+          description: Timestamp when user created feedback
+          format: date-time
+          title: timestamp
+          type: string
+        codename:
+          title: codename
+          type: string
+        currency_name:
+          description: Currency code-name
+          example: EUR
+          pattern: "^[A-Z]{3}$"
+          title: CurrencyName
+          type: string
+      title: HistoryListBUNDLE_inner
       type: object

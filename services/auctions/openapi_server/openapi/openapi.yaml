@@ -10,26 +10,16 @@ info:
   license:
     name: GPL-3.0
     url: https://www.gnu.org/licenses/gpl-3.0.html#license-text
+  termsOfService: https://localhost/tos
   title: Gacha System - OpenAPI 3.0
-  version: 1.0.0
+  version: 2.0.0
 servers:
 - description: Local server
-  url: http://localhost:8080
+  url: https://localhost
 paths:
-  /auctions/health_check:
-    get:
-      description: Returns 200 if service is healthy.
-      operationId: health_check
-      responses:
-        "200":
-          description: Service OK
-      summary: Gives information on service status.
-      tags:
-      - auctions
-      x-openapi-router-controller: openapi_server.controllers.auctions_controller
-  /auctions/bid/{auction_uuid}:
+  /auction/bid/{auction_uuid}:
     post:
-      description: "Sends a bid to an active auction, if the user has enough currency."
+      description: "Sends a bid to an open auction, if the user has enough currency."
       operationId: bid_on_auction
       parameters:
       - explode: true
@@ -47,7 +37,7 @@ paths:
         schema:
           $ref: '#/components/schemas/AuctionId'
         style: simple
-      - description: Bid value.
+      - description: Bid increment value.
         explode: true
         in: query
         name: bid
@@ -64,15 +54,17 @@ paths:
           description: Invalid query parameters.
         "403":
           description: Auction is closed.
+        "404":
+          description: Auction or user not found.
         "406":
           description: Insufficient funds.
-        "500":
-          description: Internal server error.
-      summary: Bids on an active auction
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      summary: Bids on an open auction
       tags:
-      - auctions
-      x-openapi-router-controller: openapi_server.controllers.auctions_controller
-  /auctions/create:
+      - auction
+      x-openapi-router-controller: openapi_server.controllers.auction_controller
+  /auction/create:
     post:
       description: Creates an auction for an item in player's inventory.
       operationId: create_auction
@@ -95,34 +87,53 @@ paths:
           minimum: 1
           type: integer
         style: form
-      - explode: true
+      - description: The owner id of the item.
+        explode: true
         in: query
         name: inventory_item_owner_id
-        required: false
+        required: true
         schema:
           $ref: '#/components/schemas/UserId'
         style: form
-      - explode: true
+      - description: The inventory item id.
+        explode: true
         in: query
         name: inventory_item_id
-        required: false
+        required: true
         schema:
           $ref: '#/components/schemas/ItemId'
         style: form
       responses:
-        "200":
+        "201":
           description: Auction created successfully.
         "400":
-          description: Invalid query parameters.
+          description: Invalid request.
+        "401":
+          description: This item is not yours.
+        "403":
+          description: Not logged in.
         "404":
-          description: Item in player's inventory not found.
-        "500":
-          description: Internal server error.
+          description: Item not found.
+        "409":
+          description: Another auction on the same item is still active.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
       summary: Creates an auction.
       tags:
-      - auctions
-      x-openapi-router-controller: openapi_server.controllers.auctions_controller
-  /auctions/history:
+      - auction
+      x-openapi-router-controller: openapi_server.controllers.auction_controller
+  /auction/health_check:
+    get:
+      description: Returns 200 if service is healthy.
+      operationId: auction_health_check_get
+      responses:
+        "200":
+          description: Service operational.
+      summary: Gives information on service status.
+      tags:
+      - auction
+      x-openapi-router-controller: openapi_server.controllers.auction_controller
+  /auction/history:
     get:
       description: Returns a list of all my auctions for gacha items.
       operationId: get_auctions_history
@@ -150,20 +161,434 @@ paths:
             application/json:
               schema:
                 items:
-                  $ref: '#/components/schemas/AuctionId'
+                  $ref: '#/components/schemas/Auction'
                 type: array
           description: List of my auctions.
         "400":
-          description: Invalid query parameters
-        "500":
-          description: Internal server error
+          description: Invalid request.
+        "403":
+          description: Not logged in.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
       summary: Retrieve history of my auctions.
       tags:
-      - auctions
-      x-openapi-router-controller: openapi_server.controllers.auctions_controller
-  /auctions/list:
+      - auction
+      x-openapi-router-controller: openapi_server.controllers.auction_controller
+  /auction/internal/create:
+    post:
+      description: Inserts new auction into db.
+      operationId: create_auction
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Auction'
+        required: true
+      responses:
+        "201":
+          description: Auction created.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - auction_internal
+      x-openapi-router-controller: openapi_server.controllers.auction_internal_controller
+  /auction/internal/exists:
     get:
-      description: Returns a list of all active auctions for gacha items.
+      description: "Returns true if an auction exists, false otherwise."
+      operationId: exists_auctions
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/AuctionId'
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/exists_auctions_200_response'
+          description: Result of search.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - auction_internal
+      x-openapi-router-controller: openapi_server.controllers.auction_internal_controller
+  /auction/internal/get_auction:
+    get:
+      description: Returns information of an auction by its uuid.
+      operationId: get_auction
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/AuctionId'
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Auction'
+          description: Auction info.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "404":
+          description: Not found.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - auction_internal
+      x-openapi-router-controller: openapi_server.controllers.auction_internal_controller
+  /auction/internal/get_user_auctions:
+    get:
+      description: Returns list of auctions where user is the owner of the item or
+        the current highest bidder.
+      operationId: get_user_auctions
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: user_uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/UserId'
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Auction'
+                type: array
+          description: Auction list.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - auction_internal
+      x-openapi-router-controller: openapi_server.controllers.auction_internal_controller
+  /auction/internal/is_open_by_item_uuid:
+    get:
+      description: "Returns true if an open auction is found, false otherwise."
+      operationId: is_open_by_item_uuid
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/ItemId'
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/is_open_by_item_uuid_200_response'
+          description: auction.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - auction_internal
+      x-openapi-router-controller: openapi_server.controllers.auction_internal_controller
+  /auction/internal/list:
+    get:
+      description: "Returns the list of auctions filtered by status and rarity, organized\
+        \ in pages"
+      operationId: get_auction_list
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: status
+        required: false
+        schema:
+          $ref: '#/components/schemas/AuctionStatus'
+        style: form
+      - explode: true
+        in: query
+        name: rarity
+        required: false
+        schema:
+          $ref: '#/components/schemas/GachaRarity'
+        style: form
+      - description: Page number of the list.
+        explode: true
+        in: query
+        name: page_number
+        required: false
+        schema:
+          default: 1
+          minimum: 1
+          type: integer
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Auction'
+                type: array
+          description: "List of auctions, filtered."
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - auction_internal
+      x-openapi-router-controller: openapi_server.controllers.auction_internal_controller
+  /auction/internal/refund_bidders:
+    post:
+      description: Returns inventory items owned by user with UUID requested.
+      operationId: refund_bidders
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              items:
+                $ref: '#/components/schemas/ItemId'
+              type: array
+        description: List of the item_uuid whose eventual auctions must be refunded
+          to eventual bidders.
+        required: true
+      responses:
+        "200":
+          description: Bidders refunded.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "503":
+          description: Service unavailable. Please try again later.
+      tags:
+      - auction_internal
+      x-openapi-router-controller: openapi_server.controllers.auction_internal_controller
+  /auction/internal/remove_by_item_uuid:
+    post:
+      description: Deletes eventual auctions where item_uuid is in list.
+      operationId: remove_by_item_uuid
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              items:
+                $ref: '#/components/schemas/ItemId'
+              type: array
+        description: List of the item_uuid whose eventual auctions must be deleted.
+        required: true
+      responses:
+        "200":
+          description: Auctions deleted.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "503":
+          description: Service unavailable. Please try again later.
+      tags:
+      - auction_internal
+      x-openapi-router-controller: openapi_server.controllers.auction_internal_controller
+  /auction/internal/reset_current_bidder:
+    post:
+      description: Sets current bid to 0 and current bidder to NULL.
+      operationId: reset_current_bidder
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/UserId'
+        style: form
+      responses:
+        "200":
+          description: Bid updated.
+        "304":
+          description: No changes applied.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "404":
+          description: Auction not found.
+        "503":
+          description: Service unavailable. Please try again later.
+      tags:
+      - auction_internal
+      x-openapi-router-controller: openapi_server.controllers.auction_internal_controller
+  /auction/internal/set_bid:
+    post:
+      description: Updates current bid and current bidder.
+      operationId: set_bid
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: auction_uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/AuctionId'
+        style: form
+      - explode: true
+        in: query
+        name: user_uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/UserId'
+        style: form
+      - explode: true
+        in: query
+        name: new_bid
+        required: false
+        schema:
+          type: integer
+        style: form
+      responses:
+        "200":
+          description: Bid set.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "404":
+          description: Auction not found.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - auction_internal
+      x-openapi-router-controller: openapi_server.controllers.auction_internal_controller
+  /auction/internal/update:
+    post:
+      description: Updates an auction.
+      operationId: update_auction
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Auction'
+      responses:
+        "200":
+          description: Auction updated.
+        "304":
+          description: No changes applied.
+        "400":
+          description: Invalid request.
+        "404":
+          description: Auction not found.
+        "403":
+          description: Not authorized.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - auction_internal
+      x-openapi-router-controller: openapi_server.controllers.auction_internal_controller
+  /auction/list:
+    get:
+      description: Returns a list of all open auctions for gacha items.
       operationId: get_auctions_list
       parameters:
       - explode: true
@@ -209,18 +634,20 @@ paths:
             application/json:
               schema:
                 items:
-                  $ref: '#/components/schemas/AuctionId'
+                  $ref: '#/components/schemas/Auction'
                 type: array
           description: "List of auctions, filtered."
         "400":
-          description: Invalid query parameters
-        "500":
-          description: Internal server error
+          description: Invalid request.
+        "403":
+          description: Not logged in.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
       summary: Retrieve the list of auctions.
       tags:
-      - auctions
-      x-openapi-router-controller: openapi_server.controllers.auctions_controller
-  /auctions/status/{auction_uuid}:
+      - auction
+      x-openapi-router-controller: openapi_server.controllers.auction_controller
+  /auction/status/{auction_uuid}:
     get:
       description: Returns info on the auction with a specific id.
       operationId: get_auction_status
@@ -246,19 +673,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Auction'
-          description: The auction required
+          description: The auction required.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not logged in.
         "404":
-          description: Auction not found
-        "500":
-          description: Internal server error
+          description: Auction not found.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
       summary: Retrieve info on specific auction.
       tags:
-      - auctions
-      x-openapi-router-controller: openapi_server.controllers.auctions_controller
+      - auction
+      x-openapi-router-controller: openapi_server.controllers.auction_controller
 components:
   schemas:
     GachaRarity:
-      description: Rarity level of the gacha
+      description: Rarity level of the gacha.
       enum:
       - common
       - rare
@@ -273,9 +704,9 @@ components:
       title: inventory_item_owner_id
       type: string
     AuctionStatus:
-      default: active
+      default: open
       enum:
-      - active
+      - open
       - closed
       title: AuctionStatus
       type: string
@@ -287,7 +718,7 @@ components:
     AuctionId:
       description: UUID of the auction.
       format: uuid
-      title: AuctionId
+      title: auction_uuid
       type: string
     Auction:
       example:
@@ -297,13 +728,13 @@ components:
         end_time: 2000-01-23T04:56:07.000+00:00
         inventory_item_owner_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
         current_bid: 6.0274563
-        status: active
+        status: open
         current_bidder: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
       properties:
         auction_uuid:
           description: UUID of the auction.
           format: uuid
-          title: AuctionId
+          title: auction_uuid
           type: string
         status:
           $ref: '#/components/schemas/AuctionStatus'
@@ -338,4 +769,22 @@ components:
           title: end_time
           type: string
       title: Auction
+      type: object
+    exists_auctions_200_response:
+      example:
+        exists: true
+      properties:
+        exists:
+          title: exists
+          type: boolean
+      title: exists_auctions_200_response
+      type: object
+    is_open_by_item_uuid_200_response:
+      example:
+        found: true
+      properties:
+        found:
+          title: found
+          type: boolean
+      title: is_open_by_item_uuid_200_response
       type: object

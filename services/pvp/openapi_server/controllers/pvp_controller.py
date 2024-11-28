@@ -8,6 +8,7 @@ from typing import Dict
 from typing import Tuple
 from typing import Union
 
+from openapi_server.models.pending_pv_p_requests_inner import PendingPvPRequestsInner  # noqa: E501
 from openapi_server.models.pending_pv_p_requests import PendingPvPRequests
 from openapi_server.models.pv_p_request import PvPRequest
 from openapi_server.models.team import Team

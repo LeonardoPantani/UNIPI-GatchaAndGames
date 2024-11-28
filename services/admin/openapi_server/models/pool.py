@@ -3,11 +3,9 @@ from datetime import date, datetime  # noqa: F401
 from typing import List, Dict  # noqa: F401
 
 from openapi_server.models.base_model import Model
-from openapi_server.models.rarity_probability import RarityProbability
 import re
 from openapi_server import util
 
-from openapi_server.models.rarity_probability import RarityProbability  # noqa: E501
 import re  # noqa: E501
 
 class Pool(Model):
@@ -16,40 +14,55 @@ class Pool(Model):
     Do not edit the class manually.
     """
 
-    def __init__(self, id=None, name=None, price=None, probabilities=None, items=None):  # noqa: E501
+    def __init__(self, codename=None, public_name=None, price=None, probability_common=0.5, probability_rare=0.3, probability_epic=0.15, probability_legendary=0.05, items=None):  # noqa: E501
         """Pool - a model defined in OpenAPI
 
-        :param id: The id of this Pool.  # noqa: E501
-        :type id: str
-        :param name: The name of this Pool.  # noqa: E501
-        :type name: str
+        :param codename: The codename of this Pool.  # noqa: E501
+        :type codename: str
+        :param public_name: The public_name of this Pool.  # noqa: E501
+        :type public_name: str
         :param price: The price of this Pool.  # noqa: E501
         :type price: int
-        :param probabilities: The probabilities of this Pool.  # noqa: E501
-        :type probabilities: RarityProbability
+        :param probability_common: The probability_common of this Pool.  # noqa: E501
+        :type probability_common: float
+        :param probability_rare: The probability_rare of this Pool.  # noqa: E501
+        :type probability_rare: float
+        :param probability_epic: The probability_epic of this Pool.  # noqa: E501
+        :type probability_epic: float
+        :param probability_legendary: The probability_legendary of this Pool.  # noqa: E501
+        :type probability_legendary: float
         :param items: The items of this Pool.  # noqa: E501
         :type items: List[str]
         """
         self.openapi_types = {
-            'id': str,
-            'name': str,
+            'codename': str,
+            'public_name': str,
             'price': int,
-            'probabilities': RarityProbability,
+            'probability_common': float,
+            'probability_rare': float,
+            'probability_epic': float,
+            'probability_legendary': float,
             'items': List[str]
         }
 
         self.attribute_map = {
-            'id': 'id',
-            'name': 'name',
+            'codename': 'codename',
+            'public_name': 'public_name',
             'price': 'price',
-            'probabilities': 'probabilities',
+            'probability_common': 'probability_common',
+            'probability_rare': 'probability_rare',
+            'probability_epic': 'probability_epic',
+            'probability_legendary': 'probability_legendary',
             'items': 'items'
         }
 
-        self._id = id
-        self._name = name
+        self._codename = codename
+        self._public_name = public_name
         self._price = price
-        self._probabilities = probabilities
+        self._probability_common = probability_common
+        self._probability_rare = probability_rare
+        self._probability_epic = probability_epic
+        self._probability_legendary = probability_legendary
         self._items = items
 
     @classmethod
@@ -64,52 +77,52 @@ class Pool(Model):
         return util.deserialize_model(dikt, cls)
 
     @property
-    def id(self) -> str:
-        """Gets the id of this Pool.
+    def codename(self) -> str:
+        """Gets the codename of this Pool.
 
         Internal code-name for the pool.  # noqa: E501
 
-        :return: The id of this Pool.
+        :return: The codename of this Pool.
         :rtype: str
         """
-        return self._id
+        return self._codename
 
-    @id.setter
-    def id(self, id: str):
-        """Sets the id of this Pool.
+    @codename.setter
+    def codename(self, codename: str):
+        """Sets the codename of this Pool.
 
         Internal code-name for the pool.  # noqa: E501
 
-        :param id: The id of this Pool.
-        :type id: str
+        :param codename: The codename of this Pool.
+        :type codename: str
         """
-        if id is not None and not re.search(r'^[a-zA-Z0-9_]+$', id):  # noqa: E501
-            raise ValueError("Invalid value for `id`, must be a follow pattern or equal to `/^[a-zA-Z0-9_]+$/`")  # noqa: E501
+        if codename is not None and not re.search(r'^[a-zA-Z0-9_]+$', codename):  # noqa: E501
+            raise ValueError(r"Invalid value for `codename`, must be a follow pattern or equal to `/^[a-zA-Z0-9_]+$/`")  # noqa: E501
 
-        self._id = id
+        self._codename = codename
 
     @property
-    def name(self) -> str:
-        """Gets the name of this Pool.
+    def public_name(self) -> str:
+        """Gets the public_name of this Pool.
 
         Visible name of the pool.  # noqa: E501
 
-        :return: The name of this Pool.
+        :return: The public_name of this Pool.
         :rtype: str
         """
-        return self._name
+        return self._public_name
 
-    @name.setter
-    def name(self, name: str):
-        """Sets the name of this Pool.
+    @public_name.setter
+    def public_name(self, public_name: str):
+        """Sets the public_name of this Pool.
 
         Visible name of the pool.  # noqa: E501
 
-        :param name: The name of this Pool.
-        :type name: str
+        :param public_name: The public_name of this Pool.
+        :type public_name: str
         """
 
-        self._name = name
+        self._public_name = public_name
 
     @property
     def price(self) -> int:
@@ -137,25 +150,88 @@ class Pool(Model):
         self._price = price
 
     @property
-    def probabilities(self) -> RarityProbability:
-        """Gets the probabilities of this Pool.
+    def probability_common(self) -> float:
+        """Gets the probability_common of this Pool.
 
 
-        :return: The probabilities of this Pool.
-        :rtype: RarityProbability
+        :return: The probability_common of this Pool.
+        :rtype: float
         """
-        return self._probabilities
+        return self._probability_common
 
-    @probabilities.setter
-    def probabilities(self, probabilities: RarityProbability):
-        """Sets the probabilities of this Pool.
+    @probability_common.setter
+    def probability_common(self, probability_common: float):
+        """Sets the probability_common of this Pool.
 
 
-        :param probabilities: The probabilities of this Pool.
-        :type probabilities: RarityProbability
+        :param probability_common: The probability_common of this Pool.
+        :type probability_common: float
         """
 
-        self._probabilities = probabilities
+        self._probability_common = probability_common
+
+    @property
+    def probability_rare(self) -> float:
+        """Gets the probability_rare of this Pool.
+
+
+        :return: The probability_rare of this Pool.
+        :rtype: float
+        """
+        return self._probability_rare
+
+    @probability_rare.setter
+    def probability_rare(self, probability_rare: float):
+        """Sets the probability_rare of this Pool.
+
+
+        :param probability_rare: The probability_rare of this Pool.
+        :type probability_rare: float
+        """
+
+        self._probability_rare = probability_rare
+
+    @property
+    def probability_epic(self) -> float:
+        """Gets the probability_epic of this Pool.
+
+
+        :return: The probability_epic of this Pool.
+        :rtype: float
+        """
+        return self._probability_epic
+
+    @probability_epic.setter
+    def probability_epic(self, probability_epic: float):
+        """Sets the probability_epic of this Pool.
+
+
+        :param probability_epic: The probability_epic of this Pool.
+        :type probability_epic: float
+        """
+
+        self._probability_epic = probability_epic
+
+    @property
+    def probability_legendary(self) -> float:
+        """Gets the probability_legendary of this Pool.
+
+
+        :return: The probability_legendary of this Pool.
+        :rtype: float
+        """
+        return self._probability_legendary
+
+    @probability_legendary.setter
+    def probability_legendary(self, probability_legendary: float):
+        """Sets the probability_legendary of this Pool.
+
+
+        :param probability_legendary: The probability_legendary of this Pool.
+        :type probability_legendary: float
+        """
+
+        self._probability_legendary = probability_legendary
 
     @property
     def items(self) -> List[str]:

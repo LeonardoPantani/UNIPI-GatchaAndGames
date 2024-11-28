@@ -12,7 +12,7 @@ class InventoryItem(Model):
     Do not edit the class manually.
     """
 
-    def __init__(self, owner_id=None, item_id=None, gacha_uuid=None, pull_date=None, obtained_date=None, owners_no=None, price_paid=None):  # noqa: E501
+    def __init__(self, owner_id=None, item_id=None, gacha_uuid=None, obtained_date=None, owners_no=None, price_paid=None):  # noqa: E501
         """InventoryItem - a model defined in OpenAPI
 
         :param owner_id: The owner_id of this InventoryItem.  # noqa: E501
@@ -21,8 +21,6 @@ class InventoryItem(Model):
         :type item_id: str
         :param gacha_uuid: The gacha_uuid of this InventoryItem.  # noqa: E501
         :type gacha_uuid: str
-        :param pull_date: The pull_date of this InventoryItem.  # noqa: E501
-        :type pull_date: datetime
         :param obtained_date: The obtained_date of this InventoryItem.  # noqa: E501
         :type obtained_date: datetime
         :param owners_no: The owners_no of this InventoryItem.  # noqa: E501
@@ -34,7 +32,6 @@ class InventoryItem(Model):
             'owner_id': str,
             'item_id': str,
             'gacha_uuid': str,
-            'pull_date': datetime,
             'obtained_date': datetime,
             'owners_no': int,
             'price_paid': float
@@ -44,7 +41,6 @@ class InventoryItem(Model):
             'owner_id': 'owner_id',
             'item_id': 'item_id',
             'gacha_uuid': 'gacha_uuid',
-            'pull_date': 'pull_date',
             'obtained_date': 'obtained_date',
             'owners_no': 'owners_no',
             'price_paid': 'price_paid'
@@ -53,7 +49,6 @@ class InventoryItem(Model):
         self._owner_id = owner_id
         self._item_id = item_id
         self._gacha_uuid = gacha_uuid
-        self._pull_date = pull_date
         self._obtained_date = obtained_date
         self._owners_no = owners_no
         self._price_paid = price_paid
@@ -137,29 +132,6 @@ class InventoryItem(Model):
         """
 
         self._gacha_uuid = gacha_uuid
-
-    @property
-    def pull_date(self) -> datetime:
-        """Gets the pull_date of this InventoryItem.
-
-        Timestamp of first obtainment  # noqa: E501
-
-        :return: The pull_date of this InventoryItem.
-        :rtype: datetime
-        """
-        return self._pull_date
-
-    @pull_date.setter
-    def pull_date(self, pull_date: datetime):
-        """Sets the pull_date of this InventoryItem.
-
-        Timestamp of first obtainment  # noqa: E501
-
-        :param pull_date: The pull_date of this InventoryItem.
-        :type pull_date: datetime
-        """
-
-        self._pull_date = pull_date
 
     @property
     def obtained_date(self) -> datetime:

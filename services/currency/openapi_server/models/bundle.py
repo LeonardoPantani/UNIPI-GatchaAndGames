@@ -3,11 +3,9 @@ from datetime import date, datetime  # noqa: F401
 from typing import List, Dict  # noqa: F401
 
 from openapi_server.models.base_model import Model
-from openapi_server.models.currency_item import CurrencyItem
 import re
 from openapi_server import util
 
-from openapi_server.models.currency_item import CurrencyItem  # noqa: E501
 import re  # noqa: E501
 
 class Bundle(Model):
@@ -16,36 +14,41 @@ class Bundle(Model):
     Do not edit the class manually.
     """
 
-    def __init__(self, id=None, name=None, amount=None, prices=None):  # noqa: E501
+    def __init__(self, codename=None, public_name=None, amount=None, currency=None, value=10):  # noqa: E501
         """Bundle - a model defined in OpenAPI
 
-        :param id: The id of this Bundle.  # noqa: E501
-        :type id: str
-        :param name: The name of this Bundle.  # noqa: E501
-        :type name: str
+        :param codename: The codename of this Bundle.  # noqa: E501
+        :type codename: str
+        :param public_name: The public_name of this Bundle.  # noqa: E501
+        :type public_name: str
         :param amount: The amount of this Bundle.  # noqa: E501
         :type amount: int
-        :param prices: The prices of this Bundle.  # noqa: E501
-        :type prices: List[CurrencyItem]
+        :param currency: The currency of this Bundle.  # noqa: E501
+        :type currency: str
+        :param value: The value of this Bundle.  # noqa: E501
+        :type value: int
         """
         self.openapi_types = {
-            'id': str,
-            'name': str,
+            'codename': str,
+            'public_name': str,
             'amount': int,
-            'prices': List[CurrencyItem]
+            'currency': str,
+            'value': int
         }
 
         self.attribute_map = {
-            'id': 'id',
-            'name': 'name',
+            'codename': 'codename',
+            'public_name': 'public_name',
             'amount': 'amount',
-            'prices': 'prices'
+            'currency': 'currency',
+            'value': 'value'
         }
 
-        self._id = id
-        self._name = name
+        self._codename = codename
+        self._public_name = public_name
         self._amount = amount
-        self._prices = prices
+        self._currency = currency
+        self._value = value
 
     @classmethod
     def from_dict(cls, dikt) -> 'Bundle':
@@ -59,52 +62,52 @@ class Bundle(Model):
         return util.deserialize_model(dikt, cls)
 
     @property
-    def id(self) -> str:
-        """Gets the id of this Bundle.
+    def codename(self) -> str:
+        """Gets the codename of this Bundle.
 
         Internal code-name for the bundle.  # noqa: E501
 
-        :return: The id of this Bundle.
+        :return: The codename of this Bundle.
         :rtype: str
         """
-        return self._id
+        return self._codename
 
-    @id.setter
-    def id(self, id: str):
-        """Sets the id of this Bundle.
+    @codename.setter
+    def codename(self, codename: str):
+        """Sets the codename of this Bundle.
 
         Internal code-name for the bundle.  # noqa: E501
 
-        :param id: The id of this Bundle.
-        :type id: str
+        :param codename: The codename of this Bundle.
+        :type codename: str
         """
-        if id is not None and not re.search(r'^[a-zA-Z0-9_]+$', id):  # noqa: E501
-            raise ValueError("Invalid value for `id`, must be a follow pattern or equal to `/^[a-zA-Z0-9_]+$/`")  # noqa: E501
+        if codename is not None and not re.search(r'^[a-zA-Z0-9_]+$', codename):  # noqa: E501
+            raise ValueError(r"Invalid value for `codename`, must be a follow pattern or equal to `/^[a-zA-Z0-9_]+$/`")  # noqa: E501
 
-        self._id = id
+        self._codename = codename
 
     @property
-    def name(self) -> str:
-        """Gets the name of this Bundle.
+    def public_name(self) -> str:
+        """Gets the public_name of this Bundle.
 
         Visible name of the bundle.  # noqa: E501
 
-        :return: The name of this Bundle.
+        :return: The public_name of this Bundle.
         :rtype: str
         """
-        return self._name
+        return self._public_name
 
-    @name.setter
-    def name(self, name: str):
-        """Sets the name of this Bundle.
+    @public_name.setter
+    def public_name(self, public_name: str):
+        """Sets the public_name of this Bundle.
 
         Visible name of the bundle.  # noqa: E501
 
-        :param name: The name of this Bundle.
-        :type name: str
+        :param public_name: The public_name of this Bundle.
+        :type public_name: str
         """
 
-        self._name = name
+        self._public_name = public_name
 
     @property
     def amount(self) -> int:
@@ -130,24 +133,53 @@ class Bundle(Model):
         self._amount = amount
 
     @property
-    def prices(self) -> List[CurrencyItem]:
-        """Gets the prices of this Bundle.
+    def currency(self) -> str:
+        """Gets the currency of this Bundle.
 
-        List of prices in different currencies.  # noqa: E501
+        Currency code-name  # noqa: E501
 
-        :return: The prices of this Bundle.
-        :rtype: List[CurrencyItem]
+        :return: The currency of this Bundle.
+        :rtype: str
         """
-        return self._prices
+        return self._currency
 
-    @prices.setter
-    def prices(self, prices: List[CurrencyItem]):
-        """Sets the prices of this Bundle.
+    @currency.setter
+    def currency(self, currency: str):
+        """Sets the currency of this Bundle.
 
-        List of prices in different currencies.  # noqa: E501
+        Currency code-name  # noqa: E501
 
-        :param prices: The prices of this Bundle.
-        :type prices: List[CurrencyItem]
+        :param currency: The currency of this Bundle.
+        :type currency: str
         """
+        if currency is not None and not re.search(r'^[A-Z]{3}$', currency):  # noqa: E501
+            raise ValueError(r"Invalid value for `currency`, must be a follow pattern or equal to `/^[A-Z]{3}$/`")  # noqa: E501
 
-        self._prices = prices
+        self._currency = currency
+
+    @property
+    def value(self) -> int:
+        """Gets the value of this Bundle.
+
+        Amount of real currency.  # noqa: E501
+
+        :return: The value of this Bundle.
+        :rtype: int
+        """
+        return self._value
+
+    @value.setter
+    def value(self, value: int):
+        """Sets the value of this Bundle.
+
+        Amount of real currency.  # noqa: E501
+
+        :param value: The value of this Bundle.
+        :type value: int
+        """
+        if value is not None and value > 999:  # noqa: E501
+            raise ValueError("Invalid value for `value`, must be a value less than or equal to `999`")  # noqa: E501
+        if value is not None and value < 0:  # noqa: E501
+            raise ValueError("Invalid value for `value`, must be a value greater than or equal to `0`")  # noqa: E501
+
+        self._value = value

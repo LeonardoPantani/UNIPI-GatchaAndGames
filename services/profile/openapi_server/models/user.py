@@ -14,36 +14,46 @@ class User(Model):
     Do not edit the class manually.
     """
 
-    def __init__(self, id=None, username=None, email=None, joindate=None):  # noqa: E501
+    def __init__(self, uuid=None, username=None, email=None, joindate=None, currency=None, pvp_score=None):  # noqa: E501
         """User - a model defined in OpenAPI
 
-        :param id: The id of this User.  # noqa: E501
-        :type id: str
+        :param uuid: The uuid of this User.  # noqa: E501
+        :type uuid: str
         :param username: The username of this User.  # noqa: E501
         :type username: str
         :param email: The email of this User.  # noqa: E501
         :type email: str
         :param joindate: The joindate of this User.  # noqa: E501
         :type joindate: datetime
+        :param currency: The currency of this User.  # noqa: E501
+        :type currency: int
+        :param pvp_score: The pvp_score of this User.  # noqa: E501
+        :type pvp_score: int
         """
         self.openapi_types = {
-            'id': str,
+            'uuid': str,
             'username': str,
             'email': str,
-            'joindate': datetime
+            'joindate': datetime,
+            'currency': int,
+            'pvp_score': int
         }
 
         self.attribute_map = {
-            'id': 'id',
+            'uuid': 'uuid',
             'username': 'username',
             'email': 'email',
-            'joindate': 'joindate'
+            'joindate': 'joindate',
+            'currency': 'currency',
+            'pvp_score': 'pvp_score'
         }
 
-        self._id = id
+        self._uuid = uuid
         self._username = username
         self._email = email
         self._joindate = joindate
+        self._currency = currency
+        self._pvp_score = pvp_score
 
     @classmethod
     def from_dict(cls, dikt) -> 'User':
@@ -57,33 +67,33 @@ class User(Model):
         return util.deserialize_model(dikt, cls)
 
     @property
-    def id(self) -> str:
-        """Gets the id of this User.
+    def uuid(self) -> str:
+        """Gets the uuid of this User.
 
         UUID of user.  # noqa: E501
 
-        :return: The id of this User.
+        :return: The uuid of this User.
         :rtype: str
         """
-        return self._id
+        return self._uuid
 
-    @id.setter
-    def id(self, id: str):
-        """Sets the id of this User.
+    @uuid.setter
+    def uuid(self, uuid: str):
+        """Sets the uuid of this User.
 
         UUID of user.  # noqa: E501
 
-        :param id: The id of this User.
-        :type id: str
+        :param uuid: The uuid of this User.
+        :type uuid: str
         """
 
-        self._id = id
+        self._uuid = uuid
 
     @property
     def username(self) -> str:
         """Gets the username of this User.
 
-        The username of the user  # noqa: E501
+        The user's username. Must be at least 5 characters long and contain only letters, numbers, and underscores.  # noqa: E501
 
         :return: The username of this User.
         :rtype: str
@@ -94,7 +104,7 @@ class User(Model):
     def username(self, username: str):
         """Sets the username of this User.
 
-        The username of the user  # noqa: E501
+        The user's username. Must be at least 5 characters long and contain only letters, numbers, and underscores.  # noqa: E501
 
         :param username: The username of this User.
         :type username: str
@@ -102,7 +112,7 @@ class User(Model):
         if username is not None and len(username) < 5:
             raise ValueError("Invalid value for `username`, length must be greater than or equal to `5`")  # noqa: E501
         if username is not None and not re.search(r'^[a-zA-Z0-9_]+$', username):  # noqa: E501
-            raise ValueError("Invalid value for `username`, must be a follow pattern or equal to `/^[a-zA-Z0-9_]+$/`")  # noqa: E501
+            raise ValueError(r"Invalid value for `username`, must be a follow pattern or equal to `/^[a-zA-Z0-9_]+$/`")  # noqa: E501
 
         self._username = username
 
@@ -151,3 +161,49 @@ class User(Model):
         """
 
         self._joindate = joindate
+
+    @property
+    def currency(self) -> int:
+        """Gets the currency of this User.
+
+        Ingame currency of the user  # noqa: E501
+
+        :return: The currency of this User.
+        :rtype: int
+        """
+        return self._currency
+
+    @currency.setter
+    def currency(self, currency: int):
+        """Sets the currency of this User.
+
+        Ingame currency of the user  # noqa: E501
+
+        :param currency: The currency of this User.
+        :type currency: int
+        """
+
+        self._currency = currency
+
+    @property
+    def pvp_score(self) -> int:
+        """Gets the pvp_score of this User.
+
+        Pvp score of the user  # noqa: E501
+
+        :return: The pvp_score of this User.
+        :rtype: int
+        """
+        return self._pvp_score
+
+    @pvp_score.setter
+    def pvp_score(self, pvp_score: int):
+        """Sets the pvp_score of this User.
+
+        Pvp score of the user  # noqa: E501
+
+        :param pvp_score: The pvp_score of this User.
+        :type pvp_score: int
+        """
+
+        self._pvp_score = pvp_score
