@@ -22,7 +22,7 @@ off: down
 
 up: on
 	#!/bin/bash
-	if [ $(docker compose ps | wc -l) -ne 17 ]; then
+	if [ $(docker compose ps | wc -l) -ne 28 ]; then
 		echo "Starting containers..."
 		docker compose up -d
 	else
@@ -31,7 +31,7 @@ up: on
 
 down:
 	#!/bin/bash
-	if [ $(docker compose ps | wc -l) -le 17 ]; then
+	if [ $(docker compose ps | wc -l) -le 28 ]; then
 		echo "Removing containers and resetting database..."
 		docker compose down -v
 	else
@@ -40,7 +40,7 @@ down:
 
 start: on
 	#!/bin/bash
-	if [ $(docker compose ps | wc -l) -ne 17 ]; then
+	if [ $(docker compose ps | wc -l) -ne 28 ]; then
 		echo "Starting containers and building..."
 		docker compose up --build -d
 	else
@@ -49,7 +49,7 @@ start: on
 
 stop:
 	#!/bin/bash
-	if [ $(docker compose ps | wc -l) -eq 17 ]; then
+	if [ $(docker compose ps | wc -l) -eq 28 ]; then
 		echo "Stopping containers..."
 		docker compose stop
 	else
@@ -94,9 +94,9 @@ logs service_name replica_number='1':
 		if [[ "$service_name" == "dbmanager" ]]; then
 			container_name="unipi-gatchaandgames-db_manager-${replica_number}"
 		elif [[ "$service_name" == "gwprivate" ]]; then
-			container_name="api_gateway_private_gachaandgames"
+			container_name="unipi-gatchaandgames-api_gateway_private"
 		elif [[ "$service_name" == "gwpublic" ]]; then
-			container_name="api_gateway_public_gachaandgames"
+			container_name="unipi-gatchaandgames-api_gateway_public"
 		else
 			container_name="unipi-gatchaandgames-service_${service_name}-${replica_number}"
 		fi
