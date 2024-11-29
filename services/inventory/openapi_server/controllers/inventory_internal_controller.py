@@ -27,8 +27,7 @@ circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5)
 
 def check_owner_of_team(check_owner_of_team_request=None, session=None, user_uuid=None):  # noqa: E501
     """Checks if a team is actually owned by the user."""
-    session = verify_login(connexion.request.headers.get('Authorization'))
-
+   
     if not connexion.request.is_json:
         return jsonify({"message": "Invalid request."}), 400
     
@@ -200,7 +199,7 @@ def exists_inventory(uuid=None, session=None):  # noqa: E501
         exists = check_item_exists()
         response = ExistsInventory200Response(exists=exists)
         
-        return response, 200
+        return jsonify(response), 200
 
     except (OperationalError, DataError, DatabaseError, IntegrityError, 
             InterfaceError, InternalError, ProgrammingError):
@@ -221,7 +220,7 @@ def get_gachas_types_of_user(session=None, user_uuid=None):  # noqa: E501
             cursor = connection.cursor()
             
             query = """
-            SELECT DISTINCT BIN_TO_UUID(gacha_type_uuid) 
+            SELECT DISTINCT BIN_TO_UUID(stand_uuid) 
             FROM inventories 
             WHERE BIN_TO_UUID(owner_uuid) = %s
             """
@@ -233,9 +232,6 @@ def get_gachas_types_of_user(session=None, user_uuid=None):  # noqa: E501
             return [result[0] for result in results] if results else []
 
         gacha_types = get_user_gacha_types()
-        
-        if not gacha_types:
-            return "", 404
             
         return jsonify(gacha_types), 200
 
@@ -247,139 +243,384 @@ def get_gachas_types_of_user(session=None, user_uuid=None):  # noqa: E501
 
 
 def get_inventory_by_owner_uuid(session=None, uuid=None):  # noqa: E501
-    """get_inventory_by_owner_uuid
-
-    Returns inventory items owned by user with UUID requested. # noqa: E501
-
-    :param session: 
+    """Returns inventory items owned by user with UUID requested.
+    
+    :param session: Session cookie 
     :type session: str
-    :param uuid: 
+    :param uuid: User UUID
     :type uuid: str
-    :type uuid: str
-
-    :rtype: Union[List[str], Tuple[List[str], int], Tuple[List[str], int, Dict[str, str]]
+    :rtype: List[str]
     """
-    return 'do some magic!'
+    if not uuid or not isinstance(uuid, str):
+        return "", 400
+
+    try:
+        @circuit_breaker
+        def get_user_inventory_items():
+            connection = get_db()
+            cursor = connection.cursor()
+            
+            query = """
+            SELECT BIN_TO_UUID(item_uuid)
+            FROM inventories 
+            WHERE BIN_TO_UUID(owner_uuid) = %s
+            """
+            
+            cursor.execute(query, (uuid,))
+            results = cursor.fetchall()
+            
+            cursor.close()
+            return [result[0] for result in results] if results else []
+
+        inventory_items = get_user_inventory_items()
+            
+        return jsonify(inventory_items), 200
+
+    except (OperationalError, DataError, DatabaseError, IntegrityError, 
+            InterfaceError, InternalError, ProgrammingError):
+        return "", 503
+    except CircuitBreakerError:
+        return "", 503
 
 
 def get_inventory_items_by_owner_uuid(session=None, uuid=None, page_number=None):  # noqa: E501
-    """get_inventory_items_by_owner_uuid
-
-    Returns inventory items owned by user with UUID requested, paginated. # noqa: E501
-
-    :param session: 
+    """Returns inventory items owned by user with UUID requested, paginated.
+    
+    :param session: Session cookie 
     :type session: str
-    :param uuid: 
+    :param uuid: User UUID
     :type uuid: str
-    :type uuid: str
-    :param page_number: Page number of the list.
+    :param page_number: Page number of the list
     :type page_number: int
-
-    :rtype: Union[List[InventoryItem], Tuple[List[InventoryItem], int], Tuple[List[InventoryItem], int, Dict[str, str]]
+    :rtype: List[InventoryItem]
     """
-    return 'do some magic!'
+    if not uuid or not isinstance(uuid, str):
+        return "", 400
+
+    # Validazione del page_number
+    try:
+        page_number = int(page_number) if page_number is not None else 1
+        if page_number < 1:
+            page_number = 1
+    except (TypeError, ValueError):
+        page_number = 1
+
+    try:
+        @circuit_breaker
+        def get_user_inventory_items():
+            connection = get_db()
+            cursor = connection.cursor()
+            
+            items_per_page = 10  
+            offset = (page_number - 1) * items_per_page
+            print(items_per_page,offset)
+            
+            query = """
+            SELECT BIN_TO_UUID(item_uuid), BIN_TO_UUID(owner_uuid), BIN_TO_UUID(stand_uuid), 
+                   obtained_at, owners_no, currency_spent
+            FROM inventories 
+            WHERE BIN_TO_UUID(owner_uuid) = %s
+            LIMIT %s OFFSET %s
+            """
+            
+            cursor.execute(query, (uuid, items_per_page, offset))
+            results = cursor.fetchall()
+            
+            cursor.close()
+            return results
+
+        results = get_user_inventory_items()
+        inventory_items = []
+        for row in results:
+            item = {
+                "item_id": row[0],
+                "owner_id": row[1],
+                "gacha_uuid": row[2],
+                "obtained_date": row[3].strftime("%Y-%m-%d %H:%M:%S"), 
+                "owners_no": row[4],
+                "price_paid": row[5]
+            }
+            inventory_items.append(item)
+        
+        return jsonify(inventory_items), 200
+
+    except (OperationalError, DataError, DatabaseError, IntegrityError, 
+            InterfaceError, InternalError, ProgrammingError):
+        return "", 503
+    except CircuitBreakerError:
+        return "", 503
 
 
 def get_item_by_uuid(session=None, uuid=None):  # noqa: E501
-    """get_item_by_uuid
-
-    Returns item with requested uuid. # noqa: E501
-
-    :param session: 
-    :type session: str
-    :param uuid: 
-    :type uuid: str
-    :type uuid: str
-
-    :rtype: Union[InventoryItem, Tuple[InventoryItem, int], Tuple[InventoryItem, int, Dict[str, str]]
+    """Returns item with requested uuid.
+    
     """
-    return 'do some magic!'
+    if not uuid or not isinstance(uuid, str):
+        return "", 400
+        
+    try:
+        @circuit_breaker
+        def get_item_info():
+            connection = get_db()
+            cursor = connection.cursor()
+            
+            query = """
+            SELECT BIN_TO_UUID(owner_uuid), BIN_TO_UUID(item_uuid), 
+                   BIN_TO_UUID(stand_uuid), obtained_at, owners_no, currency_spent
+            FROM inventories 
+            WHERE BIN_TO_UUID(item_uuid) = %s
+            """
+            
+            cursor.execute(query, (uuid,))
+            result = cursor.fetchone()
+            
+            cursor.close()
+            return result
+
+        item = get_item_info()
+        if not item:
+            return "", 404
+            
+        inventory_item = {
+            "owner_id": item[0],
+            "item_id": item[1], 
+            "gacha_uuid": item[2],
+            "obtained_date": item[3].strftime("%Y-%m-%d %H:%M:%S"),
+            "owners_no": item[4],
+            "price_paid": item[5]
+        }
+        
+        return jsonify(inventory_item), 200
+        
+    except (OperationalError, DataError, DatabaseError, IntegrityError, 
+            InterfaceError, InternalError, ProgrammingError):
+        return "", 503
+    except CircuitBreakerError:
+        return "", 503
 
 
 def get_items_by_stand_uuid(session=None, uuid=None):  # noqa: E501
-    """get_items_by_stand_uuid
-
-    Returns list of items which are a specific stand. # noqa: E501
-
-    :param session: 
+    """Returns list of items which are a specific stand.
+    
+    :param session: Session cookie
     :type session: str
-    :param uuid: 
+    :param uuid: Stand UUID
     :type uuid: str
-    :type uuid: str
-
-    :rtype: Union[List[InventoryItem], Tuple[List[InventoryItem], int], Tuple[List[InventoryItem], int, Dict[str, str]]
+    :rtype: List[InventoryItem]
     """
-    return 'do some magic!'
+    if not uuid or not isinstance(uuid, str):
+        return "", 400
+
+    try:
+        @circuit_breaker
+        def get_stand_items():
+            connection = get_db()
+            cursor = connection.cursor()
+            
+            query = """
+            SELECT BIN_TO_UUID(item_uuid), BIN_TO_UUID(owner_uuid), BIN_TO_UUID(stand_uuid), 
+                   obtained_at, owners_no, currency_spent
+            FROM inventories 
+            WHERE BIN_TO_UUID(stand_uuid) = %s
+            """
+            
+            cursor.execute(query, (uuid,))
+            results = cursor.fetchall()
+            
+            cursor.close()
+            return results
+
+        results = get_stand_items()
+        inventory_items = []
+        for row in results:
+            item = {
+                "item_id": row[0],
+                "owner_id": row[1],
+                "gacha_uuid": row[2],
+                "obtained_date": row[3].strftime("%Y-%m-%d %H:%M:%S"), 
+                "owners_no": row[4],
+                "price_paid": row[5]
+            }
+            inventory_items.append(item)
+        
+        return jsonify(inventory_items), 200
+
+    except (OperationalError, DataError, DatabaseError, IntegrityError, 
+            InterfaceError, InternalError, ProgrammingError):
+        return "", 503
+    except CircuitBreakerError:
+        return "", 503
 
 
 def get_stand_uuid_by_item_uuid(session=None, uuid=None):  # noqa: E501
-    """get_stand_uuid_by_item_uuid
-
-    Returns item with requested uuid. # noqa: E501
-
-    :param session: 
+    """Returns item with requested uuid.
+    
+    :param session: Session cookie
     :type session: str
-    :param uuid: 
+    :param uuid: Item UUID
     :type uuid: str
-    :type uuid: str
-
-    :rtype: Union[GetStandUuidByItemUuid200Response, Tuple[GetStandUuidByItemUuid200Response, int], Tuple[GetStandUuidByItemUuid200Response, int, Dict[str, str]]
+    :rtype: GetStandUuidByItemUuid200Response
     """
-    return 'do some magic!'
+    if not uuid or not isinstance(uuid, str):
+        return "", 400
+
+    try:
+        @circuit_breaker
+        def get_stand_uuid():
+            connection = get_db()
+            cursor = connection.cursor()
+            
+            query = """
+            SELECT BIN_TO_UUID(stand_uuid)
+            FROM inventories 
+            WHERE BIN_TO_UUID(item_uuid) = %s
+            """
+            
+            cursor.execute(query, (uuid,))
+            result = cursor.fetchone()
+            
+            cursor.close()
+            return result
+
+        result = get_stand_uuid()
+        if not result:
+            return "", 404
+            
+        stand_info = {
+            "stand_uuid": result[0]
+        }
+        
+        return jsonify(stand_info), 200
+
+    except (OperationalError, DataError, DatabaseError, IntegrityError, 
+            InterfaceError, InternalError, ProgrammingError):
+        return "", 503
+    except CircuitBreakerError:
+        return "", 503
 
 
-def insert_item(inventory_item, session=None):  # noqa: E501
+def insert_item(inventory_item=None, session=None):  # noqa: E501
     """insert_item
 
-    Assigns a certain item. # noqa: E501
+    Assigns a certain item.
 
     :param inventory_item: 
     :type inventory_item: dict | bytes
     :param session: 
     :type session: str
-
     :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
     """
-    if connexion.request.is_json:
-        inventory_item = InventoryItem.from_dict(connexion.request.get_json())  # noqa: E501
-    return 'do some magic!'
+    if not connexion.request.is_json:
+        return "", 400
+        
+    try:
+        @circuit_breaker
+        def get_item_info():
+            connection = get_db()
+            cursor = connection.cursor()
+            
+            query = """
+            INSERT INTO inventories (item_uuid, owner_uuid, stand_uuid, 
+                                   obtained_at, owners_no, currency_spent)
+            VALUES (UUID_TO_BIN(%s), UUID_TO_BIN(%s), UUID_TO_BIN(%s), 
+                   %s, %s, %s)
+            """
+            
+            inventory_item = InventoryItem.from_dict(connexion.request.get_json())
+            cursor.execute(query, (
+                inventory_item.item_id,
+                inventory_item.owner_id,
+                inventory_item.gacha_uuid,
+                inventory_item.obtained_date,
+                inventory_item.owners_no,
+                inventory_item.price_paid
+            ))
+            
+            connection.commit()
+            cursor.close()
+            return True
+
+        get_item_info()
+        return "", 200
+
+    except (OperationalError, DataError, DatabaseError, IntegrityError, 
+            InterfaceError, InternalError, ProgrammingError):
+        return "", 503
+    except CircuitBreakerError:
+        return "", 503
 
 
 def remove_item(session=None, item_uuid=None, owner_uuid=None):  # noqa: E501
-    """remove_item
 
-    Removes item from inventory, by item and owner UUID. # noqa: E501
+    if not item_uuid or not owner_uuid:
+        return "", 400
 
-    :param session: 
-    :type session: str
-    :param item_uuid: 
-    :type item_uuid: str
-    :type item_uuid: str
-    :param owner_uuid: 
-    :type owner_uuid: str
-    :type owner_uuid: str
+    try:
+        @circuit_breaker
+        def delete_inventory_item():
+            connection = get_db()
+            cursor = connection.cursor()
+            
+            # First check if item exists
+            query = """
+            SELECT BIN_TO_UUID(item_uuid)
+            FROM inventories 
+            WHERE BIN_TO_UUID(item_uuid) = %s AND BIN_TO_UUID(owner_uuid) = %s
+            """
+            
+            cursor.execute(query, (item_uuid, owner_uuid))
+            if not cursor.fetchone():
+                cursor.close()
+                return "", 403
+                
+            # If exists, delete it
+            query = """
+            DELETE FROM inventories 
+            WHERE BIN_TO_UUID(item_uuid) = %s AND BIN_TO_UUID(owner_uuid) = %s
+            """
+            
+            cursor.execute(query, (item_uuid, owner_uuid))
+            connection.commit()
+            cursor.close()
+            return "", 200
 
-    :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
-    """
-    return 'do some magic!'
+        return delete_inventory_item()
+
+    except (OperationalError, DataError, DatabaseError, IntegrityError, 
+            InterfaceError, InternalError, ProgrammingError):
+        return "", 503
+    except CircuitBreakerError:
+        return "", 503
 
 
 def update_item_ownership(session=None, new_owner_uuid=None, item_uuid=None, price_paid=None):  # noqa: E501
-    """update_item_ownership
+    if not new_owner_uuid or not item_uuid:
+        return "", 400
 
-    Updates ownership of a certain item. # noqa: E501
+    try:
+        @circuit_breaker
+        def update_item_owner():
+            connection = get_db()
+            cursor = connection.cursor()
+            
+            query = """
+            UPDATE inventories 
+            SET owner_uuid = UUID_TO_BIN(%s),
+                currency_spent = %s,
+                owners_no = owners_no + 1
+            WHERE BIN_TO_UUID(item_uuid) = %s
+            """
+            
+            cursor.execute(query, (new_owner_uuid, price_paid or 0, item_uuid))
+            connection.commit()
+            cursor.close()
+            return True
 
-    :param session: 
-    :type session: str
-    :param new_owner_uuid: 
-    :type new_owner_uuid: str
-    :type new_owner_uuid: str
-    :param item_uuid: 
-    :type item_uuid: str
-    :type item_uuid: str
-    :param price_paid: 
-    :type price_paid: int
+        update_item_owner()
+        return "", 200
 
-    :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
-    """
-    return 'do some magic!'
+    except (OperationalError, DataError, DatabaseError, IntegrityError, 
+            InterfaceError, InternalError, ProgrammingError):
+        return "", 503
+    except CircuitBreakerError:
+        return "", 503
