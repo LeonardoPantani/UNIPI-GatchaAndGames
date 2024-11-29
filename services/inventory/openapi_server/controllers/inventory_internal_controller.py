@@ -4,7 +4,6 @@ from typing import Tuple
 from typing import Union
 from flask import jsonify, session
 import requests
-import redis
 import logging
 
 from openapi_server.models.check_owner_of_team_request import CheckOwnerOfTeamRequest  # noqa: E501
@@ -26,7 +25,7 @@ from openapi_server.helpers.authorization import verify_login
 
 circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5)
 
-def check_owner_of_team(check_owner_of_team_request, session=None, user_uuid=None):  # noqa: E501
+def check_owner_of_team(check_owner_of_team_request=None, session=None, user_uuid=None):  # noqa: E501
     """Checks if a team is actually owned by the user."""
     session = verify_login(connexion.request.headers.get('Authorization'))
 
@@ -49,12 +48,12 @@ def check_owner_of_team(check_owner_of_team_request, session=None, user_uuid=Non
             SELECT COUNT(DISTINCT item_uuid) 
             FROM inventories 
             WHERE BIN_TO_UUID(owner_uuid) = %s 
-            AND BIN_TO_UUID(item_uuid) IN %s
+            AND BIN_TO_UUID(item_uuid) IN ({})
             HAVING COUNT(DISTINCT item_uuid) = %s
-            """
+            """.format(','.join(['%s'] * len(team_uuids)))
 
-            cursor.execute(query, (user_uuid, team_uuids,expected_count))
-            result = cursor.fetchone()[0]
+            cursor.execute(query, (user_uuid, *team_uuids, expected_count))
+            result = cursor.fetchone()
             
             cursor.close()
             return result is not None and result[0] == expected_count
@@ -86,19 +85,54 @@ def check_owner_of_team(check_owner_of_team_request, session=None, user_uuid=Non
 
 
 def delete_by_stand_uuid(session=None, uuid=None):  # noqa: E501
-    """delete_by_stand_uuid
+    """Deletes items which are a certain stand."""
 
-    Deletes items which are a certain stand. # noqa: E501
+    if not uuid:
+        return jsonify({"error": "Invalid request."}), 404
 
-    :param session: 
-    :type session: str
-    :param uuid: 
-    :type uuid: str
-    :type uuid: str
+    try:
+        @circuit_breaker
+        def delete_stand_items():
+            connection = get_db()
+            cursor = connection.cursor()
+            
+            # Query to delete items with specified stand_uuid
+            query = """
+            DELETE FROM inventories 
+            WHERE BIN_TO_UUID(stand_uuid) = %s
+            """
+            
+            cursor.execute(query, (uuid,))
+            connection.commit()
+            affected_rows = cursor.rowcount
+            
+            cursor.close()
+            return affected_rows > 0
 
-    :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
-    """
-    return 'do some magic!'
+        items_deleted = delete_stand_items()
+        
+        if not items_deleted:
+            return jsonify({"error": "Items not found."}), 404
+            
+        return jsonify({"message": "Items deleted."}), 200
+
+    except OperationalError:
+        logging.error(f"Query: Operational error.")
+        return "", 503
+    except ProgrammingError:
+        logging.error(f"Query: Programming error.") 
+        return "", 503
+    except DataError:
+        logging.error(f"Query: Invalid data error.")
+        return "", 503
+    except IntegrityError:
+        logging.error(f"Query: Integrity error.")
+        return "", 503
+    except DatabaseError:
+        logging.error(f"Query: Generic database error.")
+        return "", 503
+    except CircuitBreakerError:
+        return "", 503
 
 
 def delete_user_inventory(session=None, uuid=None):  # noqa: E501
