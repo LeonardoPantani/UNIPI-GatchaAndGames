@@ -158,17 +158,17 @@ services:
     - public_gachaandgames_network
     restart: always
   
-  # service_auth_db_replica:
-  #   build: ./databases/auth/replica/
-  #   container_name: unipi-gatchaandgames-service_auth_db_replica
-  #   env_file: ./databases/auth/replica/replica.env
-  #   volumes:
-  #   - ./databases/auth/replica/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-  #   - ./databases/auth/replica/ssl:/etc/mysql/ssl:ro
-  #   - service_auth_db_replica_data:/var/lib/mysql
-  #   networks:
-  #   - public_gachaandgames_network
-  #   restart: always
+  service_auth_db_replica:
+    build: ./databases/auth/replica/
+    container_name: unipi-gatchaandgames-service_auth_db_replica
+    env_file: ./databases/auth/replica/replica.env
+    volumes:
+    - ./databases/auth/replica/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    - ./databases/auth/replica/ssl:/etc/mysql/ssl:ro
+    - service_auth_db_replica_data:/var/lib/mysql
+    networks:
+    - public_gachaandgames_network
+    restart: always
   
   service_auth_db_proxy:
     image: proxysql/proxysql:2.7.1
@@ -594,35 +594,35 @@ services:
     restart: always
 
   ######### STACK ELK
-  # logging_loki:
-  #   image: grafana/loki:latest
-  #   container_name: unipi-gatchaandgames-logging_loki
-  #   ports:
-  #     - "3100:3100"
-  #   volumes:
-  #     - loki_data:/loki
-  #   restart: always
-  #   networks:
-  #     - public_gachaandgames_network
-  #     - private_gachaandgames_network
+  logging_loki:
+    image: grafana/loki:latest
+    container_name: unipi-gatchaandgames-logging_loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - loki_data:/loki
+    restart: always
+    networks:
+      - public_gachaandgames_network
+      - private_gachaandgames_network
 
-  # logging_grafana:
-  #   image: grafana/grafana-oss:10.1.2
-  #   container_name: unipi-gatchaandgames-logging_grafana
-  #   ports:
-  #     - "3000:3000"
-  #   volumes:
-  #     - grafana_data:/var/lib/grafana
-  #     - ./logs/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
-  #     - ./logs/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
-  #     - ./logs/grafana/dashboards:/var/lib/grafana/dashboards
-  #     - ./logs/grafana/grafana.ini:/etc/grafana/grafana.ini
-  #   env_file: ./logs/grafana/.env
-  #   depends_on:
-  #     - logging_loki
-  #   restart: always
-  #   networks:
-  #     - private_gachaandgames_network
+  logging_grafana:
+    image: grafana/grafana-oss:10.1.2
+    container_name: unipi-gatchaandgames-logging_grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./logs/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./logs/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+      - ./logs/grafana/dashboards:/var/lib/grafana/dashboards
+      - ./logs/grafana/grafana.ini:/etc/grafana/grafana.ini
+    env_file: ./logs/grafana/.env
+    depends_on:
+      - logging_loki
+    restart: always
+    networks:
+      - private_gachaandgames_network
 
 
 networks:

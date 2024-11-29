@@ -107,6 +107,14 @@ logs service_name db_type='' replica_number='1':
         container_name="unipi-gatchaandgames-redis"
         echo "Showing logs for Redis at $container_name..."
         docker logs -f $container_name
+    elif [[ "$service_name" == "gwprivate" ]]; then
+        container_name="unipi-gatchaandgames-api_gateway_private"
+        echo "Showing logs for private api gateway..."
+        docker logs -f $container_name
+    elif [[ "$service_name" == "gwpublic" ]]; then
+        container_name="unipi-gatchaandgames-api_gateway_public"
+        echo "Showing logs for public api gateway..."
+        docker logs -f $container_name
     elif [[ " $allowed_services " =~ (^|[[:space:]])"$service_name"($|[[:space:]]) ]]; then
         if [ -z "$db_type" ]; then
             container_name="unipi-gatchaandgames-service_${service_name}-${replica_number}"
