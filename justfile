@@ -1,5 +1,5 @@
-db_container_name  := "unipi-gatchaandgames-database"
-allowed_services := "admin auction auth currency feedback gacha inventory profile pvp dbmanager gwprivate gwpublic"
+allowed_services := "admin auction auth currency feedback gacha inventory profile pvp"
+allowed_db_types := "primary replica proxy"
 
 default: up
 
@@ -22,7 +22,7 @@ off: down
 
 up: on
 	#!/bin/bash
-	if [ $(docker compose ps | wc -l) -ne 28 ]; then
+	if [ $(docker compose ps | wc -l) -ne 1 ]; then
 		echo "Starting containers..."
 		docker compose up -d
 	else
@@ -31,8 +31,8 @@ up: on
 
 down:
 	#!/bin/bash
-	if [ $(docker compose ps | wc -l) -le 28 ]; then
-		echo "Removing containers and resetting database..."
+	if [ $(docker compose ps | wc -l) -ne 1 ]; then
+		echo "Removing containers and resetting volumes..."
 		docker compose down -v
 	else
 		echo "Containers are stopped..."
@@ -40,7 +40,7 @@ down:
 
 start: on
 	#!/bin/bash
-	if [ $(docker compose ps | wc -l) -ne 28 ]; then
+	if [ $(docker compose ps | wc -l) -ne 1 ]; then
 		echo "Starting containers and building..."
 		docker compose up --build -d
 	else
@@ -57,76 +57,94 @@ stop:
 	fi
 
 ps:
-    #!/bin/bash
-    if systemctl --quiet is-active docker; then
-        if [ $(docker compose ps | wc -l) -eq 1 ]; then
-            echo "No containers are up."
+	#!/bin/bash
+	if systemctl --quiet is-active docker; then
+		if [ $(docker compose ps | wc -l) -ne 1 ]; then
+			docker ps --format "table {{{{.ID}}\t{{{{.Names}}\t{{{{.Status}}"
         else
-            docker ps --format "table {{{{.ID}}\t{{{{.Names}}\t{{{{.Status}}"
-        fi
-    else
-        echo "Docker daemon is stopped."
-    fi
-
+			echo "No containers are up."
+		fi
+	else
+		echo "Docker daemon is stopped."
+	fi
 
 status:
-    #!/bin/bash
-    if systemctl --quiet is-active docker; then
-        docker ps --format "table {{{{.ID}}\t{{{{.Names}}\t{{{{.Status}}"
-    else
-        echo "Docker daemon is stopped."
-    fi
+	#!/bin/bash
+	if systemctl --quiet is-active docker; then
+		docker ps --format "table {{{{.ID}}\t{{{{.Names}}\t{{{{.Status}}"
+	else
+		echo "Docker daemon is stopped."
+	fi
 
-
-@db: up
-	echo "Get into {{db_container_name}}..."
-	docker exec -it {{db_container_name}} mysql -u root -h 0.0.0.0 gacha_test_db -P 3306 -p
-
-build: on
-	docker compose build
-
-logs service_name replica_number='1':
+db service_name db_type='primary':
 	#!/bin/bash
 	allowed_services="{{allowed_services}}"
+	allowed_db_types="{{allowed_db_types}}"
 	service_name="{{service_name}}"
-	replica_number="{{replica_number}}"
-	if [[ " $allowed_services " =~ (^|[[:space:]])"$service_name"($|[[:space:]]) ]]; then
-		if [[ "$service_name" == "dbmanager" ]]; then
-			container_name="unipi-gatchaandgames-db_manager-${replica_number}"
-		elif [[ "$service_name" == "gwprivate" ]]; then
-			container_name="unipi-gatchaandgames-api_gateway_private"
-		elif [[ "$service_name" == "gwpublic" ]]; then
-			container_name="unipi-gatchaandgames-api_gateway_public"
+	db_type="{{db_type}}"
+
+	if [[ "$service_name" == "redis" ]]; then
+		container_name="unipi-gatchaandgames-redis"
+		echo "Connecting to Redis at $container_name..."
+		docker exec -it $container_name redis-cli
+	elif [[ " $allowed_services " =~ (^|[[:space:]])"$service_name"($|[[:space:]]) ]] && \
+	     [[ " $allowed_db_types " =~ (^|[[:space:]])"$db_type"($|[[:space:]]) ]]; then
+		container_name="unipi-gatchaandgames-service_${service_name}_db_${db_type}"
+		if [[ "$db_type" == "proxy" ]]; then
+			echo "Connecting to database $container_name with proxy credentials..."
+			docker exec -it $container_name mysql -u radmin -h 127.0.0.1 -P 6032 -pradmin
 		else
-			container_name="unipi-gatchaandgames-service_${service_name}-${replica_number}"
+			echo "Connecting to database $container_name..."
+			docker exec -it $container_name mysql -u root -h 0.0.0.0 -P 3306 -proot
 		fi
-		echo "Showing logs for $container_name..."
-		echo "Press CTRL/CMD+C to exit."
-		docker logs -f $container_name
 	else
-		echo "Invalid service name. Must be one of: $allowed_services"
+		echo "Invalid service name or database type. Services: $allowed_services, DB Types: $allowed_db_types"
 		exit 1
 	fi
 
-shell service_name replica_number='1':
+
+logs service_name db_type='' replica_number='1':
 	#!/bin/bash
 	allowed_services="{{allowed_services}}"
+	allowed_db_types="{{allowed_db_types}}"
 	service_name="{{service_name}}"
+	db_type="{{db_type}}"
 	replica_number="{{replica_number}}"
-	if [[ " $allowed_services " =~ (^|[[:space:]])"$service_name"($|[[:space:]]) ]]; then
-		if [[ "$service_name" == "dbmanager" ]]; then
-			container_name="unipi-gatchaandgames-db_manager-${replica_number}"
-		elif [[ "$service_name" == "gwprivate" ]]; then
-			container_name="api_gateway_private_gachaandgames"
-		elif [[ "$service_name" == "gwpublic" ]]; then
-			container_name="api_gateway_public_gachaandgames"
-		else
+
+	if [[ "$service_name" == "redis" ]]; then
+		container_name="unipi-gatchaandgames-redis"
+		echo "Showing logs for Redis at $container_name..."
+		docker logs -f $container_name
+	elif [[ " $allowed_services " =~ (^|[[:space:]])"$service_name"($|[[:space:]]) ]]; then
+		if [ -z "$db_type" ]; then
 			container_name="unipi-gatchaandgames-service_${service_name}-${replica_number}"
+		elif [[ " $allowed_db_types " =~ (^|[[:space:]])"$db_type"($|[[:space:]]) ]]; then
+			container_name="unipi-gatchaandgames-service_${service_name}_db_${db_type}"
+		else
+			echo "Invalid database type. Allowed types are: $allowed_db_types"
+			exit 1
 		fi
-		echo "Opening shell for $container_name..."
-		echo "Type 'exit' to close it."
-		docker exec -it $container_name /bin/sh
+		echo "Showing logs for $container_name..."
+		docker logs -f $container_name
 	else
-		echo "Invalid service name. Must be one of: $allowed_services"
+		echo "Invalid service name. Must be one of: $allowed_services or 'redis'."
+		exit 1
+	fi
+
+
+log service_name db_type='primary':
+	#!/bin/bash
+	allowed_services="{{allowed_services}}"
+	allowed_db_types="{{allowed_db_types}}"
+	service_name="{{service_name}}"
+	db_type="{{db_type}}"
+
+	if [[ " $allowed_services " =~ (^|[[:space:]])"$service_name"($|[[:space:]]) ]] && \
+	   [[ " $allowed_db_types " =~ (^|[[:space:]])"$db_type"($|[[:space:]]) ]]; then
+		container_name="unipi-gatchaandgames-service_${service_name}_db_${db_type}"
+		echo "Showing logs for $container_name..."
+		docker logs -f $container_name
+	else
+		echo "Invalid service name or database type. Allowed services: $allowed_services, Allowed DB types: $allowed_db_types"
 		exit 1
 	fi
