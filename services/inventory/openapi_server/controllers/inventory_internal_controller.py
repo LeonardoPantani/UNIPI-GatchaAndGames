@@ -2,32 +2,57 @@ import connexion
 from typing import Dict
 from typing import Tuple
 from typing import Union
+from flask import jsonify, session
+import requests
 
 from openapi_server.models.check_owner_of_team_request import CheckOwnerOfTeamRequest  # noqa: E501
 from openapi_server.models.exists_inventory200_response import ExistsInventory200Response  # noqa: E501
 from openapi_server.models.get_stand_uuid_by_item_uuid200_response import GetStandUuidByItemUuid200Response  # noqa: E501
 from openapi_server.models.inventory_item import InventoryItem  # noqa: E501
 from openapi_server import util
+from pybreaker import CircuitBreaker, CircuitBreakerError
 
+
+
+from openapi_server.helpers.authorization import verify_login
+
+circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5)
 
 def check_owner_of_team(check_owner_of_team_request, session=None, user_uuid=None):  # noqa: E501
-    """check_owner_of_team
+    session = verify_login(connexion.request.headers.get('Authorization'))
+    if session[1] != 200: # se dà errore, il risultato della verify_login è: (messaggio, codice_errore)
+        return session
+    else: # altrimenti, va preso il primo valore (0) per i dati di sessione già pronti
+        session = session[0]
+    # fine controllo autenticazione
 
-    Checks if a team is actually owned by the user. # noqa: E501
+    if not connexion.request.is_json:
+        return jsonify({"message": "Invalid request."}), 400
+    
+    check_owner_of_team_request = CheckOwnerOfTeamRequest.from_dict(connexion.request.get_json())  # noqa: E501
 
-    :param check_owner_of_team_request: 
-    :type check_owner_of_team_request: dict | bytes
-    :param session: 
-    :type session: str
-    :param user_uuid: 
-    :type user_uuid: str
-    :type user_uuid: str
+    try:
+        @circuit_breaker
+        def make_request_to_dbmanager():
+            url = "http://db_manager:8080/db_manager/pvp/verify_gacha_item_ownership"
+            team_uuids = {"team": "(" + ",".join(check_owner_of_team_request.team) + ")"}
+            response = requests.post(url, json=team_uuids)
+            response.raise_for_status()
+            return response.text
 
-    :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
-    """
-    if connexion.request.is_json:
-        check_owner_of_team_request = CheckOwnerOfTeamRequest.from_dict(connexion.request.get_json())  # noqa: E501
-    return 'do some magic!'
+        owner_uuid = make_request_to_dbmanager()
+        
+        if not owner_uuid or owner_uuid != user_uuid:
+            return jsonify({"Items not found in user inventory."}), 404
+            
+        return jsonify({"message": "Items verified."}), 200
+
+    except requests.HTTPError:  # if request is sent to dbmanager correctly and it answers an application error (to be managed here) [error expected by us]
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
+        return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
 
 def delete_by_stand_uuid(session=None, uuid=None):  # noqa: E501
