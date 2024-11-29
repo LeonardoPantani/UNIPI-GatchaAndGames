@@ -395,6 +395,43 @@ paths:
       tags:
       - profile_internal
       x-openapi-router-controller: openapi_server.controllers.profile_internal_controller
+  /profile/internal/get_uuid_from_username:
+    get:
+      description: Returns uuid of the requested user.
+      operationId: get_uuid_from_username
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: username
+        required: false
+        schema:
+          $ref: '#/components/schemas/Username'
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/get_uuid_from_username_200_response'
+          description: UUID.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "404":
+          description: User not found.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - profile_internal
+      x-openapi-router-controller: openapi_server.controllers.profile_internal_controller
   /profile/internal/insert_profile:
     post:
       description: Creates a profile.
@@ -684,6 +721,17 @@ components:
           title: username
           type: string
       title: get_username_from_uuid_200_response
+      type: object
+    get_uuid_from_username_200_response:
+      example:
+        username: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+      properties:
+        username:
+          description: UUID of user.
+          format: uuid
+          title: uuid
+          type: string
+      title: get_uuid_from_username_200_response
       type: object
     get_currency_from_uuid_200_response:
       example:

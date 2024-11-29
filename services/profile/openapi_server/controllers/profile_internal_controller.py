@@ -1,4 +1,6 @@
 import connexion
+import logging
+import requests
 from typing import Dict
 from typing import Tuple
 from typing import Union
@@ -6,10 +8,20 @@ from typing import Union
 from openapi_server.models.exists_profile200_response import ExistsProfile200Response  # noqa: E501
 from openapi_server.models.get_currency_from_uuid200_response import GetCurrencyFromUuid200Response  # noqa: E501
 from openapi_server.models.get_username_from_uuid200_response import GetUsernameFromUuid200Response  # noqa: E501
+from openapi_server.models.get_uuid_from_username200_response import GetUuidFromUsername200Response  # noqa: E501
 from openapi_server.models.user import User  # noqa: E501
 from openapi_server.models.user_full import UserFull  # noqa: E501
 from openapi_server import util
 
+from flask import session, jsonify
+from mysql.connector.errors import (
+    OperationalError, DataError, DatabaseError, IntegrityError,
+    InterfaceError, InternalError, ProgrammingError
+)
+from openapi_server.helpers.db import get_db
+from pybreaker import CircuitBreaker, CircuitBreakerError
+
+circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5, exclude=[requests.HTTPError, OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError])
 
 def add_currency(session=None, uuid=None, amount=None):  # noqa: E501
     """add_currency
@@ -130,19 +142,47 @@ def get_profile(session=None, user_uuid=None):  # noqa: E501
 
 
 def get_username_from_uuid(session=None, user_uuid=None):  # noqa: E501
-    """get_username_from_uuid
 
-    Returns username of the requested user. # noqa: E501
+    return jsonify({"username": "suka"}), 200
 
-    :param session: 
-    :type session: str
-    :param user_uuid: 
-    :type user_uuid: str
-    :type user_uuid: str
+def get_uuid_from_username(session=None, username=None):  # noqa: E501
+    if not username:
+        return "", 400
+    
+    try:
+        @circuit_breaker
+        def make_request_to_db():
+            connection = get_db()
+            cursor = connection.cursor(dictionary=True)
+            query = """
+                SELECT BIN_TO_UUID(uuid) as uuid
+                FROM profiles
+                WHERE username = %s
+            """
+            cursor.execute(query, (username,))
+            return cursor.fetchone()
+        
+        result = make_request_to_db()
 
-    :rtype: Union[GetUsernameFromUuid200Response, Tuple[GetUsernameFromUuid200Response, int], Tuple[GetUsernameFromUuid200Response, int, Dict[str, str]]
-    """
-    return 'do some magic!'
+        if not result:
+            return "", 404
+        return result["uuid"]
+
+    except OperationalError:
+        logging.error("Query: Operational error.")
+        return "", 500
+    except ProgrammingError:
+        logging.error("Query: Programming error.")
+        return "", 500
+    except InternalError:
+        logging.error("Query: Internal error.")
+        return "", 500
+    except InterfaceError:
+        logging.error("Query: Interface error.")
+        return "", 500
+    except DatabaseError:
+        logging.error("Query: Database error.")
+        return "", 500
 
 
 def insert_profile(session=None, user_uuid=None, username=None):  # noqa: E501

@@ -5,6 +5,7 @@ from flask import json
 from openapi_server.models.exists_profile200_response import ExistsProfile200Response  # noqa: E501
 from openapi_server.models.get_currency_from_uuid200_response import GetCurrencyFromUuid200Response  # noqa: E501
 from openapi_server.models.get_username_from_uuid200_response import GetUsernameFromUuid200Response  # noqa: E501
+from openapi_server.models.get_uuid_from_username200_response import GetUuidFromUsername200Response  # noqa: E501
 from openapi_server.models.user import User  # noqa: E501
 from openapi_server.models.user_full import UserFull  # noqa: E501
 from openapi_server.test import BaseTestCase
@@ -142,6 +143,23 @@ class TestProfileInternalController(BaseTestCase):
         }
         response = self.client.open(
             '/profile/internal/get_username_from_uuid',
+            method='GET',
+            headers=headers,
+            query_string=query_string)
+        self.assert200(response,
+                       'Response body is : ' + response.data.decode('utf-8'))
+
+    def test_get_uuid_from_username(self):
+        """Test case for get_uuid_from_username
+
+        
+        """
+        query_string = [('username', 'username_example')]
+        headers = { 
+            'Accept': 'application/json',
+        }
+        response = self.client.open(
+            '/profile/internal/get_uuid_from_username',
             method='GET',
             headers=headers,
             query_string=query_string)

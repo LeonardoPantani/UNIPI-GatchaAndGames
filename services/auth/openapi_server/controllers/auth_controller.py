@@ -6,6 +6,7 @@ import connexion
 import requests
 import jwt
 import redis
+import logging
 from typing import Dict
 from typing import Tuple
 from typing import Union
@@ -16,9 +17,14 @@ from openapi_server import util
 from openapi_server.helpers.logging import send_log, query_logs
 from flask import jsonify, session, request
 from pybreaker import CircuitBreaker, CircuitBreakerError
+from openapi_server.helpers.db import get_db
+from mysql.connector.errors import (
+    OperationalError, DataError, DatabaseError, IntegrityError,
+    InterfaceError, InternalError, ProgrammingError
+)
 
 SERVICE_TYPE = "auth"
-circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5, exclude=[requests.HTTPError])
+circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5, exclude=[requests.HTTPError, OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError])
 redis_client = redis.Redis(host='redis', port=6379, db=0)
 
 
@@ -37,32 +43,58 @@ def login(login_request=None):
 
     try:
         @circuit_breaker
-        def make_request_to_dbmanager():
-            payload = {"username": username_to_login}
-            url = "http://db_manager:8080/db_manager/auth/login"
-            response = requests.post(url, json=payload)
+        def make_request_to_db():
+            url = "http://service_profile:8080/profile/internal/get_uuid_from_username?username=" + username_to_login
+            response = requests.get(url)
             response.raise_for_status()  # if response is obtained correctly
             return response.json()
+        
+        uuid = make_request_to_db()
 
-        response_data = make_request_to_dbmanager()
+        @circuit_breaker
+        def make_request_to_db():
+            connection = get_db()
+            cursor = connection.cursor()
+            query = """
+                SELECT BIN_TO_UUID(uuid), uuid, email, role, password
+                FROM users
+                WHERE uuid = UUID_TO_BIN(%s)
+            """
+            cursor.execute(query, (uuid,))
+            return cursor.fetchone()
+        
+        result = make_request_to_db()
+
+        if not result:
+            return "", 404
+        
+        user_uuid_str, user_uuid_hex, user_email, user_role, user_password = result
+        result = {
+            "uuid": user_uuid_str,
+            "uuid_hex": str(user_uuid_hex),
+            "email": user_email,
+            "username": username_to_login,
+            "role": user_role,
+            "password": user_password
+        }
 
         # Verifica se l'utente è già loggato (a questo punto le credenziali sono già ok)
-        user_id = response_data["uuid"]
+        user_id = result["uuid"]
         if redis_client.exists(user_id):
             redis_client.delete(user_id) # se l'utente è già loggato lo scolleghiamo e gli diamo errore, ma così potrà rifare il login a modo
             return jsonify({"message": "Previous session invalidated successfully. Login again."}), 409
 
         # Verifica la password
-        if bcrypt.checkpw(password_to_login.encode("utf-8"), response_data["password"].encode("utf-8")):
+        if bcrypt.checkpw(password_to_login.encode("utf-8"), result["password"].encode("utf-8")):
             # Crea i payload JWT
             access_token_payload = {
                 "iss": "http://service_auth:8080",
                 "sub": user_id,
-                "email": response_data["email"],
-                "username": response_data["username"],
-                "uuid": response_data["uuid"],
-                "uuidhex": response_data["uuid_hex"],
-                "role": response_data["role"],
+                "email": result["email"],
+                "username": result["username"],
+                "uuid": result["uuid"],
+                "uuidhex": result["uuid_hex"],
+                "role": result["role"],
                 "logindate": datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S'),
                 "aud": "public_services",
                 "iat": datetime.datetime.now(datetime.timezone.utc),
@@ -96,7 +128,21 @@ def login(login_request=None):
         return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
-
+    except OperationalError:
+        logging.error("Query: Operational error.")
+        return "", 500
+    except ProgrammingError:
+        logging.error("Query: Programming error.")
+        return "", 500
+    except InternalError:
+        logging.error("Query: Internal error.")
+        return "", 500
+    except InterfaceError:
+        logging.error("Query: Interface error.")
+        return "", 500
+    except DatabaseError:
+        logging.error("Query: Database error.")
+        return "", 500
 
 
 def logout():

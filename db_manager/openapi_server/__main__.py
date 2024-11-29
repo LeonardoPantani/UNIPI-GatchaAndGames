@@ -21,8 +21,7 @@ def main():
         'database': os.environ.get('MYSQL_DB'),
         'ssl_ca': '/usr/src/app/ssl/ca.pem',
         'ssl_cert': '/usr/src/app/ssl/client-cert.pem',
-        'ssl_key': '/usr/src/app/ssl/client-key.pem',
-        'ssl_verify_cert': True
+        'ssl_key': '/usr/src/app/ssl/client-key.pem'
     }
 
     # Close the DB connection after each request
