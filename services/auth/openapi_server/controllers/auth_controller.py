@@ -44,9 +44,10 @@ def login(login_request=None):
     try:
         @circuit_breaker
         def make_request_to_db():
-            url = "http://service_profile:8080/profile/internal/get_uuid_from_username?username=" + username_to_login
-            response = requests.get(url)
-            response.raise_for_status()  # if response is obtained correctly
+            params = {"username": username_to_login}
+            url = "http://service_profile:8080/profile/internal/get_uuid_from_username"
+            response = requests.get(url, params=params)
+            response.raise_for_status()
             return response.json()
         
         uuid = make_request_to_db()
@@ -148,29 +149,31 @@ def login(login_request=None):
 def logout():
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
-        return jsonify({"error": "Missing or invalid Authorization header"}), 403
-
+        return jsonify({"error": "Not logged in."}), 403
     token = auth_header.split(" ")[1]
 
+    # JWT
     try:
-        # Decodifica il token per ottenere l'user_id
         decoded_token = jwt.decode(token, "prova", algorithms=["HS256"], audience="public_services")
-        user_id = decoded_token["sub"]
-
-        # Controlla se la chiave esiste in Redis
-        if not redis_client.exists(user_id):
-            return jsonify({"error": "Invalid request. User is not logged in."}), 400
-
-        # Rimuovi l'associazione da Redis e verifica se è stata rimossa
-        deleted = redis_client.delete(user_id)
-        if deleted == 0:
-            return jsonify({"error": "Invalid request. User is not logged in."}), 400
-
-        send_log(f"User '{decoded_token['sub']}' logged out.", level="general", service_type=SERVICE_TYPE)
-        return jsonify({"message": "Logout successful."}), 200
-
     except jwt.InvalidTokenError:
-        return jsonify({"error": "Invalid token."}), 403
+        return jsonify({"error": "Not logged in."}), 403
+    
+    user_id = decoded_token["sub"]
+
+    # REDIS
+    try:
+        if not redis_client.exists(user_id):
+            return jsonify({"error": "Not logged in."}), 403
+
+        if redis_client.delete(user_id) == 0:
+            return jsonify({"error": "Not logged in."}), 403
+    except redis.RedisError as e:
+        send_log(f"Logout: Redis error {e}", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service unavailable. Please try again later."}), 503
+
+    # Logout OK
+    send_log(f"User '{decoded_token['sub']}' logged out.", level="general", service_type=SERVICE_TYPE)
+    return jsonify({"message": "Logout successful."}), 200
 
 
 
@@ -215,7 +218,7 @@ def register(register_request):
             }
             url = "http://db_manager:8080/db_manager/auth/register"
             response = requests.post(url, json=payload)
-            response.raise_for_status()  # if response is obtained correctly
+            response.raise_for_status()
             return
 
         make_request_to_dbmanager()
