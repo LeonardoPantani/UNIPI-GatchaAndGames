@@ -135,52 +135,115 @@ def delete_by_stand_uuid(session=None, uuid=None):  # noqa: E501
         return "", 503
 
 
-def delete_user_inventory(session=None, uuid=None):  # noqa: E501
-    """delete_user_inventory
+def delete_user_inventory(uuid=None, session=None):  # noqa: E501
+    """Deletes items owned by user."""
+    if not uuid or not isinstance(uuid, str):
+        return "", 400  # Invalid request
 
-    Deletes items owned by user. # noqa: E501
+    try:
+        @circuit_breaker
+        def delete_user_items():
+            connection = get_db()
+            cursor = connection.cursor()
+            
+            query = """
+            DELETE FROM inventories 
+            WHERE BIN_TO_UUID(owner_uuid) = %s
+            """
+            
+            cursor.execute(query, (uuid,))
+            connection.commit()
+            affected_rows = cursor.rowcount
+            
+            cursor.close()
+            return affected_rows > 0
 
-    :param session: 
-    :type session: str
-    :param uuid: 
-    :type uuid: str
-    :type uuid: str
+        items_deleted = delete_user_items()
+        
+        if not items_deleted:
+            return "", 404
+            
+        return "", 200
 
-    :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
+    except (OperationalError, DataError, DatabaseError, IntegrityError, 
+            InterfaceError, InternalError, ProgrammingError):
+        return "", 503
+    except CircuitBreakerError:
+        return "", 503
+
+
+def exists_inventory(uuid=None, session=None):  # noqa: E501
+    """Returns true if an item exists, false otherwise.
+
     """
-    return 'do some magic!'
+    if not uuid or not isinstance(uuid, str):
+        return "", 400  # Invalid request
 
+    try:
+        @circuit_breaker
+        def check_item_exists():
+            connection = get_db()
+            cursor = connection.cursor()
+            
+            query = """
+            SELECT COUNT(*) 
+            FROM inventories 
+            WHERE BIN_TO_UUID(item_uuid) = %s
+            """
+            
+            cursor.execute(query, (uuid,))
+            result = cursor.fetchone()
+            
+            cursor.close()
+            return result[0] > 0
 
-def exists_inventory(session=None, uuid=None):  # noqa: E501
-    """exists_inventory
+        exists = check_item_exists()
+        response = ExistsInventory200Response(exists=exists)
+        
+        return response, 200
 
-    Returns true if an item exists, false otherwise. # noqa: E501
-
-    :param session: 
-    :type session: str
-    :param uuid: 
-    :type uuid: str
-    :type uuid: str
-
-    :rtype: Union[ExistsInventory200Response, Tuple[ExistsInventory200Response, int], Tuple[ExistsInventory200Response, int, Dict[str, str]]
-    """
-    return 'do some magic!'
+    except (OperationalError, DataError, DatabaseError, IntegrityError, 
+            InterfaceError, InternalError, ProgrammingError):
+        return "", 503
+    except CircuitBreakerError:
+        return "", 503
 
 
 def get_gachas_types_of_user(session=None, user_uuid=None):  # noqa: E501
-    """get_gachas_types_of_user
+    """Get gacha types of items owned by user."""
+    if not user_uuid or not isinstance(user_uuid, str):
+        return "", 400
 
-    Returns list of stands types owned by the user. # noqa: E501
+    try:
+        @circuit_breaker
+        def get_user_gacha_types():
+            connection = get_db()
+            cursor = connection.cursor()
+            
+            query = """
+            SELECT DISTINCT BIN_TO_UUID(gacha_type_uuid) 
+            FROM inventories 
+            WHERE BIN_TO_UUID(owner_uuid) = %s
+            """
+            
+            cursor.execute(query, (user_uuid,))
+            results = cursor.fetchall()
+            
+            cursor.close()
+            return [result[0] for result in results] if results else []
 
-    :param session: 
-    :type session: str
-    :param user_uuid: 
-    :type user_uuid: str
-    :type user_uuid: str
+        gacha_types = get_user_gacha_types()
+        
+        if not gacha_types:
+            return "", 404
+            
+        return jsonify(gacha_types), 200
 
-    :rtype: Union[List[str], Tuple[List[str], int], Tuple[List[str], int, Dict[str, str]]
-    """
-    return 'do some magic!'
+    except (OperationalError, DataError, DatabaseError, IntegrityError, 
+            InterfaceError, InternalError, ProgrammingError):
+        return "", 503
+    except CircuitBreakerError:
+        return "", 503
 
 
 def get_inventory_by_owner_uuid(session=None, uuid=None):  # noqa: E501
