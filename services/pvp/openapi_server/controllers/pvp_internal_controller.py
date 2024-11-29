@@ -3,25 +3,83 @@ from typing import Dict
 from typing import Tuple
 from typing import Union
 
+from pybreaker import CircuitBreaker, CircuitBreakerError
+from flask import jsonify, session
+import requests
+import logging
+from datetime import datetime
+
 from openapi_server.models.pending_pv_p_requests import PendingPvPRequests  # noqa: E501
 from openapi_server.models.pv_p_request import PvPRequest  # noqa: E501
 from openapi_server import util
 
+from mysql.connector.errors import (
+    OperationalError, DataError, DatabaseError, IntegrityError,
+    InterfaceError, InternalError, ProgrammingError
+)
+from openapi_server.helpers.db import get_db
+
+circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5)
+
 
 def delete_match(session=None, uuid=None):  # noqa: E501
-    """delete_match
+    if not uuid:
+        return "", 400
+    
+    try:
+        @circuit_breaker
+        def remove_match():
+            connection = get_db()
+            cursor = connection.cursor()
 
-    Deletes a pvp match. # noqa: E501
+            query = """
+                SELECT *
+                FROM pvp_matches
+                WHERE match_uuid = UUID_TO_BIN(%s)
+            """
 
-    :param session: 
-    :type session: str
-    :param uuid: 
-    :type uuid: str
-    :type uuid: str
+            cursor.execute(query,(uuid,))
+            if not cursor.fetchone():
+                return 404
 
-    :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
-    """
-    return 'do some magic!'
+            query = """
+                DELETE 
+                FROM pvp_matches
+                WHERE match_uuid = UUID_TO_BIN(%s)
+            """
+
+            cursor.execute(query, (uuid,))
+
+            connection.commit()
+            cursor.close()
+
+            return 200
+
+        status_code = remove_match()
+
+        if status_code == 404:
+            return jsonify({"error":"Match not found."}), 404 
+
+        return jsonify({"message":"Match deleted."}), 200
+
+    except OperationalError:
+        logging.error(f"Query: Operational error.")
+        return "", 503
+    except ProgrammingError:
+        logging.error(f"Query: Programming error.")
+        return "", 503
+    except DataError:
+        logging.error(f"Query: Invalid data error.")
+        return "", 503 
+    except IntegrityError:
+        logging.error(f"Query: Integrity error.")
+        return "", 503
+    except DatabaseError:
+        logging.error(f"Query: Generic database error.")
+        return "", 503
+    except CircuitBreakerError:
+        return "", 503
+
 
 
 def get_pending_list(session=None, uuid=None):  # noqa: E501
