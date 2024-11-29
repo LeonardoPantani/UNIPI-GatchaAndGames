@@ -4,6 +4,7 @@ from typing import Tuple
 from typing import Union
 from flask import jsonify, session
 import requests
+import logging
 
 from openapi_server.models.check_owner_of_team_request import CheckOwnerOfTeamRequest  # noqa: E501
 from openapi_server.models.exists_inventory200_response import ExistsInventory200Response  # noqa: E501
@@ -12,19 +13,21 @@ from openapi_server.models.inventory_item import InventoryItem  # noqa: E501
 from openapi_server import util
 from pybreaker import CircuitBreaker, CircuitBreakerError
 
+from mysql.connector.errors import (
+    OperationalError, DataError, DatabaseError, IntegrityError,
+    InterfaceError, InternalError, ProgrammingError
+)
+from openapi_server.helpers.db import get_db
+
 
 
 from openapi_server.helpers.authorization import verify_login
 
 circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5)
 
-def check_owner_of_team(check_owner_of_team_request, session=None, user_uuid=None):  # noqa: E501
+def check_owner_of_team(check_owner_of_team_request=None, session=None, user_uuid=None):  # noqa: E501
+    """Checks if a team is actually owned by the user."""
     session = verify_login(connexion.request.headers.get('Authorization'))
-    if session[1] != 200: # se dà errore, il risultato della verify_login è: (messaggio, codice_errore)
-        return session
-    else: # altrimenti, va preso il primo valore (0) per i dati di sessione già pronti
-        session = session[0]
-    # fine controllo autenticazione
 
     if not connexion.request.is_json:
         return jsonify({"message": "Invalid request."}), 400
@@ -33,90 +36,214 @@ def check_owner_of_team(check_owner_of_team_request, session=None, user_uuid=Non
 
     try:
         @circuit_breaker
-        def make_request_to_dbmanager():
-            url = "http://db_manager:8080/db_manager/pvp/verify_gacha_item_ownership"
-            team_uuids = {"team": "(" + ",".join(check_owner_of_team_request.team) + ")"}
-            response = requests.post(url, json=team_uuids)
-            response.raise_for_status()
-            return response.text
+        def verify_team_ownership():
+            connection = get_db()
+            cursor = connection.cursor()
+            
+            team_uuids = tuple(check_owner_of_team_request.team)
+            expected_count = len(team_uuids)
+            
+            # Query to check if all items in team belong to user
+            query = """
+            SELECT COUNT(DISTINCT item_uuid) 
+            FROM inventories 
+            WHERE BIN_TO_UUID(owner_uuid) = %s 
+            AND BIN_TO_UUID(item_uuid) IN ({})
+            HAVING COUNT(DISTINCT item_uuid) = %s
+            """.format(','.join(['%s'] * len(team_uuids)))
 
-        owner_uuid = make_request_to_dbmanager()
+            cursor.execute(query, (user_uuid, *team_uuids, expected_count))
+            result = cursor.fetchone()
+            
+            cursor.close()
+            return result is not None and result[0] == expected_count
+
+        items_owned = verify_team_ownership()
         
-        if not owner_uuid or owner_uuid != user_uuid:
-            return jsonify({"Items not found in user inventory."}), 404
+        if not items_owned:
+            return jsonify({"error": "Items not found in user inventory."}), 404
             
         return jsonify({"message": "Items verified."}), 200
 
-    except requests.HTTPError:  # if request is sent to dbmanager correctly and it answers an application error (to be managed here) [error expected by us]
-        return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
-    except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
-        return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
+    except OperationalError:
+        logging.error(f"Query: Operational error.")
+        return "", 503
+    except ProgrammingError:
+        logging.error(f"Query: Programming error.")
+        return "", 503
+    except DataError:
+        logging.error(f"Query: Invalid data error.")
+        return "", 503 
+    except IntegrityError:
+        logging.error(f"Query: Integrity error.")
+        return "", 503
+    except DatabaseError:
+        logging.error(f"Query: Generic database error.")
+        return "", 503
     except CircuitBreakerError:
-        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
+        return "", 503
 
 
 def delete_by_stand_uuid(session=None, uuid=None):  # noqa: E501
-    """delete_by_stand_uuid
+    """Deletes items which are a certain stand."""
 
-    Deletes items which are a certain stand. # noqa: E501
+    if not uuid:
+        return jsonify({"error": "Invalid request."}), 404
 
-    :param session: 
-    :type session: str
-    :param uuid: 
-    :type uuid: str
-    :type uuid: str
+    try:
+        @circuit_breaker
+        def delete_stand_items():
+            connection = get_db()
+            cursor = connection.cursor()
+            
+            # Query to delete items with specified stand_uuid
+            query = """
+            DELETE FROM inventories 
+            WHERE BIN_TO_UUID(stand_uuid) = %s
+            """
+            
+            cursor.execute(query, (uuid,))
+            connection.commit()
+            affected_rows = cursor.rowcount
+            
+            cursor.close()
+            return affected_rows > 0
 
-    :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
+        items_deleted = delete_stand_items()
+        
+        if not items_deleted:
+            return jsonify({"error": "Items not found."}), 404
+            
+        return jsonify({"message": "Items deleted."}), 200
+
+    except OperationalError:
+        logging.error(f"Query: Operational error.")
+        return "", 503
+    except ProgrammingError:
+        logging.error(f"Query: Programming error.") 
+        return "", 503
+    except DataError:
+        logging.error(f"Query: Invalid data error.")
+        return "", 503
+    except IntegrityError:
+        logging.error(f"Query: Integrity error.")
+        return "", 503
+    except DatabaseError:
+        logging.error(f"Query: Generic database error.")
+        return "", 503
+    except CircuitBreakerError:
+        return "", 503
+
+
+def delete_user_inventory(uuid=None, session=None):  # noqa: E501
+    """Deletes items owned by user."""
+    if not uuid or not isinstance(uuid, str):
+        return "", 400  # Invalid request
+
+    try:
+        @circuit_breaker
+        def delete_user_items():
+            connection = get_db()
+            cursor = connection.cursor()
+            
+            query = """
+            DELETE FROM inventories 
+            WHERE BIN_TO_UUID(owner_uuid) = %s
+            """
+            
+            cursor.execute(query, (uuid,))
+            connection.commit()
+            affected_rows = cursor.rowcount
+            
+            cursor.close()
+            return affected_rows > 0
+
+        items_deleted = delete_user_items()
+        
+        if not items_deleted:
+            return "", 404
+            
+        return "", 200
+
+    except (OperationalError, DataError, DatabaseError, IntegrityError, 
+            InterfaceError, InternalError, ProgrammingError):
+        return "", 503
+    except CircuitBreakerError:
+        return "", 503
+
+
+def exists_inventory(uuid=None, session=None):  # noqa: E501
+    """Returns true if an item exists, false otherwise.
+
     """
-    return 'do some magic!'
+    if not uuid or not isinstance(uuid, str):
+        return "", 400  # Invalid request
 
+    try:
+        @circuit_breaker
+        def check_item_exists():
+            connection = get_db()
+            cursor = connection.cursor()
+            
+            query = """
+            SELECT COUNT(*) 
+            FROM inventories 
+            WHERE BIN_TO_UUID(item_uuid) = %s
+            """
+            
+            cursor.execute(query, (uuid,))
+            result = cursor.fetchone()
+            
+            cursor.close()
+            return result[0] > 0
 
-def delete_user_inventory(session=None, uuid=None):  # noqa: E501
-    """delete_user_inventory
+        exists = check_item_exists()
+        response = ExistsInventory200Response(exists=exists)
+        
+        return response, 200
 
-    Deletes items owned by user. # noqa: E501
-
-    :param session: 
-    :type session: str
-    :param uuid: 
-    :type uuid: str
-    :type uuid: str
-
-    :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
-    """
-    return 'do some magic!'
-
-
-def exists_inventory(session=None, uuid=None):  # noqa: E501
-    """exists_inventory
-
-    Returns true if an item exists, false otherwise. # noqa: E501
-
-    :param session: 
-    :type session: str
-    :param uuid: 
-    :type uuid: str
-    :type uuid: str
-
-    :rtype: Union[ExistsInventory200Response, Tuple[ExistsInventory200Response, int], Tuple[ExistsInventory200Response, int, Dict[str, str]]
-    """
-    return 'do some magic!'
+    except (OperationalError, DataError, DatabaseError, IntegrityError, 
+            InterfaceError, InternalError, ProgrammingError):
+        return "", 503
+    except CircuitBreakerError:
+        return "", 503
 
 
 def get_gachas_types_of_user(session=None, user_uuid=None):  # noqa: E501
-    """get_gachas_types_of_user
+    """Get gacha types of items owned by user."""
+    if not user_uuid or not isinstance(user_uuid, str):
+        return "", 400
 
-    Returns list of stands types owned by the user. # noqa: E501
+    try:
+        @circuit_breaker
+        def get_user_gacha_types():
+            connection = get_db()
+            cursor = connection.cursor()
+            
+            query = """
+            SELECT DISTINCT BIN_TO_UUID(gacha_type_uuid) 
+            FROM inventories 
+            WHERE BIN_TO_UUID(owner_uuid) = %s
+            """
+            
+            cursor.execute(query, (user_uuid,))
+            results = cursor.fetchall()
+            
+            cursor.close()
+            return [result[0] for result in results] if results else []
 
-    :param session: 
-    :type session: str
-    :param user_uuid: 
-    :type user_uuid: str
-    :type user_uuid: str
+        gacha_types = get_user_gacha_types()
+        
+        if not gacha_types:
+            return "", 404
+            
+        return jsonify(gacha_types), 200
 
-    :rtype: Union[List[str], Tuple[List[str], int], Tuple[List[str], int, Dict[str, str]]
-    """
-    return 'do some magic!'
+    except (OperationalError, DataError, DatabaseError, IntegrityError, 
+            InterfaceError, InternalError, ProgrammingError):
+        return "", 503
+    except CircuitBreakerError:
+        return "", 503
 
 
 def get_inventory_by_owner_uuid(session=None, uuid=None):  # noqa: E501
