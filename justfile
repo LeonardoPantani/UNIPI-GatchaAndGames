@@ -41,7 +41,7 @@ start: on
 
 stop:
     #!/bin/bash
-    if [ $(docker compose ps | wc -l) -eq 28 ]; then
+    if [ $(docker compose ps | wc -l) -ne 1 ]; then
         echo "Stopping containers..."
         docker compose stop
     else
