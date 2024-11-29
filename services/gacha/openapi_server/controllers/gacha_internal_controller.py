@@ -411,7 +411,7 @@ def get_rarity_by_uuid(session=None, uuid=None):  # noqa: E501
             InterfaceError, InternalError, ProgrammingError):
         return "", 503
     except CircuitBreakerError:
-        return "", 503.
+        return "", 503
 
 
 def list_gachas(request_body, session=None, not_owned=None):  # noqa: E501
