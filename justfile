@@ -22,12 +22,8 @@ off: down
 
 up: on
     #!/bin/bash
-    if [ $(docker compose ps | wc -l) -ne 1 ]; then
-        echo "Starting containers..."
-        docker compose up -d
-    else
-        echo "Containers are already running..."
-    fi
+    echo "Starting containers..."
+    docker compose up -d
 
 down:
     #!/bin/bash
@@ -40,16 +36,12 @@ down:
 
 start: on
     #!/bin/bash
-    if [ $(docker compose ps | wc -l) -ne 1 ]; then
-        echo "Starting containers and building..."
-        docker compose up --build -d
-    else
-        echo "Containers are already running..."
-    fi
+    echo "Starting containers and building..."
+    docker compose up --build -d
 
 stop:
     #!/bin/bash
-    if [ $(docker compose ps | wc -l) -eq 28 ]; then
+    if [ $(docker compose ps | wc -l) -ne 1 ]; then
         echo "Stopping containers..."
         docker compose stop
     else
@@ -95,7 +87,7 @@ db service_name db_type='primary':
             docker exec -it $container_name mysql -u radmin -h 127.0.0.1 -P 6032 -pradmin
         else
             echo "Connecting to database $container_name..."
-            docker exec -it $container_name mysql -u root -h 0.0.0.0 -P 3306 -proot
+            docker exec -it $container_name mysql -u root -h 0.0.0.0 gacha_test_db -P 3306 -proot
         fi
     else
         echo "Invalid service name or database type. Services: $allowed_services, DB Types: $allowed_db_types"
