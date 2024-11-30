@@ -126,7 +126,7 @@ paths:
     get:
       tags:
         - auth_internal
-      description: Returns role of the user by UUID, if exists.
+      description: Returns role of the user.
       operationId: get_role_by_uuid
       parameters:
       - name: session
@@ -154,7 +154,7 @@ paths:
         '403':
           description: Not authorized.
         '404':
-          description: Not found.
+          description: User not found.
         '503':
           description: Service unavailable. Please try again later.
   /auth/internal/delete_user_by_uuid:
@@ -182,7 +182,7 @@ paths:
         '403':
           description: Not authorized.
         '404':
-          description: Not found.
+          description: User not found.
         '503':
           description: Service temporarily unavailable. Please try again later.
   /auth/internal/edit_email:

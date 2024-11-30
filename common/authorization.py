@@ -5,10 +5,12 @@ from pybreaker import CircuitBreaker, CircuitBreakerError
 circuit_breaker = CircuitBreaker(fail_max=5, reset_timeout=5)
 
 def verify_login(auth_header=None):
-    if not auth_header:
+    if not auth_header or not auth_header.startswith("Bearer "):
         return jsonify({"error": "Missing Authorization header"}), 401
-
+    
     access_token = auth_header.split(" ")[1]
+    if not access_token: # checks if after "Bearer " there is text
+        return "", 400
 
     try:
         @circuit_breaker

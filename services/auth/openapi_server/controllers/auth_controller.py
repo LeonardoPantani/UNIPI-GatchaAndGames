@@ -1,32 +1,37 @@
-import uuid
-import re
 import datetime
+import re
+import uuid
+
 import bcrypt
 import connexion
-import requests
 import jwt
 import redis
-from typing import Dict
-from typing import Tuple
-from typing import Union
-
-from openapi_server.models.login_request import LoginRequest
-from openapi_server.models.register_request import RegisterRequest
-from openapi_server import util
-from openapi_server.helpers.logging import send_log
+import requests
 from flask import jsonify, request
+from mysql.connector.errors import (
+    DatabaseError,
+    DataError,
+    IntegrityError,
+    InterfaceError,
+    InternalError,
+    OperationalError,
+    ProgrammingError,
+)
 from pybreaker import CircuitBreaker, CircuitBreakerError
+
 from openapi_server.helpers.authorization import verify_login
 from openapi_server.helpers.db import get_db
-from mysql.connector.errors import (
-    OperationalError, DataError, DatabaseError, IntegrityError,
-    InterfaceError, InternalError, ProgrammingError
-)
+from openapi_server.helpers.logging import send_log
+from openapi_server.models.login_request import LoginRequest
+from openapi_server.models.register_request import RegisterRequest
+
 
 SERVICE_TYPE = "auth"
 circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5, exclude=[requests.HTTPError, OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError])
 redis_client = redis.Redis(host='redis', port=6379, db=0)
 
+
+""" Returns 200 if service is healthy. """
 def auth_health_check_get():
     return jsonify({"message": "Service operational."}), 200
 
@@ -102,7 +107,7 @@ def login(login_request=None):
         "password": user_password
     }
 
-    # Password check
+    # password check
     if not bcrypt.checkpw(password_to_login.encode("utf-8"), result["password"].encode("utf-8")):
         send_log(f"User '{username_to_login}' used invalid credentials.", level="info", service_type=SERVICE_TYPE)
         return jsonify({"error": "Invalid credentials."}), 401
@@ -155,7 +160,7 @@ def logout():
         send_log(f"Logout: Redis error {e}", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service unavailable. Please try again later."}), 503
 
-    # Logout OK
+    # logout OK
     send_log(f"User '{username}' logged out.", level="general", service_type=SERVICE_TYPE)
     return jsonify({"message": "Logout successful."}), 200
 
@@ -189,14 +194,13 @@ def register(register_request=None):
     uuid_hex_to_register = uuid.uuid4().bytes
     uuid_to_register = str(uuid.UUID(bytes=uuid_hex_to_register))
 
-
+    # query to database
     connection = get_db()
     try:
         @circuit_breaker
         def request_to_db():
             cursor = connection.cursor()
             connection.start_transaction()
-            # Insert user in USERS table
             cursor.execute(
                 'INSERT INTO users (uuid, email, password, role) VALUES (UUID_TO_BIN(%s), %s, %s, %s)',
                 (uuid_to_register, register_request.email, password_hashed, role)

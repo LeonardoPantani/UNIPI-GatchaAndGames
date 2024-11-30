@@ -50,9 +50,9 @@ services:
   #   healthcheck:
   #     test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
   #     start_period: 10s
-  #     interval: 5s
+  #     interval: 3s
   #     timeout: 2s
-  #     retries: 10
+  #     retries: 15
   #   restart: always
   #   networks:
   #     - private_gachaandgames_network
@@ -129,7 +129,8 @@ services:
       - ./services/auth:/usr/src/app/
       - ./common/:/usr/src/app/openapi_server/helpers/
     depends_on:
-      - service_auth_db_proxy
+      service_auth_db_proxy:
+        condition: service_healthy
     tty: true
     restart: always
     networks:
@@ -156,6 +157,12 @@ services:
     - service_auth_db_primary_data:/var/lib/mysql
     networks:
     - public_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      start_period: 10s
+      interval: 3s
+      timeout: 2s
+      retries: 15
     restart: always
   
   service_auth_db_replica:
@@ -168,6 +175,12 @@ services:
     - service_auth_db_replica_data:/var/lib/mysql
     networks:
     - public_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      start_period: 10s
+      interval: 3s
+      timeout: 2s
+      retries: 15
     restart: always
   
   service_auth_db_proxy:
@@ -178,6 +191,17 @@ services:
     - ./databases/auth/proxy/ssl:/etc/proxysql/ssl:ro
     networks:
     - public_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-P", "6032"]
+      start_period: 10s
+      interval: 3s
+      timeout: 2s
+      retries: 15
+    depends_on:
+      service_auth_db_primary:
+        condition: service_healthy
+      service_auth_db_replica:
+        condition: service_healthy
     restart: always
   
   ########################## AUCTION
@@ -194,6 +218,9 @@ services:
     restart: always
     networks:
       - public_gachaandgames_network
+    depends_on:
+      service_auction_db_proxy:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/auction/health_check"]
       start_period: 10s
@@ -215,6 +242,12 @@ services:
     - service_auction_db_primary_data:/var/lib/mysql
     networks:
     - public_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      start_period: 10s
+      interval: 3s
+      timeout: 2s
+      retries: 15
     restart: always
   
   # service_auction_db_replica:
@@ -227,6 +260,12 @@ services:
   #   - service_auction_db_replica_data:/var/lib/mysql
   #   networks:
   #   - public_gachaandgames_network
+  #   healthcheck:
+  #     test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+  #     start_period: 10s
+  #     interval: 3s
+  #     timeout: 2s
+  #     retries: 15
   #   restart: always
   
   service_auction_db_proxy:
@@ -237,6 +276,17 @@ services:
     - ./databases/auction/proxy/ssl:/etc/proxysql/ssl:ro
     networks:
     - public_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-P", "6032"]
+      start_period: 10s
+      interval: 3s
+      timeout: 2s
+      retries: 15
+    depends_on:
+      service_auction_db_primary:
+        condition: service_healthy
+      # service_auction_db_replica:
+      #   condition: service_healthy
     restart: always
 
   ########################## CURRENCY
@@ -253,6 +303,9 @@ services:
     restart: always
     networks:
       - public_gachaandgames_network
+    depends_on:
+      service_currency_db_proxy:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/currency/health_check"]
       start_period: 10s
@@ -274,6 +327,12 @@ services:
     - service_currency_db_primary_data:/var/lib/mysql
     networks:
     - public_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      start_period: 10s
+      interval: 3s
+      timeout: 2s
+      retries: 15
     restart: always
   
   # service_currency_db_replica:
@@ -286,6 +345,12 @@ services:
   #   - service_currency_db_replica_data:/var/lib/mysql
   #   networks:
   #   - public_gachaandgames_network
+  #   healthcheck:
+  #     test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+  #     start_period: 10s
+  #     interval: 3s
+  #     timeout: 2s
+  #     retries: 15
   #   restart: always
   
   service_currency_db_proxy:
@@ -296,6 +361,17 @@ services:
     - ./databases/currency/proxy/ssl:/etc/proxysql/ssl:ro
     networks:
     - public_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-P", "6032"]
+      start_period: 10s
+      interval: 3s
+      timeout: 2s
+      retries: 15
+    depends_on:
+      service_currency_db_primary:
+        condition: service_healthy
+      # service_currency_db_replica:
+      #   condition: service_healthy
     restart: always
 
   ########################## FEEDBACK
@@ -312,6 +388,9 @@ services:
     restart: always
     networks:
       - public_gachaandgames_network
+    depends_on:
+      service_feedback_db_proxy:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/feedback/health_check"]
       start_period: 10s
@@ -333,6 +412,12 @@ services:
     - service_feedback_db_primary_data:/var/lib/mysql
     networks:
     - public_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      start_period: 10s
+      interval: 3s
+      timeout: 2s
+      retries: 15
     restart: always
   
   # service_feedback_db_replica:
@@ -345,6 +430,12 @@ services:
   #   - service_feedback_db_replica_data:/var/lib/mysql
   #   networks:
   #   - public_gachaandgames_network
+  #   healthcheck:
+  #     test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+  #     start_period: 10s
+  #     interval: 3s
+  #     timeout: 2s
+  #     retries: 15
   #   restart: always
   
   service_feedback_db_proxy:
@@ -355,6 +446,17 @@ services:
     - ./databases/feedback/proxy/ssl:/etc/proxysql/ssl:ro
     networks:
     - public_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-P", "6032"]
+      start_period: 10s
+      interval: 3s
+      timeout: 2s
+      retries: 15
+    depends_on:
+      service_feedback_db_primary:
+        condition: service_healthy
+      # service_feedback_db_replica:
+      #   condition: service_healthy
     restart: always
 
   ########################## GACHA
@@ -371,6 +473,9 @@ services:
     restart: always
     networks:
       - public_gachaandgames_network
+    depends_on:
+      service_gacha_db_proxy:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/gacha/health_check"]
       start_period: 10s
@@ -392,6 +497,12 @@ services:
     - service_gacha_db_primary_data:/var/lib/mysql
     networks:
     - public_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      start_period: 10s
+      interval: 3s
+      timeout: 2s
+      retries: 15
     restart: always
   
   # service_gacha_db_replica:
@@ -404,6 +515,12 @@ services:
   #   - service_gacha_db_replica_data:/var/lib/mysql
   #   networks:
   #   - public_gachaandgames_network
+  #   healthcheck:
+  #     test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+  #     start_period: 10s
+  #     interval: 3s
+  #     timeout: 2s
+  #     retries: 15
   #   restart: always
   
   service_gacha_db_proxy:
@@ -414,6 +531,17 @@ services:
     - ./databases/gacha/proxy/ssl:/etc/proxysql/ssl:ro
     networks:
     - public_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-P", "6032"]
+      start_period: 10s
+      interval: 3s
+      timeout: 2s
+      retries: 15
+    depends_on:
+      service_gacha_db_primary:
+        condition: service_healthy
+      # service_gacha_db_replica:
+      #   condition: service_healthy
     restart: always
 
   ########################## INVENTORY
@@ -430,6 +558,9 @@ services:
     restart: always
     networks:
       - public_gachaandgames_network
+    depends_on:
+      service_inventory_db_proxy:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/inventory/health_check"]
       start_period: 10s
@@ -451,6 +582,12 @@ services:
     - service_inventory_db_primary_data:/var/lib/mysql
     networks:
     - public_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      start_period: 10s
+      interval: 3s
+      timeout: 2s
+      retries: 15
     restart: always
   
   # service_inventory_db_replica:
@@ -463,6 +600,12 @@ services:
   #   - service_inventory_db_replica_data:/var/lib/mysql
   #   networks:
   #   - public_gachaandgames_network
+  #   healthcheck:
+  #     test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+  #     start_period: 10s
+  #     interval: 3s
+  #     timeout: 2s
+  #     retries: 15
   #   restart: always
   
   service_inventory_db_proxy:
@@ -473,6 +616,17 @@ services:
     - ./databases/inventory/proxy/ssl:/etc/proxysql/ssl:ro
     networks:
     - public_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-P", "6032"]
+      start_period: 10s
+      interval: 3s
+      timeout: 2s
+      retries: 15
+    depends_on:
+      service_inventory_db_primary:
+        condition: service_healthy
+      # service_inventory_db_replica:
+      #   condition: service_healthy
     restart: always
 
   ########################## PROFILE
@@ -489,6 +643,9 @@ services:
     restart: always
     networks:
       - public_gachaandgames_network
+    depends_on:
+      service_profile_db_proxy:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/profile/health_check"]
       start_period: 10s
@@ -510,6 +667,12 @@ services:
     - service_profile_db_primary_data:/var/lib/mysql
     networks:
     - public_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      start_period: 10s
+      interval: 3s
+      timeout: 2s
+      retries: 15
     restart: always
   
   # service_profile_db_replica:
@@ -522,6 +685,12 @@ services:
   #   - service_profile_db_replica_data:/var/lib/mysql
   #   networks:
   #   - public_gachaandgames_network
+  #   healthcheck:
+  #     test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+  #     start_period: 10s
+  #     interval: 3s
+  #     timeout: 2s
+  #     retries: 15
   #   restart: always
   
   service_profile_db_proxy:
@@ -532,6 +701,17 @@ services:
     - ./databases/profile/proxy/ssl:/etc/proxysql/ssl:ro
     networks:
     - public_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-P", "6032"]
+      start_period: 10s
+      interval: 3s
+      timeout: 2s
+      retries: 15
+    depends_on:
+      service_profile_db_primary:
+        condition: service_healthy
+      # service_profile_db_replica:
+      #   condition: service_healthy
     restart: always
 
   ########################## PVP
@@ -548,6 +728,9 @@ services:
     restart: always
     networks:
       - public_gachaandgames_network
+    depends_on:
+      service_pvp_db_proxy:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/pvp/health_check"]
       start_period: 10s
@@ -569,6 +752,12 @@ services:
     - service_pvp_db_primary_data:/var/lib/mysql
     networks:
     - public_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      start_period: 10s
+      interval: 3s
+      timeout: 2s
+      retries: 15
     restart: always
   
   # service_pvp_db_replica:
@@ -581,6 +770,12 @@ services:
   #   - service_pvp_db_replica_data:/var/lib/mysql
   #   networks:
   #   - public_gachaandgames_network
+  #   healthcheck:
+  #     test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+  #     start_period: 10s
+  #     interval: 3s
+  #     timeout: 2s
+  #     retries: 15
   #   restart: always
   
   service_pvp_db_proxy:
@@ -591,6 +786,17 @@ services:
     - ./databases/pvp/proxy/ssl:/etc/proxysql/ssl:ro
     networks:
     - public_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-P", "6032"]
+      start_period: 10s
+      interval: 3s
+      timeout: 2s
+      retries: 15
+    depends_on:
+      service_pvp_db_primary:
+        condition: service_healthy
+      # service_pvp_db_replica:
+      #   condition: service_healthy
     restart: always
 
   ######### STACK ELK
@@ -605,6 +811,11 @@ services:
     networks:
       - public_gachaandgames_network
       - private_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3100/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   logging_grafana:
     image: grafana/grafana-oss:10.1.2
@@ -623,6 +834,11 @@ services:
     restart: always
     networks:
       - private_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/login"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
 
 networks:
