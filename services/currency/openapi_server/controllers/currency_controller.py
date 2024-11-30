@@ -10,7 +10,7 @@ from openapi_server.helpers.logging import send_log
 
 from openapi_server.helpers.authorization import verify_login
 
-from openapi_server.controllers.currency_internal_controller import get_bundle
+from openapi_server.controllers.currency_internal_controller import get_bundle, insert_bundle_transaction, insert_ingame_transaction, list_bundles
 
 circuit_breaker = CircuitBreaker(
     fail_max=1000, reset_timeout=5, exclude=[requests.HTTPError]
@@ -18,50 +18,7 @@ circuit_breaker = CircuitBreaker(
 
 TRANSACTION_TYPE_BUNDLE_CODE = "bought_bundle"
 global_mock_accounts = {
-    "87f3b5d1-5e8e-4fa4-909b-3cd29f4b1f09": {
-        "username": "user1",
-        "accounts": [
-            {
-                "currency": "EUR",
-                "amount": 100
-            },
-            {
-                "currency": "USD",
-                "amount": 300
-            }
-        ]
-    },
-    "4f2e8bb5-38e1-4537-9cfa-11425c3b4284": {
-        "username": "user1",
-        "accounts": [
-            {
-                "currency": "EUR",
-                "amount": 10000
-            },
-            {
-                "currency": "PLN",
-                "amount": 300
-            }
-        ]
-    },
-    "e3b0c442-98fc-1c14-b39f-92d1282048c0": {
-        "username": "user2",
-        "accounts": [
-            {
-                "currency": "USD",
-                "amount": 50
-            }
-        ]
-    },
-    "16ca8be1-8497-4957-ad5c-ad0bbe2a2863": {
-        "username": "user3",
-        "accounts": [
-            {
-                "currency": "EUR",
-                "amount": 200
-            }
-        ]
-    }
+
 }
 
 
@@ -92,11 +49,22 @@ def buy_currency(bundle_id):
     candidate_user_account_no = -1
     user_accounts = global_mock_accounts.get(session['uuid'])
 
-    if user_accounts:  # Ensure the user exists
-        accounts_list = user_accounts.get("accounts")  # Access the 'accounts' list
-        for index, element in enumerate(accounts_list):
-            if element["currency"] == currency_name:
-                candidate_user_account_no = index
+    if not user_accounts: #simplification of contacting a bank, we generate an account binded to the user if it's not present in global mock data
+        global_mock_accounts[session['uuid']] = {
+            "username": session['username'],
+            "accounts": [
+                {
+                    "currency": currency_name,
+                    "amount": (3 * price) + 1
+                }
+            ]
+        }
+        user_accounts = global_mock_accounts[session['uuid']]
+
+    accounts_list = user_accounts.get("accounts")  # Access the 'accounts' list
+    for index, element in enumerate(accounts_list):
+        if element["currency"] == currency_name:
+            candidate_user_account_no = index
 
     if user_accounts["accounts"][candidate_user_account_no]["currency"] != currency_name:
         return jsonify({"error": "Different currency needed, contact your bank."}), 400
@@ -106,6 +74,14 @@ def buy_currency(bundle_id):
     
     user_accounts["accounts"][candidate_user_account_no]["amount"] -= price
     
+    response = insert_bundle_transaction(None, session['uuid'], codename, currency_name)
+    if response[1] != 200:
+        jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+
+    response = insert_ingame_transaction(None, session['uuid'], credits_obtained, TRANSACTION_TYPE_BUNDLE_CODE)
+    if response[1] != 200:
+        jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+
     try:
         @circuit_breaker
         def make_request_to_profile_service():
@@ -126,45 +102,12 @@ def buy_currency(bundle_id):
     except CircuitBreakerError:
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503  
 
-    return jsonify({"message":"Purchase successful."}), 200
+    return jsonify({"message":"Purchase of "+public_name+" successful."}), 200
 
-
+@circuit_breaker
 def get_bundles():
-    # /db_manager/currency/list_bundles
-    # Returns a list of all available bundles with their details.
-    try:
-        @circuit_breaker
-        def make_request_to_dbmanager():
-            url = "http://db_manager:8080/db_manager/currency/list_bundles"
-            response = requests.post(url)
-            response.raise_for_status()  # if response is obtained correctly
-            return response.json()
-        
-        bundles = make_request_to_dbmanager()
-        
-        if not bundles:
-            return jsonify({"error": "No bundles found."}), 404
-
-        # Format the bundles data to match the API response structure
-        bundles_list = []
-        for bundle in bundles:
-            codename, currency_name, public_name, credits_obtained, price = bundle
-            bundles_list.append({
-                "id": codename,
-                "name": public_name,
-                "amount": credits_obtained,
-                "prices": [
-                    {"name": currency_name, "value": price}
-                ]
-            })
-        
-        return bundles_list, 200
-    except requests.HTTPError as e:
-        if e.response.status_code == 404:
-            return jsonify({"error": "No bundles found."}), 404
-        else:  # other errors
-            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
-    except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
-        return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
-    except CircuitBreakerError:
-        return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503
+    response = list_bundles(None)
+    
+    if response[1] != 200:
+        jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+    return response

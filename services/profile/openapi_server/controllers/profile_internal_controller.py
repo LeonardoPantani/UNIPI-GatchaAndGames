@@ -414,7 +414,7 @@ def get_username_from_uuid(session=None, user_uuid=None):  # noqa: E501
 
 def get_uuid_from_username(session=None, username=None):  # noqa: E501
     if not username:
-        return "", 400
+        return jsonify({"error": "Invalid request."}), 400
     
     try:
         @circuit_breaker

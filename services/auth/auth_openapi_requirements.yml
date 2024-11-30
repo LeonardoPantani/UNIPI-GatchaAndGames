@@ -209,7 +209,7 @@ paths:
         '403':
           description: Not authorized.
         '404':
-          description: Not found.
+          description: User not found.
         '503':
           description: Service unavailable. Please try again later.
   /auth/internal/delete_user_by_uuid:
@@ -237,7 +237,7 @@ paths:
         '403':
           description: Not authorized.
         '404':
-          description: Not found.
+          description: User not found.
         '503':
           description: Service temporarily unavailable. Please try again later.
   /auth/internal/edit_email:

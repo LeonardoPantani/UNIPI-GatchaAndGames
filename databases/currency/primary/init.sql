@@ -6,7 +6,7 @@ CREATE TABLE bundles (
     public_name VARCHAR(200) NOT NULL, 
     credits_obtained INT NOT NULL,
     price DECIMAL(15,2) NOT NULL,
-    PRIMARY KEY (codename, currency_name)
+    PRIMARY KEY (codename)
 );
 
 -- users can buy ingame currency with predefined ingame currency bundles like:
@@ -17,8 +17,8 @@ CREATE TABLE bundles_transactions (
     bundle_currency_name VARCHAR(3),
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     user_uuid BINARY(16),
-    PRIMARY KEY (bundle_codename, bundle_currency_name, timestamp, user_uuid),
-    FOREIGN KEY (bundle_codename, bundle_currency_name) REFERENCES bundles(codename, currency_name)
+    PRIMARY KEY (bundle_codename, timestamp, user_uuid),
+    FOREIGN KEY (bundle_codename) REFERENCES bundles(codename)
 );
 
 -- transactions can be of 4 types:
