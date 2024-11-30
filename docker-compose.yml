@@ -38,52 +38,6 @@ services:
     networks:
       - private_gachaandgames_network
 
-  # db:
-  #   image: db_gachaandgames
-  #   container_name: unipi-gatchaandgames-database
-  #   build: ./database/
-  #   ports:
-  #     - "3306"
-  #   env_file: "database/db.env"
-  #   volumes:
-  #     - mysql_gachaandgames_db:/var/lib/mysql
-  #   healthcheck:
-  #     test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-  #     start_period: 10s
-  #     interval: 3s
-  #     timeout: 2s
-  #     retries: 15
-  #   restart: always
-  #   networks:
-  #     - private_gachaandgames_network
-  #     - public_gachaandgames_network # to remove
-
-  # db_manager:
-  #   image: db_manager_gachaandgames
-  #   build: ./db_manager/
-  #   ports:
-  #     - "8080"
-  #   env_file: ./db_manager/.env
-  #   volumes:
-  #     - ./db_manager:/usr/src/app/
-  #     - ./common/logging.py:/usr/src/app/openapi_server/helpers/logging.py
-  #   depends_on:
-  #     db:
-  #       condition: service_healthy
-  #   tty: true
-  #   restart: always
-  #   networks:
-  #     - private_gachaandgames_network
-  #     - public_gachaandgames_network
-  #   healthcheck:
-  #     test: ["CMD", "curl", "-f", "http://localhost:8080/db_manager/health_check"]
-  #     start_period: 10s
-  #     interval: 10s
-  #     timeout: 2s
-  #     retries: 5
-  #   deploy:
-  #     replicas: 1
-
   redis:
     image: redis:latest
     container_name: unipi-gatchaandgames-redis
@@ -150,16 +104,16 @@ services:
     container_name: unipi-gatchaandgames-service_auth_db_primary
     env_file: ./databases/auth/primary/primary.env
     volumes:
-    - ./databases/auth/primary/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    - ./databases/auth/primary/mock_data.sql:/docker-entrypoint-initdb.d/mock_data.sql:ro
+      - ./databases/auth/primary/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./databases/auth/primary/mock_data.sql:/docker-entrypoint-initdb.d/mock_data.sql:ro
 
-    - ./databases/auth/primary/ssl:/etc/mysql/ssl:ro
-    - service_auth_db_primary_data:/var/lib/mysql
+      - ./databases/auth/primary/ssl:/etc/mysql/ssl:ro
+      - service_auth_db_primary_data:/var/lib/mysql
     networks:
-    - public_gachaandgames_network
+      - public_gachaandgames_network
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      start_period: 10s
+      start_period: 15s
       interval: 3s
       timeout: 2s
       retries: 15
@@ -171,13 +125,17 @@ services:
     env_file: ./databases/auth/replica/replica.env
     volumes:
     - ./databases/auth/replica/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
     - ./databases/auth/replica/ssl:/etc/mysql/ssl:ro
     - service_auth_db_replica_data:/var/lib/mysql
     networks:
     - public_gachaandgames_network
+    depends_on:
+      service_auth_db_primary:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      start_period: 10s
+      start_period: 5s
       interval: 3s
       timeout: 2s
       retries: 15
@@ -260,9 +218,12 @@ services:
   #   - service_auction_db_replica_data:/var/lib/mysql
   #   networks:
   #   - public_gachaandgames_network
+  #   depends_on:
+  #     service_auction_db_primary:
+  #       condition: service_healthy
   #   healthcheck:
   #     test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-  #     start_period: 10s
+  #     start_period: 5s
   #     interval: 3s
   #     timeout: 2s
   #     retries: 15
@@ -345,9 +306,12 @@ services:
   #   - service_currency_db_replica_data:/var/lib/mysql
   #   networks:
   #   - public_gachaandgames_network
+  #   depends_on:
+  #     service_currency_db_primary:
+  #       condition: service_healthy
   #   healthcheck:
   #     test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-  #     start_period: 10s
+  #     start_period: 5s
   #     interval: 3s
   #     timeout: 2s
   #     retries: 15
@@ -430,9 +394,12 @@ services:
   #   - service_feedback_db_replica_data:/var/lib/mysql
   #   networks:
   #   - public_gachaandgames_network
+  #   depends_on:
+  #     service_feedback_db_primary:
+  #       condition: service_healthy
   #   healthcheck:
   #     test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-  #     start_period: 10s
+  #     start_period: 5s
   #     interval: 3s
   #     timeout: 2s
   #     retries: 15
@@ -515,9 +482,12 @@ services:
   #   - service_gacha_db_replica_data:/var/lib/mysql
   #   networks:
   #   - public_gachaandgames_network
+  #   depends_on:
+  #     service_gacha_db_primary:
+  #       condition: service_healthy
   #   healthcheck:
   #     test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-  #     start_period: 10s
+  #     start_period: 5s
   #     interval: 3s
   #     timeout: 2s
   #     retries: 15
@@ -600,9 +570,12 @@ services:
   #   - service_inventory_db_replica_data:/var/lib/mysql
   #   networks:
   #   - public_gachaandgames_network
+  #   depends_on:
+  #     service_inventory_db_primary:
+  #       condition: service_healthy
   #   healthcheck:
   #     test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-  #     start_period: 10s
+  #     start_period: 5s
   #     interval: 3s
   #     timeout: 2s
   #     retries: 15
@@ -685,9 +658,12 @@ services:
   #   - service_profile_db_replica_data:/var/lib/mysql
   #   networks:
   #   - public_gachaandgames_network
+  #   depends_on:
+  #     service_profile_db_primary:
+  #       condition: service_healthy
   #   healthcheck:
   #     test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-  #     start_period: 10s
+  #     start_period: 5s
   #     interval: 3s
   #     timeout: 2s
   #     retries: 15
@@ -770,9 +746,12 @@ services:
   #   - service_pvp_db_replica_data:/var/lib/mysql
   #   networks:
   #   - public_gachaandgames_network
+  #   depends_on:
+  #     service_pvp_db_primary:
+  #       condition: service_healthy
   #   healthcheck:
   #     test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-  #     start_period: 10s
+  #     start_period: 5s
   #     interval: 3s
   #     timeout: 2s
   #     retries: 15
