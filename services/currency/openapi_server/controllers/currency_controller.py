@@ -35,8 +35,10 @@ def buy_currency(bundle_id):
     # fine controllo autenticazione
 
     response = get_bundle(None, bundle_id)
-    if response[1] != 200:
+    if response[1] == 404:
         return response
+    elif response[1] == 503 or response[1] == 400:
+        return jsonify({"error": "Service unavailable. Please try again later."}), 503
     
     response_data = response[0].get_json()
 
@@ -76,16 +78,16 @@ def buy_currency(bundle_id):
     
     response = insert_bundle_transaction(None, session['uuid'], codename, currency_name)
     if response[1] != 200:
-        jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
 
     response = insert_ingame_transaction(None, session['uuid'], credits_obtained, TRANSACTION_TYPE_BUNDLE_CODE)
     if response[1] != 200:
-        jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
 
     try:
         @circuit_breaker
         def make_request_to_profile_service():
-            params = {"uuid": session['uuid'],"amount":credits_obtained}
+            params = {"uuid": session['uuid'], "amount":credits_obtained}
             url = "http://service_profile:8080/profile/internal/add_currency"
             response = requests.post(url, params=params)
             response.raise_for_status()
@@ -94,7 +96,7 @@ def buy_currency(bundle_id):
         make_request_to_profile_service()
     except requests.HTTPError as e:
         if e.response.status_code == 404: 
-            return jsonify({"error": "Item not found."}), 404
+            return jsonify({"error": "User not found."}), 404
         else:
             return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
     except requests.RequestException:

@@ -24,18 +24,22 @@ from openapi_server.helpers.db import get_db
 
 circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5)
 
-def create_auction(auction=None, session=None):  # noqa: E501
-    if not connexion.request.is_json:
-        return "", 400
-        
-    auction = Auction.from_dict(connexion.request.get_json())  # noqa: E501
+def create_auction(auction = None, session=None):  # noqa: E501
+    if not auction:
+        if not connexion.request.is_json:
+            return "", 400
+            
+        auction = Auction.from_dict(connexion.request.get_json())  # noqa: E501
 
-    uuid = auction.auction_uuid
-    item_id = auction.inventory_item_id
-    starting_price = auction.starting_price
-    current_bid = auction.current_bid
-    current_bidder = auction.current_bidder
-    end_time = auction.end_time
+        uuid = auction.auction_uuid
+        item_id = auction.inventory_item_id
+        starting_price = auction.starting_price
+        end_time = auction.end_time
+    else:
+        uuid = auction.get("auction_uuid")
+        item_id = auction.get("inventory_item_id")
+        starting_price = auction.get("starting_price")
+        end_time = auction.get("end_time")
 
     if not uuid or not item_id or not starting_price or not end_time:
         return "", 400
@@ -49,10 +53,10 @@ def create_auction(auction=None, session=None):  # noqa: E501
             query = """
                 INSERT INTO auctions
                 (uuid, item_uuid, starting_price, current_bid, current_bidder, end_time)
-                VALUES (UUID_TO_BIN(%s), UUID_TO_BIN(%s), %s, %s, UUID_TO_BIN(%s), %s)
+                VALUES (UUID_TO_BIN(%s), UUID_TO_BIN(%s), %s, %s, NULL, %s)
             """
 
-            cursor.execute(query, (uuid, item_id, starting_price, current_bid, current_bidder, end_time))
+            cursor.execute(query, (uuid, item_id, starting_price, 0, end_time))
 
             connection.commit()
 
@@ -65,8 +69,8 @@ def create_auction(auction=None, session=None):  # noqa: E501
     except OperationalError:
         logging.error(f"Query: Operational error.")
         return "", 503
-    except ProgrammingError:
-        logging.error(f"Query: Programming error.")
+    except ProgrammingError as e:
+        logging.error(f"Query: Programming error.{e}")
         return "", 503
     except DataError:
         logging.error(f"Query: Invalid data error.")
@@ -74,8 +78,8 @@ def create_auction(auction=None, session=None):  # noqa: E501
     except IntegrityError:
         logging.error(f"Query: Integrity error.")
         return "", 503
-    except DatabaseError:
-        logging.error(f"Query: Generic database error.")
+    except DatabaseError as e:
+        logging.error(f"Query: Generic database error.{e}")
         return "", 503
     except CircuitBreakerError:
         return "", 503
@@ -451,7 +455,7 @@ def get_user_auctions(session=None, user_uuid=None):  # noqa: E501
 def is_open_by_item_uuid(session=None, uuid=None):  # noqa: E501
     if not uuid:
         return "", 400
-    
+    print(uuid)
     try:
         @circuit_breaker
         def search_auction():
@@ -461,9 +465,9 @@ def is_open_by_item_uuid(session=None, uuid=None):  # noqa: E501
             query = """
                 SELECT BIN_TO_UUID(uuid), BIN_TO_UUID(item_uuid), starting_price, current_bid, BIN_TO_UUID(current_bidder), end_time
                 FROM auctions
-                WHERE uuid = UUID_TO_BIN(%s)
+                WHERE item_uuid = UUID_TO_BIN(%s)
             """
-            print (query)
+
             cursor.execute(query, (uuid,))
 
             result = cursor.fetchone()
@@ -475,9 +479,9 @@ def is_open_by_item_uuid(session=None, uuid=None):  # noqa: E501
         auction_data = search_auction()
         print(auction_data)
         if not auction_data or auction_data[5] < datetime.now():
-            return jsonify({"found":False})
+            return jsonify({"found":False}), 200
 
-        return jsonify({"found":True})
+        return jsonify({"found":True}), 200
 
     except OperationalError:
         logging.error(f"Query: Operational error.")

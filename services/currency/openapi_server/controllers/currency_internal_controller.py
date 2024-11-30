@@ -331,20 +331,6 @@ def list_bundles(session=None):  # noqa: E501
         
         bundles_list = get_bundles()
 
-        response = []
-
-        for bundle in bundles_list:
-            payload = {
-                "codename": bundle[0],
-                "public_name": bundle[1],
-                "amount": bundle[2],
-                "currency": bundle[3],
-                "value": bundle[4]
-            }
-            response.append(payload)
-
-        return jsonify(response), 200
-
     except OperationalError:
         logging.error(f"Query: Operational error.")
         return "", 503
@@ -362,3 +348,17 @@ def list_bundles(session=None):  # noqa: E501
         return "", 503
     except CircuitBreakerError:
         return "", 503    
+    
+    response = []
+
+    for bundle in bundles_list:
+        payload = {
+            "codename": bundle[0],
+            "public_name": bundle[1],
+            "amount": bundle[2],
+            "currency": bundle[3],
+            "value": bundle[4]
+        }
+        response.append(payload)
+
+    return jsonify(response), 200
