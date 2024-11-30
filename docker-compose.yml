@@ -773,7 +773,7 @@ services:
       - public_gachaandgames_network
       - private_gachaandgames_network
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "https://127.0.0.1:3100/ready"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3100/ready"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -796,7 +796,7 @@ services:
     networks:
       - private_gachaandgames_network
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "https://127.0.0.1:3000/login"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/login"]
       interval: 10s
       timeout: 5s
       retries: 3
