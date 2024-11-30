@@ -25,7 +25,7 @@ def verify_login(auth_header=None, audience_required="public_services"):
             return response.json()
 
         session = make_request_to_auth()
-    
+
         return session, 200
     except requests.HTTPError as e:
         if e.response.status_code == 401: # unauthorized

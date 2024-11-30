@@ -35,6 +35,7 @@ def ban_profile(user_uuid):
         return session
     else:
         session = session[0]
+    print("start")
     try:
         @circuit_breaker
         def make_request_to_auth_service():
@@ -55,9 +56,9 @@ def ban_profile(user_uuid):
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503  
-    print("get role")
+    
     user_role = user_role_data['role']
-
+    
     if user_role != "ADMIN":
         return jsonify({"error": "This account is not authorized to perform this action."}), 403
 
@@ -77,8 +78,8 @@ def ban_profile(user_uuid):
 
     except requests.HTTPError as e:
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
-    except requests.RequestException:
-        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
+    except requests.RequestException as e:
+        return jsonify({"error": f"Service temporarily unavailable. Please try again later. [RequestError]{e}"}), 503
     except CircuitBreakerError:
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503  
     print("del feedback")
