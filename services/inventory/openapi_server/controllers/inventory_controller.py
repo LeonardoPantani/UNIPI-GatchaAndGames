@@ -15,9 +15,8 @@ from openapi_server.helpers.authorization import verify_login
 from openapi_server.controllers.inventory_internal_controller import remove_item
 
 # Service URLs
-INVENTORY_SERVICE_URL = "http://service_inventory:8080"
-DB_MANAGER_URL = "http://db_manager:8080"
-AUCTIONS_SERVICE_URL = "http://service_auctions:8080"
+INVENTORY_SERVICE_URL = "https://service_inventory"
+AUCTIONS_SERVICE_URL = "https://service_auctions"
 
 # Circuit breaker instance for inventory operations
 circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5, exclude=[requests.HTTPError])
@@ -49,7 +48,8 @@ def get_inventory():  # noqa: E501
                     "uuid": user_uuid,
                     "page_number": page_number,
                     "session": None
-                }
+                },
+                verify=False
             )
             response.raise_for_status()
             return response.json()
@@ -87,7 +87,8 @@ def get_inventory_item_info(inventory_item_id):  # noqa: E501
                 f"{INVENTORY_SERVICE_URL}/inventory/internal/get_by_item_uuid",
                 params={
                     "uuid": inventory_item_id
-                }
+                },
+                verify=False
             )
             response.raise_for_status()
             return response.json()
@@ -130,7 +131,7 @@ def remove_inventory_item():  # noqa: E501
         def check_auction_status():
             params = {"uuid": item_uuid}
             url = "http://service_auction:8080/auction/internal/is_open_by_item_uuid"
-            response = requests.get(url,params=params)
+            response = requests.get(url,params=params, verify=False)
             response.raise_for_status()
             return response.json()
         

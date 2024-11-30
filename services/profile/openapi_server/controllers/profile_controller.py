@@ -1,31 +1,23 @@
-import traceback
-import connexion
-import bcrypt
 import logging
+
+import connexion
 import requests
-
-from typing import Dict
-from typing import Tuple
-from typing import Union
-
-from openapi_server.models.delete_profile_request import DeleteProfileRequest
-from openapi_server.models.edit_profile_request import EditProfileRequest
-from openapi_server.models.user import User
-from openapi_server import util
-from openapi_server.helpers.logging import send_log
-
-from flask import session, jsonify
-
+from flask import jsonify
 from pybreaker import CircuitBreaker, CircuitBreakerError
 
 from openapi_server.helpers.authorization import verify_login
-from pybreaker import CircuitBreaker, CircuitBreakerError
+from openapi_server.helpers.logging import send_log
+from openapi_server.models.delete_profile_request import DeleteProfileRequest
+from openapi_server.models.edit_profile_request import EditProfileRequest
+from openapi_server.models.user import User
 
 circuit_breaker = CircuitBreaker(
     fail_max=1000, reset_timeout=5, exclude=[requests.HTTPError]
 )
 
-from openapi_server.controllers.profile_internal_controller import delete_profile_by_uuid
+from openapi_server.controllers.profile_internal_controller import (
+    delete_profile_by_uuid,
+)
 
 FEEDBACK_SERVICE_URL = "https://service_feedback"
 CURRENCY_SERVICE_URL = "https://service_currency"
@@ -57,7 +49,8 @@ def delete_profile():
         def delete_user_feedbacks():
             feedback_response = requests.delete(
                 f"{FEEDBACK_SERVICE_URL}/feedback/internal/delete_user_feedbacks",
-                params={"uuid":session.get("uuid") ,"session": None}
+                params={"uuid":session.get("uuid") ,"session": None},
+                verify=False
             )
             feedback_response.raise_for_status()
 
@@ -70,7 +63,8 @@ def delete_profile():
         def delete_currency_transactions():
             currency_response = requests.delete(
                 f"{CURRENCY_SERVICE_URL}/currency/internal/delete_user_transactions",
-                params={"uuid":session.get("uuid"),"session": None}
+                params={"uuid":session.get("uuid"),"session": None},
+                verify=False
             )
             currency_response.raise_for_status()
 
@@ -83,7 +77,8 @@ def delete_profile():
         def get_user_items():
             inventory_response = requests.get(
                 f"{INVENTORY_SERVICE_URL}/inventory/internal/get_items_by_owner_uuid",
-                params={"uuid": session.get("uuid"),"session": None}
+                params={"uuid": session.get("uuid"),"session": None},
+                verify=False
             )
             inventory_response.raise_for_status()
             return inventory_response.json()
@@ -98,7 +93,8 @@ def delete_profile():
             def refund_bidders():
                 refund_response = requests.post(
                     f"{AUCTION_SERVICE_URL}/auction/internal/refund_bidders",
-                    json=item_uuids
+                    json=item_uuids,
+                verify=False
                 )
                 refund_response.raise_for_status()
             
@@ -111,7 +107,8 @@ def delete_profile():
         def reset_current_bidder():
             reset_bidder_response = requests.post(
                 f"{AUCTION_SERVICE_URL}/auction/internal/reset_current_bidder",
-                params={"uuid": session.get("uuid")}
+                params={"uuid": session.get("uuid")},
+                verify=False
             )
             reset_bidder_response.raise_for_status()
 
@@ -124,7 +121,8 @@ def delete_profile():
         def remove_pvp_matches():
             pvp_response = requests.delete(
                 f"{PVP_SERVICE_URL}/pvp/internal/remove_by_user_uuid",
-                params={"uuid": session.get("uuid"),"session": None}
+                params={"uuid": session.get("uuid"),"session": None},
+                verify=False
             )
             pvp_response.raise_for_status()
 
@@ -138,7 +136,8 @@ def delete_profile():
                 def remove_auctions():
                     auction_response = requests.post(
                         f"{AUCTION_SERVICE_URL}/auction/internal/remove_by_item_uuid",
-                        json=item_uuids
+                        json=item_uuids,
+                verify=False
                     )
                     auction_response.raise_for_status()
 
@@ -154,7 +153,8 @@ def delete_profile():
         def delete_user_inventory():
             delete_inventory_response = requests.delete(
                 f"{INVENTORY_SERVICE_URL}/inventory/internal/delete_user_inventory",
-                params={"uuid": session.get("uuid"),"session": None}
+                params={"uuid": session.get("uuid"),"session": None},
+                verify=False
             )
             delete_inventory_response.raise_for_status()
 
@@ -170,7 +170,8 @@ def delete_profile():
         def delete_auth_user():
             delete_auth_response = requests.delete(
                 f"{AUTH_SERVICE_URL}/auth/internal/delete_user_by_uuid",
-                params={"uuid": session.get("uuid"),"session": None}
+                params={"uuid": session.get("uuid"),"session": None},
+                verify=False
             )
             delete_auth_response.raise_for_status()
 
@@ -228,7 +229,8 @@ def edit_profile():
         def check_profile_exists():
             response = requests.get(
                 f"{PROFILE_SERVICE_URL}/profile/internal/exists",
-                params={"uuid": user_uuid}
+                params={"uuid": user_uuid},
+                verify=False
             )
             response.raise_for_status()
             return response.json()
@@ -244,7 +246,8 @@ def edit_profile():
             def update_email():
                 response = requests.post(
                     f"{AUTH_SERVICE_URL}/auth/internal/edit_email",
-                    params={"uuid": user_uuid, "email": edit_request.email}
+                    params={"uuid": user_uuid, "email": edit_request.email},
+                verify=False
                 )
                 response.raise_for_status()
                 return response
@@ -258,7 +261,8 @@ def edit_profile():
             def update_username():
                 response = requests.post(
                     f"{PROFILE_SERVICE_URL}/profile/internal/edit_username",
-                    params={"uuid": user_uuid, "username": edit_request.username}
+                    params={"uuid": user_uuid, "username": edit_request.username},
+                verify=False
                 )
                 
                 response.raise_for_status()
@@ -301,7 +305,8 @@ def get_user_info(uuid):
         def get_user_profile():
             response = requests.get(
                 f"{PROFILE_SERVICE_URL}/profile/internal/get_profile",
-                params={"user_uuid": uuid}
+                params={"user_uuid": uuid},
+                verify=False
             )
             response.raise_for_status()
             return response.json()

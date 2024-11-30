@@ -28,9 +28,9 @@ circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5, exclude=[reques
 def gacha_health_check_get():  # noqa: E501
     return jsonify({"message": "Service operational."}), 200
 
-GACHA_SERVICE_URL = "http://service_gacha:8080"
-PROFILE_SERVICE_URL = "http://service_profile:8080"
-INVENTORY_SERVICE_URL = "http://service_inventory:8080"
+GACHA_SERVICE_URL = "https://service_gacha"
+PROFILE_SERVICE_URL = "https://service_profile"
+INVENTORY_SERVICE_URL = "https://service_inventory"
 
 def get_gacha_info(gacha_uuid):  # noqa: E501
     """Get information about a specific gacha."""
@@ -45,7 +45,8 @@ def get_gacha_info(gacha_uuid):  # noqa: E501
         def get_gacha():
             response = requests.get(
                 f"{GACHA_SERVICE_URL}/gacha/internal/gacha/get",
-                params={"uuid": gacha_uuid}
+                params={"uuid": gacha_uuid},
+                verify=False
             )
             response.raise_for_status()
             return response.json()
@@ -83,7 +84,8 @@ def pull_gacha(pool_id):  # noqa: E501
         def check_pool_exists():
             response = requests.get(
                 f"{GACHA_SERVICE_URL}/gacha/internal/pool/exists",
-                params={"uuid": pool_id}
+                params={"uuid": pool_id},
+                verify=False
             )
             response.raise_for_status()
             return response.json()
@@ -97,7 +99,8 @@ def pull_gacha(pool_id):  # noqa: E501
         def get_pool_info():
             response = requests.get(
                 f"{GACHA_SERVICE_URL}/gacha/internal/pool/get",
-                params={"uuid": pool_id}
+                params={"uuid": pool_id},
+                verify=False
             )
             response.raise_for_status()
             return response.json()
@@ -108,7 +111,8 @@ def pull_gacha(pool_id):  # noqa: E501
         def check_currency():
             response = requests.get(
                 f"{PROFILE_SERVICE_URL}/profile/internal/get_currency_from_uuid",
-                params={"user_uuid": user_uuid}
+                params={"user_uuid": user_uuid},
+                verify=False
             )
             response.raise_for_status()
             return response.json()
@@ -151,7 +155,8 @@ def pull_gacha(pool_id):  # noqa: E501
                 params={
                     "uuid": user_uuid,
                     "amount": -pool['price']
-                }
+                },
+                verify=False
             )
             response.raise_for_status()
             return response
@@ -174,7 +179,8 @@ def pull_gacha(pool_id):  # noqa: E501
             print(new_item_uuid)
             response = requests.post(
             f"{INVENTORY_SERVICE_URL}/inventory/internal/insert_item",
-            json=item_data  
+            json=item_data,
+                verify=False
             )
             print(response)
             response.raise_for_status()
@@ -210,7 +216,8 @@ def get_pool_info():
         @circuit_breaker
         def get_pools():
             response = requests.post(
-                f"{GACHA_SERVICE_URL}/gacha/internal/pool/list"
+                f"{GACHA_SERVICE_URL}/gacha/internal/pool/list",
+                verify=False
             )
             response.raise_for_status()
             return response.json()
@@ -247,7 +254,8 @@ def get_gachas(not_owned):  # noqa: E501
         def get_owned_gachas():
             response = requests.get(
                 f"{INVENTORY_SERVICE_URL}/inventory/internal/get_gachas_types_of_user",
-                params={"user_uuid": user_uuid}
+                params={"user_uuid": user_uuid},
+                verify=False
             )
             response.raise_for_status()
             return response.json()
@@ -259,7 +267,8 @@ def get_gachas(not_owned):  # noqa: E501
         def get_gacha_list():
             response = requests.post(
                 f"{GACHA_SERVICE_URL}/gacha/internal/gacha/list",
-                json=owned_gachas
+                json=owned_gachas,
+                verify=False
             )
             response.raise_for_status()
             return response.json()
