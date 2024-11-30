@@ -361,19 +361,62 @@ def get_gacha(session=None, uuid=None):  # noqa: E501
         return "", 503
 
 
-def get_pool(session=None, uuid=None):  # noqa: E501
-    """get_pool
+def get_pool(session=None, uuid=None):  # noqa: E501 #note: uuid is actually the codename
+    """Returns the pool object by pool codename.
 
-    Returns true if a pool exists, false otherwise. # noqa: E501
-
-    :param session: 
+    :param session: Session cookie
     :type session: str
-    :param uuid: 
-    :type uuid: str
-
-    :rtype: Union[Pool, Tuple[Pool, int], Tuple[Pool, int, Dict[str, str]]
+    :param codename: Codename of the pool
+    :type codename: str
+    :rtype: Union[Pool, Tuple[Pool, int], Tuple[Pool, int, Dict[str, str]]]
     """
-    return 'do some magic!'
+    if not uuid:
+        return "", 400
+
+    try:
+        @circuit_breaker
+        def get_pool_from_db():
+            connection = get_db()
+            cursor = connection.cursor()
+            
+            query = """
+                SELECT codename, public_name, probability_common, probability_rare,
+                       probability_epic, probability_legendary, price
+                FROM gacha_pools 
+                WHERE codename = %s
+            """
+            cursor.execute(query, (uuid,))
+            result = cursor.fetchone()
+            
+            if not result:
+                cursor.close()
+                return "", 404
+
+            items_query = "SELECT BIN_TO_UUID(gacha_uuid) FROM gacha_pools_items WHERE codename = %s"
+            cursor.execute(items_query, (uuid,))
+            items = [str(item[0]) for item in cursor.fetchall()]
+
+            pool_data = {
+                "codename": result[0],
+                "public_name": result[1], 
+                "probability_common": result[2],
+                "probability_rare": result[3],
+                "probability_epic": result[4],
+                "probability_legendary": result[5],
+                "price": result[6],
+                "items": items
+            }
+
+            cursor.close()
+            return jsonify(pool_data), 200
+
+        return get_pool_from_db()
+
+    except (OperationalError, DataError, DatabaseError, IntegrityError, 
+            InterfaceError, InternalError, ProgrammingError):
+        return "", 503
+    except CircuitBreakerError:
+        return "", 503
 
 
 def get_rarity_by_uuid(session=None, uuid=None):  # noqa: E501
@@ -414,65 +457,307 @@ def get_rarity_by_uuid(session=None, uuid=None):  # noqa: E501
         return "", 503
 
 
-def list_gachas(request_body, session=None, not_owned=None):  # noqa: E501
-    """list_gachas
+def list_gachas(requestBody=None, session=None, not_owned=None):  # noqa: E501
+    """Returns a list of gachas by UUIDs."""
 
-    Returns list of gachas (not) owned by the user. # noqa: E501
+    if not connexion.request.is_json:
+        return "", 400
+        
+    try:
+        requestBody= connexion.request.get_json()
+        if not requestBody:
+            return "", 400
+        
+        @circuit_breaker
+        def get_gachas_from_db():
+            connection = get_db()
+            cursor = connection.cursor()
+            
+            placeholders = ','.join(['UUID_TO_BIN(%s)' for _ in requestBody])
+            query = f"""
+                SELECT BIN_TO_UUID(uuid), name, rarity, 
+                       stat_power, stat_speed, stat_durability, stat_precision, 
+                       stat_range, stat_potential
+                FROM gachas_types 
+                WHERE uuid IN ({placeholders})
+            """
+            cursor.execute(query, requestBody)
+            results = cursor.fetchall()
+            
 
-    :param request_body: 
-    :type request_body: List[str]
-    :param session: 
-    :type session: str
-    :param not_owned: 
-    :type not_owned: bool
+            gachas = []
+            for result in results:
+                gacha = {
+                    "gacha_uuid": result[0],
+                    "name": result[1],
+                    "rarity": result[2],
+                    "attributes": {
+                        "power": str(result[3]),
+                        "speed": str(result[4]),
+                        "durability": str(result[5]),
+                        "precision": str(result[6]),
+                        "range": str(result[7]),
+                        "potential": str(result[8])
+                    }
+                }
+                gachas.append(gacha)
+                
+            cursor.close()
+            return jsonify(gachas), 200
 
-    :rtype: Union[List[Gacha], Tuple[List[Gacha], int], Tuple[List[Gacha], int, Dict[str, str]]
-    """
-    return 'do some magic!'
+        return get_gachas_from_db()
+
+    except (OperationalError, DataError, DatabaseError, IntegrityError, 
+            InterfaceError, InternalError, ProgrammingError):
+        return "", 503
+    except CircuitBreakerError:
+        return "", 503
 
 
 def list_pools(session=None):  # noqa: E501
-    """list_pools
+    """Returns list of pools.
 
-    Returns list of pools. # noqa: E501
-
-    :param session: 
+    :param session: Session cookie
     :type session: str
-
-    :rtype: Union[List[Pool], Tuple[List[Pool], int], Tuple[List[Pool], int, Dict[str, str]]
+    :rtype: Union[List[Pool], Tuple[List[Pool], int], Tuple[List[Pool], int, Dict[str, str]]]
     """
-    return 'do some magic!'
 
 
-def update_gacha(session=None, gacha=None):  # noqa: E501
-    """update_gacha
+    try:
+        @circuit_breaker
+        def get_pools_from_db():
+            connection = get_db()
+            cursor = connection.cursor()
+            
+            query = """
+                SELECT codename, public_name, probability_common, probability_rare,
+                       probability_epic, probability_legendary, price
+                FROM gacha_pools
+            """
+            cursor.execute(query)
+            results = cursor.fetchall()
+            
+            pools = []
+            for result in results:
+                codename = result[0]
+                
+                items_query = "SELECT BIN_TO_UUID(gacha_uuid) FROM gacha_pools_items WHERE codename = %s"
+                cursor.execute(items_query, (codename,))
+                items = [item[0] for item in cursor.fetchall()]
+                
+                pool = {
+                    "codename": codename,
+                    "public_name": result[1],
+                    "probability_common": result[2],
+                    "probability_rare": result[3],
+                    "probability_epic": result[4],
+                    "probability_legendary": result[5],
+                    "price": result[6],
+                    "items": items
+                }
+                pools.append(pool)
+                
+            cursor.close()
+            return jsonify(pools), 200
 
-    Updates a gacha. # noqa: E501
+        return get_pools_from_db()
 
-    :param session: 
-    :type session: str
-    :param gacha: 
-    :type gacha: dict | bytes
+    except (OperationalError, DataError, DatabaseError, IntegrityError, 
+            InterfaceError, InternalError, ProgrammingError):
+        return "", 503
+    except CircuitBreakerError:
+        return "", 503
 
-    :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
-    """
-    if connexion.request.is_json:
-        gacha = Gacha.from_dict(connexion.request.get_json())  # noqa: E501
-    return 'do some magic!'
+def update_gacha(gacha=None, session=None):  # noqa: E501
+    if not connexion.request.is_json:
+        return "", 400
+
+    try:
+        gacha_data = connexion.request.get_json()
+        if not gacha_data or 'gacha' not in gacha_data:
+            return "", 400
+            
+        # Check rarity value before proceeding
+        valid_rarities = ["COMMON", "RARE", "EPIC", "LEGENDARY"]
+        if gacha_data['gacha']['rarity'].upper() not in valid_rarities:
+            return "", 400
+
+        gacha_object = Gacha.from_dict(gacha_data['gacha'])
+
+        @circuit_breaker
+        def update_gacha_in_db():
+            connection = get_db()
+            cursor = connection.cursor()
+
+            # First check if gacha exists and get current values
+            check_query = """
+                SELECT name, rarity, stat_power, stat_speed, stat_durability,
+                       stat_precision, stat_range, stat_potential
+                FROM gachas_types 
+                WHERE uuid = UUID_TO_BIN(%s)
+            """
+            cursor.execute(check_query, (gacha_object.gacha_uuid,))
+            current = cursor.fetchone()
+            
+            if not current:
+                cursor.close()
+                return "", 404
+
+            # Check if values are the same
+            if (current[0] == gacha_object.name and 
+                current[1].upper() == gacha_object.rarity.upper() and
+                6 - (ord(gacha_object.attributes.power.upper()) - ord('A')) == current[2] and
+                6 - (ord(gacha_object.attributes.speed.upper()) - ord('A')) == current[3] and
+                6 - (ord(gacha_object.attributes.durability.upper()) - ord('A')) == current[4] and
+                6 - (ord(gacha_object.attributes.precision.upper()) - ord('A')) == current[5] and
+                6 - (ord(gacha_object.attributes.range.upper()) - ord('A')) == current[6] and
+                6 - (ord(gacha_object.attributes.potential.upper()) - ord('A')) == current[7]):
+                cursor.close()
+                return "", 304
+
+            query = """
+                UPDATE gachas_types 
+                SET name = %s, rarity = UPPER(%s),
+                    stat_power = %s, stat_speed = %s, stat_durability = %s,
+                    stat_precision = %s, stat_range = %s, stat_potential = %s
+                WHERE uuid = UUID_TO_BIN(%s)
+            """
+
+            cursor.execute(query, (
+                gacha_object.name,
+                gacha_object.rarity,
+                6 - (ord(gacha_object.attributes.power.upper()) - ord('A')),
+                6 - (ord(gacha_object.attributes.speed.upper()) - ord('A')),
+                6 - (ord(gacha_object.attributes.durability.upper()) - ord('A')),
+                6 - (ord(gacha_object.attributes.precision.upper()) - ord('A')),
+                6 - (ord(gacha_object.attributes.range.upper()) - ord('A')),
+                6 - (ord(gacha_object.attributes.potential.upper()) - ord('A')),
+                gacha_object.gacha_uuid
+            ))
+
+            connection.commit()
+            cursor.close()
+            return "", 200
+
+        return update_gacha_in_db()
+
+    except (OperationalError, DataError, DatabaseError, IntegrityError, 
+            InterfaceError, InternalError, ProgrammingError):
+        return "", 503
+    except CircuitBreakerError:
+        return "", 503
 
 
-def update_pool(pool, session=None):  # noqa: E501
-    """update_pool
+def update_pool(pool=None, session=None):  # noqa: E501
+    """Updates a pool.
 
-    Updates a pool. # noqa: E501
-
-    :param pool: 
+    :param pool: Pool object to update
     :type pool: dict | bytes
-    :param session: 
+    :param session: Session cookie
     :type session: str
-
-    :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]
+    :rtype: Union[None, Tuple[None, int], Tuple[None, int, Dict[str, str]]]
     """
-    if connexion.request.is_json:
-        pool = Pool.from_dict(connexion.request.get_json())  # noqa: E501
-    return 'do some magic!'
+    if not connexion.request.is_json:
+        return "", 400
+
+    try:
+        pool_data = connexion.request.get_json()
+        if not pool_data or 'pool' not in pool_data:
+            return "", 400
+            
+        pool_object = Pool.from_dict(pool_data['pool'])
+
+         # Validate probabilities sum to 1
+        total_prob = (pool_object.probability_common + 
+                     pool_object.probability_rare + 
+                     pool_object.probability_epic + 
+                     pool_object.probability_legendary)
+        if not 0.99 <= total_prob <= 1.01:  # Allow for small floating point errors
+            return "", 400
+
+        # Validate price is positive
+        if pool_object.price <= 0:
+            return "", 400
+
+        @circuit_breaker
+        def update_pool_in_db():
+            connection = get_db()
+            cursor = connection.cursor()
+
+            # Check if all items exist
+            if pool_object.items:
+                placeholders = ','.join(['UUID_TO_BIN(%s)' for _ in pool_object.items])
+                items_check = f"SELECT COUNT(*) FROM gachas_types WHERE uuid IN ({placeholders})"
+                cursor.execute(items_check, pool_object.items)
+                if cursor.fetchone()[0] != len(pool_object.items):
+                    cursor.close()
+                    return "", 400  # At least one item doesn't exist
+
+            #  check if pool exists and get current values
+            check_query = """
+                SELECT codename, public_name, probability_common, probability_rare,
+                       probability_epic, probability_legendary, price
+                FROM gacha_pools 
+                WHERE codename = %s
+            """
+            cursor.execute(check_query, (pool_object.codename,))
+            current = cursor.fetchone()
+            
+            if not current:
+                cursor.close()
+                return "", 404
+
+            # Check if values are the same
+            if (current[0] == pool_object.codename and 
+                current[1] == pool_object.public_name and
+                float(current[2]) == pool_object.probability_common and
+                float(current[3]) == pool_object.probability_rare and
+                float(current[4]) == pool_object.probability_epic and
+                float(current[5]) == pool_object.probability_legendary and
+                int(current[6]) == pool_object.price):
+                cursor.close()
+                return "", 304
+
+            # Update pool data
+            query = """
+                UPDATE gacha_pools 
+                SET public_name = %s,
+                    probability_common = %s,
+                    probability_rare = %s,
+                    probability_epic = %s,
+                    probability_legendary = %s,
+                    price = %s
+                WHERE codename = %s
+            """
+            cursor.execute(query, (
+                pool_object.public_name,
+                pool_object.probability_common,
+                pool_object.probability_rare,
+                pool_object.probability_epic,
+                pool_object.probability_legendary,
+                pool_object.price,
+                pool_object.codename
+            ))
+
+            # Update pool items
+            if pool_object.items:
+                # Delete old items
+                delete_items = "DELETE FROM gacha_pools_items WHERE codename = %s"
+                cursor.execute(delete_items, (pool_object.codename,))
+                
+                # Insert new items
+                items_query = "INSERT INTO gacha_pools_items (codename, gacha_uuid) VALUES (%s, UUID_TO_BIN(%s))"
+                for item_uuid in pool_object.items:
+                    cursor.execute(items_query, (pool_object.codename, item_uuid))
+
+            connection.commit()
+            cursor.close()
+            return "", 200
+
+        return update_pool_in_db()
+
+    except (OperationalError, DataError, DatabaseError, IntegrityError, 
+            InterfaceError, InternalError, ProgrammingError):
+        return "", 503
+    except CircuitBreakerError:
+        return "", 503
