@@ -51,9 +51,22 @@ def introspect(introspect_request=None):
             "logindate": decoded_token["logindate"]
         }
 
-        saved_token = redis_client.get(decoded_token["uuid"]).decode("utf-8")
+        # obtaining token saved in Redis
+        try:
+            saved_token = redis_client.get(decoded_token["uuid"])
+        except redis.RedisError as e:
+            send_log(f"Redis error {e}", level="error", service_type=SERVICE_TYPE)
+            return jsonify({"error": "Service unavailable. Please try again later."}), 503
+        
+        # if no token is saved probably is because Redis was restarted since user logged in
+        if saved_token is None:
+            send_log(f"Token for user {decoded_token["username"]} is valid but was not found in Redis.", level="warning", service_type=SERVICE_TYPE)
+            return jsonify({"error": "Unauthorized."}), 401
+        else:
+            saved_token = saved_token.decode("utf-8")
 
-        if saved_token is not None and saved_token != introspect_request.access_token:
+        # if it is not equal to the one saved in Redis, it is a problem
+        if saved_token != introspect_request.access_token:
             send_log(f"Saved token for '{decoded_token["username"]}' is not the same as the saved one in Redis.", level="info", service_type=SERVICE_TYPE)
             return jsonify({"error": "Unauthorized."}), 401
 
@@ -190,7 +203,7 @@ def get_hashed_password(session=None, uuid=None):
             connection = get_db()
             cursor = connection.cursor(dictionary=True)
             query = "SELECT password FROM users WHERE uuid = UUID_TO_BIN(%s)"
-            cursor.execute(query, (uuid))
+            cursor.execute(query, (uuid,))
             return cursor.fetchone()
         
         result = make_request_to_db()
@@ -249,7 +262,7 @@ def get_user(session=None, uuid=None):
             connection = get_db()
             cursor = connection.cursor(dictionary=True)
             query = "SELECT BIN_TO_UUID(uuid) as uuid, email, role FROM users WHERE uuid = UUID_TO_BIN(%s)"
-            cursor.execute(query, (uuid))
+            cursor.execute(query, (uuid,))
             return cursor.fetchone()
         
         result = make_request_to_db()
