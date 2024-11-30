@@ -31,13 +31,17 @@ redis_client = redis.Redis(host='redis', port=6379, db=0)
 def introspect(userinfo_request=None):
     if not connexion.request.is_json: # checks if the request is a correct json
         return "", 400
-    
+
+    audience_required = connexion.request.get_json()["audience_required"]
     userinfo_request = UserinfoRequest.from_dict(connexion.request.get_json())
     if not userinfo_request.access_token:
         return "", 400
 
+    if audience_required != "public_services" and audience_required != "private_services":
+        return "", 400
+
     try:
-        decoded_token = jwt.decode(userinfo_request.access_token, "prova", algorithms=["HS256"], audience="public_services")
+        decoded_token = jwt.decode(userinfo_request.access_token, "prova", algorithms=["HS256"], audience=audience_required)
         result = {
             "email": decoded_token["email"],
             "username": decoded_token["username"],

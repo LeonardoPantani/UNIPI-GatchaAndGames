@@ -61,6 +61,7 @@ services:
     restart: always
     networks:
       - private_gachaandgames_network
+      - public_gachaandgames_network
     healthcheck:
       test: ["CMD", "curl", "-f", "--cert", "/usr/src/app/ssl/admin-cert.pem", "--key", "/usr/src/app/ssl/admin-key.pem", "--cacert", "/usr/src/app/ssl/services-ca-cert.pem", "https://service_admin/admin/health_check"]
       start_period: 10s
