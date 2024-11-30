@@ -18,7 +18,7 @@ def verify_login(auth_header=None, audience_required="public_services"):
     try:
         @circuit_breaker
         def make_request_to_auth():
-            payload = { "AccessToken": access_token, "audience_required": audience_required }
+            payload = { "access_token": access_token, "audience_required": audience_required }
             url = "https://service_auth/auth/internal/introspect/"
             response = requests.post(url, json=payload, verify=False)
             response.raise_for_status()

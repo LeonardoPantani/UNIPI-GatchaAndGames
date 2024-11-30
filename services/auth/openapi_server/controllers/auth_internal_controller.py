@@ -17,6 +17,7 @@ from pybreaker import CircuitBreaker, CircuitBreakerError
 from openapi_server.helpers.db import get_db
 from openapi_server.helpers.logging import send_log
 from openapi_server.models.userinfo_request import UserinfoRequest
+from openapi_server.models.introspect_request import IntrospectRequest
 
 
 SERVICE_TYPE = "auth"
@@ -25,23 +26,22 @@ redis_client = redis.Redis(host='redis', port=6379, db=0)
 
 
 """
-    The object must be { "AccessToken": "eyJhbGciOiJIUzI1NiIsInR5..." }
+    The object must be { "access_token": "eyJhbGciOiJIUzI1NiIsInR5...", "audience_required": "public_services"/"private_services" }
     This decrypts your access token and checks with REDIS that it is the same one saved by the user with the uuid written inside the token.
 """
-def introspect(userinfo_request=None):
+def introspect(introspect_request=None):
     if not connexion.request.is_json: # checks if the request is a correct json
         return "", 400
 
-    audience_required = connexion.request.get_json()["audience_required"]
-    userinfo_request = UserinfoRequest.from_dict(connexion.request.get_json())
-    if not userinfo_request.access_token:
+    introspect_request = IntrospectRequest.from_dict(connexion.request.get_json())
+    if not introspect_request.access_token or not introspect_request.audience_required:
         return "", 400
 
-    if audience_required != "public_services" and audience_required != "private_services":
+    if introspect_request.audience_required != "public_services" and introspect_request.audience_required != "private_services":
         return "", 400
 
     try:
-        decoded_token = jwt.decode(userinfo_request.access_token, "prova", algorithms=["HS256"], audience=audience_required)
+        decoded_token = jwt.decode(introspect_request.access_token, "prova", algorithms=["HS256"], audience=introspect_request.audience_required)
         result = {
             "email": decoded_token["email"],
             "username": decoded_token["username"],
@@ -53,7 +53,7 @@ def introspect(userinfo_request=None):
 
         saved_token = redis_client.get(decoded_token["uuid"]).decode("utf-8")
 
-        if saved_token is not None and saved_token != userinfo_request.access_token:
+        if saved_token is not None and saved_token != introspect_request.access_token:
             send_log(f"Saved token for '{decoded_token["username"]}' is not the same as the saved one in Redis.", level="info", service_type=SERVICE_TYPE)
             return jsonify({"error": "Unauthorized."}), 401
 
@@ -65,8 +65,8 @@ def introspect(userinfo_request=None):
 
 
 """
-    The object must be { "AccessToken": "eyJhbGciOiJIUzI1NiIsInR5..." }
-    This function just decrypts your AccessToken, without any further checks.
+    The object must be { "access_token": "eyJhbGciOiJIUzI1NiIsInR5..." }
+    This function just decrypts your access_token, without any further checks.
 """
 def userinfo(userinfo_request=None):
     if not connexion.request.is_json:

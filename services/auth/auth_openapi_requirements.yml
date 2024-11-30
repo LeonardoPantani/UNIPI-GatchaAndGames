@@ -135,7 +135,7 @@ paths:
             schema:
               type: object
               properties:
-                AccessToken:
+                access_token:
                   type: string
       responses:
         '200':
@@ -164,7 +164,9 @@ paths:
             schema:
               type: object
               properties:
-                AccessToken:
+                access_token:
+                  type: string
+                audience_required:
                   type: string
       responses:
         '200':
