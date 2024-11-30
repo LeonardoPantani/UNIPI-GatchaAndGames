@@ -286,12 +286,12 @@ def complete_access(uuid, uuid_hex, email, username, role):
         "logindate": datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S'),
         "aud": aud,
         "iat": datetime.datetime.now(datetime.timezone.utc),
-        "exp": (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=1)) # 1 hour
+        "exp": (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=24 * 60 * 60)) # 1 day
     }
     access_token = jwt.encode(access_token_payload, "prova", algorithm="HS256")
 
     # adding token to REDIS
-    redis_client.set(uuid, access_token, ex=3600) # 1 hour
+    redis_client.set(uuid, access_token, ex=24 * 60 * 60) # 1 day
     
     # returning token
     return f'Bearer {access_token}'
