@@ -1,4 +1,5 @@
 import requests
+import connexion
 
 from openapi_server.models.bundle import Bundle  # noqa: E501
 from openapi_server import util
@@ -6,6 +7,10 @@ from openapi_server import util
 from flask import jsonify, session
 from pybreaker import CircuitBreaker, CircuitBreakerError
 from openapi_server.helpers.logging import send_log
+
+from openapi_server.helpers.authorization import verify_login
+
+from openapi_server.controllers.currency_internal_controller import get_bundle
 
 circuit_breaker = CircuitBreaker(
     fail_max=1000, reset_timeout=5, exclude=[requests.HTTPError]
@@ -65,38 +70,24 @@ def currency_health_check_get():
 
 
 def buy_currency(bundle_id):
-    if 'username' not in session:
-        return jsonify({"error": "Not logged in."}), 403
+    session = verify_login(connexion.request.headers.get('Authorization'))
+    if session[1] != 200: # se dà errore, il risultato della verify_login è: (messaggio, codice_errore)
+        return session
+    else: # altrimenti, va preso il primo valore (0) per i dati di sessione già pronti
+        session = session[0]
+    # fine controllo autenticazione
 
-    # /db_manager/currency/get_bundle_info
-    # Returns information about a bundle given its codename.
-    try:
-        @circuit_breaker
-        def make_request_to_dbmanager():
-            payload = {
-                "bundle_id": bundle_id
-            }
-            url = "http://db_manager:8080/db_manager/currency/get_bundle_info"
-            response = requests.post(url, json=payload)
-            response.raise_for_status()  # if response is obtained correctly
-            return response.json()
-        
-        bundle = make_request_to_dbmanager()
-    except requests.HTTPError as e:
-        if e.response.status_code == 404:
-            return jsonify({"error": "Bundle not found."}), 404
-        else:  # other errors
-            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
-    except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
-        return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
-    except CircuitBreakerError:
-        return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503
+    response = get_bundle(None, bundle_id)
+    if response[1] != 200:
+        return response
+    
+    response_data = response[0].get_json()
 
-    codename = bundle["codename"]
-    currency_name = bundle["currency_name"]
-    public_name = bundle["public_name"]
-    credits_obtained = bundle["credits_obtained"]
-    price = bundle["price"]
+    codename = response_data["codename"]
+    currency_name = response_data["currency"]
+    public_name = response_data["public_name"]
+    credits_obtained = response_data["amount"]
+    price = response_data["value"]
 
     candidate_user_account_no = -1
     user_accounts = global_mock_accounts.get(session['uuid'])
@@ -114,36 +105,28 @@ def buy_currency(bundle_id):
         return jsonify({"error": "You cannot afford this bundle."}), 412
     
     user_accounts["accounts"][candidate_user_account_no]["amount"] -= price
-
     
-    # /db_manager/currency/purchase_bundle
-    # Processes the purchase of a bundle by updating user credits and logging transactions in appropriate tables.
     try:
         @circuit_breaker
-        def make_request_to_dbmanager():
-            payload = {
-                "user_uuid": session["uuid"],
-                "bundle_codename": codename,
-                "currency_name": currency_name,
-                "credits_obtained": credits_obtained,
-                "transaction_type_bundle_code": TRANSACTION_TYPE_BUNDLE_CODE
-            }
-            url = "http://db_manager:8080/db_manager/currency/purchase_bundle"
-            response = requests.post(url, json=payload)
-            response.raise_for_status()  # if response is obtained correctly
-            return
-
-        make_request_to_dbmanager()
-        return jsonify({"message": "Bundle " + public_name + " successfully bought."}), 200
+        def make_request_to_profile_service():
+            params = {"uuid": session['uuid'],"amount":credits_obtained}
+            url = "http://service_profile:8080/profile/internal/add_currency"
+            response = requests.post(url, params=params)
+            response.raise_for_status()
+            return response.json()
+        
+        make_request_to_profile_service()
     except requests.HTTPError as e:
-        if e.response.status_code == 404:
-            return jsonify({"error": "Bundle not found."}), 404
-        else:  # other errors
+        if e.response.status_code == 404: 
+            return jsonify({"error": "Item not found."}), 404
+        else:
             return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
-    except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
-        return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
+    except requests.RequestException:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
-        return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503  
+
+    return jsonify({"message":"Purchase successful."}), 200
 
 
 def get_bundles():

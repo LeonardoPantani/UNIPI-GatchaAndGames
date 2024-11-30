@@ -6,8 +6,7 @@ admin_variables=
 
 mysql_servers =
 (
-    { address="service_auth_db_primary", port=3306, hostgroup=1, max_connections=300 },
-    { address="service_auth_db_replica", port=3306, hostgroup=2, max_connections=300 }
+    { address="service_auth_db_primary", port=3306, hostgroup=1, max_connections=300 }
 )
 
 mysql_users =
@@ -17,8 +16,7 @@ mysql_users =
 
 mysql_query_rules =
 (
-    { rule_id=1, active=1, match_pattern="^SELECT .*", destination_hostgroup=2, apply=1 },
-    { rule_id=2, active=1, match_pattern=".*", destination_hostgroup=1, apply=1 }
+    { rule_id=1, active=1, match_pattern=".*", destination_hostgroup=1, apply=1 }
 )
 
 mysql_variables=

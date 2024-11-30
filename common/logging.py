@@ -3,6 +3,7 @@ import json
 import time
 import inspect
 
+# level = general / info / warning / error
 def send_log(message, level="general", service_type="unknown", endpoint="unknown"):
     if endpoint == "unknown":
         endpoint = inspect.stack()[1][3] # name of function that called send_log
