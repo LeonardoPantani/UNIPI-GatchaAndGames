@@ -11,6 +11,12 @@ import requests
 from openapi_server.models.inventory_item import InventoryItem  # noqa: E501
 from openapi_server import util
 from pybreaker import CircuitBreaker, CircuitBreakerError
+from openapi_server.helpers.authorization import verify_login
+
+# Service URLs
+INVENTORY_SERVICE_URL = "http://service_inventory:8080"
+DB_MANAGER_URL = "http://db_manager:8080"
+AUCTIONS_SERVICE_URL = "http://service_auctions:8080"
 
 # Circuit breaker instance for inventory operations
 circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5, exclude=[requests.HTTPError])
@@ -19,6 +25,14 @@ def inventory_health_check_get():  # noqa: E501
     return jsonify({"message": "Service operational."}), 200
 
 def get_inventory():  # noqa: E501
+    """Returns a list of gacha items currently owned by the player."""
+    # Auth verification
+    session = verify_login(connexion.request.headers.get('Authorization'))
+    if session[1] != 200:
+        return session
+    else:
+        session = session[0]
+
     user_uuid = session.get("uuid")
     if not user_uuid:
         return jsonify({"error": "Not logged in"}), 403
@@ -27,95 +41,133 @@ def get_inventory():  # noqa: E501
     
     try:
         @circuit_breaker
-        def make_request_to_dbmanager():
-            payload = {
-                "user_uuid": user_uuid,
-                "page_number": page_number
-            }
-            url = "https://db_manager/db_manager/inventory/get_user_inventory_items"
-            response = requests.post(url, json=payload)
-            response.raise_for_status()  # if response is obtained correctly
+        def get_inventory_items():
+            response = requests.get(
+                f"{INVENTORY_SERVICE_URL}/inventory/internal/list_inventory_items",
+                params={
+                    "uuid": user_uuid,
+                    "page_number": page_number,
+                    "session": None
+                }
+            )
+            response.raise_for_status()
             return response.json()
 
-        inventory_items = make_request_to_dbmanager()
-
+        inventory_items = get_inventory_items()
         return jsonify(inventory_items), 200
 
     except requests.HTTPError as e:
         if e.response.status_code == 404:
-            return jsonify({"error": "No item found"}), 404
-        else:  # other errors
+            return jsonify({"error": "No items found"}), 404
+        else:
             return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
-    except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
+    except requests.RequestException:
         return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
-        return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503  
+        return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503
 
 def get_inventory_item_info(inventory_item_id):  # noqa: E501
-    user_uuid = session.get('uuid')
+    """Returns information about a specific inventory item owned by the player."""
+    # Auth verification
+    session = verify_login(connexion.request.headers.get('Authorization'))
+    if session[1] != 200:
+        return session
+    else:
+        session = session[0]
+
+    user_uuid = session.get("uuid")
     if not user_uuid:
         return jsonify({"error": "Not logged in"}), 403
-
+    
     try:
         @circuit_breaker
-        def make_request_to_dbmanager():
-            payload = {
-                "user_uuid": user_uuid,
-                "inventory_item_id": inventory_item_id
-            }
-            url = "https://db_manager/db_manager/inventory/get_user_item_info"
-            response = requests.post(url, json=payload)
-            response.raise_for_status()  # if response is obtained correctly
+        def get_item_info():
+            response = requests.get(
+                f"{INVENTORY_SERVICE_URL}/inventory/internal/get_by_item_uuid",
+                params={
+                    "uuid": inventory_item_id
+                }
+            )
+            response.raise_for_status()
             return response.json()
 
-        item = make_request_to_dbmanager()
-
-        return jsonify(item), 200
+        item_info = get_item_info()
+        return jsonify(item_info), 200
 
     except requests.HTTPError as e:
         if e.response.status_code == 404:
-            return jsonify({"error": "No item found"}), 404
-        else:  # other errors
+            return jsonify({"error": "Item not found"}), 404
+        else:
             return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
-    except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
+    except requests.RequestException:
         return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
-        return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503  
+        return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503
 
 
-def remove_inventory_item():
-     # Get item_id from request args
-    item_id = connexion.request.args.get('inventory_item_id')
-    if not item_id:
-        return jsonify({"error": "Missing inventory_item_id parameter"}), 400
-    
-    user_uuid = session.get('uuid')
+def remove_inventory_item():  # noqa: E501
+    """Remove an item from user's inventory."""
+    # Auth verification
+    session = verify_login(connexion.request.headers.get('Authorization'))
+    if session[1] != 200:
+        return session
+    else:
+        session = session[0]
+
+    user_uuid = session.get("uuid")
     if not user_uuid:
         return jsonify({"error": "Not logged in"}), 403
-    try:
-        @circuit_breaker
-        def make_request_to_dbmanager():
-            payload = {
-                "user_uuid": user_uuid,
-                "inventory_item_id": item_id
-            }
-            url = "https://db_manager/db_manager/inventory/remove_user_item"
-            response = requests.post(url, json=payload)
-            response.raise_for_status()  # if response is obtained correctly
-            return 
-        
-        make_request_to_dbmanager()
 
-        return jsonify({"message": "Item successfully removed."}), 200
+    # Get item_uuid from request args
+    item_uuid = connexion.request.args.get('inventory_item_id')
+    if not item_uuid:
+        return jsonify({"error": "Missing item_uuid parameter"}), 400
     
+    
+    try:
+        # First check if item is in auction
+        
+        @circuit_breaker
+        def check_auction_status():
+            print(item_uuid)
+            response = requests.get(
+                f"{AUCTIONS_SERVICE_URL}/auction/internal/is_open_by_item_uuid",
+                params={"uuid": item_uuid}
+            )
+            response.raise_for_status()
+            return response.json()
+
+       
+
+        auction_check = check_auction_status()
+        if auction_check.get("is_in_auction", False):
+            return jsonify({"error": "Cannot remove item that is currently in auction"}), 400
+        
+        
+
+        # If not in auction, proceed with removal
+        @circuit_breaker
+        def remove_item():
+            response = requests.delete(
+                f"{INVENTORY_SERVICE_URL}/inventory/internal/remove",
+                params={
+                    "uuid": user_uuid,
+                    "item_uuid": item_uuid,
+                    "session": None
+                }
+            )
+            response.raise_for_status()
+            return response
+
+        remove_item()
+        return jsonify({"message": "Item removed successfully"}), 200
+
     except requests.HTTPError as e:
         if e.response.status_code == 404:
-            return jsonify({"error": "No item found"}), 404
-        elif e.response.status_code == 409:
-            return jsonify({"error": "Cannot remove item that is in an active auction."}), 409
-        else:  # other errors
+            return jsonify({"error": "Item not found"}), 404
+        else:
             return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
-    except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
+    except requests.RequestException:
         return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
-        return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503 
+        return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503
