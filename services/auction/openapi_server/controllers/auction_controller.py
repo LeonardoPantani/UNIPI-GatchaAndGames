@@ -4,11 +4,11 @@ from typing import Dict
 from typing import Tuple
 from typing import Union
 
-from openapi_server.models.auction import Auction  # noqa: E501
-from openapi_server.models.auction_status import AuctionStatus  # noqa: E501
-from openapi_server.models.exists_auctions200_response import ExistsAuctions200Response  # noqa: E501
-from openapi_server.models.gacha_rarity import GachaRarity  # noqa: E501
-from openapi_server.models.is_open_by_item_uuid200_response import IsOpenByItemUuid200Response  # noqa: E501
+from openapi_server.models.auction import Auction
+from openapi_server.models.auction_status import AuctionStatus
+from openapi_server.models.exists_auctions200_response import ExistsAuctions200Response
+from openapi_server.models.gacha_rarity import GachaRarity
+from openapi_server.models.is_open_by_item_uuid200_response import IsOpenByItemUuid200Response
 from openapi_server import util
 
 from openapi_server.controllers.auction_internal_controller import get_auction, set_bid, is_open_by_item_uuid, create_auction as create, get_user_auctions, get_auction_list as list_auctions
@@ -29,7 +29,7 @@ circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5, exclude=[reques
 TRANSACTION_TYPE_BUY = "bought_market"
 TRANSACTION_TYPE_SELL = "sold_market"
 
-def auction_health_check_get():  # noqa: E501
+def auction_health_check_get():
     return jsonify({"message": "Service operational."}), 200
 
 def bid_on_auction(auction_uuid): 

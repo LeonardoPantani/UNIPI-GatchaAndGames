@@ -1,7 +1,7 @@
 import requests
 import connexion
 
-from openapi_server.models.bundle import Bundle  # noqa: E501
+from openapi_server.models.bundle import Bundle
 from openapi_server import util
 
 from flask import jsonify, session

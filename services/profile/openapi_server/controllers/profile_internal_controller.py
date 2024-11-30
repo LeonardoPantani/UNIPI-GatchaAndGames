@@ -1,29 +1,36 @@
-import connexion
-import logging
 import requests
-from typing import Dict
-from typing import Tuple
-from typing import Union
-
-from openapi_server.models.exists_profile200_response import ExistsProfile200Response  # noqa: E501
-from openapi_server.models.get_currency_from_uuid200_response import GetCurrencyFromUuid200Response  # noqa: E501
-from openapi_server.models.get_username_from_uuid200_response import GetUsernameFromUuid200Response  # noqa: E501
-from openapi_server.models.get_uuid_from_username200_response import GetUuidFromUsername200Response  # noqa: E501
-from openapi_server.models.user import User  # noqa: E501
-from openapi_server.models.user_full import UserFull  # noqa: E501
-from openapi_server import util
-
-from flask import session, jsonify
+from flask import jsonify
 from mysql.connector.errors import (
-    OperationalError, DataError, DatabaseError, IntegrityError,
-    InterfaceError, InternalError, ProgrammingError
+    DatabaseError,
+    DataError,
+    IntegrityError,
+    InterfaceError,
+    InternalError,
+    OperationalError,
+    ProgrammingError,
 )
-from openapi_server.helpers.db import get_db
 from pybreaker import CircuitBreaker, CircuitBreakerError
 
+from openapi_server.helpers.authorization import verify_login
+from openapi_server.helpers.db import get_db
+from openapi_server.helpers.logging import send_log
+from openapi_server.models.exists_profile200_response import ExistsProfile200Response
+from openapi_server.models.get_currency_from_uuid200_response import (
+    GetCurrencyFromUuid200Response,
+)
+from openapi_server.models.get_username_from_uuid200_response import (
+    GetUsernameFromUuid200Response,
+)
+from openapi_server.models.get_uuid_from_username200_response import (
+    GetUuidFromUsername200Response,
+)
+from openapi_server.models.user import User
+from openapi_server.models.user_full import UserFull
+
+SERVICE_TYPE="profile"
 circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5, exclude=[requests.HTTPError, OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError])
 
-def add_currency(session=None, uuid=None, amount=None):  # noqa: E501
+def add_currency(session=None, uuid=None, amount=None):
     """Adds amount to user currency field by uuid.
     
     :param session: Session cookie
@@ -75,7 +82,7 @@ def add_currency(session=None, uuid=None, amount=None):  # noqa: E501
         return "", 503
 
 
-def add_pvp_score(session=None, uuid=None, points_to_add=None):  # noqa: E501
+def add_pvp_score(session=None, uuid=None, points_to_add=None):
     """Adds amount to user pvp_score field by uuid.
     
     :param session: Session cookie
@@ -127,7 +134,7 @@ def add_pvp_score(session=None, uuid=None, points_to_add=None):  # noqa: E501
         return "", 503
 
 
-def delete_profile_by_uuid(session=None, uuid=None):  # noqa: E501
+def delete_profile_by_uuid(session=None, uuid=None):
     """Deletes user profile by uuid.
     
     :param session: Session cookie
@@ -176,7 +183,7 @@ def delete_profile_by_uuid(session=None, uuid=None):  # noqa: E501
         return "", 503
 
 
-def edit_username(session=None, uuid=None, username=None):  # noqa: E501
+def edit_username(session=None, uuid=None, username=None):
     """Edits the username.
     
     :param session: Session cookie
@@ -235,7 +242,7 @@ def edit_username(session=None, uuid=None, username=None):  # noqa: E501
         return "", 503
 
 
-def exists_profile(session=None, uuid=None):  # noqa: E501
+def exists_profile(session=None, uuid=None):
     """Returns true if a profile exists, false otherwise.
     
     :param session: Session cookie
@@ -275,7 +282,7 @@ def exists_profile(session=None, uuid=None):  # noqa: E501
         return "", 503
 
 
-def get_currency_from_uuid(session=None, user_uuid=None):  # noqa: E501
+def get_currency_from_uuid(session=None, user_uuid=None):
     """Returns currency of the requested user.
     
     :param session: Session cookie
@@ -319,7 +326,7 @@ def get_currency_from_uuid(session=None, user_uuid=None):  # noqa: E501
         return "", 503
 
 
-def get_profile(session=None, user_uuid=None):  # noqa: E501
+def get_profile(session=None, user_uuid=None):
     """Returns profile info.
     
     :param session: Session cookie
@@ -370,7 +377,7 @@ def get_profile(session=None, user_uuid=None):  # noqa: E501
 
 
 
-def get_username_from_uuid(session=None, user_uuid=None):  # noqa: E501
+def get_username_from_uuid(session=None, user_uuid=None):
     """Returns username of the requested user.
     
     :param session: Session cookie
@@ -412,7 +419,7 @@ def get_username_from_uuid(session=None, user_uuid=None):  # noqa: E501
     except CircuitBreakerError:
         return "", 503
 
-def get_uuid_from_username(session=None, username=None):  # noqa: E501
+def get_uuid_from_username(session=None, username=None):
     if not username:
         return jsonify({"error": "Invalid request."}), 400
     
@@ -435,24 +442,12 @@ def get_uuid_from_username(session=None, username=None):  # noqa: E501
             return "", 404
         return result["uuid"]
 
-    except OperationalError:
-        logging.error("Query: Operational error.")
-        return "", 500
-    except ProgrammingError:
-        logging.error("Query: Programming error.")
-        return "", 500
-    except InternalError:
-        logging.error("Query: Internal error.")
-        return "", 500
-    except InterfaceError:
-        logging.error("Query: Interface error.")
-        return "", 500
-    except DatabaseError:
-        logging.error("Query: Database error.")
-        return "", 500
+    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
 
 
-def insert_profile(session=None, user_uuid=None, username=None):  # noqa: E501
+def insert_profile(session=None, user_uuid=None, username=None):
     """Creates a profile.
     
     :param session: Session cookie
@@ -495,7 +490,7 @@ def insert_profile(session=None, user_uuid=None, username=None):  # noqa: E501
         return "", 503
 
 
-def profile_list(session=None, page_number=None):  # noqa: E501
+def profile_list(session=None, page_number=None):
     """Returns list of profiles based on pagenumber.
     
     :param session: Session cookie

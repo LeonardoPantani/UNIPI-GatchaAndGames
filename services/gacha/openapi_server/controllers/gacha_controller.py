@@ -9,8 +9,8 @@ from typing import Dict
 from typing import Tuple
 from typing import Union
 
-from openapi_server.models.gacha import Gacha  # noqa: E501
-from openapi_server.models.pool import Pool  # noqa: E501
+from openapi_server.models.gacha import Gacha
+from openapi_server.models.pool import Pool
 from openapi_server import util
 
 from openapi_server.helpers.logging import send_log
@@ -25,14 +25,14 @@ from openapi_server.helpers.authorization import verify_login
 # Circuit breaker instance
 circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5, exclude=[requests.HTTPError])
 
-def gacha_health_check_get():  # noqa: E501
+def gacha_health_check_get():
     return jsonify({"message": "Service operational."}), 200
 
 GACHA_SERVICE_URL = "https://service_gacha"
 PROFILE_SERVICE_URL = "https://service_profile"
 INVENTORY_SERVICE_URL = "https://service_inventory"
 
-def get_gacha_info(gacha_uuid):  # noqa: E501
+def get_gacha_info(gacha_uuid):
     """Get information about a specific gacha."""
         # Auth verification
     session = verify_login(connexion.request.headers.get('Authorization'))
@@ -64,7 +64,7 @@ def get_gacha_info(gacha_uuid):  # noqa: E501
     except CircuitBreakerError:
         return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503
     
-def pull_gacha(pool_id):  # noqa: E501
+def pull_gacha(pool_id):
     """Pull a random gacha from a specific pool."""
     
     # Auth verification 
@@ -235,7 +235,7 @@ def get_pool_info():
     except CircuitBreakerError:
         return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503
 
-def get_gachas(not_owned):  # noqa: E501
+def get_gachas(not_owned):
     """Returns a list of gacha items based on ownership filter."""
     # Auth verification 
     session = verify_login(connexion.request.headers.get('Authorization'))

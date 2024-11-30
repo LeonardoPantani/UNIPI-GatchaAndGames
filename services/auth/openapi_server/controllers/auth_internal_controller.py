@@ -130,7 +130,7 @@ def delete_user_by_uuid(session=None, uuid=None):
         return jsonify({"message": "User deleted."}), 200
     
     except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
-        send_log(f"Query: {type(e).__name__}", level="error", service_type=SERVICE_TYPE)
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
         send_log("CircuitBreaker Error: request_to_db", level="warning", service_type=SERVICE_TYPE)
@@ -214,7 +214,7 @@ def get_hashed_password(session=None, uuid=None):
         return jsonify({"password": result["password"]}), 200
     
     except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
-        send_log(f"Query: {type(e).__name__}", level="error", service_type=SERVICE_TYPE)
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
         send_log("CircuitBreaker Error: request_to_db", level="warning", service_type=SERVICE_TYPE)
@@ -244,7 +244,7 @@ def get_role_by_uuid(session=None, uuid=None):
         return jsonify({"role": result["role"].upper()}), 200
     
     except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
-        send_log(f"Query: {type(e).__name__}", level="error", service_type=SERVICE_TYPE)
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
         send_log("CircuitBreaker Error: request_to_db", level="warning", service_type=SERVICE_TYPE)
@@ -273,7 +273,7 @@ def get_user(session=None, uuid=None):
         return jsonify({"uuid": result["uuid"], "email": result["email"], "role": result["role"].upper()}), 200
     
     except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
-        send_log(f"Query: {type(e).__name__}", level="error", service_type=SERVICE_TYPE)
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
         send_log("CircuitBreaker Error: request_to_db", level="warning", service_type=SERVICE_TYPE)

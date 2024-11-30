@@ -4,11 +4,11 @@ from typing import Tuple
 from typing import Union
 import requests
 
-from openapi_server.models.exists_gacha200_response import ExistsGacha200Response  # noqa: E501
-from openapi_server.models.gacha import Gacha  # noqa: E501
-from openapi_server.models.get_rarity_by_uuid200_response import GetRarityByUuid200Response  # noqa: E501
-from openapi_server.models.pool import Pool  # noqa: E501
-from openapi_server.models.gacha_attributes import GachaAttributes  # noqa: E501
+from openapi_server.models.exists_gacha200_response import ExistsGacha200Response
+from openapi_server.models.gacha import Gacha
+from openapi_server.models.get_rarity_by_uuid200_response import GetRarityByUuid200Response
+from openapi_server.models.pool import Pool
+from openapi_server.models.gacha_attributes import GachaAttributes
 from openapi_server import util
 from openapi_server import util
 from mysql.connector.errors import (
@@ -24,7 +24,7 @@ from pybreaker import CircuitBreaker, CircuitBreakerError
 
 circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5, exclude=[requests.HTTPError, OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError])
 
-def create_gacha(gacha=None, session=None):  # noqa: E501
+def create_gacha(gacha=None, session=None):
     """Creates gacha requested.
     
     :param gacha: Gacha object
@@ -86,7 +86,7 @@ def create_gacha(gacha=None, session=None):  # noqa: E501
         return "", 503
 
 
-def create_pool(pool=None, session=None):  # noqa: E501
+def create_pool(pool=None, session=None):
     """Creates pool requested.
 
     :param pool: Pool object to create
@@ -164,7 +164,7 @@ def create_pool(pool=None, session=None):  # noqa: E501
         return "", 503
 
 
-def delete_gacha(session=None, uuid=None):  # noqa: E501
+def delete_gacha(session=None, uuid=None):
     """Deletes requested gacha, also from pool item list.
 
     :param session: Session cookie
@@ -210,7 +210,7 @@ def delete_gacha(session=None, uuid=None):  # noqa: E501
         return "", 503
 
 
-def delete_pool(session=None, codename=None):  # noqa: E501
+def delete_pool(session=None, codename=None):
     """Deletes requested pool.
 
     :param session: Session cookie
@@ -256,7 +256,7 @@ def delete_pool(session=None, codename=None):  # noqa: E501
         return "", 503
 
 
-def exists_gacha(session=None, uuid=None):  # noqa: E501
+def exists_gacha(session=None, uuid=None):
     """Returns true if a gacha exists, false otherwise.
 
     :param session: Session cookie
@@ -290,7 +290,7 @@ def exists_gacha(session=None, uuid=None):  # noqa: E501
         return "", 503
 
 
-def exists_pool(session=None, uuid=None):  # noqa: E501  #note: uuid is actually the codename
+def exists_pool(session=None, uuid=None):  #note: uuid is actually the codename
     """Returns true if a pool exists, false otherwise.
 
     :param session: Session cookie
@@ -324,7 +324,7 @@ def exists_pool(session=None, uuid=None):  # noqa: E501  #note: uuid is actually
         return "", 503
 
 
-def get_gacha(session=None, uuid=None):  # noqa: E501
+def get_gacha(session=None, uuid=None):
     """Returns the gacha object by gacha uuid.
 
     :param session: Session cookie
@@ -382,7 +382,7 @@ def get_gacha(session=None, uuid=None):  # noqa: E501
         return "", 503
 
 
-def get_pool(session=None, uuid=None):  # noqa: E501 #note: uuid is actually the codename
+def get_pool(session=None, uuid=None): #note: uuid is actually the codename
     """Returns the pool object by pool codename.
 
     :param session: Session cookie
@@ -440,7 +440,7 @@ def get_pool(session=None, uuid=None):  # noqa: E501 #note: uuid is actually the
         return "", 503
 
 
-def get_rarity_by_uuid(session=None, uuid=None):  # noqa: E501
+def get_rarity_by_uuid(session=None, uuid=None):
     """Returns the rarity of a gacha.
 
     :param session: Session cookie
@@ -478,7 +478,7 @@ def get_rarity_by_uuid(session=None, uuid=None):  # noqa: E501
         return "", 503
 
 
-def list_gachas(requestBody=None, session=None, not_owned=None):  # noqa: E501
+def list_gachas(requestBody=None, session=None, not_owned=None):
     """Returns a list of gachas by UUIDs."""
 
     if not connexion.request.is_json:
@@ -535,7 +535,7 @@ def list_gachas(requestBody=None, session=None, not_owned=None):  # noqa: E501
         return "", 503
 
 
-def list_pools(session=None):  # noqa: E501
+def list_pools(session=None):
     """Returns list of pools.
 
     :param session: Session cookie
@@ -589,7 +589,7 @@ def list_pools(session=None):  # noqa: E501
     except CircuitBreakerError:
         return "", 503
 
-def update_gacha(gacha=None, session=None):  # noqa: E501
+def update_gacha(gacha=None, session=None):
     if not connexion.request.is_json:
         return "", 400
 
@@ -669,7 +669,7 @@ def update_gacha(gacha=None, session=None):  # noqa: E501
         return "", 503
 
 
-def update_pool(pool=None, session=None):  # noqa: E501
+def update_pool(pool=None, session=None):
     """Updates a pool.
 
     :param pool: Pool object to update
