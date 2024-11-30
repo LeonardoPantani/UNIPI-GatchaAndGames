@@ -2421,7 +2421,7 @@ paths:
         '200':
           description: Service operational.
       summary: Gives information on service status.
-  /inventory:
+  /inventory/:
     get:
       tags:
         - inventory

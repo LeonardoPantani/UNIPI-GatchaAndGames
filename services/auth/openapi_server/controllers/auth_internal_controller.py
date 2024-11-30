@@ -124,10 +124,34 @@ def delete_user_by_uuid(session=None, uuid=None):
 def edit_email(session=None, uuid=None, email=None):
     if not uuid or not email:
         return jsonify({"error": "Invalid request."}), 400
-    
+
+    # verifying if user exists
     try:
         @circuit_breaker
-        def make_request_to_db():
+        def make_request_to_db_1():
+            connection = get_db()
+            cursor = connection.cursor(dictionary=True)
+            query = "SELECT 1 FROM users WHERE uuid = UUID_TO_BIN(%s)"
+            cursor.execute(query, (uuid))
+            connection.commit()
+            return cursor.rowcount
+        
+        affected_rows = make_request_to_db_1()
+
+        if affected_rows == 0:
+            return jsonify({"error": "User not found."}), 404
+    
+    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
+        send_log(f"Query 1: {type(e).__name__}", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+    except CircuitBreakerError:
+        send_log("CircuitBreaker Error: request_to_db", level="warning", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+
+    # updating email
+    try:
+        @circuit_breaker
+        def make_request_to_db_2():
             connection = get_db()
             cursor = connection.cursor(dictionary=True)
             query = "UPDATE users SET email = %s WHERE uuid = UUID_TO_BIN(%s)"
@@ -135,15 +159,15 @@ def edit_email(session=None, uuid=None, email=None):
             connection.commit()
             return cursor.rowcount
         
-        affected_rows = make_request_to_db()
+        affected_rows = make_request_to_db_2()
 
         if affected_rows == 0:
-            return jsonify({"error": "User not found."}), 404
+            return jsonify({"error": "No changes applied."}), 304
         
         return jsonify({"message": "User deleted."}), 200
     
     except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
-        send_log(f"Query: {type(e).__name__}", level="error", service_type=SERVICE_TYPE)
+        send_log(f"Query 2: {type(e).__name__}", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
         send_log("CircuitBreaker Error: request_to_db", level="warning", service_type=SERVICE_TYPE)
