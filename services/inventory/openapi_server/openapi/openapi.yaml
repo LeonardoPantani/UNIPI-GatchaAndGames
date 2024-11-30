@@ -17,7 +17,7 @@ servers:
 - description: Local server
   url: https://localhost
 paths:
-  /inventory:
+  /inventory/:
     delete:
       description: Returns a list of gacha items currently owned by the player.
       operationId: remove_inventory_item
@@ -25,7 +25,7 @@ paths:
       - explode: true
         in: cookie
         name: session
-        required: true
+        required: false
         schema:
           type: string
         style: form
@@ -65,7 +65,7 @@ paths:
       - explode: true
         in: cookie
         name: session
-        required: true
+        required: false
         schema:
           type: string
         style: form
@@ -598,7 +598,7 @@ paths:
       - explode: true
         in: cookie
         name: session
-        required: true
+        required: false
         schema:
           type: string
         style: form

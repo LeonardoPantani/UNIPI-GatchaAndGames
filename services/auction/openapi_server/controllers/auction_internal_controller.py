@@ -451,7 +451,7 @@ def get_user_auctions(session=None, user_uuid=None):  # noqa: E501
 def is_open_by_item_uuid(session=None, uuid=None):  # noqa: E501
     if not uuid:
         return "", 400
-    
+    print(uuid)
     try:
         @circuit_breaker
         def search_auction():
