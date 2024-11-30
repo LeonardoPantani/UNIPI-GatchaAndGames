@@ -599,7 +599,6 @@ def remove_by_item_uuid(request_body=None, session=None):  # noqa: E501
                 WHERE item_uuid IN ({})
             """.format(','.join(['UUID_TO_BIN(%s)'] * len(request_body)))
 
-            print(query, request_body)
             cursor.execute(query, request_body)
 
             connection.commit()
