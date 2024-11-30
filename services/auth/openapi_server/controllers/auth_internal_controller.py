@@ -136,7 +136,8 @@ def edit_email(session=None, uuid=None, email=None):
             connection = get_db()
             cursor = connection.cursor(dictionary=True)
             query = "SELECT 1 FROM users WHERE uuid = UUID_TO_BIN(%s)"
-            cursor.execute(query, (uuid))
+            cursor.execute(query, (uuid,))
+            cursor.fetchone()
             connection.commit()
             return cursor.rowcount
         
@@ -168,7 +169,7 @@ def edit_email(session=None, uuid=None, email=None):
         if affected_rows == 0:
             return jsonify({"error": "No changes applied."}), 304
         
-        return jsonify({"message": "User deleted."}), 200
+        return jsonify({"message": "Email updated."}), 200
     
     except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
         send_log(f"Query 2: {type(e).__name__}", level="error", service_type=SERVICE_TYPE)

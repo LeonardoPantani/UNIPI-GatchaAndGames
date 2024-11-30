@@ -1,4 +1,5 @@
 import requests
+from functools import wraps
 from flask import jsonify
 from pybreaker import CircuitBreaker, CircuitBreakerError
 
