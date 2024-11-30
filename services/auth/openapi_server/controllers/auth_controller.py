@@ -270,9 +270,13 @@ def register(register_request=None):
 """ Receives: uuid, uuid_hex, email, username, role 
     Throws: redis.RedisError """
 def complete_access(uuid, uuid_hex, email, username, role):
+    aud = ["public_services"]
+    if role == "ADMIN":
+        aud.append("private_services")
+
     # creating JWT token
     access_token_payload = {
-        "iss": "https://service_auth",
+        "iss": "https://" + SERVICE_TYPE,
         "sub": uuid,
         "email": email,
         "username": username,
@@ -280,10 +284,9 @@ def complete_access(uuid, uuid_hex, email, username, role):
         "uuidhex": str(uuid_hex),
         "role": role,
         "logindate": datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S'),
-        "aud": "public_services",
+        "aud": aud,
         "iat": datetime.datetime.now(datetime.timezone.utc),
-        "exp": (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=1)), # 1 hour
-        "scope": "access",
+        "exp": (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=1)) # 1 hour
     }
     access_token = jwt.encode(access_token_payload, "prova", algorithm="HS256")
 

@@ -30,14 +30,12 @@ def admin_health_check_get():
 
 
 def ban_profile(user_uuid):
-
-    session = verify_login(connexion.request.headers.get('Authorization'))
-
+    session = verify_login(connexion.request.headers.get('Authorization'), audience_required="private_services")
     if session[1] != 200:
         return session
     else:
         session = session[0]
-
+    print("start")
     try:
         @circuit_breaker
         def make_request_to_auth_service():
