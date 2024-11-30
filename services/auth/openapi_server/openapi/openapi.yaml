@@ -142,7 +142,7 @@ paths:
       x-openapi-router-controller: openapi_server.controllers.auth_internal_controller
   /auth/internal/get_role_by_uuid:
     get:
-      description: "Returns role of the user."
+      description: "Returns role of the user by UUID, if exists."
       operationId: get_role_by_uuid
       parameters:
       - explode: true
@@ -223,7 +223,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/userinfo_request'
+              $ref: '#/components/schemas/introspect_request'
         required: true
       responses:
         "200":
@@ -232,7 +232,7 @@ paths:
           description: Invalid request.
         "401":
           description: Unauthorized.
-        '402':
+        "402":
           description: Token expired.
         "503":
           description: Service unavailable. Please try again later.
@@ -472,10 +472,20 @@ components:
       type: object
     userinfo_request:
       properties:
-        AccessToken:
-          title: AccessToken
+        access_token:
+          title: access_token
           type: string
       title: userinfo_request
+      type: object
+    introspect_request:
+      properties:
+        access_token:
+          title: access_token
+          type: string
+        audience_required:
+          title: audience_required
+          type: string
+      title: introspect_request
       type: object
     get_role_by_uuid_200_response:
       example:

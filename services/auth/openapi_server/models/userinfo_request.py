@@ -23,7 +23,7 @@ class UserinfoRequest(Model):
         }
 
         self.attribute_map = {
-            'access_token': 'AccessToken'
+            'access_token': 'access_token'
         }
 
         self._access_token = access_token
