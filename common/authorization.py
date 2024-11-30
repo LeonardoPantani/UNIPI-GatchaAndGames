@@ -17,12 +17,12 @@ def verify_login(auth_header=None):
         def make_request_to_auth():
             payload = { "AccessToken": access_token }
             url = "https://service_auth/auth/internal/introspect/"
-            response = requests.post(url, json=payload)
+            response = requests.post(url, json=payload, verify=False)
             response.raise_for_status()
             return response.json()
 
         session = make_request_to_auth()
-    
+
         return session, 200
     except requests.HTTPError:
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503

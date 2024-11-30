@@ -205,6 +205,7 @@ def get_hashed_password(session=None, uuid=None):
 
 """ Returns role of the user. """
 def get_role_by_uuid(session=None, uuid=None):
+    
     if not uuid:
         return jsonify({"error": "Invalid request."}), 400
     
@@ -214,7 +215,7 @@ def get_role_by_uuid(session=None, uuid=None):
             connection = get_db()
             cursor = connection.cursor(dictionary=True)
             query = "SELECT role FROM users WHERE uuid = UUID_TO_BIN(%s)"
-            cursor.execute(query, (uuid))
+            cursor.execute(query, (uuid,))
             return cursor.fetchone()
         
         result = make_request_to_db()
