@@ -194,27 +194,35 @@ def delete_profile():
 @circuit_breaker
 def edit_profile():
     # Auth verification
-
+    
     session = verify_login(connexion.request.headers.get('Authorization'))
+    
     if session[1] != 200:
         return session
     else:
+        
         session = session[0]
 
-    username = session.get('username')
+    username = session["username"]
+    
+    
     if not username:
         return jsonify({"error": "Not logged in."}), 403
-
+    
     try:
+        
         edit_request = EditProfileRequest.from_dict(connexion.request.get_json())
         logging.info(f"Request data: {edit_request}")
+        
     except Exception as e:
         logging.error(f"Error parsing request: {str(e)}")
         return jsonify({"error": "Invalid request."}), 400
-
+    
+    
     try:
-        user_uuid = session.get('uuid')
-
+        user_uuid = session["uuid"]
+        
+        
         # Check if profile exists
         @circuit_breaker
         def check_profile_exists():
@@ -227,6 +235,7 @@ def edit_profile():
 
         if not check_profile_exists():
             return jsonify({"error": "Profile not found"}), 404
+        
 
         # Update email if provided
         
@@ -240,31 +249,29 @@ def edit_profile():
                 response.raise_for_status()
                 return response
 
-            result=update_email()
-            if result.status_code == 304:
-                return jsonify({"error": "No changes detected"}), 304
+            result1=update_email()
 
             
-            # Update username if provided
-            if edit_request.username:
-                @circuit_breaker
-                def update_username():
-                    response = requests.post(
-                        f"{PROFILE_SERVICE_URL}/profile/internal/edit_username",
-                        params={"uuid": user_uuid, "username": edit_request.username}
-                    )
-                    
-                    response.raise_for_status()
-                    return response
-
-                result=update_username()
+        # Update username if provided
+        if edit_request.username:
+            @circuit_breaker
+            def update_username():
+                response = requests.post(
+                    f"{PROFILE_SERVICE_URL}/profile/internal/edit_username",
+                    params={"uuid": user_uuid, "username": edit_request.username}
+                )
                 
-                if result.status_code == 304:
-                    return jsonify({"error": "No changes detected"}), 304
-                session['username'] = edit_request.username
+                response.raise_for_status()
+                return response
+
+            result2=update_username()
+                
+            if result1.status_code == 304 and result2.status_code == 304:
+                return jsonify({"error": "No changes detected"}), 304
+            session['username'] = edit_request.username
             
 
-            return jsonify({"message": "Profile updated successfully"}), 200
+        return jsonify({"message": "Profile updated successfully"}), 200
 
     except requests.HTTPError as e:
         if e.response.status_code == 404:
