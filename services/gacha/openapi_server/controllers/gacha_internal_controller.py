@@ -106,6 +106,27 @@ def create_pool(pool=None, session=None):  # noqa: E501
             connection = get_db()
             cursor = connection.cursor()
 
+            # First check if pool with same codename exists
+            check_pool_query = "SELECT COUNT(*) FROM gacha_pools WHERE codename = %s"
+            cursor.execute(check_pool_query, (pool_data.codename,))
+            if cursor.fetchone()[0] > 0:
+                cursor.close()
+                return "Pool with this codename already exists", 409  # Pool with this codename already exists
+
+            # Verify if all items exist before proceeding
+            if pool_data.items:
+                check_query = """
+                    SELECT COUNT(*) FROM gachas_types 
+                    WHERE uuid IN ({})
+                """.format(','.join(['UUID_TO_BIN(%s)' for _ in pool_data.items]))
+
+                cursor.execute(check_query, pool_data.items)
+                count = cursor.fetchone()[0]
+                
+                if count != len(pool_data.items):
+                    cursor.close()
+                    return "Some items don't exist", 400  # Some items don't exist
+
             # Insert pool into gacha_pools table
             query = """
                 INSERT INTO gacha_pools 
