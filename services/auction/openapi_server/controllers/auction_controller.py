@@ -79,7 +79,7 @@ def bid_on_auction(auction_uuid):
         @circuit_breaker
         def make_request_to_profile_service():
             params = {"user_uuid": session['uuid']}
-            url = "http://service_profile:8080/profile/internal/get_profile"
+            url = "https://service_profile/profile/internal/get_profile"
             response = requests.get(url, params=params)
             response.raise_for_status()
             return response.json()
@@ -113,7 +113,7 @@ def bid_on_auction(auction_uuid):
         @circuit_breaker
         def make_request_to_profile_service():
             params = {"uuid": session['uuid'], "amount": new_bid * (-1)}
-            url = "http://service_profile:8080/profile/internal/add_currency"
+            url = "https://service_profile/profile/internal/add_currency"
             response = requests.post(url, params=params)
             response.raise_for_status()
             return response.json()
@@ -137,7 +137,7 @@ def bid_on_auction(auction_uuid):
             @circuit_breaker
             def make_request_to_profile_service():
                 params = {"uuid": previous_bidder, "amount": previous_bid}
-                url = "http://service_profile:8080/profile/internal/add_currency"
+                url = "https://service_profile/profile/internal/add_currency"
                 response = requests.post(url, params=params)
                 response.raise_for_status()
                 return response.json()
@@ -179,7 +179,7 @@ def create_auction():
         @circuit_breaker
         def make_request_to_inventory_service():
             params = {"uuid": item_id}
-            url = "http://service_inventory:8080/inventory/internal/get_by_item_uuid"
+            url = "https://service_inventory/inventory/internal/get_by_item_uuid"
             response = requests.get(url, params=params)
             response.raise_for_status()
             return response.json()
@@ -256,7 +256,7 @@ def get_auction_status(auction_uuid):
             @circuit_breaker
             def make_request_to_inventory_service():
                 params = {"uuid": item_uuid}
-                url = "http://service_inventory:8080/inventory/internal/get_by_item_uuid"
+                url = "https://service_inventory/inventory/internal/get_by_item_uuid"
                 response = requests.get(url, params=params)
                 response.raise_for_status()
                 return response.json()
@@ -279,7 +279,7 @@ def get_auction_status(auction_uuid):
             @circuit_breaker
             def make_request_to_profile_service():
                 params = {"uuid": old_owner_uuid, "amount": current_bid}
-                url = "http://service_profile:8080/profile/internal/add_currency"
+                url = "https://service_profile/profile/internal/add_currency"
                 response = requests.post(url, params=params)
                 response.raise_for_status()
                 return response.json()
@@ -301,7 +301,7 @@ def get_auction_status(auction_uuid):
             @circuit_breaker
             def make_request_to_currency_service():
                 params = {"uuid": old_owner_uuid, "current_bid": current_bid, "transaction_type": TRANSACTION_TYPE_SELL}
-                url = "http://service_currency:8080/currency/internal/insert_ingame_transaction"
+                url = "https://service_currency/currency/internal/insert_ingame_transaction"
                 response = requests.post(url, params=params)
                 response.raise_for_status()
                 return response.json()
@@ -319,7 +319,7 @@ def get_auction_status(auction_uuid):
             @circuit_breaker
             def make_request_to_inventory_service():
                 params = {"new_owner_uuid": session['uuid'], "item_uuid": item_uuid, "price_paid": current_bid}
-                url = "http://service_inventory:8080/inventory/internal/update_item_owner"
+                url = "https://service_inventory/inventory/internal/update_item_owner"
                 response = requests.post(url, params=params)
                 response.raise_for_status()
                 return response.json()
@@ -339,7 +339,7 @@ def get_auction_status(auction_uuid):
             @circuit_breaker
             def make_request_to_currency_service():
                 params = {"uuid": session['uuid'], "current_bid": current_bid, "transaction_type": TRANSACTION_TYPE_BUY}
-                url = "http://service_currency:8080/currency/internal/insert_ingame_transaction"
+                url = "https://service_currency/currency/internal/insert_ingame_transaction"
                 response = requests.post(url, params=params)
                 response.raise_for_status()
                 return response.json()

@@ -38,7 +38,7 @@ def accept_pvp_request(pvp_match_uuid):
             payload = {
                 "pvp_match_uuid": pvp_match_uuid
             }
-            url = "http://db_manager:8080/db_manager/pvp/get_pvp_status"
+            url = "https://db_manager/db_manager/pvp/get_pvp_status"
             response = requests.post(url, json=payload)
             response.raise_for_status()  # if response is obtained correctly
             return response.json()
@@ -76,7 +76,7 @@ def accept_pvp_request(pvp_match_uuid):
             payload = {
                     "pvp_match_uuid": pvp_match_uuid
             }
-            url = "http://db_manager:8080/db_manager/pvp/verify_gacha_item_ownership"
+            url = "https://db_manager/db_manager/pvp/verify_gacha_item_ownership"
             response = requests.post(url, json=payload)
             response.raise_for_status()  # if response is obtained correctly
             return response.json()
@@ -121,7 +121,7 @@ def accept_pvp_request(pvp_match_uuid):
                     "player2_stand": player2_team[i],
                     "extracted_stat": extracted_stat #TODO: modify model to include extracted
                 }
-                url = "http://db_manager:8080/db_manager/pvp/get_gacha_stat"
+                url = "https://db_manager/db_manager/pvp/get_gacha_stat"
                 response = requests.post(url, json=payload)
                 response.raise_for_status()  # if response is obtained correctly
                 return response.json()
@@ -191,7 +191,7 @@ def accept_pvp_request(pvp_match_uuid):
                 },
                 "points": points
             }
-            url = "http://db_manager:8080/db_manager/pvp/set_match_results"
+            url = "https://db_manager/db_manager/pvp/set_match_results"
             response = requests.post(url, json=payload)
             response.raise_for_status()  # if response is obtained correctly
             return 
@@ -225,7 +225,7 @@ def check_pending_pvp_requests():
 
         @circuit_breaker
         def make_request_to_dbmanager():
-            url = "http://db_manager:8080/db_manager/pvp/check_pending_pvp_requests"
+            url = "https://db_manager/db_manager/pvp/check_pending_pvp_requests"
             response = requests.post(url, json=payload)
             response.raise_for_status()  # if response is obtained correctly
             return response.json()
@@ -254,7 +254,7 @@ def get_pvp_status(pvp_match_uuid):
 
         @circuit_breaker
         def make_request_to_dbmanager():
-            url = "http://db_manager:8080/db_manager/pvp/get_pvp_status"
+            url = "https://db_manager/db_manager/pvp/get_pvp_status"
             response = requests.post(url, json=payload)
             response.raise_for_status()  # if response is obtained correctly
             return response.json()
@@ -287,7 +287,7 @@ def reject_pv_prequest(pvp_match_uuid):
 
         @circuit_breaker
         def make_request_to_dbmanager():
-            url = "http://db_manager:8080/db_manager/pvp/reject_pvp_request"
+            url = "https://db_manager/db_manager/pvp/reject_pvp_request"
             response = requests.post(url, json=payload)
             response.raise_for_status()  # if response is obtained correctly
             return response.json()
@@ -324,7 +324,7 @@ def send_pvp_request(user_uuid):
 
         @circuit_breaker
         def make_request_to_dbmanager():
-            url = "http://db_manager:8080/db_manager/pvp/verify_gacha_item_ownership"
+            url = "https://db_manager/db_manager/pvp/verify_gacha_item_ownership"
             response = requests.post(url, json=payload)
             response.raise_for_status()  # if response is obtained correctly
             return response.json()
@@ -360,7 +360,7 @@ def send_pvp_request(user_uuid):
         
         @circuit_breaker
         def make_request_to_dbmanager():
-            url = "http://db_manager:8080/db_manager/pvp/finalize_pvp_request_sending"
+            url = "https://db_manager/db_manager/pvp/finalize_pvp_request_sending"
             response = requests.post(url, json=payload)
             response.raise_for_status()  # if response is obtained correctly
             return response.json()

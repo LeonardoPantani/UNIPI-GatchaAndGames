@@ -88,7 +88,7 @@ def buy_currency(bundle_id):
         @circuit_breaker
         def make_request_to_profile_service():
             params = {"uuid": session['uuid'], "amount":credits_obtained}
-            url = "http://service_profile:8080/profile/internal/add_currency"
+            url = "https://service_profile/profile/internal/add_currency"
             response = requests.post(url, params=params)
             response.raise_for_status()
             return response.json()

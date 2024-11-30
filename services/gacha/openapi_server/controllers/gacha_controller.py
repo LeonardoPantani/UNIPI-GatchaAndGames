@@ -35,7 +35,7 @@ def get_gacha_info(gacha_uuid):  # noqa: E501
             payload = {
                 "gacha_uuid": gacha_uuid
             }
-            url = "http://db_manager:8080/db_manager/gachas/get_gacha_info"
+            url = "https://db_manager/db_manager/gachas/get_gacha_info"
             response = requests.post(url, json=payload)
             response.raise_for_status()  # if response is obtained correctly
             return response.json()
@@ -62,7 +62,7 @@ def pull_gacha(pool_id):
         @circuit_breaker
         def make_request_to_dbmanager():
             payload = pool_id
-            url = "http://db_manager:8080/db_manager/gachas/get_pool_info"
+            url = "https://db_manager/db_manager/gachas/get_pool_info"
             response = requests.post(url, json=payload)
             response.raise_for_status()  # if response is obtained correctly
             return response.json()
@@ -88,7 +88,7 @@ def pull_gacha(pool_id):
             payload = {
                 "user_uuid": session['uuid']
             }
-            url = "http://db_manager:8080/db_manager/gachas/get_currency"
+            url = "https://db_manager/db_manager/gachas/get_currency"
             response = requests.post(url, json=payload)
             response.raise_for_status()  # if response is obtained correctly
             return response.json()
@@ -140,7 +140,7 @@ def pull_gacha(pool_id):
                 "stand_uuid": selected_item['gacha_uuid'],
                 "price_paid": price
             }
-            url = "http://db_manager:8080/db_manager/gachas/give_item"
+            url = "https://db_manager/db_manager/gachas/give_item"
             response = requests.post(url, json=payload)
             response.raise_for_status()  # if response is obtained correctly
             return 
@@ -171,7 +171,7 @@ def get_pool_info():
     try:
         @circuit_breaker
         def make_request_to_dbmanager():
-            url = "http://db_manager:8080/db_manager/gachas/get_pools"
+            url = "https://db_manager/db_manager/gachas/get_pools"
             response = requests.post(url)
             response.raise_for_status()
             return response.json()
@@ -203,7 +203,7 @@ def get_gachas(not_owned):  # noqa: E501
                 "user_uuid": user_uuid,
                 "owned_filter": not_owned  
             }
-            url = "http://db_manager:8080/db_manager/gachas/get_gacha_list"
+            url = "https://db_manager/db_manager/gachas/get_gacha_list"
             response = requests.post(url, json=payload)
             response.raise_for_status()
             return response.json()

@@ -173,7 +173,7 @@ def get_auction(session=None, uuid=None):  # noqa: E501
             @circuit_breaker
             def make_request_to_inventory_service():
                 params = {"uuid": auction[1]}
-                url = "http://service_inventory:8080/inventory/internal/get_by_item_uuid"
+                url = "https://service_inventory/inventory/internal/get_by_item_uuid"
                 response = requests.get(url, params=params)
                 response.raise_for_status()
                 return response.json()
@@ -279,7 +279,7 @@ def get_auction_list(session=None, status=None, rarity=None, page_number=None): 
                 @circuit_breaker
                 def make_request_to_inventory_service():
                     params = {"uuid": auction[1]}
-                    url = "http://service_inventory:8080/inventory/internal/get_by_item_uuid"
+                    url = "https://service_inventory/inventory/internal/get_by_item_uuid"
                     response = requests.get(url, params=params)
                     response.raise_for_status()
                     return response.json()
@@ -300,7 +300,7 @@ def get_auction_list(session=None, status=None, rarity=None, page_number=None): 
                     @circuit_breaker
                     def make_request_to_gacha_service():
                         params = {"uuid": item["gacha_uuid"]}
-                        url = "http://service_gacha:8080/gacha/internal/get_rarity_by_uuid"
+                        url = "https://service_gacha/gacha/internal/get_rarity_by_uuid"
                         response = requests.get(url, params=params)
                         response.raise_for_status()
                         return response.json()
@@ -369,7 +369,7 @@ def get_user_auctions(session=None, user_uuid=None):  # noqa: E501
         @circuit_breaker
         def make_request_to_inventory_service():
             params = {"uuid": user_uuid}
-            url = "http://service_inventory:8080/inventory/internal/get_items_by_owner_uuid"
+            url = "https://service_inventory/inventory/internal/get_items_by_owner_uuid"
             response = requests.get(url, params=params)
             response.raise_for_status()
             return response.json()
@@ -540,7 +540,7 @@ def refund_bidders(request_body=None, session=None):  # noqa: E501
                     @circuit_breaker
                     def make_request_to_profile_service():
                         params = {"uuid": auction[4], "amount": auction[3]}
-                        url = "http://service_profile:8080/profile/internal/add_currency"
+                        url = "https://service_profile/profile/internal/add_currency"
                         response = requests.post(url, params=params)
                         response.raise_for_status()
                         return response.json()

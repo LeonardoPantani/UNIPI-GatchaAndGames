@@ -32,7 +32,7 @@ def get_inventory():  # noqa: E501
                 "user_uuid": user_uuid,
                 "page_number": page_number
             }
-            url = "http://db_manager:8080/db_manager/inventory/get_user_inventory_items"
+            url = "https://db_manager/db_manager/inventory/get_user_inventory_items"
             response = requests.post(url, json=payload)
             response.raise_for_status()  # if response is obtained correctly
             return response.json()
@@ -63,7 +63,7 @@ def get_inventory_item_info(inventory_item_id):  # noqa: E501
                 "user_uuid": user_uuid,
                 "inventory_item_id": inventory_item_id
             }
-            url = "http://db_manager:8080/db_manager/inventory/get_user_item_info"
+            url = "https://db_manager/db_manager/inventory/get_user_item_info"
             response = requests.post(url, json=payload)
             response.raise_for_status()  # if response is obtained correctly
             return response.json()
@@ -99,7 +99,7 @@ def remove_inventory_item():
                 "user_uuid": user_uuid,
                 "inventory_item_id": item_id
             }
-            url = "http://db_manager:8080/db_manager/inventory/remove_user_item"
+            url = "https://db_manager/db_manager/inventory/remove_user_item"
             response = requests.post(url, json=payload)
             response.raise_for_status()  # if response is obtained correctly
             return 
