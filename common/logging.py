@@ -34,7 +34,7 @@ def send_log(message, level="general", service_type="unknown", endpoint="unknown
 
 
 def query_logs(service_type, endpoint="unknown", interval=3600, level="info", start_time=None):
-    loki_url = "http://logging_loki:3100/loki/api/v1/query_range"
+    loki_url = "https://logging_loki:3100/loki/api/v1/query_range"
     headers = {'Content-Type': 'application/json'}
 
     

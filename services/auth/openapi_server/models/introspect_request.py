@@ -12,26 +12,26 @@ class IntrospectRequest(Model):
     Do not edit the class manually.
     """
 
-    def __init__(self, user_uuid=None, access_token=None):  # noqa: E501
+    def __init__(self, access_token=None, audience_required=None):  # noqa: E501
         """IntrospectRequest - a model defined in OpenAPI
 
-        :param user_uuid: The user_uuid of this IntrospectRequest.  # noqa: E501
-        :type user_uuid: str
         :param access_token: The access_token of this IntrospectRequest.  # noqa: E501
         :type access_token: str
+        :param audience_required: The audience_required of this IntrospectRequest.  # noqa: E501
+        :type audience_required: str
         """
         self.openapi_types = {
-            'user_uuid': str,
-            'access_token': str
+            'access_token': str,
+            'audience_required': str
         }
 
         self.attribute_map = {
-            'user_uuid': 'user_uuid',
-            'access_token': 'AccessToken'
+            'access_token': 'access_token',
+            'audience_required': 'audience_required'
         }
 
-        self._user_uuid = user_uuid
         self._access_token = access_token
+        self._audience_required = audience_required
 
     @classmethod
     def from_dict(cls, dikt) -> 'IntrospectRequest':
@@ -43,29 +43,6 @@ class IntrospectRequest(Model):
         :rtype: IntrospectRequest
         """
         return util.deserialize_model(dikt, cls)
-
-    @property
-    def user_uuid(self) -> str:
-        """Gets the user_uuid of this IntrospectRequest.
-
-        UUID of user.  # noqa: E501
-
-        :return: The user_uuid of this IntrospectRequest.
-        :rtype: str
-        """
-        return self._user_uuid
-
-    @user_uuid.setter
-    def user_uuid(self, user_uuid: str):
-        """Sets the user_uuid of this IntrospectRequest.
-
-        UUID of user.  # noqa: E501
-
-        :param user_uuid: The user_uuid of this IntrospectRequest.
-        :type user_uuid: str
-        """
-
-        self._user_uuid = user_uuid
 
     @property
     def access_token(self) -> str:
@@ -87,3 +64,24 @@ class IntrospectRequest(Model):
         """
 
         self._access_token = access_token
+
+    @property
+    def audience_required(self) -> str:
+        """Gets the audience_required of this IntrospectRequest.
+
+
+        :return: The audience_required of this IntrospectRequest.
+        :rtype: str
+        """
+        return self._audience_required
+
+    @audience_required.setter
+    def audience_required(self, audience_required: str):
+        """Sets the audience_required of this IntrospectRequest.
+
+
+        :param audience_required: The audience_required of this IntrospectRequest.
+        :type audience_required: str
+        """
+
+        self._audience_required = audience_required

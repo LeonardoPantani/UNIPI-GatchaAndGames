@@ -114,7 +114,7 @@ def feedback_info(session=None, feedback_id=None):  # noqa: E501
         @circuit_breaker
         def make_request_to_profile_service():
             params = {"user_uuid": feedback[1]}
-            url = "http://service_profile:8080/profile/internal/get_username_from_uuid"
+            url = "https://service_profile/profile/internal/get_username_from_uuid"
             response = requests.get(url, params=params)
             response.raise_for_status()
             return response.json()

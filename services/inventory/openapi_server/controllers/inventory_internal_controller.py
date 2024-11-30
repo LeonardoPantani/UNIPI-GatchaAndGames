@@ -571,7 +571,7 @@ def remove_item(session=None, item_uuid=None, owner_uuid=None):  # noqa: E501
             cursor.execute(query, (item_uuid, owner_uuid))
             if not cursor.fetchone():
                 cursor.close()
-                return "", 403
+                return "", 404
                 
             # If exists, delete it
             query = """
@@ -584,7 +584,9 @@ def remove_item(session=None, item_uuid=None, owner_uuid=None):  # noqa: E501
             cursor.close()
             return "", 200
 
-        return delete_inventory_item()
+        response = delete_inventory_item()
+
+        return response
 
     except (OperationalError, DataError, DatabaseError, IntegrityError, 
             InterfaceError, InternalError, ProgrammingError):

@@ -51,9 +51,11 @@ def login(login_request=None):
         @circuit_breaker
         def request_to_profile_service():
             params = { "username": username_to_login }
-            url = "http://service_profile:8080/profile/internal/get_uuid_from_username"
-            response = requests.get(url, params=params)
-            response.raise_for_status()
+            url = "https://service_profile/profile/internal/get_uuid_from_username"
+            response = requests.get(url, params=params, verify=False)
+            #response.raise_for_status()
+            print(response.status_code)
+            print(response.text)
             return response.json()
         
         uuid = request_to_profile_service()
@@ -63,7 +65,8 @@ def login(login_request=None):
         else:
             send_log("HTTP Error", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    except requests.RequestException:
+    except requests.RequestException as e:
+        print(e)
         send_log("Request Exception", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
@@ -224,8 +227,8 @@ def register(register_request=None):
         @circuit_breaker
         def request_to_profile_service():
             params = { "user_uuid": uuid_to_register, "username": register_request.username }
-            url = "http://service_profile:8080/profile/internal/insert_profile"
-            response = requests.post(url, params=params)
+            url = "https://service_profile/profile/internal/insert_profile"
+            response = requests.post(url, params=params, verify=False)
             response.raise_for_status()
             return response.json()
         
@@ -267,9 +270,13 @@ def register(register_request=None):
 """ Receives: uuid, uuid_hex, email, username, role 
     Throws: redis.RedisError """
 def complete_access(uuid, uuid_hex, email, username, role):
+    aud = ["public_services"]
+    if role == "ADMIN":
+        aud.append("private_services")
+
     # creating JWT token
     access_token_payload = {
-        "iss": "http://service_auth:8080",
+        "iss": "https://" + SERVICE_TYPE,
         "sub": uuid,
         "email": email,
         "username": username,
@@ -277,15 +284,14 @@ def complete_access(uuid, uuid_hex, email, username, role):
         "uuidhex": str(uuid_hex),
         "role": role,
         "logindate": datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S'),
-        "aud": "public_services",
+        "aud": aud,
         "iat": datetime.datetime.now(datetime.timezone.utc),
-        "exp": (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=1)), # 1 hour
-        "scope": "access",
+        "exp": (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=24 * 60 * 60)) # 1 day
     }
     access_token = jwt.encode(access_token_payload, "prova", algorithm="HS256")
 
     # adding token to REDIS
-    redis_client.set(uuid, access_token, ex=3600) # 1 hour
+    redis_client.set(uuid, access_token, ex=24 * 60 * 60) # 1 day
     
     # returning token
     return f'Bearer {access_token}'
