@@ -69,7 +69,7 @@
 							"script": {
 								"exec": [
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
@@ -126,7 +126,7 @@
 							"script": {
 								"exec": [
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
@@ -190,7 +190,7 @@
 							"script": {
 								"exec": [
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
@@ -264,7 +264,7 @@
 							"script": {
 								"exec": [
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
@@ -329,7 +329,7 @@
 							"script": {
 								"exec": [
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
@@ -393,12 +393,12 @@
 							"script": {
 								"exec": [
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
 									"const loginAsUserRequest = {\r",
-									"    url: 'http://localhost:8080/auth/login',\r",
+									"    url: 'http://localhost/auth/login',\r",
 									"    method: 'POST',\r",
 									"    header: {\r",
 									"        'Content-Type': 'application/json'\r",
@@ -515,7 +515,7 @@
 							"script": {
 								"exec": [
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
@@ -622,12 +622,12 @@
 							"script": {
 								"exec": [
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
 									"const loginAsUserRequest = {\r",
-									"    url: 'http://localhost:8080/auth/login',\r",
+									"    url: 'http://localhost/auth/login',\r",
 									"    method: 'POST',\r",
 									"    header: {\r",
 									"        'Content-Type': 'application/json'\r",
@@ -693,12 +693,12 @@
 								"exec": [
 									"// Pre-request Script\r",
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
 									"const loginRequest = {\r",
-									"    url: 'http://localhost:8080/auth/login',\r",
+									"    url: 'http://localhost/auth/login',\r",
 									"    method: 'POST',\r",
 									"    header: {\r",
 									"        'Content-Type': 'application/json'\r",
@@ -770,12 +770,12 @@
 								"exec": [
 									"// Pre-request Script\r",
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
 									"const loginRequest = {\r",
-									"    url: 'http://localhost:8080/auth/login',\r",
+									"    url: 'http://localhost/auth/login',\r",
 									"    method: 'POST',\r",
 									"    header: {\r",
 									"        'Content-Type': 'application/json'\r",
@@ -846,12 +846,12 @@
 							"script": {
 								"exec": [
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
 									"const loginRequest = {\r",
-									"    url: 'http://localhost:8080/auth/login',\r",
+									"    url: 'http://localhost/auth/login',\r",
 									"    method: 'POST',\r",
 									"    header: {\r",
 									"        'Content-Type': 'application/json'\r",
@@ -921,7 +921,7 @@
 							"script": {
 								"exec": [
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
@@ -962,12 +962,12 @@
 							"script": {
 								"exec": [
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
 									"const loginAsUserRequest = {\r",
-									"    url: 'http://localhost:8080/auth/login',\r",
+									"    url: 'http://localhost/auth/login',\r",
 									"    method: 'POST',\r",
 									"    header: {\r",
 									"        'Content-Type': 'application/json'\r",
@@ -1027,12 +1027,12 @@
 							"script": {
 								"exec": [
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
 									"const loginAsUserRequest = {\r",
-									"    url: 'http://localhost:8080/auth/login',\r",
+									"    url: 'http://localhost/auth/login',\r",
 									"    method: 'POST',\r",
 									"    header: {\r",
 									"        'Content-Type': 'application/json'\r",
@@ -1106,12 +1106,12 @@
 							"script": {
 								"exec": [
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
 									"const loginAsUserRequest = {\r",
-									"    url: 'http://localhost:8080/auth/login',\r",
+									"    url: 'http://localhost/auth/login',\r",
 									"    method: 'POST',\r",
 									"    header: {\r",
 									"        'Content-Type': 'application/json'\r",
@@ -1184,12 +1184,12 @@
 							"script": {
 								"exec": [
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
 									"const loginAsUserRequest = {\r",
-									"    url: 'http://localhost:8080/auth/login',\r",
+									"    url: 'http://localhost/auth/login',\r",
 									"    method: 'POST',\r",
 									"    header: {\r",
 									"        'Content-Type': 'application/json'\r",
@@ -1264,7 +1264,7 @@
 								"exec": [
 									"// Pre-request Script\r",
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};"
 								],
@@ -1349,12 +1349,12 @@
 							"script": {
 								"exec": [
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
 									"const loginAsUserRequest = {\r",
-									"    url: 'http://localhost:8080/auth/login',\r",
+									"    url: 'http://localhost/auth/login',\r",
 									"    method: 'POST',\r",
 									"    header: {\r",
 									"        'Content-Type': 'application/json'\r",
@@ -1428,12 +1428,12 @@
 							"script": {
 								"exec": [
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
 									"const loginAsUserRequest = {\r",
-									"    url: 'http://localhost:8080/auth/login',\r",
+									"    url: 'http://localhost/auth/login',\r",
 									"    method: 'POST',\r",
 									"    header: {\r",
 									"        'Content-Type': 'application/json'\r",
@@ -1571,12 +1571,12 @@
 							"script": {
 								"exec": [
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
 									"const loginAsUserRequest = {\r",
-									"    url: 'http://localhost:8080/auth/login',\r",
+									"    url: 'http://localhost/auth/login',\r",
 									"    method: 'POST',\r",
 									"    header: {\r",
 									"        'Content-Type': 'application/json'\r",
@@ -1649,12 +1649,12 @@
 							"script": {
 								"exec": [
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
 									"const loginAsUserRequest = {\r",
-									"    url: 'http://localhost:8080/auth/login',\r",
+									"    url: 'http://localhost/auth/login',\r",
 									"    method: 'POST',\r",
 									"    header: {\r",
 									"        'Content-Type': 'application/json'\r",
@@ -1727,7 +1727,7 @@
 							"script": {
 								"exec": [
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
@@ -1842,12 +1842,12 @@
 							"script": {
 								"exec": [
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
 									"const loginAsUserRequest = {\r",
-									"    url: 'http://localhost:8080/auth/login',\r",
+									"    url: 'http://localhost/auth/login',\r",
 									"    method: 'POST',\r",
 									"    header: {\r",
 									"        'Content-Type': 'application/json'\r",
@@ -1935,7 +1935,7 @@
 							"script": {
 								"exec": [
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
@@ -2008,12 +2008,12 @@
 							"script": {
 								"exec": [
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
 									"const loginAsUserRequest = {\r",
-									"    url: 'http://localhost:8080/auth/login',\r",
+									"    url: 'http://localhost/auth/login',\r",
 									"    method: 'POST',\r",
 									"    header: {\r",
 									"        'Content-Type': 'application/json'\r",
@@ -2103,12 +2103,12 @@
 							"script": {
 								"exec": [
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
 									"const loginAsUserRequest = {\r",
-									"    url: 'http://localhost:8080/auth/login',\r",
+									"    url: 'http://localhost/auth/login',\r",
 									"    method: 'POST',\r",
 									"    header: {\r",
 									"        'Content-Type': 'application/json'\r",
@@ -2198,12 +2198,12 @@
 							"script": {
 								"exec": [
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
 									"const loginAsUserRequest = {\r",
-									"    url: 'http://localhost:8080/auth/login',\r",
+									"    url: 'http://localhost/auth/login',\r",
 									"    method: 'POST',\r",
 									"    header: {\r",
 									"        'Content-Type': 'application/json'\r",
@@ -2304,12 +2304,12 @@
 							"script": {
 								"exec": [
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
 									"const loginAsUserRequest = {\r",
-									"    url: 'http://localhost:8080/auth/login',\r",
+									"    url: 'http://localhost/auth/login',\r",
 									"    method: 'POST',\r",
 									"    header: {\r",
 									"        'Content-Type': 'application/json'\r",
@@ -2397,12 +2397,12 @@
 							"script": {
 								"exec": [
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
 									"const loginAsUserRequest = {\r",
-									"    url: 'http://localhost:8080/auth/login',\r",
+									"    url: 'http://localhost/auth/login',\r",
 									"    method: 'POST',\r",
 									"    header: {\r",
 									"        'Content-Type': 'application/json'\r",
@@ -2491,12 +2491,12 @@
 							"script": {
 								"exec": [
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
 									"const loginAsUserRequest = {\r",
-									"    url: 'http://localhost:8080/auth/login',\r",
+									"    url: 'http://localhost/auth/login',\r",
 									"    method: 'POST',\r",
 									"    header: {\r",
 									"        'Content-Type': 'application/json'\r",
@@ -2581,12 +2581,12 @@
 							"script": {
 								"exec": [
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
 									"const loginAsUserRequest = {\r",
-									"    url: 'http://localhost:8080/auth/login',\r",
+									"    url: 'http://localhost/auth/login',\r",
 									"    method: 'POST',\r",
 									"    header: {\r",
 									"        'Content-Type': 'application/json'\r",
@@ -2653,7 +2653,7 @@
 								"exec": [
 									"// Pre-request Script\r",
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
@@ -2717,12 +2717,12 @@
 							"script": {
 								"exec": [
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
 									"const loginAsUserRequest = {\r",
-									"    url: 'http://localhost:8080/auth/login',\r",
+									"    url: 'http://localhost/auth/login',\r",
 									"    method: 'POST',\r",
 									"    header: {\r",
 									"        'Content-Type': 'application/json'\r",
@@ -2801,12 +2801,12 @@
 							"script": {
 								"exec": [
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
 									"const loginAsUserRequest = {\r",
-									"    url: 'http://localhost:8080/auth/login',\r",
+									"    url: 'http://localhost/auth/login',\r",
 									"    method: 'POST',\r",
 									"    header: {\r",
 									"        'Content-Type': 'application/json'\r",
@@ -2898,12 +2898,12 @@
 								"exec": [
 									"// Pre-request Script\r",
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
 									"const loginRequest = {\r",
-									"    url: 'http://localhost:8080/auth/login',\r",
+									"    url: 'http://localhost/auth/login',\r",
 									"    method: 'POST',\r",
 									"    header: {\r",
 									"        'Content-Type': 'application/json'\r",
@@ -2987,12 +2987,12 @@
 								"exec": [
 									"// Pre-request Script\r",
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
 									"const loginRequest = {\r",
-									"    url: 'http://localhost:8080/auth/login',\r",
+									"    url: 'http://localhost/auth/login',\r",
 									"    method: 'POST',\r",
 									"    header: {\r",
 									"        'Content-Type': 'application/json'\r",
@@ -3076,12 +3076,12 @@
 								"exec": [
 									"// Pre-request Script\r",
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
 									"const loginRequest = {\r",
-									"    url: 'http://localhost:8080/auth/login',\r",
+									"    url: 'http://localhost/auth/login',\r",
 									"    method: 'POST',\r",
 									"    header: {\r",
 									"        'Content-Type': 'application/json'\r",
@@ -3165,12 +3165,12 @@
 								"exec": [
 									"// Pre-request Script\r",
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
 									"const loginRequest = {\r",
-									"    url: 'http://localhost:8080/auth/login',\r",
+									"    url: 'http://localhost/auth/login',\r",
 									"    method: 'POST',\r",
 									"    header: {\r",
 									"        'Content-Type': 'application/json'\r",
@@ -3254,12 +3254,12 @@
 								"exec": [
 									"// Pre-request Script\r",
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
 									"const loginRequest = {\r",
-									"    url: 'http://localhost:8080/auth/login',\r",
+									"    url: 'http://localhost/auth/login',\r",
 									"    method: 'POST',\r",
 									"    header: {\r",
 									"        'Content-Type': 'application/json'\r",
@@ -3329,12 +3329,12 @@
 							"script": {
 								"exec": [
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
 									"const loginAsUserRequest = {\r",
-									"    url: 'http://localhost:8080/auth/login',\r",
+									"    url: 'http://localhost/auth/login',\r",
 									"    method: 'POST',\r",
 									"    header: {\r",
 									"        'Content-Type': 'application/json'\r",
@@ -3385,12 +3385,12 @@
 							"script": {
 								"exec": [
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
 									"const loginAsUserRequest = {\r",
-									"    url: 'http://localhost:8080/auth/login',\r",
+									"    url: 'http://localhost/auth/login',\r",
 									"    method: 'POST',\r",
 									"    header: {\r",
 									"        'Content-Type': 'application/json'\r",
@@ -3451,12 +3451,12 @@
 							"script": {
 								"exec": [
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
 									"const loginAsUserRequest = {\r",
-									"    url: 'http://localhost:8080/auth/login',\r",
+									"    url: 'http://localhost/auth/login',\r",
 									"    method: 'POST',\r",
 									"    header: {\r",
 									"        'Content-Type': 'application/json'\r",
@@ -3517,12 +3517,12 @@
 							"script": {
 								"exec": [
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
 									"const loginAsUserRequest = {\r",
-									"    url: 'http://localhost:8080/auth/login',\r",
+									"    url: 'http://localhost/auth/login',\r",
 									"    method: 'POST',\r",
 									"    header: {\r",
 									"        'Content-Type': 'application/json'\r",
@@ -3597,12 +3597,12 @@
 							"script": {
 								"exec": [
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
 									"const loginAsUserRequest = {\r",
-									"    url: 'http://localhost:8080/auth/login',\r",
+									"    url: 'http://localhost/auth/login',\r",
 									"    method: 'POST',\r",
 									"    header: {\r",
 									"        'Content-Type': 'application/json'\r",
@@ -3676,12 +3676,12 @@
 							"script": {
 								"exec": [
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
 									"const loginAsUserRequest = {\r",
-									"    url: 'http://localhost:8080/auth/login',\r",
+									"    url: 'http://localhost/auth/login',\r",
 									"    method: 'POST',\r",
 									"    header: {\r",
 									"        'Content-Type': 'application/json'\r",
@@ -3783,12 +3783,12 @@
 							"script": {
 								"exec": [
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
 									"const loginAsUserRequest = {\r",
-									"    url: 'http://localhost:8080/auth/login',\r",
+									"    url: 'http://localhost/auth/login',\r",
 									"    method: 'POST',\r",
 									"    header: {\r",
 									"        'Content-Type': 'application/json'\r",
@@ -4110,7 +4110,7 @@
 								"exec": [
 									"const postFeedback = async (feedbackContent) => {\r",
 									"    try {\r",
-									"        const response = await fetch('http://localhost:8080/feedback/', {\r",
+									"        const response = await fetch('http://localhost/feedback/', {\r",
 									"            method: 'POST',\r",
 									"            headers: {\r",
 									"                'Content-Type': 'application/json'\r",
@@ -4154,7 +4154,7 @@
 							}
 						},
 						"url": {
-							"raw": "http://localhost:8080/feedback/",
+							"raw": "https://localhost/feedback/",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -4208,7 +4208,7 @@
 							}
 						},
 						"url": {
-							"raw": "http://localhost:8080/feedback/",
+							"raw": "https://localhost/feedback/",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -4243,7 +4243,7 @@
 							"script": {
 								"exec": [
 									"pm.sendRequest({\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"}, function (err, res) {\r",
 									"    if (err) {\r",
@@ -4269,7 +4269,7 @@
 							}
 						},
 						"url": {
-							"raw": "http://localhost:8080/feedback/",
+							"raw": "https://localhost/feedback/",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -4298,7 +4298,7 @@
 								"exec": [
 									"const healthCheck = async () => {\r",
 									"    try {\r",
-									"        const response = await fetch('http://localhost:8080/gacha/health_check', {\r",
+									"        const response = await fetch('http://localhost/gacha/health_check', {\r",
 									"            method: 'GET',\r",
 									"            headers: {\r",
 									"                'Content-Type': 'application/json'\r",
@@ -4411,12 +4411,12 @@
 							"script": {
 								"exec": [
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
 									"const loginAsUserRequest = {\r",
-									"    url: 'http://localhost:8080/auth/login',\r",
+									"    url: 'http://localhost/auth/login',\r",
 									"    method: 'POST',\r",
 									"    header: {\r",
 									"        'Content-Type': 'application/json'\r",
@@ -4514,12 +4514,12 @@
 							"script": {
 								"exec": [
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
 									"const loginAsUserRequest = {\r",
-									"    url: 'http://localhost:8080/auth/login',\r",
+									"    url: 'http://localhost/auth/login',\r",
 									"    method: 'POST',\r",
 									"    header: {\r",
 									"        'Content-Type': 'application/json'\r",
@@ -4549,7 +4549,7 @@
 						"method": "POST",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:8080/gacha/pull/{{pool_id}}",
+							"raw": "https://localhost/gacha/pull/{{pool_id}}",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -4636,7 +4636,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:8080/gacha/pools",
+							"raw": "https://localhost/gacha/pools",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -4726,7 +4726,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:8080/gacha/list?not_owned=true",
+							"raw": "https://localhost/gacha/list?not_owned=true",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -4757,7 +4757,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:8080/inventory/health_check",
+							"raw": "https://localhost/inventory/health_check",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -4812,7 +4812,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:8080/inventory?page_number=1",
+							"raw": "https://localhost/inventory?page_number=1",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -4890,7 +4890,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:8080/inventory/{{item_uuid}}",
+							"raw": "https://localhost/inventory/{{item_uuid}}",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -5208,12 +5208,12 @@
 							"script": {
 								"exec": [
 									"const logoutRequest = {\r",
-									"    url: 'http://localhost:8080/auth/logout',\r",
+									"    url: 'http://localhost/auth/logout',\r",
 									"    method: 'DELETE'\r",
 									"};\r",
 									"\r",
 									"const loginAsUserRequest = {\r",
-									"    url: 'http://localhost:8080/auth/login',\r",
+									"    url: 'http://localhost/auth/login',\r",
 									"    method: 'POST',\r",
 									"    header: {\r",
 									"        'Content-Type': 'application/json'\r",

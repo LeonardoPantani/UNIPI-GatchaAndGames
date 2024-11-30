@@ -14,7 +14,7 @@ info:
   version: 1.0.0
 servers:
 - description: Local server
-  url: http://localhost:8080
+  url: http://localhost
 paths:
   /db_manager/admin/ban_user_profile:
     post:

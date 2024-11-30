@@ -25,9 +25,9 @@ def main():
         'password': os.environ.get('MYSQL_PASSWORD'),
         'database': os.environ.get('MYSQL_DB'),
         'port': os.environ.get('MYSQL_PORT'),
-        'ssl_ca': '/usr/src/app/ssl/ca-cert.pem',
-        'ssl_cert': '/usr/src/app/ssl/client-cert.pem',
-        'ssl_key': '/usr/src/app/ssl/client-key.pem'
+        'ssl_ca': '/usr/src/app/ssl/database-ca-cert.pem',
+        'ssl_cert': '/usr/src/app/ssl/auth-cert.pem',
+        'ssl_key': '/usr/src/app/ssl/auth-key.pem'
     }
 
     # Close the DB connection after each request
@@ -43,8 +43,16 @@ def main():
         pythonic_params=True
     )
 
-    # Starting Connexion Flask app
-    connexion_app.run(host='0.0.0.0', port=8080, debug=True)
+    # starting flask
+    connexion_app.run(
+        host='0.0.0.0',
+        port=443,
+        debug=True,
+        ssl_context=(
+            '/usr/src/app/ssl/auth-cert.pem',
+            '/usr/src/app/ssl/auth-key.pem'
+        )
+    )
 
 
 if __name__ == '__main__':

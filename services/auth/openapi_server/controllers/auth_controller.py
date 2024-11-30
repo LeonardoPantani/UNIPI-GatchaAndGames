@@ -51,9 +51,11 @@ def login(login_request=None):
         @circuit_breaker
         def request_to_profile_service():
             params = { "username": username_to_login }
-            url = "http://service_profile:8080/profile/internal/get_uuid_from_username"
-            response = requests.get(url, params=params)
-            response.raise_for_status()
+            url = "https://service_profile/profile/internal/get_uuid_from_username"
+            response = requests.get(url, params=params, verify=False)
+            #response.raise_for_status()
+            print(response.status_code)
+            print(response.text)
             return response.json()
         
         uuid = request_to_profile_service()
@@ -63,7 +65,8 @@ def login(login_request=None):
         else:
             send_log("HTTP Error", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    except requests.RequestException:
+    except requests.RequestException as e:
+        print(e)
         send_log("Request Exception", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
@@ -224,8 +227,8 @@ def register(register_request=None):
         @circuit_breaker
         def request_to_profile_service():
             params = { "user_uuid": uuid_to_register, "username": register_request.username }
-            url = "http://service_profile:8080/profile/internal/insert_profile"
-            response = requests.post(url, params=params)
+            url = "https://service_profile/profile/internal/insert_profile"
+            response = requests.post(url, params=params, verify=False)
             response.raise_for_status()
             return response.json()
         
@@ -269,7 +272,7 @@ def register(register_request=None):
 def complete_access(uuid, uuid_hex, email, username, role):
     # creating JWT token
     access_token_payload = {
-        "iss": "http://service_auth:8080",
+        "iss": "https://service_auth",
         "sub": uuid,
         "email": email,
         "username": username,

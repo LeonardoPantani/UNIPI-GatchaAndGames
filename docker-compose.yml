@@ -53,8 +53,6 @@ services:
   service_admin:
     image: service_admin
     build: ./services/admin/
-    ports:
-      - "8080"
     env_file: ./services/admin/.env
     volumes:
       - ./services/admin:/usr/src/app/
@@ -64,7 +62,7 @@ services:
     networks:
       - private_gachaandgames_network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/admin/health_check"]
+      test: ["CMD", "curl", "-f", "--cert", "/usr/src/app/ssl/admin-cert.pem", "--key", "/usr/src/app/ssl/admin-key.pem", "--cacert", "/usr/src/app/ssl/services-ca-cert.pem", "https://service_admin/admin/health_check"]
       start_period: 10s
       interval: 1m
       timeout: 2s
@@ -76,8 +74,6 @@ services:
   service_auth:
     image: service_auth
     build: ./services/auth/
-    ports:
-      - "8080"
     env_file: ./services/auth/.env
     volumes:
       - ./services/auth:/usr/src/app/
@@ -91,7 +87,7 @@ services:
       - public_gachaandgames_network
       - private_gachaandgames_network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/auth/health_check"]
+      test: ["CMD", "curl", "-f", "--cert", "/usr/src/app/ssl/auth-cert.pem", "--key", "/usr/src/app/ssl/auth-key.pem", "--cacert", "/usr/src/app/ssl/services-ca-cert.pem", "https://service_auth/auth/health_check"]
       start_period: 10s
       interval: 1m
       timeout: 2s
@@ -150,7 +146,7 @@ services:
     networks:
     - public_gachaandgames_network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-P", "6032"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-P", "6032", "-uradmin", "-pradmin"]
       start_period: 10s
       interval: 3s
       timeout: 2s
@@ -166,8 +162,6 @@ services:
   service_auction:
     image: service_auction
     build: ./services/auction/
-    ports:
-      - "8080"
     env_file: ./services/auction/.env
     volumes:
       - ./services/auction:/usr/src/app/
@@ -180,7 +174,7 @@ services:
       service_auction_db_proxy:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/auction/health_check"]
+      test: ["CMD", "curl", "-f", "--cert", "/usr/src/app/ssl/auction-cert.pem", "--key", "/usr/src/app/ssl/auction-key.pem", "--cacert", "/usr/src/app/ssl/services-ca-cert.pem", "https://service_auction/auction/health_check"]
       start_period: 10s
       interval: 1m
       timeout: 2s
@@ -238,7 +232,7 @@ services:
     networks:
     - public_gachaandgames_network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-P", "6032"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-P", "6032", "-uradmin", "-pradmin"]
       start_period: 10s
       interval: 3s
       timeout: 2s
@@ -254,8 +248,6 @@ services:
   service_currency:
     image: service_currency
     build: ./services/currency/
-    ports:
-      - "8080"
     env_file: ./services/currency/.env
     volumes:
       - ./services/currency:/usr/src/app/
@@ -268,7 +260,7 @@ services:
       service_currency_db_proxy:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/currency/health_check"]
+      test: ["CMD", "curl", "-f", "--cert", "/usr/src/app/ssl/currency-cert.pem", "--key", "/usr/src/app/ssl/currency-key.pem", "--cacert", "/usr/src/app/ssl/services-ca-cert.pem", "https://service_currency/currency/health_check"]
       start_period: 10s
       interval: 1m
       timeout: 2s
@@ -326,7 +318,7 @@ services:
     networks:
     - public_gachaandgames_network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-P", "6032"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-P", "6032", "-uradmin", "-pradmin"]
       start_period: 10s
       interval: 3s
       timeout: 2s
@@ -342,8 +334,6 @@ services:
   service_feedback:
     image: service_feedback
     build: ./services/feedback/
-    ports:
-      - "8080"
     env_file: ./services/feedback/.env
     volumes:
       - ./services/feedback:/usr/src/app/
@@ -356,7 +346,7 @@ services:
       service_feedback_db_proxy:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/feedback/health_check"]
+      test: ["CMD", "curl", "-f", "--cert", "/usr/src/app/ssl/feedback-cert.pem", "--key", "/usr/src/app/ssl/feedback-key.pem", "--cacert", "/usr/src/app/ssl/services-ca-cert.pem", "https://service_feedback/feedback/health_check"]
       start_period: 10s
       interval: 1m
       timeout: 2s
@@ -414,7 +404,7 @@ services:
     networks:
     - public_gachaandgames_network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-P", "6032"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-P", "6032", "-uradmin", "-pradmin"]
       start_period: 10s
       interval: 3s
       timeout: 2s
@@ -430,8 +420,6 @@ services:
   service_gacha:
     image: service_gacha
     build: ./services/gacha/
-    ports:
-      - "8080"
     env_file: ./services/gacha/.env
     volumes:
       - ./services/gacha:/usr/src/app/
@@ -444,7 +432,7 @@ services:
       service_gacha_db_proxy:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/gacha/health_check"]
+      test: ["CMD", "curl", "-f", "--cert", "/usr/src/app/ssl/gacha-cert.pem", "--key", "/usr/src/app/ssl/gacha-key.pem", "--cacert", "/usr/src/app/ssl/services-ca-cert.pem", "https://service_gacha/gacha/health_check"]
       start_period: 10s
       interval: 1m
       timeout: 2s
@@ -502,7 +490,7 @@ services:
     networks:
     - public_gachaandgames_network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-P", "6032"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-P", "6032", "-uradmin", "-pradmin"]
       start_period: 10s
       interval: 3s
       timeout: 2s
@@ -518,8 +506,6 @@ services:
   service_inventory:
     image: service_inventory
     build: ./services/inventory/
-    ports:
-      - "8080"
     env_file: ./services/inventory/.env
     volumes:
       - ./services/inventory:/usr/src/app/
@@ -532,7 +518,7 @@ services:
       service_inventory_db_proxy:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/inventory/health_check"]
+      test: ["CMD", "curl", "-f", "--cert", "/usr/src/app/ssl/inventory-cert.pem", "--key", "/usr/src/app/ssl/inventory-key.pem", "--cacert", "/usr/src/app/ssl/services-ca-cert.pem", "https://service_inventory/inventory/health_check"]
       start_period: 10s
       interval: 1m
       timeout: 2s
@@ -590,7 +576,7 @@ services:
     networks:
     - public_gachaandgames_network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-P", "6032"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-P", "6032", "-uradmin", "-pradmin"]
       start_period: 10s
       interval: 3s
       timeout: 2s
@@ -606,8 +592,6 @@ services:
   service_profile:
     image: service_profile
     build: ./services/profile/
-    ports:
-      - "8080"
     env_file: ./services/profile/.env
     volumes:
       - ./services/profile:/usr/src/app/
@@ -620,7 +604,7 @@ services:
       service_profile_db_proxy:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/profile/health_check"]
+      test: ["CMD", "curl", "-f", "--cert", "/usr/src/app/ssl/profile-cert.pem", "--key", "/usr/src/app/ssl/profile-key.pem", "--cacert", "/usr/src/app/ssl/services-ca-cert.pem", "https://service_profile/profile/health_check"]
       start_period: 10s
       interval: 1m
       timeout: 2s
@@ -678,7 +662,7 @@ services:
     networks:
     - public_gachaandgames_network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-P", "6032"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-P", "6032", "-uradmin", "-pradmin"]
       start_period: 10s
       interval: 3s
       timeout: 2s
@@ -694,8 +678,6 @@ services:
   service_pvp:
     image: service_pvp
     build: ./services/pvp/
-    ports:
-      - "8080"
     env_file: ./services/pvp/.env
     volumes:
       - ./services/pvp:/usr/src/app/
@@ -708,7 +690,7 @@ services:
       service_pvp_db_proxy:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/pvp/health_check"]
+      test: ["CMD", "curl", "-f", "--cert", "/usr/src/app/ssl/pvp-cert.pem", "--key", "/usr/src/app/ssl/pvp-key.pem", "--cacert", "/usr/src/app/ssl/services-ca-cert.pem", "https://service_pvp/pvp/health_check"]
       start_period: 10s
       interval: 1m
       timeout: 2s
@@ -766,7 +748,7 @@ services:
     networks:
     - public_gachaandgames_network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-P", "6032"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-P", "6032", "-uradmin", "-pradmin"]
       start_period: 10s
       interval: 3s
       timeout: 2s
@@ -791,7 +773,7 @@ services:
       - public_gachaandgames_network
       - private_gachaandgames_network
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3100/ready"]
+      test: ["CMD", "wget", "-qO-", "https://127.0.0.1:3100/ready"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -814,7 +796,7 @@ services:
     networks:
       - private_gachaandgames_network
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/login"]
+      test: ["CMD", "wget", "-qO-", "https://127.0.0.1:3000/login"]
       interval: 10s
       timeout: 5s
       retries: 3

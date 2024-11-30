@@ -27,13 +27,13 @@ circuit_breaker = CircuitBreaker(
 
 from openapi_server.controllers.profile_internal_controller import delete_profile_by_uuid
 
-FEEDBACK_SERVICE_URL = "http://service_feedback:8080"
-CURRENCY_SERVICE_URL = "http://service_currency:8080"
-INVENTORY_SERVICE_URL = "http://service_inventory:8080"
-AUCTION_SERVICE_URL = "http://service_auction:8080"
-PVP_SERVICE_URL = "http://service_pvp:8080"
-AUTH_SERVICE_URL = "http://service_auth:8080"
-PROFILE_SERVICE_URL = "http://service_profile:8080"
+FEEDBACK_SERVICE_URL = "https://service_feedback"
+CURRENCY_SERVICE_URL = "https://service_currency"
+INVENTORY_SERVICE_URL = "https://service_inventory"
+AUCTION_SERVICE_URL = "https://service_auction"
+PVP_SERVICE_URL = "https://service_pvp"
+AUTH_SERVICE_URL = "https://service_auth"
+PROFILE_SERVICE_URL = "https://service_profile"
 
 def profile_health_check_get():
     return jsonify({"message": "Service operational."}), 200

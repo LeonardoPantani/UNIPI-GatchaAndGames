@@ -24,8 +24,16 @@ def main():
         pythonic_params=True
     )
 
-    # Starting Connexion Flask app
-    connexion_app.run(host='0.0.0.0', port=8080, debug=True)
+    # starting flask
+    connexion_app.run(
+        host='0.0.0.0',
+        port=443,
+        debug=True,
+        ssl_context=(
+            '/usr/src/app/ssl/admin-cert.pem',
+            '/usr/src/app/ssl/admin-key.pem'
+        )
+    )
 
 
 if __name__ == '__main__':

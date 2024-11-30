@@ -33,11 +33,11 @@ Il progetto **UNIPI-GachaAndGames** è un sistema Gacha sviluppato per il corso 
 ```nginx
 http {
     upstream service_admin {
-        server service_admin:8080;
+        server service_admin;
     }
 
     upstream service_auth {
-        server service_auth:8080;
+        server service_auth;
     }
 
     server {

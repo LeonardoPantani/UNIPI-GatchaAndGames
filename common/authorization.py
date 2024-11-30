@@ -16,7 +16,7 @@ def verify_login(auth_header=None):
         @circuit_breaker
         def make_request_to_auth():
             payload = { "AccessToken": access_token }
-            url = "http://service_auth:8080/auth/internal/introspect/"
+            url = "https://service_auth/auth/internal/introspect/"
             response = requests.post(url, json=payload)
             response.raise_for_status()
             return response.json()

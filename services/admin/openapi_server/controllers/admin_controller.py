@@ -174,7 +174,7 @@ def create_gacha():
         @circuit_breaker
         def make_request_to_dbmanager():
             payload = connexion.request.get_json()
-            url = "http://db_manager:8080/db_manager/admin/create_gacha"
+            url = "https://db_manager/db_manager/admin/create_gacha"
             response = requests.post(url, json=payload)
             response.raise_for_status()  # if response is obtained correctly
             return response.json()
@@ -218,7 +218,7 @@ def delete_gacha(gacha_uuid):  # TODO vanno rimosse le cose nel modo corretto
         @circuit_breaker
         def make_request_to_dbmanager():
             payload = gacha_uuid
-            url = "http://db_manager:8080/db_manager/admin/delete_gacha"
+            url = "https://db_manager/db_manager/admin/delete_gacha"
             response = requests.post(url, json=payload)
             response.raise_for_status()  # if response is obtained correctly
             return response.json()
@@ -288,7 +288,7 @@ def create_pool():
         @circuit_breaker
         def make_request_to_dbmanager():
             payload = connexion.request.get_json()
-            url = "http://db_manager:8080/db_manager/admin/create_pool"
+            url = "https://db_manager/db_manager/admin/create_pool"
             response = requests.post(url, json=payload)
             response.raise_for_status()  # if response is obtained correctly
             return
@@ -332,7 +332,7 @@ def delete_pool(pool_id):  # TODO controllare dipendenze
         @circuit_breaker
         def make_request_to_dbmanager():
             payload = pool_id
-            url = "http://db_manager:8080/db_manager/admin/delete_pool"
+            url = "https://db_manager/db_manager/admin/delete_pool"
             response = requests.post(url, json=payload)
             response.raise_for_status()  # if response is obtained correctly
             return response.json()
@@ -375,7 +375,7 @@ def edit_user_profile(user_uuid, email=None, username=None):
 
         @circuit_breaker
         def make_request_to_dbmanager():
-            url = "http://db_manager:8080/db_manager/admin/edit_user_profile"
+            url = "https://db_manager/db_manager/admin/edit_user_profile"
             response = requests.post(url, json=payload)
             response.raise_for_status()  # if response is obtained correctly
             return response
@@ -424,7 +424,7 @@ def get_all_feedbacks(page_number=None):
 
         @circuit_breaker
         def make_request_to_dbmanager():
-            url = "http://db_manager:8080/db_manager/admin/get_all_feedbacks"
+            url = "https://db_manager/db_manager/admin/get_all_feedbacks"
             response = requests.post(url, json=payload)
             response.raise_for_status()  # if response is obtained correctly
             return response.json()
@@ -468,7 +468,7 @@ def get_all_profiles(page_number=None):
 
         @circuit_breaker
         def make_request_to_dbmanager():
-            url = "http://db_manager:8080/db_manager/admin/get_all_profiles"
+            url = "https://db_manager/db_manager/admin/get_all_profiles"
             response = requests.post(url, json=payload)
             response.raise_for_status()  # if response is obtained correctly
             return response.json()
@@ -512,7 +512,7 @@ def get_feedback_info(feedback_id=None):
 
         @circuit_breaker
         def make_request_to_dbmanager():
-            url = "http://db_manager:8080/db_manager/admin/get_feedback_info"
+            url = "https://db_manager/db_manager/admin/get_feedback_info"
             response = requests.post(url, json=payload)
             response.raise_for_status()  # if response is obtained correctly
             return response.json()
@@ -570,7 +570,7 @@ def get_user_history(user_uuid, history_type, page_number=None):
 
         @circuit_breaker
         def make_request_to_dbmanager():
-            url = "http://db_manager:8080/db_manager/admin/get_user_history"
+            url = "https://db_manager/db_manager/admin/get_user_history"
             response = requests.post(url, json=payload)
             response.raise_for_status()  # if response is obtained correctly
             return response.json()
@@ -642,7 +642,7 @@ def update_auction(auction_uuid):
         @circuit_breaker
         def make_request_to_dbmanager():
             payload = connexion.request.get_json()
-            url = "http://db_manager:8080/db_manager/admin/update_auction"
+            url = "https://db_manager/db_manager/admin/update_auction"
             response = requests.post(url, json=payload)
             response.raise_for_status()  # if response is obtained correctly
             return response.json()
@@ -699,7 +699,7 @@ def update_gacha(gacha_uuid):
         @circuit_breaker
         def make_request_to_dbmanager():
             payload = connexion.request.get_json()
-            url = "http://db_manager:8080/db_manager/admin/update_gacha"
+            url = "https://db_manager/db_manager/admin/update_gacha"
             response = requests.post(url, json=payload)
             response.raise_for_status()  # if response is obtained correctly
             return response.json()
@@ -780,7 +780,7 @@ def update_pool(pool_id):
         @circuit_breaker
         def make_request_to_dbmanager():
             payload = connexion.request.get_json()
-            url = "http://db_manager:8080/db_manager/admin/update_pool"
+            url = "https://db_manager/db_manager/admin/update_pool"
             response = requests.post(url, json=payload)
             response.raise_for_status()  # if response is obtained correctly
             return response.json()
