@@ -12,6 +12,7 @@ from openapi_server.models.inventory_item import InventoryItem  # noqa: E501
 from openapi_server import util
 from pybreaker import CircuitBreaker, CircuitBreakerError
 from openapi_server.helpers.authorization import verify_login
+from openapi_server.controllers.inventory_internal_controller import remove_item
 
 # Service URLs
 INVENTORY_SERVICE_URL = "http://service_inventory:8080"
@@ -123,45 +124,18 @@ def remove_inventory_item():  # noqa: E501
     if not item_uuid:
         return jsonify({"error": "Missing item_uuid parameter"}), 400
     
-    
     try:
-        # First check if item is in auction
-        
+        # First check if item is in auction     
         @circuit_breaker
         def check_auction_status():
-            print(item_uuid)
-            response = requests.get(
-                f"{AUCTIONS_SERVICE_URL}/auction/internal/is_open_by_item_uuid",
-                params={"uuid": item_uuid}
-            )
+            params = {"uuid": item_uuid}
+            url = "http://service_auction:8080/auction/internal/is_open_by_item_uuid"
+            response = requests.get(url,params=params)
             response.raise_for_status()
             return response.json()
-
-       
-
+        
         auction_check = check_auction_status()
-        if auction_check.get("is_in_auction", False):
-            return jsonify({"error": "Cannot remove item that is currently in auction"}), 400
         
-        
-
-        # If not in auction, proceed with removal
-        @circuit_breaker
-        def remove_item():
-            response = requests.delete(
-                f"{INVENTORY_SERVICE_URL}/inventory/internal/remove",
-                params={
-                    "uuid": user_uuid,
-                    "item_uuid": item_uuid,
-                    "session": None
-                }
-            )
-            response.raise_for_status()
-            return response
-
-        remove_item()
-        return jsonify({"message": "Item removed successfully"}), 200
-
     except requests.HTTPError as e:
         if e.response.status_code == 404:
             return jsonify({"error": "Item not found"}), 404
@@ -171,3 +145,15 @@ def remove_inventory_item():  # noqa: E501
         return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
         return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503
+
+    if auction_check.get("found", False):
+        return jsonify({"error": "Cannot remove item that is currently in auction"}), 400
+    
+    response = remove_item(None, item_uuid, user_uuid)
+
+    if response[1] == 404:
+        return jsonify({"error": "Item not found."}), 404
+    elif response[1] != 200:
+        return jsonify({"error": "Service unavailable. Please try again later."}), 503
+    
+    return jsonify({"message":"Item removed from inventory."}), 200

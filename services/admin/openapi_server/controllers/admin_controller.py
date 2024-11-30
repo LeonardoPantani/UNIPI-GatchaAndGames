@@ -1,6 +1,7 @@
 import connexion
 import json
 import requests
+import bcrypt
 
 from openapi_server.models.auction import Auction  # noqa: E501
 from openapi_server.models.feedback_preview import FeedbackPreview  # noqa: E501
@@ -13,66 +14,149 @@ from openapi_server.models.user_full import UserFull  # noqa: E501
 from openapi_server import util
 
 from openapi_server.helpers.logging import send_log
-from flask import jsonify, session
+
+from flask import session, jsonify
+
 from pybreaker import CircuitBreaker, CircuitBreakerError
 
+from openapi_server.helpers.authorization import verify_login
+from pybreaker import CircuitBreaker, CircuitBreakerError
 
 circuit_breaker = CircuitBreaker(
     fail_max=1000, reset_timeout=5, exclude=[requests.HTTPError]
 )
-
 
 def admin_health_check_get():
     return jsonify({"message": "Service operational."}), 200
 
 
 def ban_profile(user_uuid):
-    if "username" not in session or session.get("role") != "ADMIN":
-        return jsonify(
-            {"error": "This account is not authorized to perform this action."}
-        ), 403
+    session = verify_login(connexion.request.headers.get('Authorization'))
+    if session[1] != 200:
+        return session
+    else:
+        session = session[0]
 
-    if session.get("uuid") == user_uuid:
+    try:
+        @circuit_breaker
+        def make_request_to_auth_service():
+            params = {"uuid": session['uuid']}
+            url = "http://service_auth:8080/auth/internal/get_role_by_uuid"
+            response = requests.get(url, params=params)
+            response.raise_for_status()
+            return response.json()
+        
+        user_role_data = make_request_to_auth_service()
+
+    except requests.HTTPError as e:
+        if e.response.status_code == 404: 
+            return jsonify({"error": "User not found."}), 404
+        else:
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503  
+
+    user_role = user_role_data['role']
+
+    if user_role != "ADMIN":
+        return jsonify({"error": "This account is not authorized to perform this action."}), 403
+
+    if session['uuid'] == user_uuid:
         return jsonify({"error": "You cannot delete your account like this."}), 406
-
     
     try:
-
         @circuit_breaker
-        def make_request_to_dbmanager():
-            payload = {"user_uuid": user_uuid}
-            url = "https://db_manager/db_manager/admin/ban_user_profile"
-            response = requests.post(url, json=payload)
-            response.raise_for_status()  # if response is obtained correctly
+        def make_request_to_feedback_service():
+            params = {"uuid": user_uuid}
+            url = "http://service_feedback:8080/feedback/internal/delete_user_feedbacks"
+            response = requests.delete(url, params=params)
+            response.raise_for_status()
             return response.json()
+        
+        make_request_to_feedback_service()
 
-        make_request_to_dbmanager()
+    except requests.HTTPError as e:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503  
 
-        return jsonify({"message": "Profile successfully banned."}), 200
-    except requests.HTTPError as e:  # if request is sent to dbmanager correctly and it answers an application error (to be managed here) [error expected by us]
-        if e.response.status_code == 404:
-            return jsonify({"error": "User not found."}), 404
-        elif e.response.status_code == 406:
-            return jsonify({"error": "Cannot ban a user with the ADMIN role."}), 409
-        else:  # other errors
-            return jsonify(
-                {
-                    "error": "Service temporarily unavailable. Please try again later. [HTTPError]"
-                }
-            ), 503
-    except (
-        requests.RequestException
-    ):  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
-        return jsonify(
-            {"error": "Service unavailable. Please try again later. [RequestError]"}
-        ), 503
-    except CircuitBreakerError: 
-        return jsonify(
-            {
-                "error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"
-            }
-        ), 503
+    try:
+        @circuit_breaker
+        def make_request_to_currency_service():
+            params = {"uuid": user_uuid}
+            url = "http://service_currency:8080/currency/internal/delete_user_transactions"
+            response = requests.delete(url, params=params)
+            response.raise_for_status()
+            return response.json()
+        
+        make_request_to_currency_service()
 
+    except requests.HTTPError as e:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503  
+
+    try:
+        @circuit_breaker
+        def make_request_to_inventory_service():
+            params = {"uuid": user_uuid}
+            url = "http://service_inventory:8080/inventory/internal/get_items_by_owner_uuid"
+            response = requests.get(url, params=params)
+            response.raise_for_status()
+            return response.json()
+        
+        user_items = make_request_to_inventory_service()
+
+    except requests.HTTPError as e:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503  
+
+    try:
+        @circuit_breaker
+        def make_request_to_auction_service():
+            url = "http://service_auction:8080/auction/internal/refund_bidders"
+            response = requests.post(url, json = user_items)
+            response.raise_for_status()
+            return response.json()
+        
+        make_request_to_auction_service()
+
+    except requests.HTTPError as e:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503  
+
+
+    try:
+        @circuit_breaker
+        def make_request_to_auction_service():
+            params = {"uuid": user_uuid}
+            url = "http://service_auction:8080/auction/internal/reset_current_bidder"
+            response = requests.post(url, params=params)
+            response.raise_for_status()
+            return response.json()
+        
+        make_request_to_auction_service()
+
+    except requests.HTTPError as e:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503  
+
+    #TODO
 
 def create_gacha():
     if "username" not in session or session.get("role") != "ADMIN":
