@@ -1,4 +1,23 @@
 services:
+  ########################## CDN FOR IMAGES
+  cdn:
+    build: ./cdn/
+    container_name: unipi-gatchaandgames-cdn
+    env_file: ./cdn/.env
+    volumes:
+      - ./common/:/usr/src/app/helpers/
+      - ./cdn/storage:/app/storage
+      - ./cdn:/app
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health_check"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    networks:
+      - public_gachaandgames_network
+
   ########################## API GATEWAYS
   api_gateway_public:
     image: nginx:alpine
@@ -19,6 +38,7 @@ services:
       - service_inventory
       - service_profile
       - service_pvp
+      - cdn
     restart: always
     healthcheck:
       test: ["CMD", "curl", "-f", "--cert", "/etc/nginx/ssl/apigateways-cert.pem", "--key", "/etc/nginx/ssl/apigateways-key.pem", "--cacert", "/etc/nginx/ssl/apigateways-ca-cert.pem", "https://localhost/health_check"]
@@ -828,10 +848,9 @@ networks:
   private_gachaandgames_network:
   public_gachaandgames_network:
 volumes:
-  mysql_gachaandgames_db:
-  grafana_data:
   loki_data:
   redis_data:
+  grafana_data:
   service_auth_db_proxy_data:
   service_auth_db_primary_data:
   service_auth_db_replica_data:
