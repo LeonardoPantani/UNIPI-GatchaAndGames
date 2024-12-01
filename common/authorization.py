@@ -1,7 +1,7 @@
 import requests
 import inspect
 from openapi_server.helpers.logging import send_log
-from flask import jsonify
+from flask import jsonify, current_app
 from pybreaker import CircuitBreaker, CircuitBreakerError
 
 circuit_breaker = CircuitBreaker(fail_max=5, reset_timeout=5)
@@ -26,7 +26,7 @@ def verify_login(auth_header=None, audience_required="public_services", service_
         def make_request_to_auth():
             payload = { "access_token": access_token, "audience_required": audience_required }
             url = "https://service_auth/auth/internal/introspect/"
-            response = requests.post(url, json=payload, verify=False)
+            response = requests.post(url, json=payload, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
             return response.json()
 

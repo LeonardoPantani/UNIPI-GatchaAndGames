@@ -15,7 +15,7 @@ from openapi_server import util
 
 from openapi_server.helpers.logging import send_log, query_logs
 
-from flask import session, jsonify
+from flask import session, jsonify, current_app
 
 from pybreaker import CircuitBreaker, CircuitBreakerError
 
@@ -44,7 +44,7 @@ def ban_profile(user_uuid):
         def make_request_to_auth_service():
             params = {"uuid": session['uuid']}
             url = "https://service_auth/auth/internal/get_role_by_uuid"
-            response = requests.get(url, params=params, verify=False)
+            response = requests.get(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
             return response.json()
         
@@ -73,7 +73,7 @@ def ban_profile(user_uuid):
         def make_request_to_feedback_service():
             params = {"uuid": user_uuid}
             url = "https://service_feedback/feedback/internal/delete_user_feedbacks"
-            response = requests.delete(url, params=params, verify=False)
+            response = requests.delete(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
         
         make_request_to_feedback_service()
@@ -90,7 +90,7 @@ def ban_profile(user_uuid):
         def make_request_to_currency_service():
             params = {"uuid": user_uuid}
             url = "https://service_currency/currency/internal/delete_user_transactions"
-            response = requests.delete(url, params=params, verify=False)
+            response = requests.delete(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
             return response.json()
         
@@ -108,7 +108,7 @@ def ban_profile(user_uuid):
         def make_request_to_inventory_service():
             params = {"uuid": user_uuid}
             url = "https://service_inventory/inventory/internal/get_items_by_owner_uuid"
-            response = requests.get(url, params=params, verify=False)
+            response = requests.get(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
             return response.json()
         
@@ -125,7 +125,7 @@ def ban_profile(user_uuid):
         @circuit_breaker
         def make_request_to_auction_service():
             url = "https://service_auction/auction/internal/refund_bidders"
-            response = requests.post(url, json = user_items, verify=False)
+            response = requests.post(url, json = user_items, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
             return response.json()
         
@@ -144,7 +144,7 @@ def ban_profile(user_uuid):
         def make_request_to_auction_service():
             params = {"uuid": user_uuid}
             url = "https://service_auction/auction/internal/reset_current_bidder"
-            response = requests.post(url, params=params, verify=False)
+            response = requests.post(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
         
         make_request_to_auction_service()
@@ -164,7 +164,7 @@ def ban_profile(user_uuid):
         def make_request_to_pvp_service():
             params = {"uuid": user_uuid}
             url = "https://service_pvp/pvp/internal/remove_by_user_uuid"
-            response = requests.delete(url, params=params, verify=False)
+            response = requests.delete(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
             return response.json()
         
@@ -181,7 +181,7 @@ def ban_profile(user_uuid):
         @circuit_breaker
         def make_request_to_auction_service():
             url = "https://service_auction/auction/internal/remove_by_item_uuid"
-            response = requests.post(url, json=user_items, verify=False)
+            response = requests.post(url, json=user_items, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
             return response.json()
         
@@ -199,7 +199,7 @@ def ban_profile(user_uuid):
         def make_request_to_inventory_service():
             params = {"uuid": user_uuid}
             url = "https://service_inventory/inventory/internal/delete_user_inventory"
-            response = requests.delete(url, params=params, verify=False)
+            response = requests.delete(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
             return response.json()
         
@@ -217,7 +217,7 @@ def ban_profile(user_uuid):
         def make_request_to_profile_service():
             params = {"uuid": user_uuid}
             url = "https://service_profile/profile/internal/delete_profile_by_uuid"
-            response = requests.delete(url, params=params, verify=False)
+            response = requests.delete(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
             return response.json()
         
@@ -235,7 +235,7 @@ def ban_profile(user_uuid):
         def make_request_to_auth_service():
             params = {"uuid": user_uuid}
             url = "https://service_auth/auth/internal/delete_user_by_uuid"
-            response = requests.delete(url, params=params, verify=False)
+            response = requests.delete(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
             return response.json()
         
@@ -262,7 +262,7 @@ def create_gacha():
         def make_request_to_auth_service():
             params = {"uuid": session['uuid']}
             url = "https://service_auth/auth/internal/get_role_by_uuid"
-            response = requests.get(url, params=params, verify=False)
+            response = requests.get(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
             return response.json()
         
@@ -296,7 +296,7 @@ def create_gacha():
         @circuit_breaker
         def make_request_to_gacha_service():
             url = "https://service_gacha/gacha/internal/gacha/create"
-            response = requests.post(url, json=gacha, verify=False)
+            response = requests.post(url, json=gacha, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
         
         make_request_to_gacha_service()
@@ -313,7 +313,7 @@ def create_gacha():
 
     return jsonify({"message":"Gacha created with uuid: "+ new_uuid}), 201
 
-def delete_gacha(gacha_uuid):  # TODO vanno rimosse le cose nel modo corretto
+def delete_gacha(gacha_uuid):
     session = verify_login(connexion.request.headers.get('Authorization'), audience_required="private_services", service_type=SERVICE_TYPE)
     if session[1] != 200:
         return session
@@ -325,7 +325,7 @@ def delete_gacha(gacha_uuid):  # TODO vanno rimosse le cose nel modo corretto
         def make_request_to_auth_service():
             params = {"uuid": session['uuid']}
             url = "https://service_auth/auth/internal/get_role_by_uuid"
-            response = requests.get(url, params=params, verify=False)
+            response = requests.get(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
             return response.json()
         
@@ -351,7 +351,7 @@ def delete_gacha(gacha_uuid):  # TODO vanno rimosse le cose nel modo corretto
         def make_request_to_gacha_service():
             params = {"uuid": gacha_uuid}
             url = "https://service_gacha/gacha/internal/gacha/delete"
-            response = requests.delete(url, params=params, verify=False)
+            response = requests.delete(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
         
         make_request_to_gacha_service()
@@ -380,7 +380,7 @@ def create_pool():
         def make_request_to_auth_service():
             params = {"uuid": session['uuid']}
             url = "https://service_auth/auth/internal/get_role_by_uuid"
-            response = requests.get(url, params=params, verify=False)
+            response = requests.get(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
             return response.json()
         
@@ -425,7 +425,7 @@ def create_pool():
         @circuit_breaker
         def make_request_to_gacha_service():
             url = "https://service_gacha/gacha/internal/pool/create"
-            response = requests.post(url, json=pool.to_dict(), verify=False)
+            response = requests.post(url, json=pool.to_dict(), verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
         
         make_request_to_gacha_service()
@@ -454,7 +454,7 @@ def delete_pool(pool_id):
         def make_request_to_auth_service():
             params = {"uuid": session['uuid']}
             url = "https://service_auth/auth/internal/get_role_by_uuid"
-            response = requests.get(url, params=params, verify=False)
+            response = requests.get(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
             return response.json()
         
@@ -480,7 +480,7 @@ def delete_pool(pool_id):
         def make_request_to_gacha_service():
             params = {"codename": pool_id}
             url = "https://service_gacha/gacha/internal/pool/delete"
-            response = requests.delete(url, params=params, verify=False)
+            response = requests.delete(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
         
         make_request_to_gacha_service()
@@ -512,7 +512,7 @@ def edit_user_profile(user_uuid, email=None, username=None):
         def make_request_to_auth_service():
             params = {"uuid": session['uuid']}
             url = "https://service_auth/auth/internal/get_role_by_uuid"
-            response = requests.get(url, params=params, verify=False)
+            response = requests.get(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
             return response.json()
         
@@ -538,7 +538,7 @@ def edit_user_profile(user_uuid, email=None, username=None):
         def make_request_to_profile_service():
             params = {"uuid": user_uuid}
             url = "https://service_profile/profile/internal/exists"
-            response = requests.get(url, params=params, verify=False)
+            response = requests.get(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
             return response.json()
         
@@ -563,7 +563,7 @@ def edit_user_profile(user_uuid, email=None, username=None):
             def make_request_to_auth_service():
                 params = {"uuid": user_uuid, "email": email}
                 url = "https://service_auth/auth/internal/edit_email"
-                response = requests.post(url, params=params, verify=False)
+                response = requests.post(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
                 print(response)
                 response.raise_for_status()
             
@@ -587,7 +587,7 @@ def edit_user_profile(user_uuid, email=None, username=None):
             def make_request_to_profile_service():
                 params = {"uuid": user_uuid, "username": username}
                 url = "https://service_profile/profile/internal/edit_username"
-                response = requests.post(url, params=params, verify=False)
+                response = requests.post(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
                 response.raise_for_status()
             
             make_request_to_profile_service()
@@ -621,7 +621,7 @@ def get_all_feedbacks(page_number=None):
         def make_request_to_auth_service():
             params = {"uuid": session['uuid']}
             url = "https://service_auth/auth/internal/get_role_by_uuid"
-            response = requests.get(url, params=params, verify=False)
+            response = requests.get(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
             return response.json()
         
@@ -647,7 +647,7 @@ def get_all_feedbacks(page_number=None):
         def make_request_to_feedback_service():
             params = {"page_number": page_number}
             url = "https://service_feedback/feedback/internal/list"
-            response = requests.get(url, params=params, verify=False)
+            response = requests.get(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
             return response.json()
         
@@ -677,7 +677,7 @@ def get_all_profiles(page_number=None):
         def make_request_to_auth_service():
             params = {"uuid": session['uuid']}
             url = "https://service_auth/auth/internal/get_role_by_uuid"
-            response = requests.get(url, params=params, verify=False)
+            response = requests.get(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
             return response.json()
         
@@ -703,7 +703,7 @@ def get_all_profiles(page_number=None):
         def make_request_to_profile_service():
             params = {"page_number": page_number}
             url = "https://service_profile/profile/internal/list"
-            response = requests.get(url, params=params, verify=False)
+            response = requests.get(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
             return response.json()
         
@@ -734,7 +734,7 @@ def get_feedback_info(feedback_id=None):
         def make_request_to_auth_service():
             params = {"uuid": session['uuid']}
             url = "https://service_auth/auth/internal/get_role_by_uuid"
-            response = requests.get(url, params=params, verify=False)
+            response = requests.get(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
             return response.json()
         
@@ -760,7 +760,7 @@ def get_feedback_info(feedback_id=None):
         def make_request_to_feedback_service():
             params = {"feedback_id": feedback_id}
             url = "https://service_feedback/feedback/internal/info"
-            response = requests.get(url, params=params, verify=False)
+            response = requests.get(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
             return response.json()
         
@@ -794,7 +794,7 @@ def get_system_logs():
         def make_request_to_auth_service():
             params = {"uuid": session['uuid']}
             url = "https://service_auth/auth/internal/get_role_by_uuid"
-            response = requests.get(url, params=params, verify=False)
+            response = requests.get(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
             return response.json()
         
@@ -817,8 +817,6 @@ def get_system_logs():
     
     logs = query_logs(service_type, endpoint, interval, level, start_time)
     
-    if not logs:
-        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
 
     return jsonify(logs), 200
 
@@ -839,7 +837,7 @@ def get_user_history(user_uuid, history_type, page_number=None):
         def make_request_to_auth_service():
             params = {"uuid": session['uuid']}
             url = "https://service_auth/auth/internal/get_role_by_uuid"
-            response = requests.get(url, params=params, verify=False)
+            response = requests.get(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
             return response.json()
         
@@ -865,7 +863,7 @@ def get_user_history(user_uuid, history_type, page_number=None):
         def make_request_to_currency_service():
             params = {"uuid": user_uuid, "history_type": history_type, "page_number": page_number}
             url = "https://service_currency/currency/internal/get_user_history"
-            response = requests.get(url, params=params, verify=False)
+            response = requests.get(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
             return response.json()
         
@@ -915,7 +913,7 @@ def update_auction(auction_uuid):
         def make_request_to_auth_service():
             params = {"uuid": session['uuid']}
             url = "https://service_auth/auth/internal/get_role_by_uuid"
-            response = requests.get(url, params=params, verify=False)
+            response = requests.get(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
             return response.json()
         
@@ -950,7 +948,7 @@ def update_auction(auction_uuid):
         @circuit_breaker
         def make_request_to_auction_service():
             url = "https://service_auction/auction/internal/update"
-            response = requests.post(url, json=auction_data, verify=False)
+            response = requests.post(url, json=auction_data, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
             
         make_request_to_auction_service()
@@ -991,7 +989,7 @@ def update_gacha(gacha_uuid):
         def make_request_to_auth_service():
             params = {"uuid": session['uuid']}
             url = "https://service_auth/auth/internal/get_role_by_uuid"
-            response = requests.get(url, params=params, verify=False)
+            response = requests.get(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
             return response.json()
         
@@ -1016,7 +1014,7 @@ def update_gacha(gacha_uuid):
         @circuit_breaker
         def make_request_to_gacha_service():
             url = "https://service_gacha/gacha/internal/gacha/update"
-            response = requests.post(url, json=gacha.to_dict(), verify=False)
+            response = requests.post(url, json=gacha.to_dict(), verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
             
         make_request_to_gacha_service()
@@ -1075,7 +1073,7 @@ def update_pool(pool_id):
         def make_request_to_auth_service():
             params = {"uuid": session['uuid']}
             url = "https://service_auth/auth/internal/get_role_by_uuid"
-            response = requests.get(url, params=params, verify=False)
+            response = requests.get(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
             return response.json()
         
@@ -1100,7 +1098,7 @@ def update_pool(pool_id):
         @circuit_breaker
         def make_request_to_gacha_service():
             url = "https://service_gacha/gacha/internal/pool/update"
-            response = requests.post(url, json=pool.to_dict(), verify=False)
+            response = requests.post(url, json=pool.to_dict(), verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
             
         make_request_to_gacha_service()

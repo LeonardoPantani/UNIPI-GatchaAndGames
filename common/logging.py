@@ -33,28 +33,35 @@ def send_log(message, level="general", service_type="unknown", endpoint="unknown
         print(f"Error sending log: {e}")
 
 
-def query_logs(service_type, endpoint="unknown", interval=3600, level="info", start_time=None):
-    loki_url = "https://logging_loki:3100/loki/api/v1/query_range"
+def query_logs(service_type, endpoint="unknown", interval=3600, level="general", start_time=None):
+    loki_url = "http://logging_loki:3100/loki/api/v1/query_range"
     headers = {'Content-Type': 'application/json'}
-
-    if start_time is None:
-        start_time_ns = int(time.time() * 1e9) - int(interval * 1e9)
-    else:
-        start_time_ns = int(start_time * 1e9)
     
-    end_time_ns = start_time_ns + int(interval * 1e9)
-    query = f'{{service="{service_type}", endpoint="{endpoint}", level="{level}"}}'
-    params = {
-        "query": query,
-        "start": start_time_ns,
-        "end": end_time_ns,
-        "limit": 1000
-    }
     try:
+        # Ensure interval is a valid number
+        interval = float(interval)
+        
+        # Ensure start_time is a valid number
+        if start_time is None:
+            start_time_ns = int(time.time() * 1e9) - int(interval * 1e9)
+        else:
+            start_time_float = float(start_time)
+            start_time_ns = int(start_time_float * 1e9)
+        
+        end_time_ns = start_time_ns + int(interval * 1e9)
+        query = f'{{service="{service_type}", endpoint="{endpoint}", level="{level}"}}'
+        params = {
+            "query": query,
+            "start": start_time_ns,
+            "end": end_time_ns,
+            "limit": 1000
+        }
+        # Send the query to Loki
         response = requests.get(loki_url, params=params, headers=headers)
         response.raise_for_status()
-
+        
         logs = response.json().get("data", {}).get("result", [])
+        
         log_values = []
 
         for result in logs:
@@ -69,5 +76,11 @@ def query_logs(service_type, endpoint="unknown", interval=3600, level="info", st
                 })
         
         return log_values
-    except requests.exceptions.RequestException:
+    except ValueError as ve:
+        # Handle invalid start_time or interval
+        print(f"Invalid input: start_time={start_time}, interval={interval}. Error: {ve}")
+        return None
+    except requests.exceptions.RequestException as re:
+        # Handle network errors
+        print(f"Request error: {re}")
         return None

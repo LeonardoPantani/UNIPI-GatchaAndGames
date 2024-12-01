@@ -3,7 +3,7 @@ from datetime import datetime
 
 import connexion
 import requests
-from flask import jsonify
+from flask import jsonify, current_app
 from mysql.connector.errors import (
     DatabaseError,
     DataError,
@@ -150,7 +150,7 @@ def get_auction(session=None, uuid=None):
             def make_request_to_inventory_service():
                 params = {"uuid": auction[1]}
                 url = "https://service_inventory/inventory/internal/get_by_item_uuid"
-                response = requests.get(url, params=params)
+                response = requests.get(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
                 response.raise_for_status()
                 return response.json()
             
@@ -244,7 +244,7 @@ def get_auction_list(session=None, status=None, rarity=None, page_number=None):
                 def make_request_to_inventory_service():
                     params = {"uuid": auction[1]}
                     url = "https://service_inventory/inventory/internal/get_by_item_uuid"
-                    response = requests.get(url, params=params)
+                    response = requests.get(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
                     response.raise_for_status()
                     return response.json()
                 
@@ -265,7 +265,7 @@ def get_auction_list(session=None, status=None, rarity=None, page_number=None):
                     def make_request_to_gacha_service():
                         params = {"uuid": item["gacha_uuid"]}
                         url = "https://service_gacha/gacha/internal/get_rarity_by_uuid"
-                        response = requests.get(url, params=params)
+                        response = requests.get(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
                         response.raise_for_status()
                         return response.json()
                     
@@ -322,7 +322,7 @@ def get_user_auctions(session=None, user_uuid=None):
         def make_request_to_inventory_service():
             params = {"uuid": user_uuid}
             url = "https://service_inventory/inventory/internal/get_items_by_owner_uuid"
-            response = requests.get(url, params=params)
+            response = requests.get(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
             return response.json()
         
@@ -469,7 +469,7 @@ def refund_bidders(request_body=None, session=None):
                     def make_request_to_profile_service():
                         params = {"uuid": auction[4], "amount": auction[3]}
                         url = "https://service_profile/profile/internal/add_currency"
-                        response = requests.post(url, params=params)
+                        response = requests.post(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
                         response.raise_for_status()
                         return response.json()
                     

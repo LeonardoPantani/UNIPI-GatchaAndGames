@@ -253,7 +253,7 @@ def create_gacha_type(gacha=None):
         return "", 503
 
 
-def delete_gacha_pool(body=None): # TODO controllare dipendenze tra elementi nel db
+def delete_gacha_pool(body=None):
     if not connexion.request.is_json:
         return "", 400
 
@@ -306,7 +306,7 @@ def delete_gacha_pool(body=None): # TODO controllare dipendenze tra elementi nel
         return "", 503
 
 
-def delete_gacha_type(): # TODO controllare dipendenze tra elementi nel db
+def delete_gacha_type():
     if not connexion.request.is_json:
         return "", 400
 

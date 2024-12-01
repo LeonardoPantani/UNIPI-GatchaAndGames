@@ -705,6 +705,7 @@ def update_pool(pool=None, session=None):
             connection = get_db()
             cursor = connection.cursor()
 
+            # TODO risolvere possibile sql injection
             # Check if all items exist
             if pool_object.items:
                 placeholders = ','.join(['UUID_TO_BIN(%s)' for _ in pool_object.items])

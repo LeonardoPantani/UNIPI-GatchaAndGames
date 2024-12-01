@@ -1,24 +1,37 @@
 #!/usr/bin/env python3
 
-import connexion
 import os
-import time
+
+import connexion
+import urllib3
+from flask.json.provider import DefaultJSONProvider
+from urllib3.exceptions import InsecureRequestWarning
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from openapi_server import encoder
 
-from flask import Flask
-from werkzeug.middleware.proxy_fix import ProxyFix
 
+class CustomJSONProvider(DefaultJSONProvider):
+    def dumps(self, obj, **kwargs):
+        return encoder.JSONEncoder().encode(obj)
+    
+    def loads(self, s, **kwargs):
+        return super().loads(s, **kwargs)
 
 def main():
+    urllib3.disable_warnings(InsecureRequestWarning)
     connexion_app = connexion.App(__name__, specification_dir='./openapi/')
-    connexion_app.app.json_encoder = encoder.JSONEncoder
-    connexion_app.app.wsgi_app = ProxyFix(connexion_app.app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+    app = connexion_app.app
+    app.json = CustomJSONProvider(app)
+    app.wsgi_app = ProxyFix(connexion_app.app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+
+    # secret key flask
+    app.secret_key = os.environ.get('FLASK_SECRET_KEY')
+    app.config['jwt_secret_key'] = os.environ.get('JWT_SECRET_KEY')
+    app.config['requests_timeout'] = int(os.environ.get('REQUESTS_TIMEOUT'))
+    app.config['database_timeout'] = int(os.environ.get('DATABASE_TIMEOUT'))
     
-    # Flask SECRET KEY
-    connexion_app.app.secret_key = os.environ.get('FLASK_SECRET_KEY')
-    
-    # Adding api
+    # adding api
     connexion_app.add_api('openapi.yaml',
         arguments={'title': 'Gacha System - OpenAPI 3.0'},
         pythonic_params=True

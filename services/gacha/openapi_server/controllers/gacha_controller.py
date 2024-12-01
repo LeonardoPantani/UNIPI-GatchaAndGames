@@ -47,7 +47,7 @@ def get_gacha_info(gacha_uuid):
             response = requests.get(
                 f"{GACHA_SERVICE_URL}/gacha/internal/gacha/get",
                 params={"uuid": gacha_uuid},
-                verify=False
+                verify=False, timeout=current_app.config['requests_timeout']
             )
             response.raise_for_status()
             return response.json()
@@ -86,7 +86,7 @@ def pull_gacha(pool_id):
             response = requests.get(
                 f"{GACHA_SERVICE_URL}/gacha/internal/pool/exists",
                 params={"uuid": pool_id},
-                verify=False
+                verify=False, timeout=current_app.config['requests_timeout']
             )
             response.raise_for_status()
             return response.json()
@@ -101,7 +101,7 @@ def pull_gacha(pool_id):
             response = requests.get(
                 f"{GACHA_SERVICE_URL}/gacha/internal/pool/get",
                 params={"uuid": pool_id},
-                verify=False
+                verify=False, timeout=current_app.config['requests_timeout']
             )
             response.raise_for_status()
             return response.json()
@@ -113,7 +113,7 @@ def pull_gacha(pool_id):
             response = requests.get(
                 f"{PROFILE_SERVICE_URL}/profile/internal/get_currency_from_uuid",
                 params={"user_uuid": user_uuid},
-                verify=False
+                verify=False, timeout=current_app.config['requests_timeout']
             )
             response.raise_for_status()
             return response.json()
@@ -157,7 +157,7 @@ def pull_gacha(pool_id):
                     "uuid": user_uuid,
                     "amount": -pool['price']
                 },
-                verify=False
+                verify=False, timeout=current_app.config['requests_timeout']
             )
             response.raise_for_status()
             return response
@@ -181,7 +181,7 @@ def pull_gacha(pool_id):
             response = requests.post(
             f"{INVENTORY_SERVICE_URL}/inventory/internal/insert_item",
             json=item_data,
-                verify=False
+                verify=False, timeout=current_app.config['requests_timeout']
             )
             print(response)
             response.raise_for_status()
@@ -218,7 +218,7 @@ def get_pool_info():
         def get_pools():
             response = requests.post(
                 f"{GACHA_SERVICE_URL}/gacha/internal/pool/list",
-                verify=False
+                verify=False, timeout=current_app.config['requests_timeout']
             )
             response.raise_for_status()
             return response.json()
@@ -256,7 +256,7 @@ def get_gachas(not_owned):
             response = requests.get(
                 f"{INVENTORY_SERVICE_URL}/inventory/internal/get_gachas_types_of_user",
                 params={"user_uuid": user_uuid},
-                verify=False
+                verify=False, timeout=current_app.config['requests_timeout']
             )
             response.raise_for_status()
             return response.json()
@@ -269,7 +269,7 @@ def get_gachas(not_owned):
             response = requests.post(
                 f"{GACHA_SERVICE_URL}/gacha/internal/gacha/list",
                 json=owned_gachas,
-                verify=False
+                verify=False, timeout=current_app.config['requests_timeout']
             )
             response.raise_for_status()
             return response.json()

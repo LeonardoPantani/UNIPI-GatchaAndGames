@@ -93,6 +93,7 @@ def accept_pvp_request(pvp_match_uuid):
     if player2_uuid != user_uuid:
         return jsonify({"error": "Gacha items do not belong to you"}), 400
 
+    # TODO riparare
     # Deserialize `teams` if it was stored as a JSON string in the database
     if isinstance(teams, str):
         teams = json.loads(teams)
@@ -119,7 +120,7 @@ def accept_pvp_request(pvp_match_uuid):
                 payload = {
                     "player1_stand": player1_team[i],
                     "player2_stand": player2_team[i],
-                    "extracted_stat": extracted_stat #TODO: modify model to include extracted
+                    "extracted_stat": extracted_stat
                 }
                 url = "https://db_manager/db_manager/pvp/get_gacha_stat"
                 response = requests.post(url, json=payload)
@@ -139,7 +140,7 @@ def accept_pvp_request(pvp_match_uuid):
         def number_to_stat(number):
             return chr(ord('A') + (5 - number))
 
-        player1_stand_name, player1_stand_stat, player1_stand_potential = result["player1_stat"] #TODO: more data needed in answer than just the stat
+        player1_stand_name, player1_stand_stat, player1_stand_potential = result["player1_stat"]
         player2_stand_name, player2_stand_stat, player2_stand_potential = result["player2_stat"]
 
         log["pairings"].append({
