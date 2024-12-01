@@ -13,7 +13,7 @@ from openapi_server.models.pool import Pool
 from openapi_server.models.user_full import UserFull
 from openapi_server import util
 
-from openapi_server.helpers.logging import send_log
+from openapi_server.helpers.logging import send_log, query_logs
 
 from flask import session, jsonify
 
@@ -606,218 +606,294 @@ def edit_user_profile(user_uuid, email=None, username=None):
 
 
 def get_all_feedbacks(page_number=None):
-    if "username" not in session or session.get("role") != "ADMIN":
-        return jsonify(
-            {"error": "This account is not authorized to perform this action"}
-        ), 403
+    session = verify_login(connexion.request.headers.get('Authorization'), audience_required="private_services")
+    if session[1] != 200:
+        return session
+    else:
+        session = session[0]
 
-    # valid json request
-    if page_number is None:
-        page_number = 1
-
-    payload = {"page_number": page_number}
+    if not page_number:
+        return jsonify({"message": "Invalid request."}), 400
 
     try:
-
         @circuit_breaker
-        def make_request_to_dbmanager():
-            url = "https://db_manager/db_manager/admin/get_all_feedbacks"
-            response = requests.post(url, json=payload)
-            response.raise_for_status()  # if response is obtained correctly
+        def make_request_to_auth_service():
+            params = {"uuid": session['uuid']}
+            url = "https://service_auth/auth/internal/get_role_by_uuid"
+            response = requests.get(url, params=params, verify=False)
+            response.raise_for_status()
             return response.json()
+        
+        user_role_data = make_request_to_auth_service()
 
-        response = make_request_to_dbmanager()
+    except requests.HTTPError as e:
+        if e.response.status_code == 404: 
+            return jsonify({"error": "User not found."}), 404
+        else:
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503  
+    
+    user_role = user_role_data['role']
+    
+    if user_role != "ADMIN":
+        return jsonify({"error": "This account is not authorized to perform this action."}), 403
+    
+    try:
+        @circuit_breaker
+        def make_request_to_feedback_service():
+            params = {"page_number": page_number}
+            url = "https://service_feedback/feedback/internal/list"
+            response = requests.get(url, params=params, verify=False)
+            response.raise_for_status()
+            return response.json()
+        
+        feedback_list = make_request_to_feedback_service()
 
-        return jsonify(response), 200
-    except requests.HTTPError:  # if request is sent to dbmanager correctly and it answers an application error (to be managed here) [error expected by us]
-        return jsonify(
-            {
-                "error": "Service temporarily unavailable. Please try again later. [HTTPError]"
-            }
-        ), 503
-    except (
-        requests.RequestException
-    ):  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
-        return jsonify(
-            {"error": "Service unavailable. Please try again later. [RequestError]"}
-        ), 503
-    except CircuitBreakerError: 
-        return jsonify(
-            {
-                "error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"
-            }
-        ), 503
+    except requests.HTTPError as e:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
+    return jsonify(feedback_list), 200
 
 def get_all_profiles(page_number=None):
-    if "username" not in session or session.get("role") != "ADMIN":
-        return jsonify(
-            {"error": "This account is not authorized to perform this action"}
-        ), 403
+    session = verify_login(connexion.request.headers.get('Authorization'), audience_required="private_services")
+    if session[1] != 200:
+        return session
+    else:
+        session = session[0]
 
-    # valid json request
-    if page_number is None:
-        page_number = 1
-
-    payload = {"page_number": page_number}
+    if not page_number:
+        return jsonify({"message": "Invalid request."}), 400
 
     try:
-
         @circuit_breaker
-        def make_request_to_dbmanager():
-            url = "https://db_manager/db_manager/admin/get_all_profiles"
-            response = requests.post(url, json=payload)
-            response.raise_for_status()  # if response is obtained correctly
+        def make_request_to_auth_service():
+            params = {"uuid": session['uuid']}
+            url = "https://service_auth/auth/internal/get_role_by_uuid"
+            response = requests.get(url, params=params, verify=False)
+            response.raise_for_status()
             return response.json()
+        
+        user_role_data = make_request_to_auth_service()
 
-        response = make_request_to_dbmanager()
+    except requests.HTTPError as e:
+        if e.response.status_code == 404: 
+            return jsonify({"error": "User not found."}), 404
+        else:
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503  
+    
+    user_role = user_role_data['role']
+    
+    if user_role != "ADMIN":
+        return jsonify({"error": "This account is not authorized to perform this action."}), 403
+    
+    try:
+        @circuit_breaker
+        def make_request_to_profile_service():
+            params = {"page_number": page_number}
+            url = "https://service_profile/profile/internal/list"
+            response = requests.get(url, params=params, verify=False)
+            response.raise_for_status()
+            return response.json()
+        
+        profile_list = make_request_to_profile_service()
 
-        return jsonify(response), 200
-    except requests.HTTPError:  # if request is sent to dbmanager correctly and it answers an application error (to be managed here) [error expected by us]
-        return jsonify(
-            {
-                "error": "Service temporarily unavailable. Please try again later. [HTTPError]"
-            }
-        ), 503
-    except (
-        requests.RequestException
-    ):  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
-        return jsonify(
-            {"error": "Service unavailable. Please try again later. [RequestError]"}
-        ), 503
-    except CircuitBreakerError: 
-        return jsonify(
-            {
-                "error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"
-            }
-        ), 503
+    except requests.HTTPError as e:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
+
+    return jsonify(profile_list), 200
 
 
 def get_feedback_info(feedback_id=None):
-    if "username" not in session or session.get("role") != "ADMIN":
-        return jsonify(
-            {"error": "This account is not authorized to perform this action"}
-        ), 403
+    session = verify_login(connexion.request.headers.get('Authorization'), audience_required="private_services")
+    if session[1] != 200:
+        return session
+    else:
+        session = session[0]
 
-    # valid request from now on
-    if feedback_id is None:
-        feedback_id = 1
-
-    payload = {"feedback_id": feedback_id}
+    if not feedback_id:
+        return jsonify({"message": "Invalid request."}), 400
 
     try:
-
         @circuit_breaker
-        def make_request_to_dbmanager():
-            url = "https://db_manager/db_manager/admin/get_feedback_info"
-            response = requests.post(url, json=payload)
-            response.raise_for_status()  # if response is obtained correctly
+        def make_request_to_auth_service():
+            params = {"uuid": session['uuid']}
+            url = "https://service_auth/auth/internal/get_role_by_uuid"
+            response = requests.get(url, params=params, verify=False)
+            response.raise_for_status()
             return response.json()
+        
+        user_role_data = make_request_to_auth_service()
 
-        response = make_request_to_dbmanager()
+    except requests.HTTPError as e:
+        if e.response.status_code == 404: 
+            return jsonify({"error": "User not found."}), 404
+        else:
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503  
+    
+    user_role = user_role_data['role']
+    
+    if user_role != "ADMIN":
+        return jsonify({"error": "This account is not authorized to perform this action."}), 403
 
-        return jsonify(response), 200
+    try:
+        @circuit_breaker
+        def make_request_to_feedback_service():
+            params = {"feedback_id": feedback_id}
+            url = "https://service_feedback/feedback/internal/info"
+            response = requests.get(url, params=params, verify=False)
+            response.raise_for_status()
+            return response.json()
+        
+        feedback = make_request_to_feedback_service()
 
-    except requests.HTTPError as e:  # if request is sent to dbmanager correctly and it answers an application error (to be managed here) [error expected by us]
-        if e.response.status_code == 404:
-            return jsonify({"error": "Feedback not found."}), 404
-        else:  # other errors
-            return jsonify(
-                {
-                    "error": "Service temporarily unavailable. Please try again later. [HTTPError]"
-                }
-            ), 503
-    except (
-        requests.RequestException
-    ):  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
-        return jsonify(
-            {"error": "Service unavailable. Please try again later. [RequestError]"}
-        ), 503
-    except CircuitBreakerError: 
-        return jsonify(
-            {
-                "error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"
-            }
-        ), 503
+    except requests.HTTPError as e:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
+
+    return jsonify(feedback), 200
 
 
 def get_system_logs():  # TODO
-    return "do some magic!"
+    session = verify_login(connexion.request.headers.get('Authorization'), audience_required="private_services")
+    if session[1] != 200:
+        return session
+    else:
+        session = session[0]
+
+    service_type = connexion.request.args.get('service_type')
+    endpoint = connexion.request.args.get('endpoint')
+    interval = connexion.request.args.get('interval', default=3600)
+    level = connexion.request.args.get('level', default="info")
+    start_time = connexion.request.args.get('service_type')
+    
+    try:
+        @circuit_breaker
+        def make_request_to_auth_service():
+            params = {"uuid": session['uuid']}
+            url = "https://service_auth/auth/internal/get_role_by_uuid"
+            response = requests.get(url, params=params, verify=False)
+            response.raise_for_status()
+            return response.json()
+        
+        user_role_data = make_request_to_auth_service()
+
+    except requests.HTTPError as e:
+        if e.response.status_code == 404: 
+            return jsonify({"error": "User not found."}), 404
+        else:
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503  
+    
+    user_role = user_role_data['role']
+    
+    if user_role != "ADMIN":
+        return jsonify({"error": "This account is not authorized to perform this action."}), 403
+
+    logs = query_logs(service_type, endpoint, interval, level, start_time)
+    if not logs:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+
+    return jsonify(logs), 200
+
 
 
 def get_user_history(user_uuid, history_type, page_number=None):
-    if "username" not in session or session.get("role") != "ADMIN":
-        return jsonify(
-            {"error": "This account is not authorized to perform this action"}
-        ), 403
+    session = verify_login(connexion.request.headers.get('Authorization'), audience_required="private_services")
+    if session[1] != 200:
+        return session
+    else:
+        session = session[0]
 
-    # valid request from now on
-    if page_number is None:
-        page_number = 1
-    if history_type is None:
-        history_type = "ingame"
-
-    payload = {
-        "user_uuid": user_uuid,
-        "history_type": history_type,
-        "page_number": page_number,
-    }
+    if not user_uuid or not history_type or not page_number:
+        return jsonify({"message": "Invalid request."}), 400
 
     try:
-
         @circuit_breaker
-        def make_request_to_dbmanager():
-            url = "https://db_manager/db_manager/admin/get_user_history"
-            response = requests.post(url, json=payload)
-            response.raise_for_status()  # if response is obtained correctly
+        def make_request_to_auth_service():
+            params = {"uuid": session['uuid']}
+            url = "https://service_auth/auth/internal/get_role_by_uuid"
+            response = requests.get(url, params=params, verify=False)
+            response.raise_for_status()
             return response.json()
+        
+        user_role_data = make_request_to_auth_service()
 
-        response = make_request_to_dbmanager()
-
-        return jsonify(response), 200
-
-    except requests.HTTPError as e:  # if request is sent to dbmanager correctly and it answers an application error (to be managed here) [error expected by us]
-        if e.response.status_code == 404:
+    except requests.HTTPError as e:
+        if e.response.status_code == 404: 
             return jsonify({"error": "User not found."}), 404
-        elif e.response.status_code == 405:
-            return jsonify({"error": "Invalid history type."}), 400
-        else:  # other errors
-            return jsonify(
-                {
-                    "error": "Service temporarily unavailable. Please try again later. [HTTPError]"
-                }
-            ), 503
-    except (
-        requests.RequestException
-    ):  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
-        return jsonify(
-            {"error": "Service unavailable. Please try again later. [RequestError]"}
-        ), 503
-    except CircuitBreakerError: 
-        return jsonify(
-            {
-                "error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"
-            }
-        ), 503
+        else:
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503  
+    
+    user_role = user_role_data['role']
+    
+    if user_role != "ADMIN":
+        return jsonify({"error": "This account is not authorized to perform this action."}), 403
 
+    try:
+        @circuit_breaker
+        def make_request_to_feedback_service():
+            params = {"uuid": user_uuid, "history_type": history_type, "page_number": page_number}
+            url = "https://service_feedback/feedback/internal/get_user_history"
+            response = requests.get(url, params=params, verify=False)
+            response.raise_for_status()
+        
+        transaction_list = make_request_to_feedback_service()
+
+    except requests.HTTPError as e:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException as e:
+        return jsonify({"error": f"Service temporarily unavailable. Please try again later. [RequestError]{e}"}), 503
+    except CircuitBreakerError:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503  
+
+    return jsonify(transaction_list), 200
 
 def update_auction(auction_uuid):
-    if "username" not in session or session.get("role") != "ADMIN":
-        return jsonify(
-            {"error": "This account is not authorized to perform this action"}
-        ), 403
+    session = verify_login(connexion.request.headers.get('Authorization'), audience_required="private_services")
+    if session[1] != 200:
+        return session
+    else:
+        session = session[0]
 
+    if not auction_uuid:
+        return jsonify({"message": "Invalid request."}), 400
+    
     if not connexion.request.is_json:
         return jsonify({"message": "Invalid request."}), 400
 
     auction = Auction.from_dict(connexion.request.get_json())
 
     if auction.auction_uuid != auction_uuid:
-        return jsonify(
-            {
-                "message": "Auction UUID in request is different from the one inside the auction object."
-            }
-        ), 406
+        return jsonify({"message": "Auction UUID in request is different from the one inside the auction object."}), 406
 
     # starting price check
     if auction.starting_price <= 0:
@@ -829,180 +905,200 @@ def update_auction(auction_uuid):
 
     # Current bid cannot be lower than starting price
     if auction.current_bid < auction.starting_price:
-        return jsonify(
-            {"error": "Current bid cannot be lower than starting price."}
-        ), 401
+        return jsonify({"error": "Current bid cannot be lower than starting price."}), 401
 
-    # valid request from now on
     try:
-
         @circuit_breaker
-        def make_request_to_dbmanager():
-            payload = connexion.request.get_json()
-            url = "https://db_manager/db_manager/admin/update_auction"
-            response = requests.post(url, json=payload)
-            response.raise_for_status()  # if response is obtained correctly
+        def make_request_to_auth_service():
+            params = {"uuid": session['uuid']}
+            url = "https://service_auth/auth/internal/get_role_by_uuid"
+            response = requests.get(url, params=params, verify=False)
+            response.raise_for_status()
             return response.json()
+        
+        user_role_data = make_request_to_auth_service()
 
-        make_request_to_dbmanager()
+    except requests.HTTPError as e:
+        if e.response.status_code == 404: 
+            return jsonify({"error": "User not found."}), 404
+        else:
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503  
+    
+    user_role = user_role_data['role']
+    
+    if user_role != "ADMIN":
+        return jsonify({"error": "This account is not authorized to perform this action."}), 403
 
-        return jsonify({"message": "Auction updated."}), 200
-    except requests.HTTPError as e:  # if request is sent to dbmanager correctly and it answers an application error (to be managed here) [error expected by us]
-        if e.response.status_code == 404:
-            return json.loads(e.response.text), 404
+    try:
+        @circuit_breaker
+        def make_request_to_auction_service():
+            url = "https://service_auction/auction/internal/update"
+            response = requests.post(url, json=auction, verify=False)
+            response.raise_for_status()
+            
+        make_request_to_auction_service()
+    except requests.HTTPError as e:
+        if e.response.status_code == 404: 
+            return jsonify({"error": "Auctions not found."}), 404
         elif e.response.status_code == 417:
             return jsonify({"error": "Invalid date format."}), 417
-        else:  # other errors
-            return jsonify(
-                {
-                    "error": "Service temporarily unavailable. Please try again later. [HTTPError]"
-                }
-            ), 503
-    except (
-        requests.RequestException
-    ):  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
-        return jsonify(
-            {"error": "Service unavailable. Please try again later. [RequestError]"}
-        ), 503
-    except CircuitBreakerError: 
-        return jsonify(
-            {
-                "error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"
-            }
-        ), 503
+        else:
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503  
 
+    return jsonify({"message":"Auction updated."}), 200
 
 def update_gacha(gacha_uuid):
-    if "username" not in session or session.get("role") != "ADMIN":
-        return jsonify(
-            {"error": "This account is not authorized to perform this action"}
-        ), 403
+    session = verify_login(connexion.request.headers.get('Authorization'), audience_required="private_services")
+    if session[1] != 200:
+        return session
+    else:
+        session = session[0]
 
+    if not gacha_uuid:
+        return jsonify({"message": "Invalid request."}), 400
+    
     if not connexion.request.is_json:
         return jsonify({"message": "Invalid request."}), 400
 
     gacha = Gacha.from_dict(connexion.request.get_json())
 
     if gacha.gacha_uuid != gacha_uuid:
-        return jsonify(
-            {
-                "message": "Gacha UUID in request is different from the one inside the gacha object."
-            }
-        ), 406
+        return jsonify({"message": "Gacha UUID in request is different from the one inside the gacha object."}), 406
 
-    # valid request from now on
     try:
-
         @circuit_breaker
-        def make_request_to_dbmanager():
-            payload = connexion.request.get_json()
-            url = "https://db_manager/db_manager/admin/update_gacha"
-            response = requests.post(url, json=payload)
-            response.raise_for_status()  # if response is obtained correctly
+        def make_request_to_auth_service():
+            params = {"uuid": session['uuid']}
+            url = "https://service_auth/auth/internal/get_role_by_uuid"
+            response = requests.get(url, params=params, verify=False)
+            response.raise_for_status()
             return response.json()
+        
+        user_role_data = make_request_to_auth_service()
 
-        make_request_to_dbmanager()
+    except requests.HTTPError as e:
+        if e.response.status_code == 404: 
+            return jsonify({"error": "User not found."}), 404
+        else:
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503  
+    
+    user_role = user_role_data['role']
+    
+    if user_role != "ADMIN":
+        return jsonify({"error": "This account is not authorized to perform this action."}), 403
 
-        return jsonify({"message": "Gacha successfully updated."}), 200
-    except requests.HTTPError as e:  # if request is sent to dbmanager correctly and it answers an application error (to be managed here) [error expected by us]
-        if e.response.status_code == 404:
-            return json.loads(e.response.text), 404
-        else:  # other errors
-            return jsonify(
-                {
-                    "error": "Service temporarily unavailable. Please try again later. [HTTPError]"
-                }
-            ), 503
-    except (
-        requests.RequestException
-    ):  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
-        return jsonify(
-            {"error": "Service unavailable. Please try again later. [RequestError]"}
-        ), 503
-    except CircuitBreakerError: 
-        return jsonify(
-            {
-                "error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"
-            }
-        ), 503
+    try:
+        @circuit_breaker
+        def make_request_to_gacha_service():
+            url = "https://service_gacha/gacha/internal/gacha/update"
+            response = requests.post(url, json=gacha, verify=False)
+            response.raise_for_status()
+            
+        make_request_to_gacha_service()
+    except requests.HTTPError as e:
+        if e.response.status_code == 404: 
+            return jsonify({"error": "Gacha not found."}), 404
+        else:
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503  
+
+    return jsonify({"message":"Gacha updated."}), 200
 
 
 def update_pool(pool_id):
-    if "username" not in session or session.get("role") != "ADMIN":
-        return jsonify(
-            {"error": "This account is not authorized to perform this action"}
-        ), 403
+    session = verify_login(connexion.request.headers.get('Authorization'), audience_required="private_services")
+    if session[1] != 200:
+        return session
+    else:
+        session = session[0]
 
+    if not pool_id:
+        return jsonify({"message": "Invalid request."}), 400
+    
     if not connexion.request.is_json:
         return jsonify({"message": "Invalid request."}), 400
 
     pool = Pool.from_dict(connexion.request.get_json())
 
     if pool.id != pool_id:
-        return jsonify(
-            {
-                "message": "Pool UUID in request is different from the one inside the pool object."
-            }
-        ), 406
+        return jsonify({"message": "Pool UUID in request is different from the one inside the pool object."}), 406
 
     
-    if pool.probabilities is None or pool.name is None or pool.price is None or pool.items is None or pool.probabilities.legendary_probability is None or pool.probabilities.rare_probability is None or pool.probabilities.epic_probability is None or pool.probabilities.common_probability is None:
+    if pool.public_name is None or pool.price is None or pool.items is None or pool.probability_legendary is None or pool.probability_rare is None or pool.probability_epic is None or pool.probability_common is None:
         return jsonify({"message": "Invalid request."}), 400
-
-    # check if probabilities are are floats
+    
     if (
-        not isinstance(pool.probabilities.legendary_probability, float)
-        or not isinstance(pool.probabilities.rare_probability, float)
-        or not isinstance(pool.probabilities.epic_probability, float)
-        or not isinstance(pool.probabilities.common_probability, float)
+        not isinstance(pool.probability_common, float)
+        or not isinstance(pool.probability_rare, float)
+        or not isinstance(pool.probability_epic, float)
+        or not isinstance(pool.probability_legendary, float)
     ):
         return jsonify({"error": "Invalid probabilities field."}), 412
 
     # check if sum of probabilities is 1
-    if (
-        pool.probabilities.legendary_probability
-        + pool.probabilities.epic_probability
-        + pool.probabilities.rare_probability
-        + pool.probabilities.common_probability
-        != 1
-    ):
+    if ((pool.probability_legendary + pool.probability_epic + pool.probability_rare + pool.probability_common) != 1):
         return jsonify({"error": "Sum of probabilities is not 1."}), 416
 
     if pool.price < 1:
         return jsonify({"error": "Price should be a positive number."}), 416
-
-    # valid request from now on
+    
     try:
-
         @circuit_breaker
-        def make_request_to_dbmanager():
-            payload = connexion.request.get_json()
-            url = "https://db_manager/db_manager/admin/update_pool"
-            response = requests.post(url, json=payload)
-            response.raise_for_status()  # if response is obtained correctly
+        def make_request_to_auth_service():
+            params = {"uuid": session['uuid']}
+            url = "https://service_auth/auth/internal/get_role_by_uuid"
+            response = requests.get(url, params=params, verify=False)
+            response.raise_for_status()
             return response.json()
+        
+        user_role_data = make_request_to_auth_service()
 
-        make_request_to_dbmanager()
+    except requests.HTTPError as e:
+        if e.response.status_code == 404: 
+            return jsonify({"error": "User not found."}), 404
+        else:
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503  
+    
+    user_role = user_role_data['role']
+    
+    if user_role != "ADMIN":
+        return jsonify({"error": "This account is not authorized to perform this action."}), 403
 
-        return jsonify({"message": "Pool successfully updated."}), 200
-    except requests.HTTPError as e:  # if request is sent to dbmanager correctly and it answers an application error (to be managed here) [error expected by us]
-        if e.response.status_code == 404:
-            return json.loads(e.response.text), 404
-        else:  # other errors
-            return jsonify(
-                {
-                    "error": "Service temporarily unavailable. Please try again later. [HTTPError]"
-                }
-            ), 503
-    except (
-        requests.RequestException
-    ):  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
-        return jsonify(
-            {"error": "Service unavailable. Please try again later. [RequestError]"}
-        ), 503
-    except CircuitBreakerError: 
-        return jsonify(
-            {
-                "error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"
-            }
-        ), 503
+    try:
+        @circuit_breaker
+        def make_request_to_gacha_service():
+            url = "https://service_gacha/gacha/internal/pool/update"
+            response = requests.post(url, json=pool, verify=False)
+            response.raise_for_status()
+            
+        make_request_to_gacha_service()
+    except requests.HTTPError as e:
+        if e.response.status_code == 404: 
+            return jsonify({"error": "Pool not found."}), 404
+        else:
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+    except requests.RequestException:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503  
+
+    return jsonify({"message":"Pool updated."}), 200

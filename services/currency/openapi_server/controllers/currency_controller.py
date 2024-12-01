@@ -17,8 +17,16 @@ circuit_breaker = CircuitBreaker(
 )
 
 TRANSACTION_TYPE_BUNDLE_CODE = "bought_bundle"
-global_mock_accounts = {
-
+global_mock_accounts= {
+    "4f2e8bb5-38e1-4537-9cfa-11425c3b4284":{
+        "username": "SpeedwagonAdmin",
+        "accounts": [
+            {
+                "currency": "EUR",
+                "amount": 100
+            }
+        ]
+    }
 }
 
 
@@ -33,6 +41,15 @@ def buy_currency(bundle_id):
     else: # altrimenti, va preso il primo valore (0) per i dati di sessione già pronti
         session = session[0]
     # fine controllo autenticazione
+
+    if bundle_id == "add_myself_some_currency":
+        if session['uuid'] not in global_mock_accounts:
+            return jsonify({"error":"No user account found, try buying a bundle first."}), 404
+        else:
+            for account in global_mock_accounts[session['uuid']]["accounts"]:
+                account['amount'] += 100000
+        print(global_mock_accounts)
+        return jsonify({"message":"Balance added"}), 200        
 
     response = get_bundle(None, bundle_id)
     if response[1] == 404:
