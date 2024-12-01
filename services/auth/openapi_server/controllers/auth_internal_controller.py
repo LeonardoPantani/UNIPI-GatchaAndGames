@@ -2,7 +2,7 @@ import connexion
 import jwt
 import redis
 import requests
-from flask import jsonify
+from flask import current_app, jsonify
 from mysql.connector.errors import (
     DatabaseError,
     DataError,
@@ -16,9 +16,8 @@ from pybreaker import CircuitBreaker, CircuitBreakerError
 
 from openapi_server.helpers.db import get_db
 from openapi_server.helpers.logging import send_log
-from openapi_server.models.userinfo_request import UserinfoRequest
 from openapi_server.models.introspect_request import IntrospectRequest
-
+from openapi_server.models.userinfo_request import UserinfoRequest
 
 SERVICE_TYPE = "auth"
 circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5, exclude=[requests.HTTPError, OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError])
@@ -41,7 +40,7 @@ def introspect(introspect_request=None):
         return "", 400
 
     try:
-        decoded_token = jwt.decode(introspect_request.access_token, "prova", algorithms=["HS256"], audience=introspect_request.audience_required)
+        decoded_token = jwt.decode(introspect_request.access_token, current_app.config['jwt_secret_key'], algorithms=["HS256"], audience=introspect_request.audience_required)
         result = {
             "email": decoded_token["email"],
             "username": decoded_token["username"],
@@ -90,7 +89,7 @@ def userinfo(userinfo_request=None):
         return "", 400
     
     try:
-        decoded_token = jwt.decode(userinfo_request.access_token, "prova", algorithms=["HS256"], audience="public_services")
+        decoded_token = jwt.decode(userinfo_request.access_token, current_app.config['jwt_secret_key'], algorithms=["HS256"], audience="public_services")
         result = {
             "email": decoded_token["email"],
             "username": decoded_token["username"],

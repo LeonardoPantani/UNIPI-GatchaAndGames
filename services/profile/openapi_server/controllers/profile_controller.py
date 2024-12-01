@@ -21,6 +21,8 @@ from openapi_server.controllers.profile_internal_controller import (
     delete_profile_by_uuid,
 )
 
+SERVICE_TYPE="profile"
+
 FEEDBACK_SERVICE_URL = "https://service_feedback"
 CURRENCY_SERVICE_URL = "https://service_currency"
 INVENTORY_SERVICE_URL = "https://service_inventory"
@@ -37,7 +39,7 @@ def profile_health_check_get():
 @circuit_breaker
 def delete_profile():
     # Auth verification
-    session = verify_login(connexion.request.headers.get('Authorization'))
+    session = verify_login(connexion.request.headers.get('Authorization'), service_type=SERVICE_TYPE)
     if session[1] != 200:
         return session
     else:
@@ -216,13 +218,10 @@ def delete_profile():
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
 
-
-
 @circuit_breaker
 def edit_profile():
     # Auth verification
-    
-    session = verify_login(connexion.request.headers.get('Authorization'))
+    session = verify_login(connexion.request.headers.get('Authorization'), service_type=SERVICE_TYPE)
     
     if session[1] != 200:
         return session
@@ -331,7 +330,7 @@ def edit_profile():
 
 def get_user_info(uuid):
  # Auth verification
-    session = verify_login(connexion.request.headers.get('Authorization'))
+    session = verify_login(connexion.request.headers.get('Authorization'), service_type=SERVICE_TYPE)
     if session[1] != 200:
         return session
     else:

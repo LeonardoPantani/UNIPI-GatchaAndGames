@@ -44,7 +44,7 @@ paths:
       - explode: true
         in: cookie
         name: session
-        required: true
+        required: false
         schema:
           type: string
         style: form

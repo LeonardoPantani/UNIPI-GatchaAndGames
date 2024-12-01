@@ -17,6 +17,7 @@ def main():
 
     # secret key flask
     app.secret_key = os.environ.get('FLASK_SECRET_KEY')
+    app.config['jwt_secret_key'] = os.environ.get('JWT_SECRET_KEY')
 
     # Store DB configuration in app.config
     app.config['DB_CONFIG'] = {

@@ -16,6 +16,7 @@ circuit_breaker = CircuitBreaker(
     fail_max=1000, reset_timeout=5, exclude=[requests.HTTPError]
 )
 
+SERVICE_TYPE="currency"
 TRANSACTION_TYPE_BUNDLE_CODE = "bought_bundle"
 global_mock_accounts = {
 
@@ -27,7 +28,7 @@ def currency_health_check_get():
 
 
 def buy_currency(bundle_id):
-    session = verify_login(connexion.request.headers.get('Authorization'))
+    session = verify_login(connexion.request.headers.get('Authorization'), service_type=SERVICE_TYPE)
     if session[1] != 200: # se dà errore, il risultato della verify_login è: (messaggio, codice_errore)
         return session
     else: # altrimenti, va preso il primo valore (0) per i dati di sessione già pronti

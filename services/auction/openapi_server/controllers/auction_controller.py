@@ -26,6 +26,7 @@ from pybreaker import CircuitBreaker, CircuitBreakerError
 # Circuit breaker instance
 circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5, exclude=[requests.HTTPError])
 
+SERVICE_TYPE="auction"
 TRANSACTION_TYPE_BUY = "bought_market"
 TRANSACTION_TYPE_SELL = "sold_market"
 
@@ -33,7 +34,7 @@ def auction_health_check_get():
     return jsonify({"message": "Service operational."}), 200
 
 def bid_on_auction(auction_uuid): 
-    session = verify_login(connexion.request.headers.get('Authorization'))
+    session = verify_login(connexion.request.headers.get('Authorization'), service_type=SERVICE_TYPE)
     if session[1] != 200: # se dà errore, il risultato della verify_login è: (messaggio, codice_errore)
         return session
     else: # altrimenti, va preso il primo valore (0) per i dati di sessione già pronti
@@ -157,7 +158,7 @@ def bid_on_auction(auction_uuid):
     return jsonify({"message": "Successfully bid "+ str(new_bid) +" on auction " + auction_uuid + "."}), 200
 
 def create_auction(): 
-    session = verify_login(connexion.request.headers.get('Authorization'))
+    session = verify_login(connexion.request.headers.get('Authorization'), service_type=SERVICE_TYPE)
     if session[1] != 200: # se dà errore, il risultato della verify_login è: (messaggio, codice_errore)
         return session
     else: # altrimenti, va preso il primo valore (0) per i dati di sessione già pronti
@@ -228,7 +229,7 @@ def create_auction():
     return response
 
 def get_auction_status(auction_uuid): 
-    session = verify_login(connexion.request.headers.get('Authorization'))
+    session = verify_login(connexion.request.headers.get('Authorization'), service_type=SERVICE_TYPE)
     if session[1] != 200: # se dà errore, il risultato della verify_login è: (messaggio, codice_errore)
         return session
     else: # altrimenti, va preso il primo valore (0) per i dati di sessione già pronti
@@ -357,7 +358,7 @@ def get_auction_status(auction_uuid):
     return response_data, 200
 
 def get_auctions_history(page_number=None):  
-    session = verify_login(connexion.request.headers.get('Authorization'))
+    session = verify_login(connexion.request.headers.get('Authorization'), service_type=SERVICE_TYPE)
     if session[1] != 200: # se dà errore, il risultato della verify_login è: (messaggio, codice_errore)
         return session
     else: # altrimenti, va preso il primo valore (0) per i dati di sessione già pronti
@@ -380,7 +381,7 @@ def get_auctions_history(page_number=None):
 
  
 def get_auctions_list(status=None, rarity=None, page_number=None): 
-    session = verify_login(connexion.request.headers.get('Authorization'))
+    session = verify_login(connexion.request.headers.get('Authorization'), service_type=SERVICE_TYPE)
     if session[1] != 200: # se dà errore, il risultato della verify_login è: (messaggio, codice_errore)
         return session
     else: # altrimenti, va preso il primo valore (0) per i dati di sessione già pronti

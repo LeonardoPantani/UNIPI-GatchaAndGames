@@ -6,7 +6,7 @@ services:
     ports:
       - "443:443"
     volumes:
-      - ./api_gateway_public/ssl:/etc/nginx/ssl/:ro
+      - ./api_gateway_public/ssl/:/etc/nginx/ssl/:ro
       - ./api_gateway_public/api_gateway.conf:/etc/nginx/nginx.conf:ro
       - ./favicon.ico:/usr/share/nginx/html/favicon.ico:ro
     depends_on:
@@ -21,7 +21,7 @@ services:
       - service_pvp
     restart: always
     healthcheck:
-      test: ["CMD", "curl", "-f", "--cert", "/etc/nginx/ssl/api-gateway-cert.pem", "--key", "/etc/nginx/ssl/api-gateway-key.pem", "--cacert", "/etc/nginx/ssl/api-gateways-ca-cert.pem", "https://localhost/health_check"]
+      test: ["CMD", "curl", "-f", "--cert", "/etc/nginx/ssl/apigateways-cert.pem", "--key", "/etc/nginx/ssl/apigateways-key.pem", "--cacert", "/etc/nginx/ssl/apigateways-ca-cert.pem", "https://localhost/health_check"]
       interval: 30s
       timeout: 3s
       retries: 3
@@ -35,7 +35,7 @@ services:
     ports:
       - "444:444"
     volumes:
-      - ./api_gateway_private/ssl:/etc/nginx/ssl/:ro
+      - ./api_gateway_private/ssl/:/etc/nginx/ssl/:ro
       - ./api_gateway_private/api_gateway.conf:/etc/nginx/nginx.conf:ro
       - ./favicon.ico:/usr/share/nginx/html/favicon.ico:ro
     depends_on:
@@ -43,8 +43,8 @@ services:
       - service_auth
     restart: always
     healthcheck:
-      test: ["CMD", "curl", "-f", "--cert", "/etc/nginx/ssl/api-gateway-cert.pem", "--key", "/etc/nginx/ssl/api-gateway-key.pem", "--cacert", "/etc/nginx/ssl/api-gateways-ca-cert.pem", "https://localhost:444/health_check"]
-      interval: 30s
+      test: ["CMD", "curl", "-f", "--cert", "/etc/nginx/ssl/apigateways-cert.pem", "--key", "/etc/nginx/ssl/apigateways-key.pem", "--cacert", "/etc/nginx/ssl/apigateways-ca-cert.pem", "https://localhost:444/health_check"]
+      interval: 15s
       timeout: 3s
       retries: 3
       start_period: 5s

@@ -26,12 +26,14 @@ circuit_breaker = CircuitBreaker(
     fail_max=1000, reset_timeout=5, exclude=[requests.HTTPError]
 )
 
+SERVICE_TYPE="admin"
+
 def admin_health_check_get():
     return jsonify({"message": "Service operational."}), 200
 
 
 def ban_profile(user_uuid):
-    session = verify_login(connexion.request.headers.get('Authorization'), audience_required="private_services")
+    session = verify_login(connexion.request.headers.get('Authorization'), audience_required="private_services", service_type=SERVICE_TYPE)
     if session[1] != 200:
         return session
     else:
@@ -249,7 +251,7 @@ def ban_profile(user_uuid):
     return jsonify({"message":"Profile deleted."}), 200
 
 def create_gacha():
-    session = verify_login(connexion.request.headers.get('Authorization'), audience_required="private_services")
+    session = verify_login(connexion.request.headers.get('Authorization'), audience_required="private_services", service_type=SERVICE_TYPE)
     if session[1] != 200:
         return session
     else:
@@ -312,7 +314,7 @@ def create_gacha():
     return jsonify({"message":"Gacha created with uuid: "+ new_uuid}), 201
 
 def delete_gacha(gacha_uuid):  # TODO vanno rimosse le cose nel modo corretto
-    session = verify_login(connexion.request.headers.get('Authorization'), audience_required="private_services")
+    session = verify_login(connexion.request.headers.get('Authorization'), audience_required="private_services", service_type=SERVICE_TYPE)
     if session[1] != 200:
         return session
     else:
@@ -367,7 +369,7 @@ def delete_gacha(gacha_uuid):  # TODO vanno rimosse le cose nel modo corretto
     return jsonify({"message":"Gacha deleted."}), 200
 
 def create_pool():
-    session = verify_login(connexion.request.headers.get('Authorization'), audience_required="private_services")
+    session = verify_login(connexion.request.headers.get('Authorization'), audience_required="private_services", service_type=SERVICE_TYPE)
     if session[1] != 200:
         return session
     else:
@@ -441,7 +443,7 @@ def create_pool():
     return jsonify({"message":"Pool created."}), 201
 
 def delete_pool(pool_id):  
-    session = verify_login(connexion.request.headers.get('Authorization'), audience_required="private_services")
+    session = verify_login(connexion.request.headers.get('Authorization'), audience_required="private_services", service_type=SERVICE_TYPE)
     if session[1] != 200:
         return session
     else:
@@ -496,7 +498,7 @@ def delete_pool(pool_id):
     return jsonify({"message":"Pool deleted."}), 200
 
 def edit_user_profile(user_uuid, email=None, username=None):
-    session = verify_login(connexion.request.headers.get('Authorization'), audience_required="private_services")
+    session = verify_login(connexion.request.headers.get('Authorization'), audience_required="private_services", service_type=SERVICE_TYPE)
     if session[1] != 200:
         return session
     else:
