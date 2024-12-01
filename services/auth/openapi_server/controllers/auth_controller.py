@@ -7,7 +7,8 @@ import connexion
 import jwt
 import redis
 import requests
-from flask import jsonify, request
+import urllib3
+from flask import current_app, jsonify, request
 from mysql.connector.errors import (
     DatabaseError,
     DataError,
@@ -18,6 +19,7 @@ from mysql.connector.errors import (
     ProgrammingError,
 )
 from pybreaker import CircuitBreaker, CircuitBreakerError
+from urllib3.exceptions import InsecureRequestWarning
 
 from openapi_server.helpers.authorization import verify_login
 from openapi_server.helpers.db import get_db
@@ -25,7 +27,7 @@ from openapi_server.helpers.logging import send_log
 from openapi_server.models.login_request import LoginRequest
 from openapi_server.models.register_request import RegisterRequest
 
-
+urllib3.disable_warnings(InsecureRequestWarning)
 SERVICE_TYPE = "auth"
 circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5, exclude=[requests.HTTPError, OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError])
 redis_client = redis.Redis(host='redis', port=6379, db=0)
@@ -53,9 +55,7 @@ def login(login_request=None):
             params = { "username": username_to_login }
             url = "https://service_profile/profile/internal/get_uuid_from_username"
             response = requests.get(url, params=params, verify=False)
-            #response.raise_for_status()
-            print(response.status_code)
-            print(response.text)
+            response.raise_for_status()
             return response.json()
         
         uuid = request_to_profile_service()
@@ -65,8 +65,7 @@ def login(login_request=None):
         else:
             send_log("HTTP Error", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    except requests.RequestException as e:
-        print(e)
+    except requests.RequestException:
         send_log("Request Exception", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
@@ -138,19 +137,15 @@ def login(login_request=None):
 
 """ Allows an account to log out. """
 def logout():
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
-        return jsonify({"error": "Not logged in."}), 403
-    token = auth_header.split(" ")[1]
-
-    # JWT
-    try:
-        decoded_token = jwt.decode(token, "prova", algorithms=["HS256"], audience="public_services")
-    except jwt.InvalidTokenError:
-        return jsonify({"error": "Not logged in."}), 403
+    session = verify_login(connexion.request.headers.get('Authorization'), service_type=SERVICE_TYPE)
+    if session[1] != 200: # se dà errore, il risultato della verify_login è: (messaggio, codice_errore)
+        return session
+    else: # altrimenti, va preso il primo valore (0) per i dati di sessione già pronti
+        session = session[0]
+    # fine controllo autenticazione
     
-    user_id = decoded_token["sub"]
-    username = decoded_token["username"]
+    user_id = session["uuid"]
+    username = session["username"]
 
     # REDIS
     try:
@@ -174,7 +169,7 @@ def register(register_request=None):
         return jsonify({"message": "Invalid request."}), 400
     
     # authentication check
-    session = verify_login(connexion.request.headers.get('Authorization'))
+    session = verify_login(connexion.request.headers.get('Authorization'), service_type=SERVICE_TYPE)
     if session[1] == 200: # is logged
         return jsonify({"message": "You are already logged in."}), 401
 
@@ -288,7 +283,7 @@ def complete_access(uuid, uuid_hex, email, username, role):
         "iat": datetime.datetime.now(datetime.timezone.utc),
         "exp": (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=24 * 60 * 60)) # 1 day
     }
-    access_token = jwt.encode(access_token_payload, "prova", algorithm="HS256")
+    access_token = jwt.encode(access_token_payload, current_app.config['jwt_secret_key'], algorithm="HS256")
 
     # adding token to REDIS
     redis_client.set(uuid, access_token, ex=24 * 60 * 60) # 1 day

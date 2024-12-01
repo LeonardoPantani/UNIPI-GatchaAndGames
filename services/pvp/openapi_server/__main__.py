@@ -25,7 +25,7 @@ def main():
         'password': os.environ.get('MYSQL_PASSWORD'),
         'database': os.environ.get('MYSQL_DB'),
         'port': os.environ.get('MYSQL_PORT'),
-        'ssl_ca': '/usr/src/app/ssl/services-ca-cert.pem',
+        'ssl_ca': '/usr/src/app/ssl/database-ca-cert.pem',
         'ssl_cert': '/usr/src/app/ssl/pvp-cert.pem',
         'ssl_key': '/usr/src/app/ssl/pvp-key.pem'
     }

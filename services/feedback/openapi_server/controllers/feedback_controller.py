@@ -13,7 +13,7 @@ from openapi_server.helpers.authorization import verify_login
 
 from openapi_server.controllers.feedback_internal_controller import submit_feedback
 
-
+SERVICE_TYPE="admin"
 circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5)
 
 
@@ -22,7 +22,7 @@ def feedback_health_check_get():
 
 
 def post_feedback(string=None, session=None):
-    session = verify_login(connexion.request.headers.get('Authorization'))
+    session = verify_login(connexion.request.headers.get('Authorization'), service_type=SERVICE_TYPE)
     if session[1] != 200: # se dà errore, il risultato della verify_login è: (messaggio, codice_errore)
         return session
     else: # altrimenti, va preso il primo valore (0) per i dati di sessione già pronti

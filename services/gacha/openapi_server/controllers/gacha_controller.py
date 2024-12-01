@@ -28,6 +28,7 @@ circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5, exclude=[reques
 def gacha_health_check_get():
     return jsonify({"message": "Service operational."}), 200
 
+SERVICE_TYPE="gacha"
 GACHA_SERVICE_URL = "https://service_gacha"
 PROFILE_SERVICE_URL = "https://service_profile"
 INVENTORY_SERVICE_URL = "https://service_inventory"
@@ -35,7 +36,7 @@ INVENTORY_SERVICE_URL = "https://service_inventory"
 def get_gacha_info(gacha_uuid):
     """Get information about a specific gacha."""
         # Auth verification
-    session = verify_login(connexion.request.headers.get('Authorization'))
+    session = verify_login(connexion.request.headers.get('Authorization'), service_type=SERVICE_TYPE)
     if session[1] != 200:
         return session
     else:
@@ -68,7 +69,7 @@ def pull_gacha(pool_id):
     """Pull a random gacha from a specific pool."""
     
     # Auth verification 
-    session = verify_login(connexion.request.headers.get('Authorization'))
+    session = verify_login(connexion.request.headers.get('Authorization'), service_type=SERVICE_TYPE)
     if session[1] != 200:
         return session
     else:
@@ -202,7 +203,7 @@ def pull_gacha(pool_id):
 def get_pool_info():
     """Returns a list of available gacha pools."""
     # Auth verification 
-    session = verify_login(connexion.request.headers.get('Authorization'))
+    session = verify_login(connexion.request.headers.get('Authorization'), service_type=SERVICE_TYPE)
     if session[1] != 200:
         return session
     else:
@@ -238,7 +239,7 @@ def get_pool_info():
 def get_gachas(not_owned):
     """Returns a list of gacha items based on ownership filter."""
     # Auth verification 
-    session = verify_login(connexion.request.headers.get('Authorization'))
+    session = verify_login(connexion.request.headers.get('Authorization'), service_type=SERVICE_TYPE)
     if session[1] != 200:
         return session
     else:
