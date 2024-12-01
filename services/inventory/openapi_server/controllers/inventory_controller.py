@@ -28,7 +28,7 @@ def inventory_health_check_get():
 def get_inventory():
     """Returns a list of gacha items currently owned by the player."""
     # Auth verification
-    session = verify_login(connexion.request.headers.get('Authorization'), service_type=SERVICE_TYPE))
+    session = verify_login(connexion.request.headers.get('Authorization'), service_type=SERVICE_TYPE)
     if session[1] != 200:
         return session
     else:
@@ -71,7 +71,7 @@ def get_inventory():
 def get_inventory_item_info(inventory_item_id):
     """Returns information about a specific inventory item owned by the player."""
     # Auth verification
-    session = verify_login(connexion.request.headers.get('Authorization'), service_type=SERVICE_TYPE))
+    session = verify_login(connexion.request.headers.get('Authorization'), service_type=SERVICE_TYPE)
     if session[1] != 200:
         return session
     else:
@@ -111,7 +111,7 @@ def get_inventory_item_info(inventory_item_id):
 def remove_inventory_item():
     """Remove an item from user's inventory."""
     # Auth verification
-    session = verify_login(connexion.request.headers.get('Authorization'), service_type=SERVICE_TYPE))
+    session = verify_login(connexion.request.headers.get('Authorization'), service_type=SERVICE_TYPE)
     if session[1] != 200:
         return session
     else:
