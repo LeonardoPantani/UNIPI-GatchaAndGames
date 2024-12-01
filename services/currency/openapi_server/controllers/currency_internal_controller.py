@@ -148,7 +148,7 @@ def get_user_history(session=None, uuid=None, history_type=None, page_number=Non
             return transaction_data
         
         transaction_list = get_user_transactions()
-
+        
         response = []
 
         for transaction in transaction_list:
@@ -167,7 +167,7 @@ def get_user_history(session=None, uuid=None, history_type=None, page_number=Non
                     "transaction_type": transaction[3]
                 }
             response.append(payload)
-        print (response)
+        
         return jsonify(response), 200
 
     except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:

@@ -595,15 +595,15 @@ def update_gacha(gacha=None, session=None):
 
     try:
         gacha_data = connexion.request.get_json()
-        if not gacha_data or 'gacha' not in gacha_data:
+        if not gacha_data:
             return "", 400
-            
+        
         # Check rarity value before proceeding
         valid_rarities = ["COMMON", "RARE", "EPIC", "LEGENDARY"]
-        if gacha_data['gacha']['rarity'].upper() not in valid_rarities:
+        if gacha_data['rarity'].upper() not in valid_rarities:
             return "", 400
 
-        gacha_object = Gacha.from_dict(gacha_data['gacha'])
+        gacha_object = Gacha.from_dict(gacha_data)
 
         @circuit_breaker
         def update_gacha_in_db():
@@ -683,10 +683,10 @@ def update_pool(pool=None, session=None):
 
     try:
         pool_data = connexion.request.get_json()
-        if not pool_data or 'pool' not in pool_data:
+        if not pool_data:
             return "", 400
             
-        pool_object = Pool.from_dict(pool_data['pool'])
+        pool_object = Pool.from_dict(pool_data)
 
          # Validate probabilities sum to 1
         total_prob = (pool_object.probability_common + 

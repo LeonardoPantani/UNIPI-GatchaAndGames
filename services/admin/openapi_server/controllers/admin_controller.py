@@ -405,7 +405,7 @@ def create_pool():
         return jsonify({"message": "Invalid request."}), 400
 
     pool = Pool.from_dict(connexion.request.get_json())
-
+    
     if (
         not isinstance(pool.probability_common, float)
         or not isinstance(pool.probability_rare, float)
@@ -606,9 +606,8 @@ def edit_user_profile(user_uuid, email=None, username=None):
     
     return jsonify({"message":"Profile successfully updated."}), 200
 
-
 def get_all_feedbacks(page_number=None):
-    session = verify_login(connexion.request.headers.get('Authorization'), audience_required="private_services")
+    session = verify_login(connexion.request.headers.get('Authorization'), audience_required="private_services", service_type=SERVICE_TYPE)
     if session[1] != 200:
         return session
     else:
@@ -664,7 +663,7 @@ def get_all_feedbacks(page_number=None):
     return jsonify(feedback_list), 200
 
 def get_all_profiles(page_number=None):
-    session = verify_login(connexion.request.headers.get('Authorization'), audience_required="private_services")
+    session = verify_login(connexion.request.headers.get('Authorization'), audience_required="private_services", service_type=SERVICE_TYPE)
     if session[1] != 200:
         return session
     else:
@@ -721,7 +720,7 @@ def get_all_profiles(page_number=None):
 
 
 def get_feedback_info(feedback_id=None):
-    session = verify_login(connexion.request.headers.get('Authorization'), audience_required="private_services")
+    session = verify_login(connexion.request.headers.get('Authorization'), audience_required="private_services", service_type=SERVICE_TYPE)
     if session[1] != 200:
         return session
     else:
@@ -777,8 +776,8 @@ def get_feedback_info(feedback_id=None):
     return jsonify(feedback), 200
 
 
-def get_system_logs():  # TODO
-    session = verify_login(connexion.request.headers.get('Authorization'), audience_required="private_services")
+def get_system_logs():
+    session = verify_login(connexion.request.headers.get('Authorization'), audience_required="private_services", service_type=SERVICE_TYPE)
     if session[1] != 200:
         return session
     else:
@@ -788,7 +787,7 @@ def get_system_logs():  # TODO
     endpoint = connexion.request.args.get('endpoint')
     interval = connexion.request.args.get('interval', default=3600)
     level = connexion.request.args.get('level', default="info")
-    start_time = connexion.request.args.get('service_type')
+    start_time = connexion.request.args.get('start_time', type=int)
     
     try:
         @circuit_breaker
@@ -815,8 +814,9 @@ def get_system_logs():  # TODO
     
     if user_role != "ADMIN":
         return jsonify({"error": "This account is not authorized to perform this action."}), 403
-
+    
     logs = query_logs(service_type, endpoint, interval, level, start_time)
+    
     if not logs:
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
 
@@ -825,7 +825,7 @@ def get_system_logs():  # TODO
 
 
 def get_user_history(user_uuid, history_type, page_number=None):
-    session = verify_login(connexion.request.headers.get('Authorization'), audience_required="private_services")
+    session = verify_login(connexion.request.headers.get('Authorization'), audience_required="private_services", service_type=SERVICE_TYPE)
     if session[1] != 200:
         return session
     else:
@@ -862,13 +862,14 @@ def get_user_history(user_uuid, history_type, page_number=None):
 
     try:
         @circuit_breaker
-        def make_request_to_feedback_service():
+        def make_request_to_currency_service():
             params = {"uuid": user_uuid, "history_type": history_type, "page_number": page_number}
-            url = "https://service_feedback/feedback/internal/get_user_history"
+            url = "https://service_currency/currency/internal/get_user_history"
             response = requests.get(url, params=params, verify=False)
             response.raise_for_status()
+            return response.json()
         
-        transaction_list = make_request_to_feedback_service()
+        transaction_list = make_request_to_currency_service()
 
     except requests.HTTPError as e:
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
@@ -880,7 +881,7 @@ def get_user_history(user_uuid, history_type, page_number=None):
     return jsonify(transaction_list), 200
 
 def update_auction(auction_uuid):
-    session = verify_login(connexion.request.headers.get('Authorization'), audience_required="private_services")
+    session = verify_login(connexion.request.headers.get('Authorization'), audience_required="private_services", service_type=SERVICE_TYPE)
     if session[1] != 200:
         return session
     else:
@@ -934,12 +935,22 @@ def update_auction(auction_uuid):
     
     if user_role != "ADMIN":
         return jsonify({"error": "This account is not authorized to perform this action."}), 403
+    print(auction.end_time)
+    auction_data = {
+        "auction_uuid": auction.auction_uuid,
+        "current_bid": auction.current_bid,
+        "current_bidder": auction.current_bidder,
+        "end_time": str(auction.end_time),
+        "inventory_item_id": auction.inventory_item_id,
+        "starting_price": auction.starting_price,
+        "status": auction.status
+    }
 
     try:
         @circuit_breaker
         def make_request_to_auction_service():
             url = "https://service_auction/auction/internal/update"
-            response = requests.post(url, json=auction, verify=False)
+            response = requests.post(url, json=auction_data, verify=False)
             response.raise_for_status()
             
         make_request_to_auction_service()
@@ -958,7 +969,7 @@ def update_auction(auction_uuid):
     return jsonify({"message":"Auction updated."}), 200
 
 def update_gacha(gacha_uuid):
-    session = verify_login(connexion.request.headers.get('Authorization'), audience_required="private_services")
+    session = verify_login(connexion.request.headers.get('Authorization'), audience_required="private_services", service_type=SERVICE_TYPE)
     if session[1] != 200:
         return session
     else:
@@ -1005,7 +1016,7 @@ def update_gacha(gacha_uuid):
         @circuit_breaker
         def make_request_to_gacha_service():
             url = "https://service_gacha/gacha/internal/gacha/update"
-            response = requests.post(url, json=gacha, verify=False)
+            response = requests.post(url, json=gacha.to_dict(), verify=False)
             response.raise_for_status()
             
         make_request_to_gacha_service()
@@ -1023,7 +1034,7 @@ def update_gacha(gacha_uuid):
 
 
 def update_pool(pool_id):
-    session = verify_login(connexion.request.headers.get('Authorization'), audience_required="private_services")
+    session = verify_login(connexion.request.headers.get('Authorization'), audience_required="private_services", service_type=SERVICE_TYPE)
     if session[1] != 200:
         return session
     else:
@@ -1037,7 +1048,7 @@ def update_pool(pool_id):
 
     pool = Pool.from_dict(connexion.request.get_json())
 
-    if pool.id != pool_id:
+    if pool.codename != pool_id:
         return jsonify({"message": "Pool UUID in request is different from the one inside the pool object."}), 406
 
     
@@ -1089,7 +1100,7 @@ def update_pool(pool_id):
         @circuit_breaker
         def make_request_to_gacha_service():
             url = "https://service_gacha/gacha/internal/pool/update"
-            response = requests.post(url, json=pool, verify=False)
+            response = requests.post(url, json=pool.to_dict(), verify=False)
             response.raise_for_status()
             
         make_request_to_gacha_service()

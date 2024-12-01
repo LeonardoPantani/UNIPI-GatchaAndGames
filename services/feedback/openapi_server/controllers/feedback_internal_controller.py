@@ -96,7 +96,7 @@ def feedback_info(session=None, feedback_id=None):
         def make_request_to_profile_service():
             params = {"user_uuid": feedback[1]}
             url = "https://service_profile/profile/internal/get_username_from_uuid"
-            response = requests.get(url, params=params)
+            response = requests.get(url, params=params, verify=False)
             response.raise_for_status()
             return response.json()
         

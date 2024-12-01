@@ -37,8 +37,6 @@ def query_logs(service_type, endpoint="unknown", interval=3600, level="info", st
     loki_url = "https://logging_loki:3100/loki/api/v1/query_range"
     headers = {'Content-Type': 'application/json'}
 
-    
-
     if start_time is None:
         start_time_ns = int(time.time() * 1e9) - int(interval * 1e9)
     else:
