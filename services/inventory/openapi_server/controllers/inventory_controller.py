@@ -3,7 +3,7 @@ import connexion
 from typing import Dict
 from typing import Tuple
 from typing import Union
-from flask import session, jsonify
+from flask import session, jsonify, current_app
 from openapi_server.helpers.logging import send_log
 import logging
 import requests
@@ -50,7 +50,7 @@ def get_inventory():
                     "page_number": page_number,
                     "session": None
                 },
-                verify=False
+                verify=False, timeout=current_app.config['requests_timeout']
             )
             response.raise_for_status()
             return response.json()
@@ -89,7 +89,7 @@ def get_inventory_item_info(inventory_item_id):
                 params={
                     "uuid": inventory_item_id
                 },
-                verify=False
+                verify=False, timeout=current_app.config['requests_timeout']
             )
             response.raise_for_status()
             return response.json()
@@ -132,7 +132,7 @@ def remove_inventory_item():
         def check_auction_status():
             params = {"uuid": item_uuid}
             url = "http://service_auction:8080/auction/internal/is_open_by_item_uuid"
-            response = requests.get(url,params=params, verify=False)
+            response = requests.get(url,params=params, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
             return response.json()
         

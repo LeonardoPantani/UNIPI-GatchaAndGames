@@ -79,7 +79,7 @@ def bid_on_auction(auction_uuid):
         def make_request_to_profile_service():
             params = {"user_uuid": session['uuid']}
             url = "https://service_profile/profile/internal/get_profile"
-            response = requests.get(url, params=params, verify=False)
+            response = requests.get(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
             return response.json()
         
@@ -113,7 +113,7 @@ def bid_on_auction(auction_uuid):
         def make_request_to_profile_service():
             params = {"uuid": session['uuid'], "amount": new_bid * (-1)}
             url = "https://service_profile/profile/internal/add_currency"
-            response = requests.post(url, params=params, verify=False)
+            response = requests.post(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
             return response.json()
         
@@ -138,7 +138,7 @@ def bid_on_auction(auction_uuid):
             def make_request_to_profile_service():
                 params = {"uuid": previous_bidder, "amount": previous_bid}
                 url = "https://service_profile/profile/internal/add_currency"
-                response = requests.post(url, params=params, verify=False)
+                response = requests.post(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
                 response.raise_for_status()
                 return response.json()
             
@@ -180,7 +180,7 @@ def create_auction():
         def make_request_to_inventory_service():
             params = {"uuid": item_id}
             url = "https://service_inventory/inventory/internal/get_by_item_uuid"
-            response = requests.get(url, params=params, verify=False)
+            response = requests.get(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
             return response.json()
         
@@ -257,7 +257,7 @@ def get_auction_status(auction_uuid):
             def make_request_to_inventory_service():
                 params = {"uuid": item_uuid}
                 url = "https://service_inventory/inventory/internal/get_by_item_uuid"
-                response = requests.get(url, params=params, verify=False)
+                response = requests.get(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
                 response.raise_for_status()
                 return response.json()
             
@@ -280,7 +280,7 @@ def get_auction_status(auction_uuid):
             def make_request_to_profile_service():
                 params = {"uuid": old_owner_uuid, "amount": current_bid}
                 url = "https://service_profile/profile/internal/add_currency"
-                response = requests.post(url, params=params, verify=False)
+                response = requests.post(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
                 response.raise_for_status()
                 return response.json()
             
@@ -302,7 +302,7 @@ def get_auction_status(auction_uuid):
             def make_request_to_currency_service():
                 params = {"uuid": old_owner_uuid, "current_bid": current_bid, "transaction_type": TRANSACTION_TYPE_SELL}
                 url = "https://service_currency/currency/internal/insert_ingame_transaction"
-                response = requests.post(url, params=params, verify=False)
+                response = requests.post(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
                 response.raise_for_status()
                 return response.json()
             
@@ -320,7 +320,7 @@ def get_auction_status(auction_uuid):
             def make_request_to_inventory_service():
                 params = {"new_owner_uuid": session['uuid'], "item_uuid": item_uuid, "price_paid": current_bid}
                 url = "https://service_inventory/inventory/internal/update_item_owner"
-                response = requests.post(url, params=params, verify=False)
+                response = requests.post(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
                 response.raise_for_status()
                 return response.json()
             
@@ -340,7 +340,7 @@ def get_auction_status(auction_uuid):
             def make_request_to_currency_service():
                 params = {"uuid": session['uuid'], "current_bid": current_bid, "transaction_type": TRANSACTION_TYPE_BUY}
                 url = "https://service_currency/currency/internal/insert_ingame_transaction"
-                response = requests.post(url, params=params, verify=False)
+                response = requests.post(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
                 response.raise_for_status()
                 return response.json()
             

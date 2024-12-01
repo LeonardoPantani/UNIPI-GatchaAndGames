@@ -4,7 +4,7 @@ import bcrypt
 
 import connexion
 import requests
-from flask import jsonify
+from flask import jsonify, current_app
 from pybreaker import CircuitBreaker, CircuitBreakerError
 
 from openapi_server.helpers.authorization import verify_login
@@ -58,7 +58,7 @@ def delete_profile():
         response = requests.get(
             f"{AUTH_SERVICE_URL}/auth/internal/get_hashed_password",
             params={"uuid": session.get("uuid")},
-            verify=False
+            verify=False, timeout=current_app.config['requests_timeout']
         )
         response.raise_for_status()
         stored_hash = response.json()["password"]
@@ -78,7 +78,7 @@ def delete_profile():
             feedback_response = requests.delete(
                 f"{FEEDBACK_SERVICE_URL}/feedback/internal/delete_user_feedbacks",
                 params={"uuid":session.get("uuid") ,"session": None},
-                verify=False
+                verify=False, timeout=current_app.config['requests_timeout']
             )
             feedback_response.raise_for_status()
 
@@ -92,7 +92,7 @@ def delete_profile():
             currency_response = requests.delete(
                 f"{CURRENCY_SERVICE_URL}/currency/internal/delete_user_transactions",
                 params={"uuid":session.get("uuid"),"session": None},
-                verify=False
+                verify=False, timeout=current_app.config['requests_timeout']
             )
             currency_response.raise_for_status()
 
@@ -106,7 +106,7 @@ def delete_profile():
             inventory_response = requests.get(
                 f"{INVENTORY_SERVICE_URL}/inventory/internal/get_items_by_owner_uuid",
                 params={"uuid": session.get("uuid"),"session": None},
-                verify=False
+                verify=False, timeout=current_app.config['requests_timeout']
             )
             inventory_response.raise_for_status()
             return inventory_response.json()
@@ -122,7 +122,7 @@ def delete_profile():
                 refund_response = requests.post(
                     f"{AUCTION_SERVICE_URL}/auction/internal/refund_bidders",
                     json=item_uuids,
-                verify=False
+                verify=False, timeout=current_app.config['requests_timeout']
                 )
                 refund_response.raise_for_status()
             
@@ -136,7 +136,7 @@ def delete_profile():
             reset_bidder_response = requests.post(
                 f"{AUCTION_SERVICE_URL}/auction/internal/reset_current_bidder",
                 params={"uuid": session.get("uuid")},
-                verify=False
+                verify=False, timeout=current_app.config['requests_timeout']
             )
             reset_bidder_response.raise_for_status()
 
@@ -150,7 +150,7 @@ def delete_profile():
             pvp_response = requests.delete(
                 f"{PVP_SERVICE_URL}/pvp/internal/remove_by_user_uuid",
                 params={"uuid": session.get("uuid"),"session": None},
-                verify=False
+                verify=False, timeout=current_app.config['requests_timeout']
             )
             pvp_response.raise_for_status()
 
@@ -165,7 +165,7 @@ def delete_profile():
                     auction_response = requests.post(
                         f"{AUCTION_SERVICE_URL}/auction/internal/remove_by_item_uuid",
                         json=item_uuids,
-                verify=False
+                verify=False, timeout=current_app.config['requests_timeout']
                     )
                     auction_response.raise_for_status()
 
@@ -182,7 +182,7 @@ def delete_profile():
             delete_inventory_response = requests.delete(
                 f"{INVENTORY_SERVICE_URL}/inventory/internal/delete_user_inventory",
                 params={"uuid": session.get("uuid"),"session": None},
-                verify=False
+                verify=False, timeout=current_app.config['requests_timeout']
             )
             delete_inventory_response.raise_for_status()
 
@@ -199,7 +199,7 @@ def delete_profile():
             delete_auth_response = requests.delete(
                 f"{AUTH_SERVICE_URL}/auth/internal/delete_user_by_uuid",
                 params={"uuid": session.get("uuid"),"session": None},
-                verify=False
+                verify=False, timeout=current_app.config['requests_timeout']
             )
             delete_auth_response.raise_for_status()
 
@@ -247,7 +247,7 @@ def edit_profile():
         response = requests.get(
             f"{AUTH_SERVICE_URL}/auth/internal/get_hashed_password",
             params={"uuid": session.get("uuid")},
-            verify=False
+            verify=False, timeout=current_app.config['requests_timeout']
         )
         response.raise_for_status()
         stored_hash = response.json()["password"]
@@ -270,7 +270,7 @@ def edit_profile():
             response = requests.get(
                 f"{PROFILE_SERVICE_URL}/profile/internal/exists",
                 params={"uuid": user_uuid},
-                verify=False
+                verify=False, timeout=current_app.config['requests_timeout']
             )
             response.raise_for_status()
             return response.json()
@@ -287,7 +287,7 @@ def edit_profile():
                 response = requests.post(
                     f"{AUTH_SERVICE_URL}/auth/internal/edit_email",
                     params={"uuid": user_uuid, "email": edit_request.email},
-                verify=False
+                verify=False, timeout=current_app.config['requests_timeout']
                 )
                 response.raise_for_status()
                 return response
@@ -302,7 +302,7 @@ def edit_profile():
                 response = requests.post(
                     f"{PROFILE_SERVICE_URL}/profile/internal/edit_username",
                     params={"uuid": user_uuid, "username": edit_request.username},
-                verify=False
+                verify=False, timeout=current_app.config['requests_timeout']
                 )
                 
                 response.raise_for_status()
@@ -346,7 +346,7 @@ def get_user_info(uuid):
             response = requests.get(
                 f"{PROFILE_SERVICE_URL}/profile/internal/get_profile",
                 params={"user_uuid": uuid},
-                verify=False
+                verify=False, timeout=current_app.config['requests_timeout']
             )
             response.raise_for_status()
             return response.json()

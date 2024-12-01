@@ -29,6 +29,8 @@ def main():
     # secret key flask
     app.secret_key = os.environ.get('FLASK_SECRET_KEY')
     app.config['jwt_secret_key'] = os.environ.get('JWT_SECRET_KEY')
+    app.config['requests_timeout'] = int(os.environ.get('REQUESTS_TIMEOUT'))
+    app.config['database_timeout'] = int(os.environ.get('DATABASE_TIMEOUT'))
 
     # db configuration
     app.config['DB_CONFIG'] = {

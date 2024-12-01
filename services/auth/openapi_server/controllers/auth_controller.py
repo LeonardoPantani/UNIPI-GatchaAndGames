@@ -51,7 +51,7 @@ def login(login_request=None):
         def request_to_profile_service():
             params = { "username": username_to_login }
             url = "https://service_profile/profile/internal/get_uuid_from_username"
-            response = requests.get(url, params=params, verify=False)
+            response = requests.get(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
             return response.json()
         
@@ -220,7 +220,7 @@ def register(register_request=None):
         def request_to_profile_service():
             params = { "user_uuid": uuid_to_register, "username": register_request.username }
             url = "https://service_profile/profile/internal/insert_profile"
-            response = requests.post(url, params=params, verify=False)
+            response = requests.post(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
             return response.json()
         
