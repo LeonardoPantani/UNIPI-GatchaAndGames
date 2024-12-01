@@ -120,6 +120,7 @@ def remove_inventory_item():
     user_uuid = session.get("uuid")
     if not user_uuid:
         return jsonify({"error": "Not logged in"}), 403
+    
 
     # Get item_uuid from request args
     item_uuid = connexion.request.args.get('inventory_item_id')
@@ -127,16 +128,19 @@ def remove_inventory_item():
         return jsonify({"error": "Missing item_uuid parameter"}), 400
     
     try:
+        
         # First check if item is in auction     
         @circuit_breaker
         def check_auction_status():
             params = {"uuid": item_uuid}
-            url = "http://service_auction:8080/auction/internal/is_open_by_item_uuid"
+            url = f"{AUCTIONS_SERVICE_URL}/auction/internal/is_open_by_item_uuid"
             response = requests.get(url,params=params, verify=False)
             response.raise_for_status()
+            
             return response.json()
         
         auction_check = check_auction_status()
+        print("ziopera")
         
     except requests.HTTPError as e:
         if e.response.status_code == 404:
