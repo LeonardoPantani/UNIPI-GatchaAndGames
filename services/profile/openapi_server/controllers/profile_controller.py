@@ -1,5 +1,7 @@
 import logging
 
+import bcrypt
+
 import connexion
 import requests
 from flask import jsonify
@@ -41,9 +43,33 @@ def delete_profile():
     else:
         session = session[0]
 
+        try:
+            delete_request = DeleteProfileRequest.from_dict(connexion.request.get_json())
+        except Exception:
+            return jsonify({"error": "Invalid request"}), 400
     
 
+
+    # Verify password
+    @circuit_breaker
+    def verify_password():
+        response = requests.get(
+            f"{AUTH_SERVICE_URL}/auth/internal/get_hashed_password",
+            params={"uuid": session.get("uuid")},
+            verify=False
+        )
+        response.raise_for_status()
+        stored_hash = response.json()["password"]
+        
+        # Compare provided password with stored hash
+        if not bcrypt.checkpw(delete_request.password.encode('utf-8'), stored_hash.encode('utf-8')):
+            return False
+        return True
+
     try:
+        if not verify_password():
+            return jsonify({"error": "Invalid password"}), 401
+
         # 1. Delete user feedbacks
         @circuit_breaker
         def delete_user_feedbacks():
@@ -206,21 +232,36 @@ def edit_profile():
 
     username = session["username"]
     
-    
     if not username:
         return jsonify({"error": "Not logged in."}), 403
     
     try:
-        
         edit_request = EditProfileRequest.from_dict(connexion.request.get_json())
         logging.info(f"Request data: {edit_request}")
-        
     except Exception as e:
         logging.error(f"Error parsing request: {str(e)}")
         return jsonify({"error": "Invalid request."}), 400
     
-    
+    # Verify password before proceeding with edit
+    @circuit_breaker
+    def verify_password():
+        response = requests.get(
+            f"{AUTH_SERVICE_URL}/auth/internal/get_hashed_password",
+            params={"uuid": session.get("uuid")},
+            verify=False
+        )
+        response.raise_for_status()
+        stored_hash = response.json()["password"]
+        
+        # Compare provided password with stored hash
+        if not bcrypt.checkpw(edit_request.password.encode('utf-8'), stored_hash.encode('utf-8')):
+            return False
+        return True
+
     try:
+        if not verify_password():
+            return jsonify({"error": "Invalid password"}), 401
+    
         user_uuid = session["uuid"]
         
         
