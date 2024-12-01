@@ -7,7 +7,6 @@ import connexion
 import jwt
 import redis
 import requests
-import urllib3
 from flask import current_app, jsonify, request
 from mysql.connector.errors import (
     DatabaseError,
@@ -19,7 +18,6 @@ from mysql.connector.errors import (
     ProgrammingError,
 )
 from pybreaker import CircuitBreaker, CircuitBreakerError
-from urllib3.exceptions import InsecureRequestWarning
 
 from openapi_server.helpers.authorization import verify_login
 from openapi_server.helpers.db import get_db
@@ -27,7 +25,6 @@ from openapi_server.helpers.logging import send_log
 from openapi_server.models.login_request import LoginRequest
 from openapi_server.models.register_request import RegisterRequest
 
-urllib3.disable_warnings(InsecureRequestWarning)
 SERVICE_TYPE = "auth"
 circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5, exclude=[requests.HTTPError, OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError])
 redis_client = redis.Redis(host='redis', port=6379, db=0)

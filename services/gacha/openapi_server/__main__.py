@@ -1,24 +1,36 @@
 #!/usr/bin/env python3
 
-import connexion
 import os
+
+import connexion
+import urllib3
+from flask import g
+from flask.json.provider import DefaultJSONProvider
+from urllib3.exceptions import InsecureRequestWarning
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from openapi_server import encoder
 
-from flask import g
-from werkzeug.middleware.proxy_fix import ProxyFix
 
+class CustomJSONProvider(DefaultJSONProvider):
+    def dumps(self, obj, **kwargs):
+        return encoder.JSONEncoder().encode(obj)
+    
+    def loads(self, s, **kwargs):
+        return super().loads(s, **kwargs)
 
 def main():
+    urllib3.disable_warnings(InsecureRequestWarning)
     connexion_app = connexion.App(__name__, specification_dir='./openapi/')
     app = connexion_app.app
-    app.json_encoder = encoder.JSONEncoder
+    app.json = CustomJSONProvider(app)
     app.wsgi_app = ProxyFix(connexion_app.app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
     # secret key flask
     app.secret_key = os.environ.get('FLASK_SECRET_KEY')
+    app.config['jwt_secret_key'] = os.environ.get('JWT_SECRET_KEY')
 
-    # Store DB configuration in app.config
+    # db configuration
     app.config['DB_CONFIG'] = {
         'host': os.environ.get('MYSQL_HOST'),
         'user': os.environ.get('MYSQL_USER'),
@@ -30,14 +42,14 @@ def main():
         'ssl_key': '/usr/src/app/ssl/gacha-key.pem'
     }
 
-    # Close the DB connection after each request
+    # close db after request
     @app.teardown_appcontext
     def close_db(error):
         db = g.pop('db', None)
         if db is not None:
             db.close()
     
-    # Adding api
+    # adding api
     connexion_app.add_api('openapi.yaml',
         arguments={'title': 'Gacha System - OpenAPI 3.0'},
         pythonic_params=True
