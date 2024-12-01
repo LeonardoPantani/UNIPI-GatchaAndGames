@@ -6,18 +6,17 @@ from PIL import Image
 
 app = Flask(__name__)
 
-SERVICE_TYPE="cdn"
+SERVICE_TYPE = "cdn"
 STORAGE_DIR = "./storage"
 os.makedirs(STORAGE_DIR, exist_ok=True)
 
+"""Verifica se una stringa è un UUID valido."""
 def is_valid_uuid(value):
-    """Verifica se una stringa è un UUID valido."""
     try:
         uuid.UUID(value)
         return True
     except ValueError:
         return False
-
 
 @app.route("/upload", methods=["POST"])
 def upload_image():
@@ -48,18 +47,17 @@ def upload_image():
         if img.format != "PNG":
             return jsonify({"error": "Only PNG images are allowed."}), 400
 
-
         if os.path.exists(file_path):
             img.save(file_path, "PNG")
             send_log("Image updated.", level="general", service_type=SERVICE_TYPE)
             return jsonify({"message": "Image updated."}), 200
-
 
         img.save(file_path, "PNG")
         send_log(f"Image saved as: {file_uuid}", level="general", service_type=SERVICE_TYPE)
         return jsonify({"message": f"File saved as {file_uuid}.png."}), 201
 
     except Exception as e:
+        send_log(f"File processing error: {str(e)}", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": f"File processing error: {str(e)}"}), 400
 
 @app.route("/image/<file_uuid>", methods=["GET"])
@@ -75,4 +73,5 @@ def health_check():
     return "OK", 200
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080, debug=True)
+    ssl_context = ("ssl/cdn-cert.pem", "ssl/cdn-key.pem")
+    app.run(host="0.0.0.0", port=443, debug=True, ssl_context=ssl_context)

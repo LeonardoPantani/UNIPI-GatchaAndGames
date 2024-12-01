@@ -5,7 +5,7 @@ services:
     container_name: unipi-gatchaandgames-cdn
     env_file: ./cdn/.env
     volumes:
-      - ./common/:/usr/src/app/helpers/
+      - ./common/:/app/helpers/
       - ./cdn/storage:/app/storage
       - ./cdn:/app
     restart: always

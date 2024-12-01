@@ -16,8 +16,8 @@ RUN apt-get update && apt-get install -y \
 # Installa le dipendenze Python
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Espone la porta 8080
-EXPOSE 8080
+# Espone la porta 443
+EXPOSE 443
 
 # Comando per avviare l'applicazione
 CMD ["python", "app.py"]
