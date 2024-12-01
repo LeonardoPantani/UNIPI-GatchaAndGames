@@ -1,35 +1,35 @@
-import connexion
-from typing import Dict
-from typing import Tuple
-from typing import Union
-
-from pybreaker import CircuitBreaker, CircuitBreakerError
-from flask import jsonify, session
-import requests
 import logging
 from datetime import datetime
 
-from openapi_server.models.auction import Auction  # noqa: E501
-from openapi_server.models.auction_status import AuctionStatus  # noqa: E501
-from openapi_server.models.exists_auctions200_response import ExistsAuctions200Response  # noqa: E501
-from openapi_server.models.gacha_rarity import GachaRarity  # noqa: E501
-from openapi_server.models.is_open_by_item_uuid200_response import IsOpenByItemUuid200Response  # noqa: E501
-from openapi_server import util
-
+import connexion
+import requests
+from flask import jsonify
 from mysql.connector.errors import (
-    OperationalError, DataError, DatabaseError, IntegrityError,
-    InterfaceError, InternalError, ProgrammingError
+    DatabaseError,
+    DataError,
+    IntegrityError,
+    InterfaceError,
+    InternalError,
+    OperationalError,
+    ProgrammingError,
 )
-from openapi_server.helpers.db import get_db
+from pybreaker import CircuitBreaker, CircuitBreakerError
 
+from openapi_server.helpers.db import get_db
+from openapi_server.helpers.logging import send_log
+from openapi_server.models.auction import Auction
+from openapi_server.models.auction_status import AuctionStatus
+from openapi_server.models.gacha_rarity import GachaRarity
+
+SERVICE_TYPE="auction"
 circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5)
 
-def create_auction(auction = None, session=None):  # noqa: E501
+def create_auction(auction = None, session=None):
     if not auction:
         if not connexion.request.is_json:
             return "", 400
             
-        auction = Auction.from_dict(connexion.request.get_json())  # noqa: E501
+        auction = Auction.from_dict(connexion.request.get_json())
 
         uuid = auction.auction_uuid
         item_id = auction.inventory_item_id
@@ -66,26 +66,14 @@ def create_auction(auction = None, session=None):  # noqa: E501
 
         return jsonify({"message":"Auction created."}), 201
 
-    except OperationalError:
-        logging.error(f"Query: Operational error.")
-        return "", 503
-    except ProgrammingError as e:
-        logging.error(f"Query: Programming error.{e}")
-        return "", 503
-    except DataError:
-        logging.error(f"Query: Invalid data error.")
-        return "", 503 
-    except IntegrityError:
-        logging.error(f"Query: Integrity error.")
-        return "", 503
-    except DatabaseError as e:
-        logging.error(f"Query: Generic database error.{e}")
-        return "", 503
+    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
         return "", 503
 
 
-def exists_auctions(session=None, uuid=None):  # noqa: E501
+def exists_auctions(session=None, uuid=None):
     if not uuid:
         return "", 400
 
@@ -121,26 +109,14 @@ def exists_auctions(session=None, uuid=None):  # noqa: E501
 
         return jsonify(payload), 200
 
-    except OperationalError:
-        logging.error(f"Query: Operational error.")
-        return "", 503
-    except ProgrammingError:
-        logging.error(f"Query: Programming error.")
-        return "", 503
-    except DataError:
-        logging.error(f"Query: Invalid data error.")
-        return "", 503 
-    except IntegrityError:
-        logging.error(f"Query: Integrity error.")
-        return "", 503
-    except DatabaseError:
-        logging.error(f"Query: Generic database error.")
-        return "", 503
+    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
         return "", 503
 
 
-def get_auction(session=None, uuid=None):  # noqa: E501
+def get_auction(session=None, uuid=None):
     if not uuid:
         return "", 400
 
@@ -206,30 +182,18 @@ def get_auction(session=None, uuid=None):  # noqa: E501
 
         return jsonify(payload), 200
 
-    except OperationalError:
-        logging.error(f"Query: Operational error.")
-        return "", 503
-    except ProgrammingError:
-        logging.error(f"Query: Programming error.")
-        return "", 503
-    except DataError:
-        logging.error(f"Query: Invalid data error.")
-        return "", 503 
-    except IntegrityError:
-        logging.error(f"Query: Integrity error.")
-        return "", 503
-    except DatabaseError:
-        logging.error(f"Query: Generic database error.")
-        return "", 503
+    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
         return "", 503
 
 
-def get_auction_list(session=None, status=None, rarity=None, page_number=None):  # noqa: E501
+def get_auction_list(session=None, status=None, rarity=None, page_number=None):
     if connexion.request.is_json:
-        status =  AuctionStatus.from_dict(connexion.request.get_json())  # noqa: E501
+        status =  AuctionStatus.from_dict(connexion.request.get_json())
     if connexion.request.is_json:
-        rarity =  GachaRarity.from_dict(connexion.request.get_json())  # noqa: E501
+        rarity =  GachaRarity.from_dict(connexion.request.get_json())
     
     if not status or (status != "open" and status != "closed"):
         return "", 400
@@ -342,26 +306,14 @@ def get_auction_list(session=None, status=None, rarity=None, page_number=None): 
 
         return jsonify(response[offset:(offset+items_per_page)]), 200
 
-    except OperationalError:
-        logging.error(f"Query: Operational error.")
-        return "", 503
-    except ProgrammingError:
-        logging.error(f"Query: Programming error.")
-        return "", 503
-    except DataError:
-        logging.error(f"Query: Invalid data error.")
-        return "", 503 
-    except IntegrityError:
-        logging.error(f"Query: Integrity error.")
-        return "", 503
-    except DatabaseError:
-        logging.error(f"Query: Generic database error.")
-        return "", 503
+    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
         return "", 503
 
 
-def get_user_auctions(session=None, user_uuid=None):  # noqa: E501
+def get_user_auctions(session=None, user_uuid=None):
     if not user_uuid:
         return "", 400
 
@@ -433,26 +385,14 @@ def get_user_auctions(session=None, user_uuid=None):  # noqa: E501
         
         return jsonify(response), 200
 
-    except OperationalError:
-        logging.error(f"Query: Operational error.")
-        return "", 503
-    except ProgrammingError:
-        logging.error(f"Query: Programming error.")
-        return "", 503
-    except DataError:
-        logging.error(f"Query: Invalid data error.")
-        return "", 503 
-    except IntegrityError:
-        logging.error(f"Query: Integrity error.")
-        return "", 503
-    except DatabaseError:
-        logging.error(f"Query: Generic database error.")
-        return "", 503
+    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
         return "", 503
 
 
-def is_open_by_item_uuid(session=None, uuid=None):  # noqa: E501
+def is_open_by_item_uuid(session=None, uuid=None):
     if not uuid:
         return "", 400
     print(uuid)
@@ -483,26 +423,14 @@ def is_open_by_item_uuid(session=None, uuid=None):  # noqa: E501
 
         return jsonify({"found":True}), 200
 
-    except OperationalError:
-        logging.error(f"Query: Operational error.")
-        return "", 503
-    except ProgrammingError:
-        logging.error(f"Query: Programming error.")
-        return "", 503
-    except DataError:
-        logging.error(f"Query: Invalid data error.")
-        return "", 503 
-    except IntegrityError:
-        logging.error(f"Query: Integrity error.")
-        return "", 503
-    except DatabaseError:
-        logging.error(f"Query: Generic database error.")
-        return "", 503
+    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
         return "", 503
 
 
-def refund_bidders(request_body=None, session=None):  # noqa: E501
+def refund_bidders(request_body=None, session=None):
     request_body = connexion.request.get_json()
 
     if not request_body:
@@ -559,26 +487,14 @@ def refund_bidders(request_body=None, session=None):  # noqa: E501
 
         return jsonify({"message":"Bidders refunded."}), 200
 
-    except OperationalError:
-        logging.error(f"Query: Operational error.")
-        return "", 503
-    except ProgrammingError:
-        logging.error(f"Query: Programming error.")
-        return "", 503
-    except DataError:
-        logging.error(f"Query: Invalid data error.")
-        return "", 503 
-    except IntegrityError:
-        logging.error(f"Query: Integrity error.")
-        return "", 503
-    except DatabaseError:
-        logging.error(f"Query: Generic database error.")
-        return "", 503
+    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
         return "", 503
 
 
-def remove_by_item_uuid(request_body=None, session=None):  # noqa: E501
+def remove_by_item_uuid(request_body=None, session=None):
     request_body = connexion.request.get_json()
 
     if not request_body:
@@ -608,26 +524,14 @@ def remove_by_item_uuid(request_body=None, session=None):  # noqa: E501
 
         return jsonify({"message":"Auctions deleted."}), 200
         
-    except OperationalError:
-        logging.error(f"Query: Operational error.")
-        return "", 503
-    except ProgrammingError:
-        logging.error(f"Query: Programming error.")
-        return "", 503
-    except DataError:
-        logging.error(f"Query: Invalid data error.")
-        return "", 503 
-    except IntegrityError:
-        logging.error(f"Query: Integrity error.")
-        return "", 503
-    except DatabaseError:
-        logging.error(f"Query: Generic database error.")
-        return "", 503
+    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
         return "", 503
 
 
-def reset_current_bidder(session=None, uuid=None):  # noqa: E501
+def reset_current_bidder(session=None, uuid=None):
     if not uuid:
         return "", 400
 
@@ -659,26 +563,14 @@ def reset_current_bidder(session=None, uuid=None):  # noqa: E501
 
         return jsonify({"message":"Bid updated."}), 200
 
-    except OperationalError:
-        logging.error(f"Query: Operational error.")
-        return "", 503
-    except ProgrammingError:
-        logging.error(f"Query: Programming error.")
-        return "", 503
-    except DataError:
-        logging.error(f"Query: Invalid data error.")
-        return "", 503 
-    except IntegrityError:
-        logging.error(f"Query: Integrity error.")
-        return "", 503
-    except DatabaseError:
-        logging.error(f"Query: Generic database error.")
-        return "", 503
+    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
         return "", 503
 
 
-def set_bid(session=None, auction_uuid=None, user_uuid=None, new_bid=None):  # noqa: E501
+def set_bid(session=None, auction_uuid=None, user_uuid=None, new_bid=None):
     if not auction_uuid or not user_uuid or not new_bid:
         return "", 400
 
@@ -726,30 +618,18 @@ def set_bid(session=None, auction_uuid=None, user_uuid=None, new_bid=None):  # n
 
         return jsonify({"message":"Bid updated."}), 200
 
-    except OperationalError:
-        logging.error(f"Query: Operational error.")
-        return "", 503
-    except ProgrammingError:
-        logging.error(f"Query: Programming error.")
-        return "", 503
-    except DataError:
-        logging.error(f"Query: Invalid data error.")
-        return "", 503 
-    except IntegrityError:
-        logging.error(f"Query: Integrity error.")
-        return "", 503
-    except DatabaseError:
-        logging.error(f"Query: Generic database error.")
-        return "", 503
+    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
         return "", 503
 
 
-def update_auction(session=None, auction=None):  # noqa: E501
+def update_auction(session=None, auction=None):
     if not connexion.request.is_json:
         return "", 400
         
-    auction = Auction.from_dict(connexion.request.get_json())  # noqa: E501
+    auction = Auction.from_dict(connexion.request.get_json())
 
     uuid = auction.auction_uuid
     item_id = auction.inventory_item_id
@@ -831,20 +711,8 @@ def update_auction(session=None, auction=None):  # noqa: E501
 
         return jsonify({"message":"Auction updated."}), 200
 
-    except OperationalError:
-        logging.error(f"Query: Operational error.")
-        return "", 503
-    except ProgrammingError as e:
-        logging.error(f"Query: Programming error.{e}")
-        return "", 503
-    except DataError:
-        logging.error(f"Query: Invalid data error.")
-        return "", 503 
-    except IntegrityError:
-        logging.error(f"Query: Integrity error.")
-        return "", 503
-    except DatabaseError as e:
-        logging.error(f"Query: Generic database error.{e}")
-        return "", 503
+    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
         return "", 503

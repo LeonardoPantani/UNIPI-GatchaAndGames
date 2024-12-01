@@ -90,7 +90,7 @@ def login(login_request=None):
         
         result = request_to_db()
     except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
-        send_log(f"Query: {type(e).__name__}", level="error", service_type=SERVICE_TYPE)
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
         send_log("CircuitBreaker Error: request_to_db", level="warning", service_type=SERVICE_TYPE)
@@ -215,7 +215,7 @@ def register(register_request=None):
         send_log(f"For username '{register_request.username}', email chosen '{register_request.email}' already exists.", level="info", service_type=SERVICE_TYPE)
         return jsonify({"error": "The provided username / email is already in use."}), 503
     except (OperationalError, DataError, ProgrammingError, InternalError, InterfaceError, DatabaseError) as e:
-        send_log(f"Query: {type(e).__name__}", level="error", service_type=SERVICE_TYPE)
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
         send_log("CircuitBreaker Error: request_to_db", level="warning", service_type=SERVICE_TYPE)

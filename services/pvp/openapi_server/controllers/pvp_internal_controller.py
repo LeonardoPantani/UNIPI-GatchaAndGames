@@ -1,29 +1,29 @@
-import connexion
 import json
-from typing import Dict
-from typing import Tuple
-from typing import Union
 
-from pybreaker import CircuitBreaker, CircuitBreakerError
-from flask import jsonify, session
-import requests
-import logging
-from datetime import datetime
-
-from openapi_server.models.pending_pv_p_requests import PendingPvPRequests  # noqa: E501
-from openapi_server.models.pv_p_request import PvPRequest  # noqa: E501
-from openapi_server import util
-
+import connexion
+from flask import jsonify
 from mysql.connector.errors import (
-    OperationalError, DataError, DatabaseError, IntegrityError,
-    InterfaceError, InternalError, ProgrammingError
+    DatabaseError,
+    DataError,
+    IntegrityError,
+    InterfaceError,
+    InternalError,
+    OperationalError,
+    ProgrammingError,
 )
-from openapi_server.helpers.db import get_db
+from pybreaker import CircuitBreaker, CircuitBreakerError
 
+from openapi_server.helpers.authorization import verify_login
+from openapi_server.helpers.db import get_db
+from openapi_server.helpers.logging import send_log
+from openapi_server.models.pending_pv_p_requests import PendingPvPRequests
+from openapi_server.models.pv_p_request import PvPRequest
+
+SERVICE_TYPE="pvp"
 circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5)
 
 
-def delete_match(session=None, uuid=None):  # noqa: E501
+def delete_match(session=None, uuid=None):
     if not uuid:
         return "", 400
     
@@ -63,27 +63,15 @@ def delete_match(session=None, uuid=None):  # noqa: E501
 
         return jsonify({"message":"Match deleted."}), 200
 
-    except OperationalError:
-        logging.error(f"Query: Operational error.")
-        return "", 503
-    except ProgrammingError:
-        logging.error(f"Query: Programming error.")
-        return "", 503
-    except DataError:
-        logging.error(f"Query: Invalid data error.")
-        return "", 503 
-    except IntegrityError:
-        logging.error(f"Query: Integrity error.")
-        return "", 503
-    except DatabaseError:
-        logging.error(f"Query: Generic database error.")
-        return "", 503
+    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
         return "", 503
 
 
 
-def get_pending_list(session=None, uuid=None):  # noqa: E501
+def get_pending_list(session=None, uuid=None):
     if not uuid:
         return "", 400
     
@@ -119,26 +107,14 @@ def get_pending_list(session=None, uuid=None):  # noqa: E501
 
         return jsonify(response), 200
 
-    except OperationalError:
-        logging.error(f"Query: Operational error.")
-        return "", 503
-    except ProgrammingError:
-        logging.error(f"Query: Programming error.")
-        return "", 503
-    except DataError:
-        logging.error(f"Query: Invalid data error.")
-        return "", 503 
-    except IntegrityError:
-        logging.error(f"Query: Integrity error.")
-        return "", 503
-    except DatabaseError:
-        logging.error(f"Query: Generic database error.")
-        return "", 503
+    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
         return "", 503
 
 
-def get_status(session=None, uuid=None):  # noqa: E501
+def get_status(session=None, uuid=None):
     if not uuid:
         return "", 400
     
@@ -175,30 +151,18 @@ def get_status(session=None, uuid=None):  # noqa: E501
 
         return jsonify(response), 200
 
-    except OperationalError:
-        logging.error(f"Query: Operational error.")
-        return "", 503
-    except ProgrammingError:
-        logging.error(f"Query: Programming error.")
-        return "", 503
-    except DataError:
-        logging.error(f"Query: Invalid data error.")
-        return "", 503 
-    except IntegrityError:
-        logging.error(f"Query: Integrity error.")
-        return "", 503
-    except DatabaseError:
-        logging.error(f"Query: Generic database error.")
-        return "", 503
+    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
         return "", 503
 
 
-def insert_match(pv_p_request=None, session=None):  # noqa: E501
+def insert_match(pv_p_request=None, session=None):
     if not connexion.request.is_json:
         return "", 400
         
-    pv_p_request = PvPRequest.from_dict(connexion.request.get_json())  # noqa: E501
+    pv_p_request = PvPRequest.from_dict(connexion.request.get_json())
     
     match_uuid = pv_p_request.pvp_match_uuid
     player1_uuid = pv_p_request.sender_id
@@ -235,26 +199,14 @@ def insert_match(pv_p_request=None, session=None):  # noqa: E501
 
         return jsonify({"message":"Match inserted"}), 201
 
-    except OperationalError:
-        logging.error(f"Query: Operational error.")
-        return "", 503
-    except ProgrammingError as e:
-        logging.error(f"Query: Programming error.{e}")
-        return "", 503
-    except DataError:
-        logging.error(f"Query: Invalid data error.")
-        return "", 503 
-    except IntegrityError:
-        logging.error(f"Query: Integrity error.")
-        return "", 503
-    except DatabaseError:
-        logging.error(f"Query: Generic database error.")
-        return "", 503
+    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
         return "", 503
 
 
-def remove_by_user_uuid(session=None, uuid=None):  # noqa: E501
+def remove_by_user_uuid(session=None, uuid=None):
     if not uuid:
         return "", 400
     
@@ -280,30 +232,18 @@ def remove_by_user_uuid(session=None, uuid=None):  # noqa: E501
 
         return jsonify({"message":"Match deleted."}), 200
 
-    except OperationalError:
-        logging.error(f"Query: Operational error.")
-        return "", 503
-    except ProgrammingError:
-        logging.error(f"Query: Programming error.")
-        return "", 503
-    except DataError:
-        logging.error(f"Query: Invalid data error.")
-        return "", 503 
-    except IntegrityError:
-        logging.error(f"Query: Integrity error.")
-        return "", 503
-    except DatabaseError:
-        logging.error(f"Query: Generic database error.")
-        return "", 503
+    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
         return "", 503
 
 
-def set_results(pv_p_request=None, session=None):  # noqa: E501
+def set_results(pv_p_request=None, session=None):
     if not connexion.request.is_json:
         return "", 400
     
-    pv_p_request = PvPRequest.from_dict(connexion.request.get_json())  # noqa: E501
+    pv_p_request = PvPRequest.from_dict(connexion.request.get_json())
 
     match_uuid = pv_p_request.pvp_match_uuid
     player1_uuid = pv_p_request.sender_id
@@ -340,20 +280,8 @@ def set_results(pv_p_request=None, session=None):  # noqa: E501
 
         return jsonify({"message":"Match updated."}), 200
 
-    except OperationalError:
-        logging.error(f"Query: Operational error.")
-        return "", 503
-    except ProgrammingError:
-        logging.error(f"Query: Programming error.")
-        return "", 503
-    except DataError:
-        logging.error(f"Query: Invalid data error.")
-        return "", 503 
-    except IntegrityError:
-        logging.error(f"Query: Integrity error.")
-        return "", 503
-    except DatabaseError:
-        logging.error(f"Query: Generic database error.")
-        return "", 503
+    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
         return "", 503

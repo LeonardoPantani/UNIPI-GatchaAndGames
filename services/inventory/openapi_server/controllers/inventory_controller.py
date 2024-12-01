@@ -8,7 +8,7 @@ from openapi_server.helpers.logging import send_log
 import logging
 import requests
 
-from openapi_server.models.inventory_item import InventoryItem  # noqa: E501
+from openapi_server.models.inventory_item import InventoryItem
 from openapi_server import util
 from pybreaker import CircuitBreaker, CircuitBreakerError
 from openapi_server.helpers.authorization import verify_login
@@ -21,10 +21,10 @@ AUCTIONS_SERVICE_URL = "https://service_auctions"
 # Circuit breaker instance for inventory operations
 circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5, exclude=[requests.HTTPError])
 
-def inventory_health_check_get():  # noqa: E501
+def inventory_health_check_get():
     return jsonify({"message": "Service operational."}), 200
 
-def get_inventory():  # noqa: E501
+def get_inventory():
     """Returns a list of gacha items currently owned by the player."""
     # Auth verification
     session = verify_login(connexion.request.headers.get('Authorization'))
@@ -67,7 +67,7 @@ def get_inventory():  # noqa: E501
     except CircuitBreakerError:
         return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503
 
-def get_inventory_item_info(inventory_item_id):  # noqa: E501
+def get_inventory_item_info(inventory_item_id):
     """Returns information about a specific inventory item owned by the player."""
     # Auth verification
     session = verify_login(connexion.request.headers.get('Authorization'))
@@ -107,7 +107,7 @@ def get_inventory_item_info(inventory_item_id):  # noqa: E501
         return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503
 
 
-def remove_inventory_item():  # noqa: E501
+def remove_inventory_item():
     """Remove an item from user's inventory."""
     # Auth verification
     session = verify_login(connexion.request.headers.get('Authorization'))

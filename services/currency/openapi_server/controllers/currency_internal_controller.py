@@ -1,27 +1,24 @@
-import connexion
-from typing import Dict
-from typing import Tuple
-from typing import Union
-
-from flask import jsonify, session
-import requests
 import logging
 
-from openapi_server.models.bundle import Bundle  # noqa: E501
-from openapi_server.models.get_user_history200_response import GetUserHistory200Response  # noqa: E501
-from openapi_server import util
-
+from flask import jsonify
+from mysql.connector.errors import (
+    DatabaseError,
+    DataError,
+    IntegrityError,
+    InterfaceError,
+    InternalError,
+    OperationalError,
+    ProgrammingError,
+)
 from pybreaker import CircuitBreaker, CircuitBreakerError
 
-from mysql.connector.errors import (
-    OperationalError, DataError, DatabaseError, IntegrityError,
-    InterfaceError, InternalError, ProgrammingError
-)
 from openapi_server.helpers.db import get_db
+from openapi_server.helpers.logging import send_log
 
+SERVICE_TYPE="currency"
 circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5)
 
-def delete_user_transactions(session=None, uuid=None):  # noqa: E501
+def delete_user_transactions(session=None, uuid=None):
     if not uuid:
         return "", 400
     
@@ -55,25 +52,13 @@ def delete_user_transactions(session=None, uuid=None):  # noqa: E501
 
         return jsonify({"message": "Transactions deleted."}), 200
 
-    except OperationalError:
-        logging.error(f"Query: Operational error.")
-        return "", 503
-    except ProgrammingError:
-        logging.error(f"Query: Programming error.")
-        return "", 503
-    except DataError:
-        logging.error(f"Query: Invalid data error.")
-        return "", 503 
-    except IntegrityError:
-        logging.error(f"Query: Integrity error.")
-        return "", 503
-    except DatabaseError:
-        logging.error(f"Query: Generic database error.")
-        return "", 503
+    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
         return "", 503
 
-def get_bundle(session=None, codename=None):  # noqa: E501
+def get_bundle(session=None, codename=None):
     if not codename:
         "", 400
 
@@ -115,25 +100,13 @@ def get_bundle(session=None, codename=None):  # noqa: E501
 
         return jsonify(payload), 200
 
-    except OperationalError:
-        logging.error(f"Query: Operational error.")
-        return "", 503
-    except ProgrammingError:
-        logging.error(f"Query: Programming error.")
-        return "", 503
-    except DataError:
-        logging.error(f"Query: Invalid data error.")
-        return "", 503 
-    except IntegrityError:
-        logging.error(f"Query: Integrity error.")
-        return "", 503
-    except DatabaseError as e:
-        logging.error(f"Query: Generic database error.")
-        return "", 503
+    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
         return "", 503
 
-def get_user_history(session=None, uuid=None, history_type=None, page_number=None):  # noqa: E501
+def get_user_history(session=None, uuid=None, history_type=None, page_number=None):
     if not uuid or not history_type:
         return "", 400
     
@@ -197,26 +170,14 @@ def get_user_history(session=None, uuid=None, history_type=None, page_number=Non
         print (response)
         return jsonify(response), 200
 
-    except OperationalError:
-        logging.error(f"Query: Operational error.")
-        return "", 503
-    except ProgrammingError:
-        logging.error(f"Query: Programming error.")
-        return "", 503
-    except DataError:
-        logging.error(f"Query: Invalid data error.")
-        return "", 503 
-    except IntegrityError:
-        logging.error(f"Query: Integrity error.")
-        return "", 503
-    except DatabaseError:
-        logging.error(f"Query: Generic database error.")
-        return "", 503
+    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
         return "", 503    
 
 
-def insert_bundle_transaction(session=None, uuid=None, bundle_codename=None, currency_name=None):  # noqa: E501
+def insert_bundle_transaction(session=None, uuid=None, bundle_codename=None, currency_name=None):
     if not uuid or not bundle_codename or not currency_name:
         return "", 400
     
@@ -242,25 +203,13 @@ def insert_bundle_transaction(session=None, uuid=None, bundle_codename=None, cur
 
         return jsonify({"message": "Transaction inserted."}), 200
 
-    except OperationalError:
-        logging.error(f"Query: Operational error.")
-        return "", 503
-    except ProgrammingError:
-        logging.error(f"Query: Programming error.")
-        return "", 503
-    except DataError:
-        logging.error(f"Query: Invalid data error.")
-        return "", 503 
-    except IntegrityError:
-        logging.error(f"Query: Integrity error.")
-        return "", 503
-    except DatabaseError:
-        logging.error(f"Query: Generic database error.")
-        return "", 503
+    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
         return "", 503    
 
-def insert_ingame_transaction(session=None, uuid=None, current_bid=None, transaction_type=None):  # noqa: E501
+def insert_ingame_transaction(session=None, uuid=None, current_bid=None, transaction_type=None):
     if not uuid or not current_bid or not transaction_type:
         return "", 400
     
@@ -289,26 +238,14 @@ def insert_ingame_transaction(session=None, uuid=None, current_bid=None, transac
 
         return jsonify({"message": "Transaction inserted."}), 200
 
-    except OperationalError:
-        logging.error(f"Query: Operational error.")
-        return "", 503
-    except ProgrammingError:
-        logging.error(f"Query: Programming error.")
-        return "", 503
-    except DataError:
-        logging.error(f"Query: Invalid data error.")
-        return "", 503 
-    except IntegrityError:
-        logging.error(f"Query: Integrity error.")
-        return "", 503
-    except DatabaseError:
-        logging.error(f"Query: Generic database error.")
-        return "", 503
+    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
         return "", 503    
 
 
-def list_bundles(session=None):  # noqa: E501
+def list_bundles(session=None):
     
     try:
         @circuit_breaker
@@ -331,21 +268,9 @@ def list_bundles(session=None):  # noqa: E501
         
         bundles_list = get_bundles()
 
-    except OperationalError:
-        logging.error(f"Query: Operational error.")
-        return "", 503
-    except ProgrammingError:
-        logging.error(f"Query: Programming error.")
-        return "", 503
-    except DataError:
-        logging.error(f"Query: Invalid data error.")
-        return "", 503 
-    except IntegrityError:
-        logging.error(f"Query: Integrity error.")
-        return "", 503
-    except DatabaseError:
-        logging.error(f"Query: Generic database error.")
-        return "", 503
+    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
         return "", 503    
     

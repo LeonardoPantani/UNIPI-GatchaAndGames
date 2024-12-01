@@ -1,27 +1,32 @@
+
 import connexion
-import logging
 import requests
-from typing import Dict
-from typing import Tuple
-from typing import Union
-
-from pybreaker import CircuitBreaker, CircuitBreakerError
-from flask import jsonify, session
-
-from openapi_server.models.feedback_preview import FeedbackPreview  # noqa: E501
-from openapi_server.models.feedback_with_username import FeedbackWithUsername  # noqa: E501
-from openapi_server.models.submit_feedback_request import SubmitFeedbackRequest  # noqa: E501
-from openapi_server import util
-
+from flask import jsonify
 from mysql.connector.errors import (
-    OperationalError, DataError, DatabaseError, IntegrityError,
-    InterfaceError, InternalError, ProgrammingError
+    DatabaseError,
+    DataError,
+    IntegrityError,
+    InterfaceError,
+    InternalError,
+    OperationalError,
+    ProgrammingError,
 )
-from openapi_server.helpers.db import get_db
+from pybreaker import CircuitBreaker, CircuitBreakerError
 
+from openapi_server.helpers.db import get_db
+from openapi_server.helpers.logging import send_log
+from openapi_server.models.feedback_preview import FeedbackPreview
+from openapi_server.models.feedback_with_username import (
+    FeedbackWithUsername,
+)
+from openapi_server.models.submit_feedback_request import (
+    SubmitFeedbackRequest,
+)
+
+SERVICE_TYPE="feedback"
 circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5)
 
-def delete_user_feedbacks(session=None, uuid=None):  # noqa: E501
+def delete_user_feedbacks(session=None, uuid=None):
     if not uuid:
         return "", 400
     
@@ -44,26 +49,14 @@ def delete_user_feedbacks(session=None, uuid=None):  # noqa: E501
 
         delete_feedbacks()
 
-    except OperationalError:
-        logging.error(f"Query: Operational error.")
-        return "", 503
-    except ProgrammingError:
-        logging.error(f"Query: Programming error.")
-        return "", 503
-    except DataError:
-        logging.error(f"Query: Invalid data error.")
-        return "", 503 
-    except IntegrityError:
-        logging.error(f"Query: Integrity error.")
-        return "", 503
-    except DatabaseError:
-        logging.error(f"Query: Generic database error.")
-        return "", 503
+    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
         return "", 503
 
 
-def feedback_info(session=None, feedback_id=None):  # noqa: E501
+def feedback_info(session=None, feedback_id=None):
     if not feedback_id:
         return "", 400
     
@@ -89,21 +82,9 @@ def feedback_info(session=None, feedback_id=None):  # noqa: E501
 
         feedback = get_feedback()
 
-    except OperationalError:
-        logging.error(f"Query: Operational error.")
-        return "", 503
-    except ProgrammingError:
-        logging.error(f"Query: Programming error.")
-        return "", 503
-    except DataError:
-        logging.error(f"Query: Invalid data error.")
-        return "", 503 
-    except IntegrityError:
-        logging.error(f"Query: Integrity error.")
-        return "", 503
-    except DatabaseError:
-        logging.error(f"Query: Generic database error.")
-        return "", 503
+    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
         return "", 503
 
@@ -144,7 +125,7 @@ def feedback_info(session=None, feedback_id=None):  # noqa: E501
     return jsonify(response), 200
 
 
-def feedback_list(session=None, page_number=None):  # noqa: E501
+def feedback_list(session=None, page_number=None):
     if not page_number:
         return "", 400
     
@@ -174,21 +155,9 @@ def feedback_list(session=None, page_number=None):  # noqa: E501
 
         feedback_list = get_feedbacks()
 
-    except OperationalError:
-        logging.error(f"Query: Operational error.")
-        return "", 503
-    except ProgrammingError:
-        logging.error(f"Query: Programming error.")
-        return "", 503
-    except DataError:
-        logging.error(f"Query: Invalid data error.")
-        return "", 503 
-    except IntegrityError:
-        logging.error(f"Query: Integrity error.")
-        return "", 503
-    except DatabaseError as e:
-        logging.error(f"Query: Generic database error.{e}")
-        return "", 503
+    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
         return "", 503
 
@@ -203,14 +172,14 @@ def feedback_list(session=None, page_number=None):  # noqa: E501
 
     return jsonify(response), 200
 
-def submit_feedback(submit_feedback_request=None, session=None, user_uuid=None):  # noqa: E501
+def submit_feedback(submit_feedback_request=None, session=None, user_uuid=None):
     if not connexion.request.is_json:
         return "", 400
     
     if submit_feedback_request is not None:
         feedback_content = submit_feedback_request.get('content')
     else:
-        submit_feedback_request = SubmitFeedbackRequest.from_dict(connexion.request.get_json())  # noqa: E501
+        submit_feedback_request = SubmitFeedbackRequest.from_dict(connexion.request.get_json())
         feedback_content = submit_feedback_request.content
 
     try:
@@ -234,20 +203,8 @@ def submit_feedback(submit_feedback_request=None, session=None, user_uuid=None):
 
         return jsonify({"message":"Feedback added."}), 201
 
-    except OperationalError:
-        logging.error(f"Query: Operational error.")
-        return "", 503
-    except ProgrammingError as e:
-        logging.error(f"Query: Programming error.{e}")
-        return "", 503
-    except DataError:
-        logging.error(f"Query: Invalid data error.")
-        return "", 503 
-    except IntegrityError as e:
-        logging.error(f"Query: Integrity error.{e}")
-        return "", 503
-    except DatabaseError:
-        logging.error(f"Query: Generic database error.")
-        return "", 503
+    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
         return "", 503
