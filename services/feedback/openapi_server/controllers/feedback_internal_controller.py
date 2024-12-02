@@ -50,6 +50,8 @@ def delete_user_feedbacks(session=None, uuid=None):
 
         delete_feedbacks()
 
+        return "", 200
+
     except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
