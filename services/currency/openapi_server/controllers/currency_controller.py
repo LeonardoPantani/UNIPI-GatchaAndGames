@@ -10,6 +10,8 @@ from openapi_server.helpers.logging import send_log
 
 from openapi_server.helpers.authorization import verify_login
 
+from openapi_server.helpers.input_checks import sanitize_string_input
+
 from openapi_server.controllers.currency_internal_controller import get_bundle, insert_bundle_transaction, insert_ingame_transaction, list_bundles
 
 circuit_breaker = CircuitBreaker(
@@ -43,13 +45,15 @@ def buy_currency(bundle_id):
         session = session[0]
     # fine controllo autenticazione
 
+    bundle_id = sanitize_string_input(bundle_id)
+
     if bundle_id == "add_myself_some_currency":
         if session['uuid'] not in global_mock_accounts:
             return jsonify({"error":"No user account found, try buying a bundle first."}), 404
         else:
             for account in global_mock_accounts[session['uuid']]["accounts"]:
                 account['amount'] += 100000
-        print(global_mock_accounts)
+        
         return jsonify({"message":"Balance added"}), 200        
 
     response = get_bundle(None, bundle_id)

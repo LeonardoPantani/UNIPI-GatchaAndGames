@@ -14,6 +14,8 @@ from pybreaker import CircuitBreaker, CircuitBreakerError
 from openapi_server.helpers.authorization import verify_login
 from openapi_server.controllers.inventory_internal_controller import remove_item
 
+from openapi_server.helpers.input_checks import sanitize_uuid_input
+
 SERVICE_TYPE="inventory"
 # Service URLs
 INVENTORY_SERVICE_URL = "https://service_inventory"
@@ -79,6 +81,10 @@ def get_inventory_item_info(inventory_item_id):
     
     user_uuid= session["uuid"]
 
+    valid, inventory_item_id = sanitize_uuid_input(inventory_item_id)
+    if not valid:
+        return jsonify({"message": "Invalid input."}), 400
+
     try:
         @circuit_breaker
         def get_item_info():
@@ -130,6 +136,10 @@ def remove_inventory_item():
     item_uuid = connexion.request.args.get('inventory_item_id')
     if not item_uuid:
         return jsonify({"error": "Missing item_uuid parameter"}), 400
+    
+    valid, inventory_item_id = sanitize_uuid_input(inventory_item_id)
+    if not valid:
+        return jsonify({"message": "Invalid input."}), 400
     
     try:
         

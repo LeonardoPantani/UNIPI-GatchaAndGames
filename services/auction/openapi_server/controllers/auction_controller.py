@@ -16,6 +16,8 @@ from openapi_server.controllers.auction_internal_controller import get_auction, 
 from openapi_server.helpers.logging import send_log
 from openapi_server.helpers.authorization import verify_login
 
+from openapi_server.helpers.input_checks import sanitze_uuid_input, sanitize_pagenumber_input
+
 from flask import jsonify, request, session, current_app
 from werkzeug.exceptions import BadRequest, NotFound, InternalServerError
 import uuid
@@ -44,6 +46,10 @@ def bid_on_auction(auction_uuid):
     
     if increment < 1:
         return jsonify({"error": "Invalid bid value."}), 400
+    
+    valid, auction_uuid = sanitze_uuid_input(auction_uuid)
+    if not valid:
+        return jsonify({"error": "Invalid input."}), 400
     
     response = get_auction(None, auction_uuid)
     if response[1] == 404:
@@ -174,7 +180,16 @@ def create_auction():
 
     if not owner_id or not item_id:
         return jsonify({"error": "Invalid query parameters."}), 400
+    
+    valid, owner_id = sanitze_uuid_input(owner_id)
+    if not valid:
+        return jsonify({"error": "Invalid input."}), 400
+    
+    valid, item_id = sanitze_uuid_input(item_id)
+    if not valid:
+        return jsonify({"error": "Invalid input."}), 400
   
+
     try:
         @circuit_breaker
         def make_request_to_inventory_service():
@@ -233,6 +248,10 @@ def get_auction_status(auction_uuid):
         return session
     else: # altrimenti, va preso il primo valore (0) per i dati di sessione già pronti
         session = session[0]
+
+    valid, auction_uuid = sanitze_uuid_input(auction_uuid)
+    if not valid:
+        return jsonify({"error": "Invalid input."}), 400
 
     response = get_auction(None, auction_uuid)
     if response[1] == 404:
@@ -366,6 +385,8 @@ def get_auctions_history(page_number=None):
     user_uuid=session['uuid']
     page_number = int(request.args.get('page_number', 1))
 
+    page_number = sanitize_pagenumber_input(page_number)
+
     items_per_page = 10
     offset = (page_number-1) * items_per_page
 
@@ -389,6 +410,8 @@ def get_auctions_list(status=None, rarity=None, page_number=None):
     status = request.args.get('status','open')
     rarity = request.args.get('rarity')
     page_number = int(request.args.get('page_number',1))
+
+    page_number = sanitize_pagenumber_input(page_number)
 
     response = list_auctions(None, status, rarity, page_number)
 

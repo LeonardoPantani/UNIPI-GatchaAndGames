@@ -20,7 +20,10 @@ import uuid
 from datetime import datetime, timedelta
 import logging
 from pybreaker import CircuitBreaker, CircuitBreakerError
+
 from openapi_server.helpers.authorization import verify_login
+
+from openapi_server.helpers.input_checks import sanitize_uuid_input, sanitize_string_input
 
 from openapi_server.controllers.gacha_internal_controller import get_gacha as get_gacha_info_internal
 
@@ -43,6 +46,11 @@ def get_gacha_info(gacha_uuid):
         return session
     else:
         session = session[0]
+
+    valid, gacha_uuid = sanitize_uuid_input(gacha_uuid)
+    if not valid:
+        return jsonify({"message": "Invalid input."}), 400
+
     try:
         @circuit_breaker
         def get_gacha():
@@ -80,6 +88,8 @@ def pull_gacha(pool_id):
     user_uuid = session.get("uuid")
     if not user_uuid:
         return jsonify({"error": "Not logged in"}), 403
+    
+    pool_id = sanitize_string_input(pool_id)
 
     try:
         # Check if pool exists
