@@ -137,7 +137,7 @@ def remove_inventory_item():
     if not item_uuid:
         return jsonify({"error": "Missing item_uuid parameter"}), 400
     
-    valid, inventory_item_id = sanitize_uuid_input(inventory_item_id)
+    valid, item_uuid = sanitize_uuid_input(item_uuid)
     if not valid:
         return jsonify({"message": "Invalid input."}), 400
     

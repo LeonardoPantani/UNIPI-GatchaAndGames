@@ -173,15 +173,15 @@ def feedback_list(session=None, page_number=None):
     return jsonify(response), 200
 
 def submit_feedback(submit_feedback_request=None, session=None, user_uuid=None):
-    if not connexion.request.is_json:
-        return "", 400
     
     if submit_feedback_request is not None:
         feedback_content = submit_feedback_request.get('content')
     else:
+        if not connexion.request.is_json:
+            return "", 400
         submit_feedback_request = SubmitFeedbackRequest.from_dict(connexion.request.get_json())
         feedback_content = submit_feedback_request.content
-    
+
     try:
         @circuit_breaker
         def insert_feedback():

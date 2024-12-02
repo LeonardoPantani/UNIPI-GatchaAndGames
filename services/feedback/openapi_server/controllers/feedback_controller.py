@@ -31,9 +31,6 @@ def post_feedback(string=None, session=None):
     else: # altrimenti, va preso il primo valore (0) per i dati di sessione già pronti
         session = session[0]
     # fine controllo autenticazione
-    
-    if not connexion.request.is_json:
-        return jsonify({"message": "Invalid request."}), 400
 
     # valid json request
     feedback_request = connexion.request.args.get("string")
@@ -47,7 +44,7 @@ def post_feedback(string=None, session=None):
     }
     
     response = submit_feedback(feedback, None, session['uuid'])
-
+    print(response)
     if response[1] != 201:
         return jsonify({"error": "Service unavailable. Please try again later."}), 503
     
