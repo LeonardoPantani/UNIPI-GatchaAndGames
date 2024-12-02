@@ -16,7 +16,7 @@ from openapi_server.controllers.auction_internal_controller import get_auction, 
 from openapi_server.helpers.logging import send_log
 from openapi_server.helpers.authorization import verify_login
 
-from openapi_server.helpers.input_checks import sanitze_uuid_input, sanitize_pagenumber_input
+from openapi_server.helpers.input_checks import sanitize_uuid_input, sanitize_pagenumber_input
 
 from flask import jsonify, request, session, current_app
 from werkzeug.exceptions import BadRequest, NotFound, InternalServerError
@@ -47,7 +47,7 @@ def bid_on_auction(auction_uuid):
     if increment < 1:
         return jsonify({"error": "Invalid bid value."}), 400
     
-    valid, auction_uuid = sanitze_uuid_input(auction_uuid)
+    valid, auction_uuid = sanitize_uuid_input(auction_uuid)
     if not valid:
         return jsonify({"error": "Invalid input."}), 400
     
@@ -181,11 +181,11 @@ def create_auction():
     if not owner_id or not item_id:
         return jsonify({"error": "Invalid query parameters."}), 400
     
-    valid, owner_id = sanitze_uuid_input(owner_id)
+    valid, owner_id = sanitize_uuid_input(owner_id)
     if not valid:
         return jsonify({"error": "Invalid input."}), 400
     
-    valid, item_id = sanitze_uuid_input(item_id)
+    valid, item_id = sanitize_uuid_input(item_id)
     if not valid:
         return jsonify({"error": "Invalid input."}), 400
   
@@ -249,7 +249,7 @@ def get_auction_status(auction_uuid):
     else: # altrimenti, va preso il primo valore (0) per i dati di sessione già pronti
         session = session[0]
 
-    valid, auction_uuid = sanitze_uuid_input(auction_uuid)
+    valid, auction_uuid = sanitize_uuid_input(auction_uuid)
     if not valid:
         return jsonify({"error": "Invalid input."}), 400
 
