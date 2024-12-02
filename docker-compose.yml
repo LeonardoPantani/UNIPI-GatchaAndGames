@@ -6,7 +6,6 @@ services:
     env_file: ./cdn/.env
     volumes:
       - ./common/:/app/openapi_server/helpers/
-      - ./cdn/storage:/app/openapi_server/storage
       - ./cdn:/app
     restart: always
     healthcheck:
