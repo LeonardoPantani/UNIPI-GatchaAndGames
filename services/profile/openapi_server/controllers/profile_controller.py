@@ -13,6 +13,8 @@ from openapi_server.models.delete_profile_request import DeleteProfileRequest
 from openapi_server.models.edit_profile_request import EditProfileRequest
 from openapi_server.models.user import User
 
+from openapi_server.helpers.input_checks import sanitize_email_input, sanitize_uuid_input
+
 circuit_breaker = CircuitBreaker(
     fail_max=1000, reset_timeout=5, exclude=[requests.HTTPError]
 )
@@ -282,11 +284,15 @@ def edit_profile():
         # Update email if provided
         
         if edit_request.email:
+            valid, email = sanitize_email_input(edit_request.email)
+            if not valid:
+                return jsonify({"error": "Invalid input."}), 400
+
             @circuit_breaker
             def update_email():
                 response = requests.post(
                     f"{AUTH_SERVICE_URL}/auth/internal/edit_email",
-                    params={"uuid": user_uuid, "email": edit_request.email},
+                    params={"uuid": user_uuid, "email": email},
                 verify=False, timeout=current_app.config['requests_timeout']
                 )
                 response.raise_for_status()
@@ -339,6 +345,10 @@ def get_user_info(uuid):
 
     if 'username' not in session:
         return jsonify({"error": "Not logged in."}), 403
+    
+    valid, uuid = sanitize_uuid_input(uuid)
+    if not valid:
+        return jsonify({"error": "Invalid input."}), 400
 
     try:
         @circuit_breaker

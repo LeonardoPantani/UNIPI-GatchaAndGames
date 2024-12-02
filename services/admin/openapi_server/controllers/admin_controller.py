@@ -739,7 +739,6 @@ def get_all_profiles(page_number=None):
 
     return jsonify(profile_list), 200
 
-
 def get_feedback_info(feedback_id=None):
     session = verify_login(connexion.request.headers.get('Authorization'), audience_required="private_services", service_type=SERVICE_TYPE)
     if session[1] != 200:
@@ -796,7 +795,6 @@ def get_feedback_info(feedback_id=None):
 
     return jsonify(feedback), 200
 
-
 def get_system_logs():
     session = verify_login(connexion.request.headers.get('Authorization'), audience_required="private_services", service_type=SERVICE_TYPE)
     if session[1] != 200:
@@ -840,8 +838,6 @@ def get_system_logs():
     
 
     return jsonify(logs), 200
-
-
 
 def get_user_history(user_uuid, history_type, page_number=None):
     session = verify_login(connexion.request.headers.get('Authorization'), audience_required="private_services", service_type=SERVICE_TYPE)
@@ -1048,7 +1044,6 @@ def update_gacha(gacha_uuid):
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503  
 
     return jsonify({"message":"Gacha updated."}), 200
-
 
 def update_pool(pool_id):
     session = verify_login(connexion.request.headers.get('Authorization'), audience_required="private_services", service_type=SERVICE_TYPE)
