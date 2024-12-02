@@ -22,6 +22,8 @@ import logging
 from pybreaker import CircuitBreaker, CircuitBreakerError
 from openapi_server.helpers.authorization import verify_login
 
+from openapi_server.controllers.gacha_internal_controller import get_gacha as get_gacha_info_internal
+
 # Circuit breaker instance
 circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5, exclude=[requests.HTTPError])
 
@@ -177,18 +179,23 @@ def pull_gacha(pool_id):
                 "price_paid": pool['price'],
                 "obtained_date": datetime.today().strftime('%Y-%m-%d %H:%M:%S')
             }
-            print(new_item_uuid)
+            
             response = requests.post(
             f"{INVENTORY_SERVICE_URL}/inventory/internal/insert_item",
             json=item_data,
                 verify=False, timeout=current_app.config['requests_timeout']
             )
-            print(response)
             response.raise_for_status()
             return response
 
+        response=get_gacha_info_internal(None,selected_item)
+        if response[1] == 404:
+            return response
+        elif response[1] == 503 or response[1] == 400:
+            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+
         add_to_inventory()
-        return jsonify(selected_item), 200
+        return (response)
 
     except requests.HTTPError as e:
         if e.response.status_code == 404:
