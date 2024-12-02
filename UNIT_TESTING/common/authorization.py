@@ -34,11 +34,12 @@ def verify_login(auth_header=None, audience_required="public_services", service_
         @circuit_breaker
         def make_request_to_auth():
             # chiamata a introspect access_token e audience_required
-            return introspect(access_token, audience_required)
+            response = introspect(access_token, audience_required)
+            return response
 
-        session = make_request_to_auth()[0]
-
-        return session, 200
+        response = make_request_to_auth()
+        
+        return response[0], response[1]
     except requests.HTTPError as e:
         if e.response.status_code == 401: # unauthorized
             send_log("VerifyLogin: Account unauthorized.", level="info", service_type=service_type, endpoint=log_endpoint)
@@ -63,7 +64,7 @@ def introspect(access_token, audience_required):
 
     if audience_required != "public_services" and audience_required != "private_services":
         return "", 400
-   
+    
     try:
         decoded_token = jwt.decode(access_token, current_app.config['jwt_secret_key'], algorithms=["HS256"], audience=audience_required)
         result = {
@@ -75,25 +76,21 @@ def introspect(access_token, audience_required):
             "logindate": decoded_token["logindate"]
         }
 
-        # obtaining token saved in Redis
-        try:
-            saved_token = MOCK_REDIS[decoded_token["uuid"]]
-        except redis.RedisError as e:
-            send_log(f"Redis error {e}", level="error", service_type="auth")
-            return jsonify({"error": "Service unavailable. Please try again later."}), 503
+        # obtaining token saved in Redis (mock)
+        saved_token = access_token
         
         # if no token is saved probably is because Redis was restarted since user logged in
         if saved_token is None:
             send_log(f"Token for user {decoded_token["username"]} is valid but was not found in Redis.", level="warning", service_type="auth")
-            return jsonify({"error": "Unauthorized."}), 401
+            return ({"error": "Unauthorized."}, 401)
 
         # if it is not equal to the one saved in Redis, it is a problem
         if saved_token != access_token:
             send_log(f"Saved token for '{decoded_token["username"]}' is not the same as the saved one in Redis.", level="info", service_type="auth")
-            return jsonify({"error": "Unauthorized."}), 401
+            return ({"error": "Unauthorized."}, 401)
 
-        return result, 200
+        return (result, 200)
     except jwt.ExpiredSignatureError:
-        return jsonify({"error": "Token expired."}), 402
+        return ({"error": "Token expired."}, 402)
     except jwt.InvalidTokenError:
-        return jsonify({"error": "Unauthorized."}), 401
+        return ({"error": "Unauthorized."}, 401)

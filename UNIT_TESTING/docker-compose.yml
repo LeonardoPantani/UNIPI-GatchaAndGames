@@ -9,17 +9,6 @@ services:
   #     - ./cdn:/app
   #   restart: always
 
-  # ########################## ADMIN
-  # service_admin:
-  #   image: service_admin
-  #   build: ./services/admin/
-  #   env_file: ./services/admin/.env
-  #   volumes:
-  #     - ./services/admin:/usr/src/app/
-  #     - ./common/:/usr/src/app/openapi_server/helpers/
-  #   tty: true
-  #   restart: always
-
 
   # ########################## AUTH
   service_auth:
@@ -48,15 +37,17 @@ services:
 
 
   # ########################## CURRENCY
-  # service_currency:
-  #   image: service_currency
-  #   build: ./services/currency/
-  #   env_file: ./services/currency/.env
-  #   volumes:
-  #     - ./services/currency:/usr/src/app/
-  #     - ./common/:/usr/src/app/openapi_server/helpers/
-  #   tty: true
-  #   restart: always
+  service_currency:
+    image: service_currency
+    build: ./services/currency/
+    env_file: ./services/currency/.env
+    ports:
+      - "1002:443"
+    volumes:
+      - ./services/currency:/usr/src/app/
+      - ./common/:/usr/src/app/openapi_server/helpers/
+    tty: true
+    restart: always
 
 
   ########################## FEEDBACK
@@ -65,7 +56,7 @@ services:
     build: ./services/feedback/
     env_file: ./services/feedback/.env
     ports:
-      - "1000:1000"
+      - "1000:443"
     volumes:
       - ./services/feedback:/usr/src/app/
       - ./common/:/usr/src/app/openapi_server/helpers/
