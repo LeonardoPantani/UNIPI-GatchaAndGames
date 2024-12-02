@@ -103,7 +103,7 @@ def sanitize_pool_input(input_pool):
           return False
       
     return input_pool
-  except Exception:
+  except Exception as e:
       return False
   
 def sanitize_auction_input(input_auction):
