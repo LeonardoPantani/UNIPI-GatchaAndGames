@@ -8,7 +8,7 @@ from PIL import Image
 app = Flask(__name__)
 
 SERVICE_TYPE = "cdn"
-STORAGE_DIR = "./storage"
+STORAGE_DIR = "/app/openapi_server/storage"
 os.makedirs(STORAGE_DIR, exist_ok=True)
 
 """Verifica se una stringa è un UUID valido."""
