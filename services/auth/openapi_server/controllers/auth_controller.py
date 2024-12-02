@@ -29,7 +29,7 @@ from openapi_server.helpers.input_checks import sanitize_email_input
 
 SERVICE_TYPE = "auth"
 circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5, exclude=[requests.HTTPError, OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError])
-redis_client = redis.Redis(host='redis', port=6379, db=0)
+redis_client = redis.Redis(host='redis', port=6380, db=0)
 
 
 """ Returns 200 if service is healthy. """

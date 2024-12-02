@@ -21,7 +21,7 @@ from openapi_server.models.userinfo_request import UserinfoRequest
 
 SERVICE_TYPE = "auth"
 circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5, exclude=[requests.HTTPError, OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError])
-redis_client = redis.Redis(host='redis', port=6379, db=0)
+redis_client = redis.Redis(host='redis', port=6380, db=0)
 
 
 """

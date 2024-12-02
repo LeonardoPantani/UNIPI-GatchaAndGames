@@ -1,4 +1,22 @@
 services:
+  ########################## CDN FOR IMAGES
+  cdn:
+    build: ./cdn/
+    container_name: unipi-gatchaandgames-cdn
+    env_file: ./cdn/.env
+    volumes:
+      - ./common/:/app/openapi_server/helpers/
+      - ./cdn:/app
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "--cert", "/app/ssl/cdn-cert.pem", "--key", "/app/ssl/cdn-key.pem", "--cacert", "/app/ssl/cdn-ca-cert.pem", "https://cdn/health_check"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    networks:
+      - public_gachaandgames_network
+
   ########################## API GATEWAYS
   api_gateway_public:
     image: nginx:alpine
@@ -19,6 +37,7 @@ services:
       - service_inventory
       - service_profile
       - service_pvp
+      - cdn
     restart: always
     healthcheck:
       test: ["CMD", "curl", "-f", "--cert", "/etc/nginx/ssl/apigateways-cert.pem", "--key", "/etc/nginx/ssl/apigateways-key.pem", "--cacert", "/etc/nginx/ssl/apigateways-ca-cert.pem", "https://localhost/health_check"]
@@ -51,17 +70,16 @@ services:
     networks:
       - private_gachaandgames_network
 
-  ########################## REDIS (LOGGING)
+  ########################## REDIS
   redis:
-    image: redis:latest
+    build: ./redis/
     container_name: unipi-gatchaandgames-redis
-    ports:
-      - "6379:6379"
     volumes:
-      - redis_data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+      - ./redis/ssl:/usr/local/etc/redis/ssl:ro
     restart: always
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "--tls", "--cert", "/usr/local/etc/redis/ssl/redis-cert.pem", "--key", "/usr/local/etc/redis/ssl/redis-key.pem", "--cacert", "/usr/local/etc/redis/ssl/cas/redis-ca-cert.pem", "-h", "redis", "ping"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -828,10 +846,8 @@ networks:
   private_gachaandgames_network:
   public_gachaandgames_network:
 volumes:
-  mysql_gachaandgames_db:
-  grafana_data:
   loki_data:
-  redis_data:
+  grafana_data:
   service_auth_db_proxy_data:
   service_auth_db_primary_data:
   service_auth_db_replica_data:
