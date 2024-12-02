@@ -999,7 +999,7 @@ def update_gacha(gacha_uuid):
     if not valid:
         return jsonify({"message": "Invalid input."}), 400
 
-    if gacha.gacha_uuid != gacha_uuid:
+    if gacha["gacha_uuid"] != gacha_uuid:
         return jsonify({"message": "Gacha UUID in request is different from the one inside the gacha object."}), 406
 
     try:
@@ -1032,7 +1032,7 @@ def update_gacha(gacha_uuid):
         @circuit_breaker
         def make_request_to_gacha_service():
             url = "https://service_gacha/gacha/internal/gacha/update"
-            response = requests.post(url, json=gacha.to_dict(), verify=False, timeout=current_app.config['requests_timeout'])
+            response = requests.post(url, json=gacha, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
             
         make_request_to_gacha_service()
@@ -1065,16 +1065,16 @@ def update_pool(pool_id):
 
     pool_id = sanitize_string_input(pool_id)
 
-    pool = sanitize_pool_input(pool)
+    pool = sanitize_pool_input(pool.to_dict())
 
     if not pool:
         return jsonify({"error":"Invalid input"}), 400
 
-    if pool.codename != pool_id:
+    if pool["codename"] != pool_id:
         return jsonify({"message": "Pool UUID in request is different from the one inside the pool object."}), 406
 
     
-    if pool.public_name is None or pool.price is None or pool.items is None or pool.probability_legendary is None or pool.probability_rare is None or pool.probability_epic is None or pool.probability_common is None:
+    if pool["public_name"] is None or pool["price"] is None or pool["items"] is None or pool["probability_legendary"] is None or pool["probability_rare"] is None or pool["probability_epic"] is None or pool["probability_common"] is None:
         return jsonify({"message": "Invalid request."}), 400
     
     try:
@@ -1107,7 +1107,7 @@ def update_pool(pool_id):
         @circuit_breaker
         def make_request_to_gacha_service():
             url = "https://service_gacha/gacha/internal/pool/update"
-            response = requests.post(url, json=pool.to_dict(), verify=False, timeout=current_app.config['requests_timeout'])
+            response = requests.post(url, json=pool, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
             
         make_request_to_gacha_service()
