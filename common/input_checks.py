@@ -71,7 +71,9 @@ def sanitize_pagenumber_input(input_number):
     return input_number
 
 def sanitize_gacha_input(input_gacha):
-  input_gacha['gacha_uuid'] = sanitize_uuid_input(input_gacha['gacha_uuid'])
+  valid, input_gacha['gacha_uuid'] = sanitize_uuid_input(input_gacha['gacha_uuid'])
+  if not valid:
+     return False
   input_gacha['name'] = sanitize_string_input(input_gacha['name'])
 
   return input_gacha

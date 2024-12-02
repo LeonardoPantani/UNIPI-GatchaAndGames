@@ -305,6 +305,9 @@ def create_gacha():
 
     gacha = sanitize_gacha_input(gacha)
 
+    if not gacha:
+        return jsonify({"error": "Invalid input."}), 400
+
     try:
         @circuit_breaker
         def make_request_to_gacha_service():
@@ -990,7 +993,7 @@ def update_gacha(gacha_uuid):
 
     gacha = Gacha.from_dict(connexion.request.get_json())
 
-    gacha = sanitize_gacha_input(gacha)
+    gacha = sanitize_gacha_input(gacha.to_dict())
 
     valid, gacha_uuid = sanitize_uuid_input(gacha_uuid)
     if not valid:
@@ -1063,6 +1066,9 @@ def update_pool(pool_id):
     pool_id = sanitize_string_input(pool_id)
 
     pool = sanitize_pool_input(pool)
+
+    if not pool:
+        return jsonify({"error":"Invalid input"}), 400
 
     if pool.codename != pool_id:
         return jsonify({"message": "Pool UUID in request is different from the one inside the pool object."}), 406
