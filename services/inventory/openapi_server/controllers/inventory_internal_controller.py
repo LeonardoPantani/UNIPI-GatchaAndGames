@@ -134,9 +134,6 @@ def delete_user_inventory(uuid=None, session=None):
             return affected_rows > 0
 
         items_deleted = delete_user_items()
-        
-        if not items_deleted:
-            return "", 404
             
         return "", 200
 

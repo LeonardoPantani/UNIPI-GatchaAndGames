@@ -25,6 +25,8 @@ from openapi_server.helpers.logging import send_log
 from openapi_server.models.login_request import LoginRequest
 from openapi_server.models.register_request import RegisterRequest
 
+from openapi_server.helpers.input_checks import sanitize_email_input
+
 SERVICE_TYPE = "auth"
 circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5, exclude=[requests.HTTPError, OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError])
 redis_client = redis.Redis(host='redis', port=6379, db=0)
@@ -176,12 +178,11 @@ def register(register_request=None):
 
     # obtaining dict of request
     register_request = RegisterRequest.from_dict(connexion.request.get_json())
-
     # verifying mail
-    if not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', register_request.email):
-        send_log("Invalid email provided.", level="info", service_type=SERVICE_TYPE)
-        return jsonify({"error": "The specified email is not valid."}), 406
-
+    valid, email = sanitize_email_input(register_request.email)
+    if not valid:
+        return jsonify({"message": "Invalid input."}), 400
+    
     # hashing
     password_hashed = bcrypt.hashpw(register_request.password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
@@ -198,13 +199,13 @@ def register(register_request=None):
             connection.start_transaction()
             cursor.execute(
                 'INSERT INTO users (uuid, email, password, role) VALUES (UUID_TO_BIN(%s), %s, %s, %s)',
-                (uuid_to_register, register_request.email, password_hashed, role)
+                (uuid_to_register, email, password_hashed, role)
             )
             return
 
         request_to_db()
     except IntegrityError: # email already in use
-        send_log(f"For username '{register_request.username}', email chosen '{register_request.email}' already exists.", level="info", service_type=SERVICE_TYPE)
+        send_log(f"For username '{register_request.username}', email chosen '{email}' already exists.", level="info", service_type=SERVICE_TYPE)
         return jsonify({"error": "The provided username / email is already in use."}), 503
     except (OperationalError, DataError, ProgrammingError, InternalError, InterfaceError, DatabaseError) as e:
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
@@ -212,7 +213,7 @@ def register(register_request=None):
     except CircuitBreakerError:
         send_log("CircuitBreaker Error: request_to_db", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-
+    
     # /profile/internal/insert_profile
     # creates a profile.
     try:
@@ -246,7 +247,7 @@ def register(register_request=None):
 
     # auto login
     try:
-        token = complete_access(uuid_to_register, uuid_hex_to_register, register_request.email, register_request.username, role)
+        token = complete_access(uuid_to_register, uuid_hex_to_register, email, register_request.username, role)
     except redis.RedisError as e:
         send_log(f"Login: Redis error {e}", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service unavailable. Please try again later."}), 503

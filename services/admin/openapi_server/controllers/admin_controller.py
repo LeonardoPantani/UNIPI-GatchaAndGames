@@ -14,6 +14,7 @@ from openapi_server.models.user_full import UserFull
 from openapi_server import util
 
 from openapi_server.helpers.logging import send_log, query_logs
+from openapi_server.helpers.input_checks import sanitize_auction_input, sanitize_uuid_input, sanitize_pagenumber_input, sanitize_pool_input, sanitize_gacha_input, sanitize_string_input, sanitize_email_input
 
 from flask import session, jsonify, current_app
 
@@ -38,6 +39,10 @@ def ban_profile(user_uuid):
         return session
     else:
         session = session[0]
+
+    valid, user_uuid = sanitize_uuid_input(user_uuid)
+    if not valid:
+        return jsonify({"message": "Invalid input."}), 400
     
     try:
         @circuit_breaker
@@ -113,14 +118,14 @@ def ban_profile(user_uuid):
             return response.json()
         
         user_items = make_request_to_inventory_service()
-
+    
     except requests.HTTPError as e:
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
     except requests.RequestException:
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503  
-
+    
     try:
         @circuit_breaker
         def make_request_to_auction_service():
@@ -224,7 +229,10 @@ def ban_profile(user_uuid):
         make_request_to_profile_service()
 
     except requests.HTTPError as e:
-        return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+        if e.response.status_code == 404:
+            return jsonify({"error": "User not found."}), 404
+        else:  
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
     except requests.RequestException:
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
@@ -242,7 +250,10 @@ def ban_profile(user_uuid):
         make_request_to_auth_service()
 
     except requests.HTTPError as e:
-        return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+        if e.response.status_code == 404:
+            return jsonify({"error": "User not found."}), 404
+        else:
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
     except requests.RequestException:
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
@@ -292,6 +303,8 @@ def create_gacha():
     new_uuid = str(uuid.uuid4())
     gacha['gacha_uuid'] = new_uuid
 
+    gacha = sanitize_gacha_input(gacha)
+
     try:
         @circuit_breaker
         def make_request_to_gacha_service():
@@ -319,6 +332,10 @@ def delete_gacha(gacha_uuid):
         return session
     else:
         session = session[0]
+
+    valid, gacha_uuid = sanitize_uuid_input(gacha_uuid)
+    if not valid:
+        return jsonify({"message": "Invalid input."}), 400
 
     try:
         @circuit_breaker
@@ -405,27 +422,17 @@ def create_pool():
         return jsonify({"message": "Invalid request."}), 400
 
     pool = Pool.from_dict(connexion.request.get_json())
-    
-    if (
-        not isinstance(pool.probability_common, float)
-        or not isinstance(pool.probability_rare, float)
-        or not isinstance(pool.probability_epic, float)
-        or not isinstance(pool.probability_legendary, float)
-    ):
-        return jsonify({"error": "Invalid probabilities field."}), 412
 
-    # check if sum of probabilities is 1
-    if ((pool.probability_legendary + pool.probability_epic + pool.probability_rare + pool.probability_common) != 1):
-        return jsonify({"error": "Sum of probabilities is not 1."}), 416
+    pool = sanitize_pool_input(pool.to_dict())
 
-    if pool.price < 1:
-        return jsonify({"error": "Price should be a positive number."}), 416
+    if not pool:
+        return jsonify({"message": "Invalid input."}), 400
 
     try:
         @circuit_breaker
         def make_request_to_gacha_service():
             url = "https://service_gacha/gacha/internal/pool/create"
-            response = requests.post(url, json=pool.to_dict(), verify=False, timeout=current_app.config['requests_timeout'])
+            response = requests.post(url, json=pool, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
         
         make_request_to_gacha_service()
@@ -448,6 +455,8 @@ def delete_pool(pool_id):
         return session
     else:
         session = session[0]
+
+    pool_id = sanitize_string_input(pool_id)
 
     try:
         @circuit_breaker
@@ -506,6 +515,14 @@ def edit_user_profile(user_uuid, email=None, username=None):
 
     if not username and not email:
         return jsonify({"message":"No changes applied."}), 304
+    
+    valid, email = sanitize_email_input(email)
+    if not valid:
+        return jsonify({"error": "Invalid input."}), 400
+    
+    valid, user_uuid = sanitize_uuid_input(user_uuid)
+    if not valid:
+        return jsonify({"message": "Invalid input."}), 400
 
     try:
         @circuit_breaker
@@ -615,6 +632,8 @@ def get_all_feedbacks(page_number=None):
 
     if not page_number:
         return jsonify({"message": "Invalid request."}), 400
+    
+    page_number = sanitize_pagenumber_input(page_number)
 
     try:
         @circuit_breaker
@@ -671,6 +690,8 @@ def get_all_profiles(page_number=None):
 
     if not page_number:
         return jsonify({"message": "Invalid request."}), 400
+    
+    page_number = sanitize_pagenumber_input(page_number)
 
     try:
         @circuit_breaker
@@ -831,6 +852,12 @@ def get_user_history(user_uuid, history_type, page_number=None):
 
     if not user_uuid or not history_type or not page_number:
         return jsonify({"message": "Invalid request."}), 400
+    
+    valid, user_uuid = sanitize_uuid_input(user_uuid)
+    if not valid:
+        return jsonify({"message": "Invalid input."}), 400
+    
+    page_number = sanitize_pagenumber_input(page_number)
 
     try:
         @circuit_breaker
@@ -886,28 +913,24 @@ def update_auction(auction_uuid):
         session = session[0]
 
     if not auction_uuid:
-        return jsonify({"message": "Invalid request."}), 400
+        return jsonify({"error": "Invalid request."}), 400
     
     if not connexion.request.is_json:
-        return jsonify({"message": "Invalid request."}), 400
+        return jsonify({"error": "Invalid request."}), 400
 
     auction = Auction.from_dict(connexion.request.get_json())
+    
+    valid, auction_uuid = sanitize_uuid_input(auction_uuid)
+    if not valid:
+        return jsonify({"error": "Invalid request."}), 400
+    
+    auction = sanitize_auction_input(auction.to_dict())
+    if not auction:
+        return jsonify({"error": "Invalid input."}), 400
 
-    if auction.auction_uuid != auction_uuid:
+    if auction['auction_uuid'] != auction_uuid:
         return jsonify({"message": "Auction UUID in request is different from the one inside the auction object."}), 406
-
-    # starting price check
-    if auction.starting_price <= 0:
-        return jsonify({"error": "Starting price cannot be lower or equal to 0."}), 412
-
-    # starting price check
-    if auction.current_bid < 0:
-        return jsonify({"error": "Current bid cannot be lower than 0."}), 416
-
-    # Current bid cannot be lower than starting price
-    if auction.current_bid < auction.starting_price:
-        return jsonify({"error": "Current bid cannot be lower than starting price."}), 401
-
+    
     try:
         @circuit_breaker
         def make_request_to_auth_service():
@@ -933,22 +956,12 @@ def update_auction(auction_uuid):
     
     if user_role != "ADMIN":
         return jsonify({"error": "This account is not authorized to perform this action."}), 403
-    print(auction.end_time)
-    auction_data = {
-        "auction_uuid": auction.auction_uuid,
-        "current_bid": auction.current_bid,
-        "current_bidder": auction.current_bidder,
-        "end_time": str(auction.end_time),
-        "inventory_item_id": auction.inventory_item_id,
-        "starting_price": auction.starting_price,
-        "status": auction.status
-    }
 
     try:
         @circuit_breaker
         def make_request_to_auction_service():
             url = "https://service_auction/auction/internal/update"
-            response = requests.post(url, json=auction_data, verify=False, timeout=current_app.config['requests_timeout'])
+            response = requests.post(url, json=auction, verify=False, timeout=current_app.config['requests_timeout'])
             response.raise_for_status()
             
         make_request_to_auction_service()
@@ -980,6 +993,12 @@ def update_gacha(gacha_uuid):
         return jsonify({"message": "Invalid request."}), 400
 
     gacha = Gacha.from_dict(connexion.request.get_json())
+
+    gacha = sanitize_gacha_input(gacha)
+
+    valid, gacha_uuid = sanitize_uuid_input(gacha_uuid)
+    if not valid:
+        return jsonify({"message": "Invalid input."}), 400
 
     if gacha.gacha_uuid != gacha_uuid:
         return jsonify({"message": "Gacha UUID in request is different from the one inside the gacha object."}), 406
@@ -1046,27 +1065,16 @@ def update_pool(pool_id):
 
     pool = Pool.from_dict(connexion.request.get_json())
 
+    pool_id = sanitize_string_input(pool_id)
+
+    pool = sanitize_pool_input(pool)
+
     if pool.codename != pool_id:
         return jsonify({"message": "Pool UUID in request is different from the one inside the pool object."}), 406
 
     
     if pool.public_name is None or pool.price is None or pool.items is None or pool.probability_legendary is None or pool.probability_rare is None or pool.probability_epic is None or pool.probability_common is None:
         return jsonify({"message": "Invalid request."}), 400
-    
-    if (
-        not isinstance(pool.probability_common, float)
-        or not isinstance(pool.probability_rare, float)
-        or not isinstance(pool.probability_epic, float)
-        or not isinstance(pool.probability_legendary, float)
-    ):
-        return jsonify({"error": "Invalid probabilities field."}), 412
-
-    # check if sum of probabilities is 1
-    if ((pool.probability_legendary + pool.probability_epic + pool.probability_rare + pool.probability_common) != 1):
-        return jsonify({"error": "Sum of probabilities is not 1."}), 416
-
-    if pool.price < 1:
-        return jsonify({"error": "Price should be a positive number."}), 416
     
     try:
         @circuit_breaker

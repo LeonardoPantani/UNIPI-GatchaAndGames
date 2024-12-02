@@ -433,11 +433,11 @@ def is_open_by_item_uuid(session=None, uuid=None):
 def refund_bidders(request_body=None, session=None):
     request_body = connexion.request.get_json()
 
-    if not request_body:
-        return "", 400
-    
     if request_body == []:
         return "", 200
+
+    if not request_body:
+        return "", 400
     
     try:
         @circuit_breaker
@@ -497,11 +497,12 @@ def refund_bidders(request_body=None, session=None):
 def remove_by_item_uuid(request_body=None, session=None):
     request_body = connexion.request.get_json()
 
-    if not request_body:
-        return "", 400
-    
     if request_body == []:
         return "", 200
+
+    if not request_body:
+        return "", 400
+
     
     try:
         @circuit_breaker
