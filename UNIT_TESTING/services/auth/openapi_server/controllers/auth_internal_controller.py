@@ -5,6 +5,7 @@ import connexion
 import jwt
 import redis
 import requests
+import string
 from flask import current_app, jsonify
 from mysql.connector.errors import (
     DatabaseError,
@@ -17,7 +18,6 @@ from mysql.connector.errors import (
 )
 from pybreaker import CircuitBreaker, CircuitBreakerError
 
-from openapi_server.helpers.db import get_db
 from openapi_server.helpers.logging import send_log
 from openapi_server.models.introspect_request import IntrospectRequest
 from openapi_server.models.userinfo_request import UserinfoRequest
@@ -44,7 +44,6 @@ MOCK_TABLE_PROFILES = [
 
 SERVICE_TYPE = "auth"
 circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5, exclude=[requests.HTTPError, OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError])
-
 
 """
     The object must be { "access_token": "eyJhbGciOiJIUzI1NiIsInR5...", "audience_required": "public_services"/"private_services" }
@@ -73,18 +72,17 @@ def introspect(introspect_request=None):
         }
 
         # obtaining token saved in Redis
-        try:
+        if decoded_token["uuid"] in MOCK_REDIS:
             saved_token = MOCK_REDIS[decoded_token["uuid"]]
-        except redis.RedisError as e:
-            send_log(f"Redis error {e}", level="error", service_type=SERVICE_TYPE)
+        else:
+            send_log("Redis error", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service unavailable. Please try again later."}), 503
         
+
         # if no token is saved probably is because Redis was restarted since user logged in
         if saved_token is None:
             send_log(f"Token for user {decoded_token["username"]} is valid but was not found in Redis.", level="warning", service_type=SERVICE_TYPE)
             return jsonify({"error": "Unauthorized."}), 401
-        else:
-            saved_token = saved_token.decode("utf-8")
 
         # if it is not equal to the one saved in Redis, it is a problem
         if saved_token != introspect_request.access_token:
@@ -128,173 +126,153 @@ def userinfo(userinfo_request=None):
         return jsonify({"error": "Invalid token"}), 401
 
 
-""" Deletes a user. """
 def delete_user_by_uuid(session=None, uuid=None):
     if not uuid:
         return jsonify({"error": "Invalid request."}), 400
+    uuid = ''.join(char for char in uuid if char not in string.punctuation)
     
     try:
         @circuit_breaker
-        def make_request_to_db():
-            connection = get_db()
-            cursor = connection.cursor(dictionary=True)
-            query = "DELETE FROM users WHERE uuid = UUID_TO_BIN(%s)"
-            cursor.execute(query, (uuid,))
-            connection.commit()
-            return cursor.rowcount
+        def delete_user():
+            global MOCK_TABLE_USERS
+            initial_length = len(MOCK_TABLE_USERS)
+            MOCK_TABLE_USERS = [user for user in MOCK_TABLE_USERS if user[0] != uuid]
+            return len(MOCK_TABLE_USERS) < initial_length
         
-        affected_rows = make_request_to_db()
+        user_deleted = delete_user()
 
-        if affected_rows == 0:
+        if not user_deleted:
             return jsonify({"error": "User not found."}), 404
         
         return jsonify({"message": "User deleted."}), 200
     
-    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
-        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
-        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
-        send_log("CircuitBreaker Error: request_to_db", level="warning", service_type=SERVICE_TYPE)
+        send_log("CircuitBreaker Error: delete_user", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
 
 
-""" Updates a user's email. """
 def edit_email(session=None, uuid=None, email=None):
     if not uuid or not email:
         return jsonify({"error": "Invalid request."}), 400
+    uuid = ''.join(char for char in uuid if char not in string.punctuation)
 
-    # verifying if user exists
+    # Verifying if user exists
     try:
         @circuit_breaker
-        def make_request_to_db_1():
-            connection = get_db()
-            cursor = connection.cursor(dictionary=True)
-            query = "SELECT 1 FROM users WHERE uuid = UUID_TO_BIN(%s)"
-            cursor.execute(query, (uuid,))
-            cursor.fetchone()
-            connection.commit()
-            return cursor.rowcount
+        def verify_user_exists():
+            return find_user_by_uuid(uuid) is not None
         
-        affected_rows = make_request_to_db_1()
+        user_exists = verify_user_exists()
 
-        if affected_rows == 0:
+        if not user_exists:
             return jsonify({"error": "User not found."}), 404
     
-    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
-        send_log(f"Query 1: {type(e).__name__}", level="error", service_type=SERVICE_TYPE)
-        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
-        send_log("CircuitBreaker Error: request_to_db", level="warning", service_type=SERVICE_TYPE)
+        send_log("CircuitBreaker Error: verify_user_exists", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
 
-    # updating email
+    # Updating email
     try:
         @circuit_breaker
-        def make_request_to_db_2():
-            connection = get_db()
-            cursor = connection.cursor(dictionary=True)
-            query = "UPDATE users SET email = %s WHERE uuid = UUID_TO_BIN(%s)"
-            cursor.execute(query, (email, uuid))
-            connection.commit()
-            return cursor.rowcount
+        def update_email():
+            for idx, user in enumerate(MOCK_TABLE_USERS):
+                if user[0] == uuid:
+                    if user[1] == email:
+                        return False
+                    else:
+                        MOCK_TABLE_USERS[idx] = (user[0], email, user[2], user[3])
+                        return True
         
-        affected_rows = make_request_to_db_2()
+        email_updated = update_email()
 
-        if affected_rows == 0:
+        if not email_updated:
             return jsonify({"error": "No changes applied."}), 304
         
         return jsonify({"message": "Email updated."}), 200
     
-    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
-        send_log(f"Query 2: {type(e).__name__}", level="error", service_type=SERVICE_TYPE)
-        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
-        send_log("CircuitBreaker Error: request_to_db", level="warning", service_type=SERVICE_TYPE)
+        send_log("CircuitBreaker Error: update_email", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
 
 
-""" Returns user hashed password. """
 def get_hashed_password(session=None, uuid=None):
     if not uuid:
         return jsonify({"error": "Invalid request."}), 400
+    uuid = ''.join(char for char in uuid if char not in string.punctuation)
     
     try:
         @circuit_breaker
-        def make_request_to_db():
-            connection = get_db()
-            cursor = connection.cursor(dictionary=True)
-            query = "SELECT password FROM users WHERE uuid = UUID_TO_BIN(%s)"
-            cursor.execute(query, (uuid,))
-            return cursor.fetchone()
+        def get_password():
+            return get_user_password(uuid)
         
-        result = make_request_to_db()
+        password = get_password()
 
-        if not result:
+        if not password:
             return jsonify({"error": "User not found."}), 404
         
-        return jsonify({"password": result["password"]}), 200
+        return jsonify({"password": password}), 200
     
-    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
-        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
-        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
-        send_log("CircuitBreaker Error: request_to_db", level="warning", service_type=SERVICE_TYPE)
+        send_log("CircuitBreaker Error: get_password", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
 
 
-""" Returns role of the user. """
 def get_role_by_uuid(session=None, uuid=None):
     if not uuid:
         return jsonify({"error": "Invalid request."}), 400
+    uuid = ''.join(char for char in uuid if char not in string.punctuation)
     
     try:
         @circuit_breaker
-        def make_request_to_db():
-            connection = get_db()
-            cursor = connection.cursor(dictionary=True)
-            query = "SELECT role FROM users WHERE uuid = UUID_TO_BIN(%s)"
-            cursor.execute(query, (uuid,))
-            return cursor.fetchone()
+        def get_role():
+            return get_user_role(uuid)
         
-        result = make_request_to_db()
+        role = get_role()
 
-        if not result:
+        if not role:
             return jsonify({"error": "User not found."}), 404
         
-        return jsonify({"role": result["role"].upper()}), 200
+        return jsonify({"role": role.upper()}), 200
     
-    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
-        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
-        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
-        send_log("CircuitBreaker Error: request_to_db", level="warning", service_type=SERVICE_TYPE)
+        send_log("CircuitBreaker Error: get_role", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
 
 
-""" Returns user info. """
 def get_user(session=None, uuid=None):
     if not uuid:
         return jsonify({"error": "Invalid request."}), 400
+    uuid = ''.join(char for char in uuid if char not in string.punctuation)
     
     try:
         @circuit_breaker
-        def make_request_to_db():
-            connection = get_db()
-            cursor = connection.cursor(dictionary=True)
-            query = "SELECT BIN_TO_UUID(uuid) as uuid, email, role FROM users WHERE uuid = UUID_TO_BIN(%s)"
-            cursor.execute(query, (uuid,))
-            return cursor.fetchone()
+        def fetch_user():
+            user = find_user_by_uuid(uuid)
+            if user:
+                return {"uuid": user[0], "email": user[1], "role": user[3].upper()}
+            return None
         
-        result = make_request_to_db()
+        result = fetch_user()
 
         if not result:
             return jsonify({"error": "User not found."}), 404
         
-        return jsonify({"uuid": result["uuid"], "email": result["email"], "role": result["role"].upper()}), 200
+        return jsonify(result), 200
     
-    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
-        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
-        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
-        send_log("CircuitBreaker Error: request_to_db", level="warning", service_type=SERVICE_TYPE)
+        send_log("CircuitBreaker Error: fetch_user", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+
+
+
+# mock
+def find_user_by_uuid(uuid):
+    return next((user for user in MOCK_TABLE_USERS if user[0] == uuid), None)
+
+def get_user_role(uuid):
+    user = find_user_by_uuid(uuid)
+    return user[3] if user else None
+
+def get_user_password(uuid):
+    user = find_user_by_uuid(uuid)
+    return user[2] if user else None
