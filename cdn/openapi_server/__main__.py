@@ -57,11 +57,11 @@ def upload_image():
 
         if os.path.exists(file_path):
             img.save(file_path, "PNG")
-            send_log(f"User '{session['uuid']}' updated the image {file_uuid}.", level="general", service_type=SERVICE_TYPE)
+            send_log(f"User '{session['username']}' updated the image {file_uuid}.", level="general", service_type=SERVICE_TYPE)
             return jsonify({"message": "Image updated."}), 200
 
         img.save(file_path, "PNG")
-        send_log(f"User '{session['uuid']}' saved the image: {file_uuid}", level="general", service_type=SERVICE_TYPE)
+        send_log(f"User '{session['username']}' saved the image: {file_uuid}", level="general", service_type=SERVICE_TYPE)
         return jsonify({"message": f"File saved as {file_uuid}.png"}), 201
 
     except Exception as e:
