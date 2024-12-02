@@ -11,6 +11,7 @@ COPY requirements.txt /app/requirements.txt
 RUN apt-get update && apt-get install -y \
     libjpeg-dev \
     zlib1g-dev \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Installa le dipendenze Python
@@ -20,4 +21,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 EXPOSE 443
 
 # Comando per avviare l'applicazione
-CMD ["python", "app.py"]
+ENTRYPOINT ["python3"]
+CMD ["-m", "openapi_server"]
