@@ -1,6 +1,9 @@
-
+############# WARNING #############
+#   !   This is a mock file.  !   #
+###################################
 import connexion
 import requests
+import datetime
 from flask import jsonify, current_app
 from mysql.connector.errors import (
     DatabaseError,
@@ -24,6 +27,14 @@ from openapi_server.models.submit_feedback_request import (
     SubmitFeedbackRequest,
 )
 
+MOCK_COUNT = 3
+MOCK_FEEDBACKS = [
+    (1, 'e3b0c442-98fc-1c14-b39f-92d1282048c0', 'Yare yare daze... Great game!', datetime.datetime(2024, 1, 10, 12, 0)),
+    (2, '87f3b5d1-5e8e-4fa4-909b-3cd29f4b1f09', 'WRYYYYY! Amazing stands!', datetime.datetime(2024, 1, 11, 13, 30)),
+    (3, 'a4f0c592-12af-4bde-aacd-94cd0f27c57e', 'This is... Requiem. Awesome gameplay.', datetime.datetime(2024, 1, 12, 15, 45))
+]
+MOCK_USERNAME = { 'username': 'DIOBrando' }
+
 SERVICE_TYPE="feedback"
 circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5)
 
@@ -34,21 +45,13 @@ def delete_user_feedbacks(session=None, uuid=None):
     try:
         @circuit_breaker
         def delete_feedbacks():
-            connection = get_db()
-            cursor = connection.cursor()
-
-            query = """
-                DELETE
-                FROM feedbacks
-                WHERE user_uuid = UUID_TO_BIN(%s)
-            """
-
-            cursor.execute(query, (uuid,))
-
-            connection.commit()
-            cursor.close()
+            global MOCK_FEEDBACKS
+            MOCK_FEEDBACKS = [feedback for feedback in MOCK_FEEDBACKS if feedback[1] != uuid]
+            return True
 
         delete_feedbacks()
+
+        return "", 200
 
     except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
@@ -64,22 +67,8 @@ def feedback_info(session=None, feedback_id=None):
     try:
         @circuit_breaker
         def get_feedback():
-            connection = get_db()
-            cursor = connection.cursor()
-
-            query = """
-                SELECT id, BIN_TO_UUID(user_uuid), content, timestamp
-                FROM feedbacks
-                WHERE id = %s
-            """
-
-            cursor.execute(query, (feedback_id,))
-            
-            feedback_data = cursor.fetchone()
-
-            cursor.close()
-
-            return feedback_data
+            global MOCK_FEEDBACKS
+            return next((feedback for feedback in MOCK_FEEDBACKS if feedback[0] == feedback_id), None)
 
         feedback = get_feedback()
 
@@ -95,11 +84,7 @@ def feedback_info(session=None, feedback_id=None):
     try:
         @circuit_breaker
         def make_request_to_profile_service():
-            params = {"user_uuid": feedback[1]}
-            url = "https://service_profile/profile/internal/get_username_from_uuid"
-            response = requests.get(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
-            response.raise_for_status()
-            return response.json()
+            return MOCK_USERNAME
         
         username_data = make_request_to_profile_service()
 
@@ -136,23 +121,8 @@ def feedback_list(session=None, page_number=None):
     try:
         @circuit_breaker
         def get_feedbacks():
-            connection = get_db()
-            cursor = connection.cursor()
-
-            query = """
-                SELECT id, BIN_TO_UUID(user_uuid), timestamp
-                FROM feedbacks
-                LIMIT %s
-                OFFSET %s
-            """
-
-            cursor.execute(query, (items_per_page, offset))
-            
-            feedback_data = cursor.fetchall()
-
-            cursor.close()
-
-            return feedback_data
+            global MOCK_FEEDBACKS
+            return MOCK_FEEDBACKS
 
         feedback_list = get_feedbacks()
 
@@ -167,11 +137,12 @@ def feedback_list(session=None, page_number=None):
         payload = {
             "id": feedback[0],
             "user_uuid": feedback[1],
-            "timestamp": feedback[2]
+            "timestamp": feedback[3]
         }
         response.append(payload)
 
     return jsonify(response), 200
+
 
 def submit_feedback(submit_feedback_request=None, session=None, user_uuid=None):
     
@@ -189,23 +160,19 @@ def submit_feedback(submit_feedback_request=None, session=None, user_uuid=None):
         
         submit_feedback_request = SubmitFeedbackRequest.from_dict(connexion.request.get_json())
         feedback_content = submit_feedback_request.content
+        
 
     try:
         @circuit_breaker
         def insert_feedback():
-            connection = get_db()
-            cursor = connection.cursor()
+            global MOCK_COUNT
+            global MOCK_FEEDBACKS
 
-            query = """
-                INSERT INTO feedbacks
-                (user_uuid, content)
-                VALUES (UUID_TO_BIN(%s), %s)
-            """
-
-            cursor.execute(query, (user_uuid, feedback_content))
-
-            connection.commit()
-            cursor.close()
+            MOCK_COUNT = MOCK_COUNT + 1
+            MOCK_FEEDBACKS.append(
+                (MOCK_COUNT, user_uuid, feedback_content, datetime.datetime.now())
+            )
+            return True
         
         insert_feedback()
 

@@ -1,6 +1,9 @@
-from locust import HttpUser, task, between, events
-import random
 import json
+import os
+import random
+
+from locust import HttpUser, between, events, task
+
 count=0
 
 

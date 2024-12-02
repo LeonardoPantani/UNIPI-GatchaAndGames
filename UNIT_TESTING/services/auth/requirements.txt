@@ -1,0 +1,13 @@
+connexion[swagger-ui] == 2.14.2
+python_dateutil == 2.9.0
+setuptools >= 75.6.0
+Flask == 2.2.5
+python-dotenv == 1.0.1
+cryptography == 44.0.0
+pybreaker == 1.2.0
+requests == 2.32.3
+bcrypt == 4.2.1
+pyjwt[crypto] == 2.10.1
+redis == 5.2.0
+mysql-connector-python == 9.1.0
+pytest == 8.3.4 

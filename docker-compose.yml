@@ -107,8 +107,7 @@ services:
       interval: 1m
       timeout: 2s
       retries: 3
-    deploy:
-      replicas: 1
+
 
   ########################## AUTH
   service_auth:
@@ -132,8 +131,7 @@ services:
       interval: 1m
       timeout: 2s
       retries: 3
-    deploy:
-      replicas: 1
+
 
   service_auth_db_primary:
     build: ./databases/auth/primary/
@@ -219,8 +217,7 @@ services:
       interval: 1m
       timeout: 2s
       retries: 3
-    deploy:
-      replicas: 1
+
 
   service_auction_db_primary:
     build: ./databases/auction/primary/
@@ -305,8 +302,7 @@ services:
       interval: 1m
       timeout: 2s
       retries: 3
-    deploy:
-      replicas: 1
+
 
   service_currency_db_primary:
     build: ./databases/currency/primary/
@@ -391,8 +387,7 @@ services:
       interval: 1m
       timeout: 2s
       retries: 3
-    deploy:
-      replicas: 1
+
 
   service_feedback_db_primary:
     build: ./databases/feedback/primary/
@@ -477,8 +472,7 @@ services:
       interval: 1m
       timeout: 2s
       retries: 3
-    deploy:
-      replicas: 1
+
 
   service_gacha_db_primary:
     build: ./databases/gacha/primary/
@@ -563,8 +557,7 @@ services:
       interval: 1m
       timeout: 2s
       retries: 3
-    deploy:
-      replicas: 1
+
 
   service_inventory_db_primary:
     build: ./databases/inventory/primary/
@@ -649,8 +642,7 @@ services:
       interval: 1m
       timeout: 2s
       retries: 3
-    deploy:
-      replicas: 1
+
 
   service_profile_db_primary:
     build: ./databases/profile/primary/
@@ -735,8 +727,7 @@ services:
       interval: 1m
       timeout: 2s
       retries: 3
-    deploy:
-      replicas: 1
+
 
   service_pvp_db_primary:
     build: ./databases/pvp/primary/

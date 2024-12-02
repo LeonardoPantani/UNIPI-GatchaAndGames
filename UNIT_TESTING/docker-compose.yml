@@ -1,0 +1,121 @@
+services:
+  # ########################## CDN FOR IMAGES
+  # cdn:
+  #   build: ./cdn/
+  #   container_name: unipi-gatchaandgames-cdn
+  #   env_file: ./cdn/.env
+  #   volumes:
+  #     - ./common/:/app/openapi_server/helpers/
+  #     - ./cdn:/app
+  #   restart: always
+
+  # ########################## ADMIN
+  # service_admin:
+  #   image: service_admin
+  #   build: ./services/admin/
+  #   env_file: ./services/admin/.env
+  #   volumes:
+  #     - ./services/admin:/usr/src/app/
+  #     - ./common/:/usr/src/app/openapi_server/helpers/
+  #   tty: true
+  #   restart: always
+
+
+  # ########################## AUTH
+  service_auth:
+    image: service_auth
+    build: ./services/auth/
+    env_file: ./services/auth/.env
+    ports:
+      - "1001:443"
+    volumes:
+      - ./services/auth:/usr/src/app/
+      - ./common/:/usr/src/app/openapi_server/helpers/
+    tty: true
+    restart: always
+
+  
+  # ########################## AUCTION
+  # service_auction:
+  #   image: service_auction
+  #   build: ./services/auction/
+  #   env_file: ./services/auction/.env
+  #   volumes:
+  #     - ./services/auction:/usr/src/app/
+  #     - ./common/:/usr/src/app/openapi_server/helpers/
+  #   tty: true
+  #   restart: always
+
+
+  # ########################## CURRENCY
+  # service_currency:
+  #   image: service_currency
+  #   build: ./services/currency/
+  #   env_file: ./services/currency/.env
+  #   volumes:
+  #     - ./services/currency:/usr/src/app/
+  #     - ./common/:/usr/src/app/openapi_server/helpers/
+  #   tty: true
+  #   restart: always
+
+
+  ########################## FEEDBACK
+  service_feedback:
+    image: service_feedback
+    build: ./services/feedback/
+    env_file: ./services/feedback/.env
+    ports:
+      - "1000:1000"
+    volumes:
+      - ./services/feedback:/usr/src/app/
+      - ./common/:/usr/src/app/openapi_server/helpers/
+    tty: true
+    restart: always
+
+
+  # ########################## GACHA
+  # service_gacha:
+  #   image: service_gacha
+  #   build: ./services/gacha/
+  #   env_file: ./services/gacha/.env
+  #   volumes:
+  #     - ./services/gacha:/usr/src/app/
+  #     - ./common/:/usr/src/app/openapi_server/helpers/
+  #   tty: true
+  #   restart: always
+
+
+  # ########################## INVENTORY
+  # service_inventory:
+  #   image: service_inventory
+  #   build: ./services/inventory/
+  #   env_file: ./services/inventory/.env
+  #   volumes:
+  #     - ./services/inventory:/usr/src/app/
+  #     - ./common/:/usr/src/app/openapi_server/helpers/
+  #   tty: true
+  #   restart: always
+
+
+  # ########################## PROFILE
+  # service_profile:
+  #   image: service_profile
+  #   build: ./services/profile/
+  #   env_file: ./services/profile/.env
+  #   volumes:
+  #     - ./services/profile:/usr/src/app/
+  #     - ./common/:/usr/src/app/openapi_server/helpers/
+  #   tty: true
+  #   restart: always
+
+
+  # ########################## PVP
+  # service_pvp:
+  #   image: service_pvp
+  #   build: ./services/pvp/
+  #   env_file: ./services/pvp/.env
+  #   volumes:
+  #     - ./services/pvp:/usr/src/app/
+  #     - ./common/:/usr/src/app/openapi_server/helpers/
+  #   tty: true
+  #   restart: always
