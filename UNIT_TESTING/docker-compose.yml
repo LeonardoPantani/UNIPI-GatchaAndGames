@@ -60,28 +60,30 @@ services:
     restart: always
 
   # ########################## GACHA
-  # service_gacha:
-  #   image: service_gacha
-  #   build: ./services/gacha/
-  #   env_file: ./services/gacha/.env
-  #   ports:
-  #     - "1003:443"
-  #   volumes:
-  #     - ./services/gacha:/usr/src/app/
-  #     - ./common/:/usr/src/app/openapi_server/helpers/
-  #   tty: true
-  #   restart: always
+  service_gacha:
+    image: service_gacha
+    build: ./services/gacha/
+    env_file: ./services/gacha/.env
+    ports:
+      - "1003:443"
+    volumes:
+      - ./services/gacha:/usr/src/app/
+      - ./common/:/usr/src/app/openapi_server/helpers/
+    tty: true
+    restart: always
 
   # ########################## INVENTORY
-  # service_inventory:
-  #   image: service_inventory
-  #   build: ./services/inventory/
-  #   env_file: ./services/inventory/.env
-  #   volumes:
-  #     - ./services/inventory:/usr/src/app/
-  #     - ./common/:/usr/src/app/openapi_server/helpers/
-  #   tty: true
-  #   restart: always
+  service_inventory:
+     image: service_inventory
+     build: ./services/inventory/
+     env_file: ./services/inventory/.env
+     ports:
+       - "1006:443"
+     volumes:
+       - ./services/inventory:/usr/src/app/
+       - ./common/:/usr/src/app/openapi_server/helpers/
+     tty: true
+     restart: always
 
   # ########################## PROFILE
   service_profile:

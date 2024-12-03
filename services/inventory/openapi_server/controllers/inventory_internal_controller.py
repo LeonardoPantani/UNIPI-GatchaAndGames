@@ -574,6 +574,22 @@ def update_item_ownership(session=None, new_owner_uuid=None, item_uuid=None, pri
 
     try:
         @circuit_breaker
+
+        def check_item_exists():
+            connection = get_db()
+            cursor = connection.cursor()
+            
+            query = """
+            SELECT COUNT(*)
+            FROM inventories
+            WHERE BIN_TO_UUID(item_uuid) = %s
+            """
+            
+            cursor.execute(query, (item_uuid,))
+            exists = cursor.fetchone()[0] > 0
+            cursor.close()
+            return exists
+        
         def update_item_owner():
             connection = get_db()
             cursor = connection.cursor()
@@ -590,6 +606,9 @@ def update_item_ownership(session=None, new_owner_uuid=None, item_uuid=None, pri
             connection.commit()
             cursor.close()
             return True
+        
+        if not check_item_exists():
+            return "", 404
 
         update_item_owner()
         return "", 200

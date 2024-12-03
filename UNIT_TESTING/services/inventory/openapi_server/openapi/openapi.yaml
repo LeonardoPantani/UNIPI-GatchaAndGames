@@ -1,0 +1,719 @@
+openapi: 3.0.0
+info:
+  contact:
+    email: support@gachaandgames.it
+  description: |-
+    API for managing gacha items, auctions, PVP battles, currency, and user authentication.
+
+    Useful links:
+    - [Project repository](https://github.com/LeonardoPantani/UNIPI-GachaAndGames)
+  license:
+    name: GPL-3.0
+    url: https://www.gnu.org/licenses/gpl-3.0.html#license-text
+  termsOfService: https://localhost/tos
+  title: Gacha System - OpenAPI 3.0
+  version: 2.0.0
+servers:
+- description: Local server
+  url: https://localhost
+paths:
+  /inventory/:
+    delete:
+      description: Returns a list of gacha items currently owned by the player.
+      operationId: remove_inventory_item
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: inventory_item_owner_id
+        required: false
+        schema:
+          $ref: '#/components/schemas/UserId'
+        style: form
+      - explode: true
+        in: query
+        name: inventory_item_id
+        required: false
+        schema:
+          $ref: '#/components/schemas/ItemId'
+        style: form
+      responses:
+        "200":
+          description: Item removed from inventory
+        "403":
+          description: Not logged in.
+        "404":
+          description: Item not found.
+        "409":
+          description: Cannot remove item that is in an active auction.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      summary: Removes an item from player's inventory
+      tags:
+      - inventory
+      x-openapi-router-controller: openapi_server.controllers.inventory_controller
+    get:
+      description: Returns a list of gacha items currently owned by the player.
+      operationId: get_inventory
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: Page number of the list.
+        explode: true
+        in: query
+        name: page_number
+        required: false
+        schema:
+          default: 1
+          minimum: 1
+          type: integer
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/InventoryItem'
+                type: array
+          description: Successful operation
+        "403":
+          description: Not logged in.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      summary: Retrieve player's inventory
+      tags:
+      - inventory
+      x-openapi-router-controller: openapi_server.controllers.inventory_controller
+  /inventory/health_check:
+    get:
+      description: Returns 200 if service is healthy.
+      operationId: inventory_health_check_get
+      responses:
+        "200":
+          description: Service operational.
+      summary: Gives information on service status.
+      tags:
+      - inventory
+      x-openapi-router-controller: openapi_server.controllers.inventory_controller
+  /inventory/internal/check_owner_of_team:
+    post:
+      description: Checks if a team is actually owned by the user.
+      operationId: check_owner_of_team
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: user_uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/UserId'
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/check_owner_of_team_request'
+        required: true
+      responses:
+        "200":
+          description: Items verified.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "404":
+          description: Items not found in user inventory.
+        "503":
+          description: Service unavailable. Please try again later.
+      tags:
+      - inventory_internal
+      x-openapi-router-controller: openapi_server.controllers.inventory_internal_controller
+  /inventory/internal/delete_by_stand_uuid:
+    delete:
+      description: Deletes items which are a certain stand.
+      operationId: delete_by_stand_uuid
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/GachaId'
+        style: form
+      responses:
+        "200":
+          description: Items deleted.
+        "404":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - inventory_internal
+      x-openapi-router-controller: openapi_server.controllers.inventory_internal_controller
+  /inventory/internal/delete_user_inventory:
+    delete:
+      description: Deletes items owned by user.
+      operationId: delete_user_inventory
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/UserId'
+        style: form
+      responses:
+        "200":
+          description: Items deleted.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - inventory_internal
+      x-openapi-router-controller: openapi_server.controllers.inventory_internal_controller
+  /inventory/internal/exists:
+    get:
+      description: "Returns true if an item exists, false otherwise."
+      operationId: exists_inventory
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/ItemId'
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/exists_inventory_200_response'
+          description: Result of search.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - inventory_internal
+      x-openapi-router-controller: openapi_server.controllers.inventory_internal_controller
+  /inventory/internal/get_by_item_uuid:
+    get:
+      description: Returns item with requested uuid.
+      operationId: get_item_by_uuid
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/ItemId'
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryItem'
+          description: Item info.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "404":
+          description: Item not found.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - inventory_internal
+      x-openapi-router-controller: openapi_server.controllers.inventory_internal_controller
+  /inventory/internal/get_gachas_types_of_user:
+    get:
+      description: Returns list of stands types owned by the user.
+      operationId: get_gachas_types_of_user
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: user_uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/UserId'
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/GachaId'
+                type: array
+          description: Stands owned.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - inventory_internal
+      x-openapi-router-controller: openapi_server.controllers.inventory_internal_controller
+  /inventory/internal/get_items_by_owner_uuid:
+    get:
+      description: Returns inventory items owned by user with UUID requested.
+      operationId: get_inventory_by_owner_uuid
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/UserId'
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/ItemId'
+                type: array
+          description: Item list.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "503":
+          description: Service unavailable. Please try again later.
+      tags:
+      - inventory_internal
+      x-openapi-router-controller: openapi_server.controllers.inventory_internal_controller
+  /inventory/internal/get_items_by_stand_uuid:
+    get:
+      description: Returns list of items which are a specific stand.
+      operationId: get_items_by_stand_uuid
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/GachaId'
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/InventoryItem'
+                type: array
+          description: Item list.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - inventory_internal
+      x-openapi-router-controller: openapi_server.controllers.inventory_internal_controller
+  /inventory/internal/get_stand_uuid_by_item_uuid:
+    get:
+      description: Returns item with requested uuid.
+      operationId: get_stand_uuid_by_item_uuid
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/ItemId'
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/get_stand_uuid_by_item_uuid_200_response'
+          description: Item info.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "404":
+          description: Item not found.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - inventory_internal
+      x-openapi-router-controller: openapi_server.controllers.inventory_internal_controller
+  /inventory/internal/insert_item:
+    post:
+      description: Assigns a certain item.
+      operationId: insert_item
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventoryItem'
+        required: true
+      responses:
+        "200":
+          description: Item added successfully.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - inventory_internal
+      x-openapi-router-controller: openapi_server.controllers.inventory_internal_controller
+  /inventory/internal/list_inventory_items:
+    get:
+      description: "Returns inventory items owned by user with UUID requested, paginated."
+      operationId: get_inventory_items_by_owner_uuid
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/UserId'
+        style: form
+      - description: Page number of the list.
+        explode: true
+        in: query
+        name: page_number
+        required: false
+        schema:
+          default: 1
+          minimum: 1
+          type: integer
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/InventoryItem'
+                type: array
+          description: Item list.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "503":
+          description: Service unavailable. Please try again later.
+      tags:
+      - inventory_internal
+      x-openapi-router-controller: openapi_server.controllers.inventory_internal_controller
+  /inventory/internal/remove:
+    delete:
+      description: "Removes item from inventory, by item and owner UUID."
+      operationId: remove_item
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: item_uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/ItemId'
+        style: form
+      - explode: true
+        in: query
+        name: owner_uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/UserId'
+        style: form
+      responses:
+        "200":
+          description: Item deleted.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "503":
+          description: Service unavailable. Please try again later.
+      tags:
+      - inventory_internal
+      x-openapi-router-controller: openapi_server.controllers.inventory_internal_controller
+  /inventory/internal/update_item_owner:
+    post:
+      description: Updates ownership of a certain item.
+      operationId: update_item_ownership
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: new_owner_uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/UserId'
+        style: form
+      - explode: true
+        in: query
+        name: item_uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/ItemId'
+        style: form
+      - explode: true
+        in: query
+        name: price_paid
+        required: false
+        schema:
+          type: integer
+        style: form
+      responses:
+        "200":
+          description: Ownership updated.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "404":
+          description: Item not found.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - inventory_internal
+      x-openapi-router-controller: openapi_server.controllers.inventory_internal_controller
+  /inventory/{inventory_item_id}:
+    get:
+      description: Returns infos on my inventory item.
+      operationId: get_inventory_item_info
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: path
+        name: inventory_item_id
+        required: true
+        schema:
+          $ref: '#/components/schemas/ItemId'
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryItem'
+          description: Successful operation
+        "403":
+          description: Not logged in.
+        "404":
+          description: Item not found.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      summary: Shows infos on my inventory item.
+      tags:
+      - inventory
+      x-openapi-router-controller: openapi_server.controllers.inventory_controller
+components:
+  schemas:
+    UserId:
+      description: UUID of user.
+      format: uuid
+      title: owner_id
+      type: string
+    ItemId:
+      description: UUID of single item.
+      format: uuid
+      title: item_id
+      type: string
+    GachaId:
+      description: UUID of the gacha
+      format: uuid
+      title: GachaId
+      type: string
+    Team:
+      description: Team used by players to battle each others.
+      items:
+        $ref: '#/components/schemas/GachaId'
+      maxItems: 7
+      minItems: 7
+      title: Team
+      type: array
+    InventoryItem:
+      example:
+        item_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        obtained_date: 2000-01-23T04:56:07.000+00:00
+        price_paid: 6.0274563
+        owner_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        gacha_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        owners_no: 0
+      properties:
+        owner_id:
+          description: UUID of user.
+          format: uuid
+          title: owner_id
+          type: string
+        item_id:
+          description: UUID of single item.
+          format: uuid
+          title: item_id
+          type: string
+        gacha_uuid:
+          description: UUID representing a gacha
+          format: uuid
+          title: gacha_uuid
+          type: string
+        obtained_date:
+          description: Timestamp of latest obtainment
+          format: date-time
+          title: obtained_date
+          type: string
+        owners_no:
+          description: Number of previous owners of this item
+          title: owners_no
+          type: integer
+        price_paid:
+          description: Game currency used to buy this item
+          format: float
+          title: price_paid
+          type: number
+      title: InventoryItem
+      type: object
+    exists_inventory_200_response:
+      example:
+        exists: true
+      properties:
+        exists:
+          title: exists
+          type: boolean
+      title: exists_inventory_200_response
+      type: object
+    get_stand_uuid_by_item_uuid_200_response:
+      example:
+        stand_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+      properties:
+        stand_uuid:
+          description: UUID of the gacha
+          format: uuid
+          title: GachaId
+          type: string
+      title: get_stand_uuid_by_item_uuid_200_response
+      type: object
+    check_owner_of_team_request:
+      properties:
+        team:
+          $ref: '#/components/schemas/Team'
+      title: check_owner_of_team_request
+      type: object
