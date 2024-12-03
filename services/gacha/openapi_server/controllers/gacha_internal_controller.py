@@ -16,6 +16,8 @@ from mysql.connector.errors import (
     InterfaceError, InternalError, ProgrammingError
 )
 
+from openapi_server.helpers.stats import map_grade_to_number, map_number_to_grade
+
 
 from flask import session, jsonify
 
@@ -51,14 +53,14 @@ def create_gacha(gacha=None, session=None):
             VALUES (UUID_TO_BIN(%s), %s, %s, %s, %s, %s, %s, %s, %s, NOW())
             """
             
-            # Convert letter grades back to numbers (A=100, B=80, etc)
+            # Convert letter grades back to numbers
             stats = {
-                'power': (ord('F') - ord(gacha_data.attributes.power)) * 20,
-                'speed': (ord('F') - ord(gacha_data.attributes.speed)) * 20,
-                'durability': (ord('F') - ord(gacha_data.attributes.durability)) * 20,
-                'precision': (ord('F') - ord(gacha_data.attributes.precision)) * 20,
-                'range': (ord('F') - ord(gacha_data.attributes.range)) * 20,
-                'potential': (ord('F') - ord(gacha_data.attributes.potential)) * 20
+                'power': map_grade_to_number(gacha_data.attributes.power),
+                'speed': map_grade_to_number(gacha_data.attributes.speed),
+                'durability': map_grade_to_number(gacha_data.attributes.durability),
+                'precision': map_grade_to_number(gacha_data.attributes.precision),
+                'range': map_grade_to_number(gacha_data.attributes.range),
+                'potential': map_grade_to_number(gacha_data.attributes.potential)
             }
             
             cursor.execute(query, (
@@ -361,12 +363,12 @@ def get_gacha(session=None, uuid=None):
                 "name": result[1],
                 "rarity": result[2],
                 "attributes": {
-                    "power": str(result[3]),
-                    "speed": str(result[4]),
-                    "durability": str(result[5]),
-                    "precision": str(result[6]),
-                    "range": str(result[7]),
-                    "potential": str(result[8])
+                    "power": map_number_to_grade(result[3]),
+                    "speed": map_number_to_grade(result[4]),
+                    "durability": map_number_to_grade(result[5]),
+                    "precision": map_number_to_grade(result[6]),
+                    "range": map_number_to_grade(result[7]),
+                    "potential": map_number_to_grade(result[8])
                 }
             }
 
@@ -513,12 +515,12 @@ def list_gachas(requestBody=None, session=None, not_owned=None):
                     "name": result[1],
                     "rarity": result[2],
                     "attributes": {
-                        "power": str(result[3]),
-                        "speed": str(result[4]),
-                        "durability": str(result[5]),
-                        "precision": str(result[6]),
-                        "range": str(result[7]),
-                        "potential": str(result[8])
+                        "power": map_number_to_grade(result[3]),
+                        "speed": map_number_to_grade(result[4]),
+                        "durability": map_number_to_grade(result[5]),
+                        "precision": map_number_to_grade(result[6]),
+                        "range": map_number_to_grade(result[7]),
+                        "potential": map_number_to_grade(result[8])
                     }
                 }
                 gachas.append(gacha)
@@ -627,12 +629,12 @@ def update_gacha(gacha=None, session=None):
             # Check if values are the same
             if (current[0] == gacha_object.name and 
                 current[1].upper() == gacha_object.rarity.upper() and
-                6 - (ord(gacha_object.attributes.power.upper()) - ord('A')) == current[2] and
-                6 - (ord(gacha_object.attributes.speed.upper()) - ord('A')) == current[3] and
-                6 - (ord(gacha_object.attributes.durability.upper()) - ord('A')) == current[4] and
-                6 - (ord(gacha_object.attributes.precision.upper()) - ord('A')) == current[5] and
-                6 - (ord(gacha_object.attributes.range.upper()) - ord('A')) == current[6] and
-                6 - (ord(gacha_object.attributes.potential.upper()) - ord('A')) == current[7]):
+                map_grade_to_number(gacha_object.attributes.power) == current[2] and
+                map_grade_to_number(gacha_object.attributes.speed) == current[3] and
+                map_grade_to_number(gacha_object.attributes.durability) == current[4] and
+                map_grade_to_number(gacha_object.attributes.precision) == current[5] and
+                map_grade_to_number(gacha_object.attributes.range) == current[6] and
+                map_grade_to_number(gacha_object.attributes.potential) == current[7]):
                 cursor.close()
                 return "", 304
 
@@ -647,12 +649,12 @@ def update_gacha(gacha=None, session=None):
             cursor.execute(query, (
                 gacha_object.name,
                 gacha_object.rarity,
-                6 - (ord(gacha_object.attributes.power.upper()) - ord('A')),
-                6 - (ord(gacha_object.attributes.speed.upper()) - ord('A')),
-                6 - (ord(gacha_object.attributes.durability.upper()) - ord('A')),
-                6 - (ord(gacha_object.attributes.precision.upper()) - ord('A')),
-                6 - (ord(gacha_object.attributes.range.upper()) - ord('A')),
-                6 - (ord(gacha_object.attributes.potential.upper()) - ord('A')),
+                map_grade_to_number(gacha_object.attributes.power),
+                map_grade_to_number(gacha_object.attributes.speed),
+                map_grade_to_number(gacha_object.attributes.durability),
+                map_grade_to_number(gacha_object.attributes.precision),
+                map_grade_to_number(gacha_object.attributes.range),
+                map_grade_to_number(gacha_object.attributes.potential),
                 gacha_object.gacha_uuid
             ))
 
