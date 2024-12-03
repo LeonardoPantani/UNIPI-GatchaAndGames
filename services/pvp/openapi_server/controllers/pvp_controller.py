@@ -20,6 +20,7 @@ from openapi_server.helpers.logging import send_log
 from openapi_server.helpers.authorization import verify_login
 
 from openapi_server.helpers.input_checks import sanitize_team_input, sanitize_uuid_input
+from openapi_server.helpers.stats import map_number_to_grade
 
 from openapi_server.controllers.pvp_internal_controller import set_results, get_pending_list, insert_match, delete_match, get_status
 
@@ -33,9 +34,6 @@ SERVICE_TYPE = "pvp"
 
 def pvp_health_check_get():
     return jsonify({"message": "Service operational."}), 200
-
-def number_to_stat(number):
-            return chr(ord('A') + (5 - number))
 
 def accept_pvp_request(pvp_match_uuid): 
     session = verify_login(connexion.request.headers.get('Authorization'), service_type=SERVICE_TYPE)
@@ -211,11 +209,11 @@ def accept_pvp_request(pvp_match_uuid):
                 "extracted_stat": extracted_stat.replace("stat_", ""),
                 "player1": {
                     "stand_name": player1_stand_name,
-                    "stand_stat": player1_stand_stat
+                    "stand_stat": map_number_to_grade(player1_stand_stat)
                 },
                 "player2": {
                     "stand_name": player2_stand_name,
-                    "stand_stat": player2_stand_stat
+                    "stand_stat": map_number_to_grade(player2_stand_stat)
                 },
                 "round_winner": round_winner
             }
@@ -243,7 +241,7 @@ def accept_pvp_request(pvp_match_uuid):
     "match_timestamp": datetime.now()
     }
 
-    response = get_pending_list(None, session['uuid'])
+    response = set_results(payload, None)
 
     if response[1] == 200:
         return  response
