@@ -238,7 +238,7 @@ def get_pool_info():
     except CircuitBreakerError:
         return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503
 
-def get_gachas(not_owned):
+def get_gachas(not_owned): # --> To do 
     """Returns a list of gacha items based on ownership filter."""
     # Auth verification 
     session = verify_login(connexion.request.headers.get('Authorization'), service_type=SERVICE_TYPE)

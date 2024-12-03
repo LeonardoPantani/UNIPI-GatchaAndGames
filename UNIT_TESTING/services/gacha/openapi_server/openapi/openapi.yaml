@@ -1,0 +1,788 @@
+openapi: 3.0.0
+info:
+  contact:
+    email: support@gachaandgames.it
+  description: |-
+    API for managing gacha items, auctions, PVP battles, currency, and user authentication.
+
+    Useful links:
+    - [Project repository](https://github.com/LeonardoPantani/UNIPI-GachaAndGames)
+  license:
+    name: GPL-3.0
+    url: https://www.gnu.org/licenses/gpl-3.0.html#license-text
+  termsOfService: https://localhost/tos
+  title: Gacha System - OpenAPI 3.0
+  version: 2.0.0
+servers:
+- description: Local server
+  url: https://localhost
+paths:
+  /gacha/health_check:
+    get:
+      description: Returns 200 if service is healthy.
+      operationId: gacha_health_check_get
+      responses:
+        "200":
+          description: Service operational.
+      summary: Gives information on service status.
+      tags:
+      - gacha
+      x-openapi-router-controller: openapi_server.controllers.gacha_controller
+  /gacha/internal/gacha/create:
+    post:
+      description: Creates gacha requested.
+      operationId: create_gacha
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Gacha'
+        required: true
+      responses:
+        "201":
+          description: Gacha created.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "503":
+          description: Service unavailable. Please try again later.
+      tags:
+      - gacha_internal
+      x-openapi-router-controller: openapi_server.controllers.gacha_internal_controller
+  /gacha/internal/gacha/delete:
+    delete:
+      description: "Deletes requested gacha, also from pool item list."
+      operationId: delete_gacha
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/GachaId'
+        style: form
+      responses:
+        "200":
+          description: Gacha deleted.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "404":
+          description: Pool not found.
+        "503":
+          description: Service unavailable. Please try again later.
+      tags:
+      - gacha_internal
+      x-openapi-router-controller: openapi_server.controllers.gacha_internal_controller
+  /gacha/internal/gacha/exists:
+    get:
+      description: "Returns true if an gacha exists, false otherwise."
+      operationId: exists_gacha
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/GachaId'
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/exists_gacha_200_response'
+          description: Result of search.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - gacha_internal
+      x-openapi-router-controller: openapi_server.controllers.gacha_internal_controller
+  /gacha/internal/gacha/get:
+    get:
+      description: Returns the gacha object by gacha uuid.
+      operationId: get_gacha
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/GachaId'
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Gacha'
+          description: Gacha object.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "404":
+          description: Gacha not found.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - gacha_internal
+      x-openapi-router-controller: openapi_server.controllers.gacha_internal_controller
+  /gacha/internal/gacha/list:
+    post:
+      description: Returns list of gachas (not) owned by the user.
+      operationId: list_gachas
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: not_owned
+        required: false
+        schema:
+          type: boolean
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              items:
+                $ref: '#/components/schemas/GachaId'
+              type: array
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Gacha'
+                type: array
+          description: Gacha list.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - gacha_internal
+      x-openapi-router-controller: openapi_server.controllers.gacha_internal_controller
+  /gacha/internal/gacha/update:
+    post:
+      description: Updates a gacha.
+      operationId: update_gacha
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Gacha'
+      responses:
+        "200":
+          description: Gacha updated.
+        "304":
+          description: No changes applied.
+        "400":
+          description: Invalid request.
+        "404":
+          description: Gacha not found.
+        "403":
+          description: Not authorized.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - gacha_internal
+      x-openapi-router-controller: openapi_server.controllers.gacha_internal_controller
+  /gacha/internal/get_rarity_by_uuid:
+    get:
+      description: Returns the rarity of a certain gacha identified by its uuid.
+      operationId: get_rarity_by_uuid
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/GachaId'
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/get_rarity_by_uuid_200_response'
+          description: Gacha rarity.
+        "400":
+          description: Invalid request.
+        "404":
+          description: Gacha not found.
+        "403":
+          description: Not authorized.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - gacha_internal
+      x-openapi-router-controller: openapi_server.controllers.gacha_internal_controller
+  /gacha/internal/pool/create:
+    post:
+      description: Creates pool requested.
+      operationId: create_pool
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Pool'
+        required: true
+      responses:
+        "201":
+          description: Pool created.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "503":
+          description: Service unavailable. Please try again later.
+      tags:
+      - gacha_internal
+      x-openapi-router-controller: openapi_server.controllers.gacha_internal_controller
+  /gacha/internal/pool/delete:
+    delete:
+      description: Deletes requested pool.
+      operationId: delete_pool
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: codename
+        required: false
+        schema:
+          $ref: '#/components/schemas/PoolId'
+        style: form
+      responses:
+        "200":
+          description: Pool deleted.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "404":
+          description: Pool not found.
+        "503":
+          description: Service unavailable. Please try again later.
+      tags:
+      - gacha_internal
+      x-openapi-router-controller: openapi_server.controllers.gacha_internal_controller
+  /gacha/internal/pool/exists:
+    get:
+      description: "Returns true if a pool exists, false otherwise."
+      operationId: exists_pool
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/PoolId'
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/exists_gacha_200_response'
+          description: Result of search.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - gacha_internal
+      x-openapi-router-controller: openapi_server.controllers.gacha_internal_controller
+  /gacha/internal/pool/get:
+    get:
+      description: "Returns true if a pool exists, false otherwise."
+      operationId: get_pool
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/PoolId'
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pool'
+          description: Pool requested.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "404":
+          description: Pool not found.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - gacha_internal
+      x-openapi-router-controller: openapi_server.controllers.gacha_internal_controller
+  /gacha/internal/pool/list:
+    post:
+      description: Returns list of pools.
+      operationId: list_pools
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Pool'
+                type: array
+          description: Pool list.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - gacha_internal
+      x-openapi-router-controller: openapi_server.controllers.gacha_internal_controller
+  /gacha/internal/pool/update:
+    post:
+      description: Updates a pool.
+      operationId: update_pool
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Pool'
+        required: true
+      responses:
+        "200":
+          description: Pool updated.
+        "304":
+          description: No changes applied.
+        "400":
+          description: Invalid request.
+        "404":
+          description: Pool not found.
+        "403":
+          description: Not authorized.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - gacha_internal
+      x-openapi-router-controller: openapi_server.controllers.gacha_internal_controller
+  /gacha/list:
+    get:
+      description: Returns a list of all gachas.
+      operationId: get_gachas
+      parameters:
+      - explode: true
+        in: query
+        name: not_owned
+        required: false
+        schema:
+          default: false
+          type: boolean
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Gacha'
+                type: array
+          description: Successful operation
+        "403":
+          description: Not logged in.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      summary: Lists all gachas.
+      tags:
+      - gacha
+      x-openapi-router-controller: openapi_server.controllers.gacha_controller
+  /gacha/pools:
+    get:
+      description: Returns a list of available gacha pools.
+      operationId: get_pool_info
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Pool'
+                type: array
+          description: Successful operation
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      summary: Lists available pools.
+      tags:
+      - gacha
+      x-openapi-router-controller: openapi_server.controllers.gacha_controller
+  /gacha/pull/{pool_id}:
+    post:
+      description: Allows a player to pull a random gacha item from a specified pool.
+        Consumes in-game currency.
+      operationId: pull_gacha
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: path
+        name: pool_id
+        required: true
+        schema:
+          $ref: '#/components/schemas/PoolId'
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Gacha'
+          description: Successful pull
+        "401":
+          description: Not enough credits.
+        "403":
+          description: Not logged in.
+        "404":
+          description: Pool not found.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      summary: Pull a random gacha from a specific pool.
+      tags:
+      - gacha
+      x-openapi-router-controller: openapi_server.controllers.gacha_controller
+  /gacha/{gacha_uuid}:
+    get:
+      description: Returns infos on a gacha.
+      operationId: get_gacha_info
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: path
+        name: gacha_uuid
+        required: true
+        schema:
+          $ref: '#/components/schemas/GachaId'
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Gacha'
+          description: Successful operation
+        "404":
+          description: Gacha type not found.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      summary: Shows infos on a gacha.
+      tags:
+      - gacha
+      x-openapi-router-controller: openapi_server.controllers.gacha_controller
+components:
+  schemas:
+    GachaStat:
+      description: Stat of a gacha.
+      example: A
+      pattern: "^[A-Ea-e]$"
+      title: GachaStat
+      type: string
+    PoolId:
+      description: Internal code-name for the pool.
+      example: pool_starter
+      pattern: "^[a-zA-Z0-9_]+$"
+      title: codename
+      type: string
+    Pool:
+      example:
+        probability_rare: 6.0274563
+        price: 15
+        codename: pool_starter
+        probability_epic: 1.4658129
+        probability_common: 0.8008282
+        probability_legendary: 5.962134
+        public_name: Starter Pool
+        items:
+        - null
+        - null
+      properties:
+        codename:
+          description: Internal code-name for the pool.
+          example: pool_starter
+          pattern: "^[a-zA-Z0-9_]+$"
+          title: codename
+          type: string
+        public_name:
+          description: Visible name of the pool.
+          example: Starter Pool
+          title: public_name
+          type: string
+        price:
+          description: In-game price to pull a gacha from this pool
+          example: 15
+          minimum: 1
+          title: price
+          type: integer
+        probability_common:
+          default: 0.5
+          format: float
+          title: probability_common
+          type: number
+        probability_rare:
+          default: 0.3
+          format: float
+          title: probability_rare
+          type: number
+        probability_epic:
+          default: 0.15
+          format: float
+          title: probability_epic
+          type: number
+        probability_legendary:
+          default: 0.05
+          format: float
+          title: probability_legendary
+          type: number
+        items:
+          description: List of gacha items in the pool.
+          items:
+            $ref: '#/components/schemas/GachaId'
+          title: items
+          type: array
+      title: Pool
+      type: object
+    GachaRarity:
+      description: Rarity level of the gacha.
+      enum:
+      - common
+      - rare
+      - epic
+      - legendary
+      example: rare
+      title: GachaRarity
+      type: string
+    GachaId:
+      description: UUID of the gacha
+      format: uuid
+      title: GachaId
+      type: string
+    Gacha:
+      example:
+        gacha_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        name: Tower of Gray
+        attributes:
+          durability: A
+          precision: A
+          range: A
+          power: A
+          potential: A
+          speed: A
+        rarity: rare
+      properties:
+        gacha_uuid:
+          description: UUID of the gacha
+          format: uuid
+          title: GachaId
+          type: string
+        name:
+          description: Name of the gacha
+          example: Tower of Gray
+          title: name
+          type: string
+        rarity:
+          $ref: '#/components/schemas/GachaRarity'
+        attributes:
+          $ref: '#/components/schemas/Gacha_attributes'
+      title: Gacha
+      type: object
+    exists_gacha_200_response:
+      example:
+        exists: true
+      properties:
+        exists:
+          title: exists
+          type: boolean
+      title: exists_gacha_200_response
+      type: object
+    get_rarity_by_uuid_200_response:
+      example:
+        rarity: rare
+      properties:
+        rarity:
+          $ref: '#/components/schemas/GachaRarity'
+      title: get_rarity_by_uuid_200_response
+      type: object
+    Gacha_attributes:
+      example:
+        durability: A
+        precision: A
+        range: A
+        power: A
+        potential: A
+        speed: A
+      properties:
+        power:
+          description: Stat of a gacha.
+          example: A
+          pattern: "^[A-Ea-e]$"
+          title: GachaStat
+          type: string
+        speed:
+          description: Stat of a gacha.
+          example: A
+          pattern: "^[A-Ea-e]$"
+          title: GachaStat
+          type: string
+        durability:
+          description: Stat of a gacha.
+          example: A
+          pattern: "^[A-Ea-e]$"
+          title: GachaStat
+          type: string
+        precision:
+          description: Stat of a gacha.
+          example: A
+          pattern: "^[A-Ea-e]$"
+          title: GachaStat
+          type: string
+        range:
+          description: Stat of a gacha.
+          example: A
+          pattern: "^[A-Ea-e]$"
+          title: GachaStat
+          type: string
+        potential:
+          description: Stat of a gacha.
+          example: A
+          pattern: "^[A-Ea-e]$"
+          title: GachaStat
+          type: string
+      required:
+      - durability
+      - potential
+      - power
+      - precision
+      - range
+      - speed
+      title: Gacha_attributes
+      type: object
