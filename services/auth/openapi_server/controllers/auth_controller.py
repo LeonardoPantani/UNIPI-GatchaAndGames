@@ -1,5 +1,4 @@
 import datetime
-import re
 import uuid
 import bcrypt
 import connexion
@@ -50,10 +49,8 @@ def auth_health_check_get():
     return jsonify({"message": "Service operational."}), 200
 
 
-""" Logs a user into the game. Accepts username and password. This acts as token endpoint. """
-
-
 def login(login_request=None):
+    """Logs a user into the game. Accepts username and password. This acts as token endpoint."""
     if not connexion.request.is_json:
         return jsonify({"message": "Invalid request."}), 400
 
@@ -160,10 +157,8 @@ def login(login_request=None):
     return response, 200
 
 
-""" Allows an account to log out. """
-
-
 def logout():
+    """Allows an account to log out."""
     response = verify_login(connexion.request.headers.get("Authorization"), service_type=SERVICE_TYPE)
     if response[1] != 200:
         return response
@@ -190,10 +185,8 @@ def logout():
     return jsonify({"message": "Logout successful."}), 200
 
 
-""" Registers a new user account with username, email, and password. """
-
-
 def register(register_request=None):
+    """Registers a new user account with username, email, and password."""
     if not connexion.request.is_json:
         return jsonify({"message": "Invalid request."}), 400
 
@@ -302,11 +295,9 @@ def register(register_request=None):
     return response, 201
 
 
-""" Receives: uuid, uuid_hex, email, username, role 
-    Throws: redis.RedisError """
-
-
 def complete_access(uuid, uuid_hex, email, username, role):
+    """Receives: uuid, uuid_hex, email, username, role
+    Throws: redis.RedisError"""
     aud = ["public_services"]
     if role == "ADMIN":
         aud.append("private_services")
