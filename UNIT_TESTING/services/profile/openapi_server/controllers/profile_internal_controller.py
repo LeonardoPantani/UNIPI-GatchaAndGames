@@ -1,4 +1,5 @@
 import requests
+import datetime
 from flask import jsonify
 from mysql.connector.errors import (
     DatabaseError,
@@ -79,32 +80,38 @@ MOCK_PROFILES = {
     "e3b0c44298fc1c14b39f92d1282048c0": (
         "JotaroKujo",
         5000,
-        100
+        100,
+        "2024-01-05 10:00:00"
     ),
     "87f3b5d15e8e4fa4909b3cd29f4b1f09": (
         "DIOBrando",
         6000,
-        95
+        95,
+        "2024-01-05 11:00:00"
     ),
     "a4f0c59212af4bdeaacd94cd0f27c57e": (
         "GiornoGiovanna",
         4500,
-        85
+        85,
+        "2024-01-05 12:00:00"
     ),
     "b5c3d2e14f5e6a7b8c9d0e1f2a3b4c5d": (
         "JosukeHigashikata",
         3500,
-        80
+        80,
+        "2024-01-05 13:00:00"
     ),
     "4f2e8bb538e145379cfa11425c3b4284": (
         "SpeedwagonAdmin",
         10000,
-        98
+        98,
+        "2024-01-05 14:00:00"
     ),
     "a1a2a3a4b5b6c7c8d9d0e1e2e3e4e5e6": (
         "AdminUser",
         100000000,
-        999
+        999,
+        "2024-01-05 15:00:00"
     ),
 }
 
@@ -192,30 +199,12 @@ def add_currency(session=None, uuid=None, amount=None):
     try:
         @circuit_breaker
         def update_user_currency():
-            connection = get_db()
-            cursor = connection.cursor()
-            
             # First check if user exists
-            check_query = """
-            SELECT uuid 
-            FROM profiles 
-            WHERE BIN_TO_UUID(uuid) = %s
-            """
-            cursor.execute(check_query, (uuid,))
-            if not cursor.fetchone():
-                cursor.close()
+            if uuid not in MOCK_PROFILES:
                 return "", 404
-
-            # If user exists, update currency
-            query = """
-            UPDATE profiles 
-            SET currency = currency + %s
-            WHERE BIN_TO_UUID(uuid) = %s
-            """
             
-            cursor.execute(query, (amount, uuid))
-            connection.commit()
-            cursor.close()
+            # If user exists, update currency
+            MOCK_PROFILES[uuid][1] = MOCK_PROFILES[uuid][1] + amount
             return "", 200
 
         return update_user_currency()
@@ -244,30 +233,12 @@ def add_pvp_score(session=None, uuid=None, points_to_add=None):
     try:
         @circuit_breaker
         def update_user_pvp_score():
-            connection = get_db()
-            cursor = connection.cursor()
-            
-            # Check if user exists
-            check_query = """
-            SELECT uuid 
-            FROM profiles 
-            WHERE BIN_TO_UUID(uuid) = %s
-            """
-            cursor.execute(check_query, (uuid,))
-            if not cursor.fetchone():
-                cursor.close()
+            # First check if user exists
+            if uuid not in MOCK_PROFILES:
                 return "", 404
 
-            # Update pvp score
-            query = """
-            UPDATE profiles 
-            SET pvp_score = pvp_score + %s
-            WHERE BIN_TO_UUID(uuid) = %s
-            """
-            
-            cursor.execute(query, (points_to_add, uuid))
-            connection.commit()
-            cursor.close()
+            # If user exists, update currency
+            MOCK_PROFILES[uuid][2] = MOCK_PROFILES[uuid][2] + points_to_add
             return "", 200
 
         return update_user_pvp_score()
@@ -303,7 +274,6 @@ def delete_profile_by_uuid(session=None, uuid=None):
             MOCK_PROFILES = {
                 k: v for k, v in MOCK_PROFILES.items() if k != uuid
             }
-            print(MOCK_PROFILES)
             return "", 200
 
         return delete_user_profile()
@@ -333,37 +303,16 @@ def edit_username(session=None, uuid=None, username=None):
     try:
         @circuit_breaker
         def update_username():
-            connection = get_db()
-            cursor = connection.cursor()
-            
             # Check if user exists and get current username
-            check_query = """
-            SELECT username 
-            FROM profiles 
-            WHERE BIN_TO_UUID(uuid) = %s
-            """
-            cursor.execute(check_query, (uuid,))
-            result = cursor.fetchone()
-            
-            if not result:
-                cursor.close()
+            if uuid not in MOCK_PROFILES:
                 return "", 404
                 
             # Check if username is the same
-            if result[0] == username:
-                cursor.close()
+            if MOCK_PROFILES[uuid][0] == username:
                 return "", 304
             
             # Update username
-            query = """
-            UPDATE profiles 
-            SET username = %s
-            WHERE BIN_TO_UUID(uuid) = %s
-            """
-            
-            cursor.execute(query, (username, uuid))
-            connection.commit()
-            cursor.close()
+            MOCK_PROFILES[uuid][0] = username
             return "", 200
 
         return update_username()
@@ -390,19 +339,10 @@ def exists_profile(session=None, uuid=None):
     try:
         @circuit_breaker
         def check_profile_exists():
-            connection = get_db()
-            cursor = connection.cursor()
-            
-            query = """
-            SELECT uuid
-            FROM profiles 
-            WHERE BIN_TO_UUID(uuid) = %s
-            """
-            
-            cursor.execute(query, (uuid,))
-            result = cursor.fetchone()
-            
-            cursor.close()
+            if uuid not in MOCK_PROFILES:
+                result = None
+            else:
+                result = MOCK_PROFILES[uuid]
             return result is not None
 
         exists = check_profile_exists()
@@ -430,20 +370,11 @@ def get_currency_from_uuid(session=None, user_uuid=None):
     try:
         @circuit_breaker
         def get_user_currency():
-            connection = get_db()
-            cursor = connection.cursor()
-            
             # Check if user exists and get currency
-            query = """
-            SELECT currency 
-            FROM profiles 
-            WHERE BIN_TO_UUID(uuid) = %s
-            """
-            
-            cursor.execute(query, (user_uuid,))
-            result = cursor.fetchone()
-            
-            cursor.close()
+            if user_uuid not in MOCK_PROFILES:
+                result = [MOCK_PROFILES[user_uuid][1]]
+            else:
+                result = None
             
             if not result:
                 return "", 404
@@ -474,28 +405,15 @@ def get_profile(session=None, user_uuid=None):
     try:
         @circuit_breaker
         def get_user_profile():
-            connection = get_db()
-            cursor = connection.cursor()
-            
-            query = """
-            SELECT username, currency, pvp_score, created_at
-            FROM profiles 
-            WHERE BIN_TO_UUID(uuid) = %s
-            """
-            
-            cursor.execute(query, (user_uuid,))
-            result = cursor.fetchone()
-            
-            cursor.close()
-            
-            if not result:
+            if user_uuid not in MOCK_PROFILES:
                 return "", 404
-                
+            
+            result = MOCK_PROFILES[user_uuid]
             profile = {
                 "username": result[0],
                 "currency": result[1],
                 "pvp_score": result[2],
-                "created_at": result[3].strftime("%Y-%m-%d %H:%M:%S")
+                "created_at": result[3]
             }
             
             return jsonify(profile), 200
@@ -507,7 +425,6 @@ def get_profile(session=None, user_uuid=None):
         return "", 503
     except CircuitBreakerError:
         return "", 503
-
 
 
 def get_username_from_uuid(session=None, user_uuid=None):
@@ -525,22 +442,10 @@ def get_username_from_uuid(session=None, user_uuid=None):
     try:
         @circuit_breaker
         def get_user_username():
-            connection = get_db()
-            cursor = connection.cursor()
-            
-            query = """
-            SELECT username 
-            FROM profiles 
-            WHERE BIN_TO_UUID(uuid) = %s
-            """
-            
-            cursor.execute(query, (user_uuid,))
-            result = cursor.fetchone()
-            
-            cursor.close()
-            
-            if not result:
+            if user_uuid not in MOCK_PROFILES:
                 return "", 404
+            
+            result = MOCK_PROFILES[user_uuid][0]
                 
             return jsonify({"username": result[0]}), 200
 
@@ -552,6 +457,7 @@ def get_username_from_uuid(session=None, user_uuid=None):
     except CircuitBreakerError:
         return "", 503
 
+
 def get_uuid_from_username(session=None, username=None):
     if not username:
         return jsonify({"error": "Invalid request."}), 400
@@ -559,15 +465,11 @@ def get_uuid_from_username(session=None, username=None):
     try:
         @circuit_breaker
         def make_request_to_db():
-            connection = get_db()
-            cursor = connection.cursor(dictionary=True)
-            query = """
-                SELECT BIN_TO_UUID(uuid) as uuid
-                FROM profiles
-                WHERE username = %s
-            """
-            cursor.execute(query, (username,))
-            return cursor.fetchone()
+            result = None
+            for k, v in MOCK_PROFILES.items():
+                if v[0] == username:
+                    result["uuid"] = k
+            return result
         
         result = make_request_to_db()
 
@@ -597,17 +499,14 @@ def insert_profile(session=None, user_uuid=None, username=None):
     try:
         @circuit_breaker
         def create_profile():
-            connection = get_db()
-            cursor = connection.cursor()
+            if user_uuid in MOCK_PROFILES:
+                return "", 409
             
-            query = """
-            INSERT INTO profiles (uuid, username, currency, pvp_score, created_at)
-            VALUES (UUID_TO_BIN(%s), %s, 0, 0, NOW())
-            """
+            for k, v in MOCK_PROFILES.items():
+                if v[0] == username:
+                    return "", 409
             
-            cursor.execute(query, (user_uuid, username))
-            connection.commit()
-            cursor.close()
+            MOCK_PROFILES[user_uuid] = (username, 0, 0, datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S'))
             return "", 201
 
         return create_profile()
@@ -646,35 +545,25 @@ def profile_list(session=None, page_number=None):
     try:
         @circuit_breaker
         def get_profiles():
-            connection = get_db()
-            cursor = connection.cursor()
-            
             items_per_page = 10
             offset = (page_number - 1) * items_per_page
-            
-            query = """
-            SELECT BIN_TO_UUID(uuid), username, currency, pvp_score, created_at
-            FROM profiles 
-            LIMIT %s OFFSET %s
-            """
-            
-            cursor.execute(query, (items_per_page, offset))
-            results = cursor.fetchall()
-            
-            cursor.close()
-            
-            profiles = []
-            for row in results:
-                profile = {
-                    "uuid": row[0],
-                    "username": row[1],
-                    "currency": row[2],
-                    "pvp_score": row[3],
-                    "created_at": row[4].strftime("%Y-%m-%d %H:%M:%S")
+
+            # Convert the MOCK_PROFILES dictionary to a list
+            profiles_list = [
+                {
+                    "uuid": uuid,
+                    "username": data[0],
+                    "currency": data[1],
+                    "pvp_score": data[2],
+                    "created_at": data[3]
                 }
-                profiles.append(profile)
-            
-            return jsonify(profiles), 200
+                for uuid, data in MOCK_PROFILES.items()
+            ]
+
+            # Paginate the profiles list
+            paginated_profiles = profiles_list[offset:offset + items_per_page]
+
+            return jsonify(paginated_profiles), 200
 
         return get_profiles()
 
