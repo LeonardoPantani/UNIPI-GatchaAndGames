@@ -1,9 +1,13 @@
 import connexion
-import logging
 from flask import jsonify
 from mysql.connector.errors import (
-    OperationalError, DataError, DatabaseError, IntegrityError,
-    InterfaceError, InternalError, ProgrammingError
+    OperationalError,
+    DataError,
+    DatabaseError,
+    IntegrityError,
+    InterfaceError,
+    InternalError,
+    ProgrammingError,
 )
 from pybreaker import CircuitBreaker, CircuitBreakerError
 from openapi_server.helpers.logging import send_log
@@ -12,19 +16,28 @@ from openapi_server.helpers.db import get_db
 circuit_breaker = CircuitBreaker(
     fail_max=3,
     reset_timeout=5,
-    exclude=[OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError]
+    exclude=[
+        OperationalError,
+        DataError,
+        DatabaseError,
+        IntegrityError,
+        InterfaceError,
+        InternalError,
+        ProgrammingError,
+    ],
 )
 
 
 def login():
     if not connexion.request.is_json:
         return "", 400
-    
+
     # valid json request
     login_request = connexion.request.get_json()
     username = login_request.get("username")
 
     try:
+
         @circuit_breaker
         def make_request_to_db():
             connection = get_db()
@@ -37,7 +50,7 @@ def login():
             """
             cursor.execute(query, (username,))
             return cursor.fetchone()
-        
+
         result = make_request_to_db()
 
         if result:
@@ -48,25 +61,25 @@ def login():
                 "email": user_email,
                 "username": user_name,
                 "role": user_role,
-                "password": user_password
+                "password": user_password,
             }
             return jsonify(payload), 200
         else:
             return "", 404
     except OperationalError:
-        logging.error("Query ["+ username +"]: Operational error.")
+        logging.error("Query [" + username + "]: Operational error.")
         return "", 500
     except ProgrammingError:
-        logging.error("Query ["+ username +"]: Programming error.")
+        logging.error("Query [" + username + "]: Programming error.")
         return "", 500
     except InternalError:
-        logging.error("Query ["+ username +"]: Internal error.")
+        logging.error("Query [" + username + "]: Internal error.")
         return "", 500
     except InterfaceError as e:
-        logging.error("Query ["+ username +"]: Interface error.")
+        logging.error("Query [" + username + "]: Interface error.")
         return "", 500
     except DatabaseError:
-        logging.error("Query ["+ username +"]: Database error.")
+        logging.error("Query [" + username + "]: Database error.")
         return "", 500
     except CircuitBreakerError:
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
@@ -76,7 +89,7 @@ def login():
 def register():
     if not connexion.request.is_json:
         return "", 400
-    
+
     # valid json request
     login_request = connexion.request.get_json()
     user_uuid = login_request.get("uuid")
@@ -87,19 +100,20 @@ def register():
 
     connection = None
     try:
+
         @circuit_breaker
         def make_request_to_db():
             connection = get_db()
             cursor = connection.cursor()
             # Insert user in USERS table
             cursor.execute(
-                'INSERT INTO users (uuid, email, password, role) VALUES (UUID_TO_BIN(%s), %s, %s, %s)',
-                (user_uuid, email, password_hash, role)
+                "INSERT INTO users (uuid, email, password, role) VALUES (UUID_TO_BIN(%s), %s, %s, %s)",
+                (user_uuid, email, password_hash, role),
             )
             # Insert profile in PROFILE table
             cursor.execute(
-                'INSERT INTO profiles (uuid, username, currency, pvp_score) VALUES (UUID_TO_BIN(%s), %s, %s, %s)',
-                (user_uuid, username, 0, 0)
+                "INSERT INTO profiles (uuid, username, currency, pvp_score) VALUES (UUID_TO_BIN(%s), %s, %s, %s)",
+                (user_uuid, username, 0, 0),
             )
             connection.commit()
             return
@@ -107,27 +121,27 @@ def register():
         make_request_to_db()
         return "", 201
     except OperationalError:
-        logging.error("Query ["+ user_uuid +", "+ username +"]: Operational error.")
+        logging.error("Query [" + user_uuid + ", " + username + "]: Operational error.")
         return "", 500
     except ProgrammingError:
-        logging.error("Query ["+ user_uuid +", "+ username +"]: Programming error.")
+        logging.error("Query [" + user_uuid + ", " + username + "]: Programming error.")
         return "", 500
     except IntegrityError:
-        logging.error("Query ["+ user_uuid +", "+ username +"]: Integrity error.")
+        logging.error("Query [" + user_uuid + ", " + username + "]: Integrity error.")
         if connection:
             connection.rollback()
         return "", 409
-    except DataError: # if data format is invalid or out of range or size
-        logging.error("Query ["+ user_uuid +", "+ username +"]: Data error.")
+    except DataError:  # if data format is invalid or out of range or size
+        logging.error("Query [" + user_uuid + ", " + username + "]: Data error.")
         return "", 500
     except InternalError:
-        logging.error("Query ["+ user_uuid +", "+ username +"]: Internal error.")
+        logging.error("Query [" + user_uuid + ", " + username + "]: Internal error.")
         return "", 500
     except InterfaceError:
-        logging.error("Query ["+ user_uuid +", "+ username +"]: Interface error.")
+        logging.error("Query [" + user_uuid + ", " + username + "]: Interface error.")
         return "", 500
     except DatabaseError:
-        logging.error("Query ["+ user_uuid +", "+ username +"]: Database error.")
+        logging.error("Query [" + user_uuid + ", " + username + "]: Database error.")
         return "", 401
     except CircuitBreakerError:
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")

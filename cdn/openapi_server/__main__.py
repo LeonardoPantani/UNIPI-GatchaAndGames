@@ -1,8 +1,9 @@
-from flask import Flask, request, send_file, jsonify
-from openapi_server.helpers.logging import send_log
-from openapi_server.helpers.authorization import verify_login
 import os
 import uuid
+
+from flask import Flask, jsonify, request, send_file
+from openapi_server.helpers.authorization import verify_login
+from openapi_server.helpers.logging import send_log
 from PIL import Image
 
 app = Flask(__name__)
@@ -12,6 +13,8 @@ STORAGE_DIR = "/app/openapi_server/storage"
 os.makedirs(STORAGE_DIR, exist_ok=True)
 
 """Verifica se una stringa è un UUID valido."""
+
+
 def is_valid_uuid(value):
     try:
         uuid.UUID(value)
@@ -19,12 +22,15 @@ def is_valid_uuid(value):
     except ValueError:
         return False
 
+
 @app.route("/upload", methods=["POST"])
 def upload_image():
-    session = verify_login(request.headers.get('Authorization'), service_type=SERVICE_TYPE, audience_required="private_services")
-    if session[1] != 200: # se dà errore, il risultato della verify_login è: (messaggio, codice_errore)
+    session = verify_login(
+        request.headers.get("Authorization"), service_type=SERVICE_TYPE, audience_required="private_services"
+    )
+    if session[1] != 200:  # se dà errore, il risultato della verify_login è: (messaggio, codice_errore)
         return session
-    else: # altrimenti, va preso il primo valore (0) per i dati di sessione già pronti
+    else:  # altrimenti, va preso il primo valore (0) per i dati di sessione già pronti
         session = session[0]
     # fine controllo autenticazione
 
@@ -57,16 +63,23 @@ def upload_image():
 
         if os.path.exists(file_path):
             img.save(file_path, "PNG")
-            send_log(f"User '{session['username']}' updated the image {file_uuid}.", level="general", service_type=SERVICE_TYPE)
+            send_log(
+                f"User '{session['username']}' updated the image {file_uuid}.",
+                level="general",
+                service_type=SERVICE_TYPE,
+            )
             return jsonify({"message": "Image updated."}), 200
 
         img.save(file_path, "PNG")
-        send_log(f"User '{session['username']}' saved the image: {file_uuid}", level="general", service_type=SERVICE_TYPE)
+        send_log(
+            f"User '{session['username']}' saved the image: {file_uuid}", level="general", service_type=SERVICE_TYPE
+        )
         return jsonify({"message": f"File saved as {file_uuid}.png"}), 201
 
     except Exception as e:
         send_log(f"File processing error: {str(e)}", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": f"File processing error: {str(e)}"}), 400
+
 
 @app.route("/image/<file_uuid>", methods=["GET"])
 def get_image(file_uuid):
@@ -76,12 +89,15 @@ def get_image(file_uuid):
 
     return send_file(file_path)
 
+
 @app.route("/delete/<file_uuid>", methods=["DELETE"])
 def delete_image(file_uuid):
-    session = verify_login(request.headers.get('Authorization'), service_type=SERVICE_TYPE, audience_required="private_services")
-    if session[1] != 200: # se dà errore, il risultato della verify_login è: (messaggio, codice_errore)
+    session = verify_login(
+        request.headers.get("Authorization"), service_type=SERVICE_TYPE, audience_required="private_services"
+    )
+    if session[1] != 200:  # se dà errore, il risultato della verify_login è: (messaggio, codice_errore)
         return session
-    else: # altrimenti, va preso il primo valore (0) per i dati di sessione già pronti
+    else:  # altrimenti, va preso il primo valore (0) per i dati di sessione già pronti
         session = session[0]
     # fine controllo autenticazione
 
@@ -106,11 +122,12 @@ def delete_image(file_uuid):
 def health_check():
     return jsonify({"message": "Service operational."}), 200
 
+
 if __name__ == "__main__":
-    # secret key flask
-    app.secret_key = os.environ.get('FLASK_SECRET_KEY')
-    app.config['jwt_secret_key'] = os.environ.get('JWT_SECRET_KEY')
-    app.config['requests_timeout'] = int(os.environ.get('REQUESTS_TIMEOUT'))
-    app.config['database_timeout'] = int(os.environ.get('DATABASE_TIMEOUT'))
+    app.secret_key = os.environ.get("FLASK_SECRET_KEY")
+    app.config["jwt_secret_key"] = os.environ.get("JWT_SECRET_KEY")
+    app.config["circuit_breaker_fails"] = int(os.environ.get("CIRCUIT_BREAKER_FAILS"))
+    app.config["requests_timeout"] = int(os.environ.get("REQUESTS_TIMEOUT"))
+    app.config["database_timeout"] = int(os.environ.get("DATABASE_TIMEOUT"))
 
     app.run(host="0.0.0.0", port=443, debug=True, ssl_context=("/app/ssl/cdn-cert.pem", "/app/ssl/cdn-key.pem"))

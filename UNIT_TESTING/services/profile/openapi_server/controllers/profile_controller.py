@@ -1,4 +1,3 @@
-import logging
 import string
 
 import bcrypt
@@ -29,7 +28,7 @@ from openapi_server.models.delete_profile_request import DeleteProfileRequest
 from openapi_server.models.edit_profile_request import EditProfileRequest
 
 circuit_breaker = CircuitBreaker(
-    fail_max=1000, reset_timeout=5, exclude=[requests.HTTPError]
+    fail_max=5, reset_timeout=5, exclude=[requests.HTTPError]
 )
 
 
@@ -209,7 +208,7 @@ def delete_profile():
         else:
             return jsonify(
                 {
-                    "error": "Service temporarily unavailable. Please try again later. [HTTPError]"
+                    "error": "Service temporarily unavailable. Please try again later."
                 }
             ), 503
     except requests.RequestException:
@@ -325,7 +324,7 @@ def edit_profile():
         else:
             return jsonify(
                 {
-                    "error": "Service temporarily unavailable. Please try again later. [HTTPError]"
+                    "error": "Service temporarily unavailable. Please try again later."
                 }
             ), 503
     except requests.RequestException:
@@ -373,7 +372,7 @@ def get_user_info(uuid):
         else:
             return jsonify(
                 {
-                    "error": "Service temporarily unavailable. Please try again later. [HTTPError]"
+                    "error": "Service temporarily unavailable. Please try again later."
                 }
             ), 503
     except requests.HTTPError as e:
@@ -382,7 +381,7 @@ def get_user_info(uuid):
         else:
             return jsonify(
                 {
-                    "error": "Service temporarily unavailable. Please try again later. [HTTPError]"
+                    "error": "Service temporarily unavailable. Please try again later."
                 }
             ), 503
     except requests.RequestException:

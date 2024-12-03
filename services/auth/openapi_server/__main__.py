@@ -26,9 +26,9 @@ def main():
     app.json = CustomJSONProvider(app)
     app.wsgi_app = ProxyFix(connexion_app.app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
-    # secret key flask
     app.secret_key = os.environ.get('FLASK_SECRET_KEY')
     app.config['jwt_secret_key'] = os.environ.get('JWT_SECRET_KEY')
+    app.config['circuit_breaker_fails'] = int(os.environ.get('CIRCUIT_BREAKER_FAILS'))
     app.config['requests_timeout'] = int(os.environ.get('REQUESTS_TIMEOUT'))
     app.config['database_timeout'] = int(os.environ.get('DATABASE_TIMEOUT'))
 

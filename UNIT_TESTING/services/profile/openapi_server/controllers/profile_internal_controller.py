@@ -347,7 +347,7 @@ MOCK_PVPMATCHES = {
 
 SERVICE_TYPE = "profile"
 circuit_breaker = CircuitBreaker(
-    fail_max=1000,
+    fail_max=5,
     reset_timeout=5,
     exclude=[
         requests.HTTPError,

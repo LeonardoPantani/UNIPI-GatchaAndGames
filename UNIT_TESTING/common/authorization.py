@@ -49,13 +49,13 @@ def verify_login(auth_header=None, audience_required="public_services", service_
             return jsonify({"error": "Login token expired. Please log-in again."}), e.response.status_code
         else:
             send_log("VerifyLogin: HTTP Error.", level="error", service_type=service_type, endpoint=log_endpoint)
-            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
         send_log("VerifyLogin: RequestException Error.", service_type=service_type, level="error", endpoint=log_endpoint)
-        return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
         send_log("VerifyLogin: CircuitBreaker Error.", service_type=service_type, level="info", endpoint=log_endpoint)
-        return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
 
 
 def introspect(access_token, audience_required):

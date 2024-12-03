@@ -19,90 +19,104 @@ from openapi_server.helpers.logging import send_log
 
 from flask import jsonify
 from mysql.connector.errors import (
-    OperationalError, DataError, DatabaseError, IntegrityError,
-    InterfaceError, InternalError, ProgrammingError
+    OperationalError,
+    DataError,
+    DatabaseError,
+    IntegrityError,
+    InterfaceError,
+    InternalError,
+    ProgrammingError,
 )
 from pybreaker import CircuitBreaker, CircuitBreakerError
 from openapi_server.helpers.db import get_db
-import logging
 from datetime import datetime
 
-
-# circuit breaker to stop requests when dbmanager fails
-circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5, exclude=[OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError])
+circuit_breaker = CircuitBreaker(
+    fail_max=5,
+    reset_timeout=5,
+    exclude=[
+        OperationalError,
+        DataError,
+        DatabaseError,
+        IntegrityError,
+        InterfaceError,
+        InternalError,
+        ProgrammingError,
+    ],
+)
 
 MAX_PAGE_NUMBER = 10000
+
 
 def complete_auction_sale(complete_auction_sale_request=None):
     if not connexion.request.is_json:
         return "", 400
-    
+
     complete_auction_sale_request = CompleteAuctionSaleRequest.from_dict(connexion.request.get_json())
-    
+
     item_uuid = complete_auction_sale_request.item_uuid
     current_bid = complete_auction_sale_request.current_bid
     bidder_uuid = complete_auction_sale_request.user_uuid
 
-
     try:
+
         @circuit_breaker
         def make_request_to_db():
             connection = get_db()
             cursor = connection.cursor()
             cursor.execute(
-                'SELECT BIN_TO_UUID(owner_uuid) FROM inventories WHERE item_uuid = UUID_TO_BIN(%s)',
-                (item_uuid,)
+                "SELECT BIN_TO_UUID(owner_uuid) FROM inventories WHERE item_uuid = UUID_TO_BIN(%s)", (item_uuid,)
             )
             old_owner_uuid = cursor.fetchone()[0]
 
             if old_owner_uuid != bidder_uuid:
                 cursor.execute(
-                    'UPDATE profiles SET currency = currency + %s WHERE uuid = UUID_TO_BIN(%s)',
-                    (current_bid, old_owner_uuid)
-                )
-                
-                cursor.execute(
-                    'INSERT INTO ingame_transactions (user_uuid, credits, transaction_type) VALUES (UUID_TO_BIN(%s), %s, "sold_market")',
-                    (old_owner_uuid,current_bid)
+                    "UPDATE profiles SET currency = currency + %s WHERE uuid = UUID_TO_BIN(%s)",
+                    (current_bid, old_owner_uuid),
                 )
 
                 cursor.execute(
-                    'UPDATE inventories SET owner_uuid = UUID_TO_BIN(%s) WHERE item_uuid = UUID_TO_BIN(%s)',
-                    (bidder_uuid, item_uuid)
+                    'INSERT INTO ingame_transactions (user_uuid, credits, transaction_type) VALUES (UUID_TO_BIN(%s), %s, "sold_market")',
+                    (old_owner_uuid, current_bid),
+                )
+
+                cursor.execute(
+                    "UPDATE inventories SET owner_uuid = UUID_TO_BIN(%s) WHERE item_uuid = UUID_TO_BIN(%s)",
+                    (bidder_uuid, item_uuid),
                 )
 
                 cursor.execute(
                     'INSERT INTO ingame_transactions (user_uuid, credits, transaction_type) VALUES (UUID_TO_BIN(%s), %s, "bought_market")',
-                    (bidder_uuid, current_bid*(-1))
+                    (bidder_uuid, current_bid * (-1)),
                 )
                 connection.commit()
             return
-        
+
         make_request_to_db()
 
         return "", 200
     except OperationalError:
-        logging.error("Query ["+ bidder_uuid + ", " + item_uuid +"]: Operational error.")
+        logging.error("Query [" + bidder_uuid + ", " + item_uuid + "]: Operational error.")
         return "", 500
     except ProgrammingError:
-        logging.error("Query ["+ bidder_uuid + ", " + item_uuid +"]: Programming error.")
+        logging.error("Query [" + bidder_uuid + ", " + item_uuid + "]: Programming error.")
         return "", 400
     except IntegrityError:
-        logging.error("Query ["+ bidder_uuid + ", " + item_uuid +"]: Integrity error.")
+        logging.error("Query [" + bidder_uuid + ", " + item_uuid + "]: Integrity error.")
         # if connection:
         #     connection.rollback()
         return "", 500
-    except DataError: # if data format is invalid or out of range or size
-        logging.error("Query ["+ bidder_uuid + ", " + item_uuid +"]: Data error.")
+    except DataError:  # if data format is invalid or out of range or size
+        logging.error("Query [" + bidder_uuid + ", " + item_uuid + "]: Data error.")
         return "", 400
     except InternalError:
-        logging.error("Query ["+ bidder_uuid + ", " + item_uuid +"]: Internal error.")
+        logging.error("Query [" + bidder_uuid + ", " + item_uuid + "]: Internal error.")
         return "", 500
     except InterfaceError:
-        logging.error("Query ["+ bidder_uuid + ", " + item_uuid +"]: Interface error.")
+        logging.error("Query [" + bidder_uuid + ", " + item_uuid + "]: Interface error.")
         return "", 500
     except DatabaseError:
-        logging.error("Query ["+ bidder_uuid + ", " + item_uuid +"]: Database error.")
+        logging.error("Query [" + bidder_uuid + ", " + item_uuid + "]: Database error.")
         return "", 500
     except CircuitBreakerError:
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
@@ -110,11 +124,10 @@ def complete_auction_sale(complete_auction_sale_request=None):
 
 
 def create_auction(get_auction_status200_response=None):
-
     if not connexion.request.is_json:
         return "", 400
-    
-    #wrong names are still openapi's fault
+
+    # wrong names are still openapi's fault
     request = GetAuctionStatus200Response.from_dict(connexion.request.get_json())
     auction_request = request.auction
     auction_uuid = auction_request.auction_uuid
@@ -124,14 +137,15 @@ def create_auction(get_auction_status200_response=None):
 
     connection = None
     try:
+
         @circuit_breaker
         def make_request_to_db():
             connection = get_db()
             cursor = connection.cursor()
             # verifies a transaction of that item is still active (and refuses the creation)
             cursor.execute(
-                'SELECT BIN_TO_UUID(uuid) FROM auctions WHERE item_uuid = UUID_TO_BIN(%s) AND end_time > %s',
-                (item_uuid, datetime.now())
+                "SELECT BIN_TO_UUID(uuid) FROM auctions WHERE item_uuid = UUID_TO_BIN(%s) AND end_time > %s",
+                (item_uuid, datetime.now()),
             )
 
             result = cursor.fetchone()
@@ -139,38 +153,38 @@ def create_auction(get_auction_status200_response=None):
                 return "", 409
 
             cursor.execute(
-                'INSERT INTO auctions (uuid, item_uuid, starting_price, current_bid, current_bidder, end_time) VALUES (UUID_TO_BIN(%s), UUID_TO_BIN(%s), %s, 0, NULL, %s)',
-                (auction_uuid, item_uuid, starting_price, end_time)
+                "INSERT INTO auctions (uuid, item_uuid, starting_price, current_bid, current_bidder, end_time) VALUES (UUID_TO_BIN(%s), UUID_TO_BIN(%s), %s, 0, NULL, %s)",
+                (auction_uuid, item_uuid, starting_price, end_time),
             )
             connection.commit()
             return "", 201
-        
-        _ , code = make_request_to_db()
+
+        _, code = make_request_to_db()
 
         return "", code
-    
+
     except OperationalError:
-        logging.error("Query ["+ auction_uuid + ", " + item_uuid +"]: Operational error.")
+        logging.error("Query [" + auction_uuid + ", " + item_uuid + "]: Operational error.")
         return "", 500
     except ProgrammingError:
-        logging.error("Query ["+ auction_uuid + ", " + item_uuid +"]: Programming error.")
+        logging.error("Query [" + auction_uuid + ", " + item_uuid + "]: Programming error.")
         return "", 500
     except IntegrityError:
-        logging.error("Query ["+ auction_uuid + ", " + item_uuid +"]: Integrity error.")
+        logging.error("Query [" + auction_uuid + ", " + item_uuid + "]: Integrity error.")
         if connection:
             connection.rollback()
         return "", 500
-    except DataError: # if data format is invalid or out of range or size
-        logging.error("Query ["+ auction_uuid + ", " + item_uuid +"]: Data error.")
+    except DataError:  # if data format is invalid or out of range or size
+        logging.error("Query [" + auction_uuid + ", " + item_uuid + "]: Data error.")
         return "", 500
     except InternalError:
-        logging.error("Query ["+ auction_uuid + ", " + item_uuid +"]: Internal error.")
+        logging.error("Query [" + auction_uuid + ", " + item_uuid + "]: Internal error.")
         return "", 500
     except InterfaceError:
-        logging.error("Query ["+ auction_uuid + ", " + item_uuid +"]: Interface error.")
+        logging.error("Query [" + auction_uuid + ", " + item_uuid + "]: Interface error.")
         return "", 500
     except DatabaseError:
-        logging.error("Query ["+ auction_uuid + ", " + item_uuid +"]: Database error.")
+        logging.error("Query [" + auction_uuid + ", " + item_uuid + "]: Database error.")
         return "", 500
     except CircuitBreakerError:
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
@@ -178,31 +192,31 @@ def create_auction(get_auction_status200_response=None):
 
 
 def get_auction_status(get_auction_status_request=None):
-    
     if not connexion.request.is_json:
-        return "", 400    
-    
+        return "", 400
+
     get_auction_status_request = GetAuctionStatusRequest.from_dict(connexion.request.get_json())
 
     auction_uuid = get_auction_status_request.uuid
 
     try:
+
         @circuit_breaker
         def make_request_to_db():
             connection = get_db()
             cursor = connection.cursor()
-            #Get auction status from database
+            # Get auction status from database
             cursor.execute(
                 "SELECT BIN_TO_UUID(a.uuid), BIN_TO_UUID(i.owner_uuid), BIN_TO_UUID(a.item_uuid), starting_price, current_bid, BIN_TO_UUID(a.current_bidder), end_time FROM auctions a JOIN inventories i ON a.item_uuid = i.item_uuid WHERE a.uuid = UUID_TO_BIN(%s)",
-                (auction_uuid,)
+                (auction_uuid,),
             )
             return cursor.fetchone()
-        
+
         auction = make_request_to_db()
 
         if not auction:
             return "", 404
-        
+
         status = "closed" if datetime.now() > auction[6] else "open"
 
         payload = {
@@ -213,30 +227,30 @@ def get_auction_status(get_auction_status_request=None):
             "starting_price": auction[3],
             "current_bid": auction[4],
             "current_bidder": auction[5],
-            "end_time": auction[6]
+            "end_time": auction[6],
         }
 
         return payload, 200
     except OperationalError:
-        logging.error("Query ["+ auction_uuid +"]: Operational error.")
+        logging.error("Query [" + auction_uuid + "]: Operational error.")
         return "", 500
     except ProgrammingError:
-        logging.error("Query ["+ auction_uuid +"]: Programming error.")
+        logging.error("Query [" + auction_uuid + "]: Programming error.")
         return "", 400
     except IntegrityError:
-        logging.error("Query ["+ auction_uuid +"]: Integrity error.")
+        logging.error("Query [" + auction_uuid + "]: Integrity error.")
         return "", 500
-    except DataError: # if data format is invalid or out of range or size
-        logging.error("Query ["+ auction_uuid +"]: Data error.")
+    except DataError:  # if data format is invalid or out of range or size
+        logging.error("Query [" + auction_uuid + "]: Data error.")
         return "", 500
     except InternalError:
-        logging.error("Query ["+ auction_uuid +"]: Internal error.")
+        logging.error("Query [" + auction_uuid + "]: Internal error.")
         return "", 500
     except InterfaceError:
-        logging.error("Query ["+ auction_uuid +"]: Interface error.")
+        logging.error("Query [" + auction_uuid + "]: Interface error.")
         return "", 500
     except DatabaseError:
-        logging.error("Query ["+ auction_uuid +"]: Database error.")
+        logging.error("Query [" + auction_uuid + "]: Database error.")
         return "", 500
     except CircuitBreakerError:
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
@@ -246,25 +260,26 @@ def get_auction_status(get_auction_status_request=None):
 def get_item_with_owner(get_item_with_owner_request=None):
     if not connexion.request.is_json:
         return "", 400
-    
+
     get_item_with_owner_request = GetItemWithOwnerRequest.from_dict(connexion.request.get_json())
 
     user_uuid = get_item_with_owner_request.user_uuid
     item_uuid = get_item_with_owner_request.item_uuid
 
     try:
+
         @circuit_breaker
         def make_request_to_db():
             connection = get_db()
             cursor = connection.cursor()
             cursor.execute(
-                'SELECT BIN_TO_UUID(owner_uuid), BIN_TO_UUID(item_uuid), BIN_TO_UUID(stand_uuid), obtained_at, owners_no, currency_spent FROM inventories WHERE BIN_TO_UUID(owner_uuid) = %s AND BIN_TO_UUID(item_uuid) = %s',
-                (user_uuid, item_uuid)
+                "SELECT BIN_TO_UUID(owner_uuid), BIN_TO_UUID(item_uuid), BIN_TO_UUID(stand_uuid), obtained_at, owners_no, currency_spent FROM inventories WHERE BIN_TO_UUID(owner_uuid) = %s AND BIN_TO_UUID(item_uuid) = %s",
+                (user_uuid, item_uuid),
             )
             return cursor.fetchone()
-        
+
         item = make_request_to_db()
-        
+
         if not item:
             return "", 404
 
@@ -274,31 +289,31 @@ def get_item_with_owner(get_item_with_owner_request=None):
             "gacha_uuid": item[2],
             "obtained_date": item[3].strftime("%Y-%m-%d %H:%M:%S"),
             "owners_no": item[4],
-            "price_paid": item[5]
+            "price_paid": item[5],
         }
-        
+
         return jsonify(payload), 200
-    
+
     except OperationalError:
-        logging.error("Query ["+ item_uuid +"]: Operational error.")
+        logging.error("Query [" + item_uuid + "]: Operational error.")
         return "", 500
     except ProgrammingError:
-        logging.error("Query ["+ item_uuid +"]: Programming error.")
+        logging.error("Query [" + item_uuid + "]: Programming error.")
         return "", 500
     except IntegrityError:
-        logging.error("Query ["+ item_uuid +"]: Integrity error.")
+        logging.error("Query [" + item_uuid + "]: Integrity error.")
         return "", 500
-    except DataError: # if data format is invalid or out of range or size
-        logging.error("Query ["+ item_uuid +"]: Data error.")
+    except DataError:  # if data format is invalid or out of range or size
+        logging.error("Query [" + item_uuid + "]: Data error.")
         return "", 500
     except InternalError:
-        logging.error("Query ["+ item_uuid +"]: Internal error.")
+        logging.error("Query [" + item_uuid + "]: Internal error.")
         return "", 500
     except InterfaceError:
-        logging.error("Query ["+ item_uuid +"]: Interface error.")
+        logging.error("Query [" + item_uuid + "]: Interface error.")
         return "", 500
     except DatabaseError:
-        logging.error("Query ["+ item_uuid +"]: Database error.")
+        logging.error("Query [" + item_uuid + "]: Database error.")
         return "", 500
     except CircuitBreakerError:
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
@@ -308,55 +323,51 @@ def get_item_with_owner(get_item_with_owner_request=None):
 def get_user_currency(ban_user_profile_request=None):
     if not connexion.request.is_json:
         return "", 400
-    
-    #wrong name is openapi's fault
+
+    # wrong name is openapi's fault
     user_currency_request = BanUserProfileRequest.from_dict(connexion.request.get_json())
-    
+
     user_uuid = user_currency_request.user_uuid
 
     try:
+
         @circuit_breaker
         def make_request_to_db():
             connection = get_db()
             cursor = connection.cursor()
-            #Get user's currency from the database
-            cursor.execute(
-                'SELECT currency FROM profiles WHERE uuid = UUID_TO_BIN(%s)',
-                (user_uuid,)
-            )
+            # Get user's currency from the database
+            cursor.execute("SELECT currency FROM profiles WHERE uuid = UUID_TO_BIN(%s)", (user_uuid,))
             return cursor.fetchone()
-        
+
         currency = make_request_to_db()
 
         if not currency:
             return "", 404
 
-        payload = {
-            "currency": currency[0]
-        }
+        payload = {"currency": currency[0]}
 
         return payload, 200
-    
+
     except OperationalError:
-        logging.error("Query ["+user_uuid +"]: Operational error.")
+        logging.error("Query [" + user_uuid + "]: Operational error.")
         return "", 500
     except ProgrammingError:
-        logging.error("Query ["+ user_uuid +"]: Programming error.")
+        logging.error("Query [" + user_uuid + "]: Programming error.")
         return "", 500
     except IntegrityError:
-        logging.error("Query ["+ user_uuid +"]: Integrity error.")
+        logging.error("Query [" + user_uuid + "]: Integrity error.")
         return "", 500
-    except DataError: # if data format is invalid or out of range or size
-        logging.error("Query ["+ user_uuid +"]: Data error.")
+    except DataError:  # if data format is invalid or out of range or size
+        logging.error("Query [" + user_uuid + "]: Data error.")
         return "", 500
     except InternalError:
-        logging.error("Query ["+ user_uuid +"]: Internal error.")
+        logging.error("Query [" + user_uuid + "]: Internal error.")
         return "", 500
     except InterfaceError:
-        logging.error("Query ["+ user_uuid +"]: Interface error.")
+        logging.error("Query [" + user_uuid + "]: Interface error.")
         return "", 500
     except DatabaseError:
-        logging.error("Query ["+ user_uuid +"]: Database error.")
+        logging.error("Query [" + user_uuid + "]: Database error.")
         return "", 500
     except CircuitBreakerError:
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
@@ -366,28 +377,28 @@ def get_user_currency(ban_user_profile_request=None):
 def get_user_involved_auctions(get_user_involved_auctions_request=None):
     if not connexion.request.is_json:
         return "", 400
-    
+
     get_user_involved_auctions_request = GetUserInvolvedAuctionsRequest.from_dict(connexion.request.get_json())
 
     user_uuid = get_user_involved_auctions_request.user_uuid
     page_number = get_user_involved_auctions_request.page_number
 
-
     page_number = min(page_number, MAX_PAGE_NUMBER)
     items_per_page = 10
-    offset = (page_number-1)*10
+    offset = (page_number - 1) * 10
 
     try:
+
         @circuit_breaker
         def make_request_to_db():
             connection = get_db()
             cursor = connection.cursor()
-            cursor.execute( 
-                'SELECT BIN_TO_UUID(a.uuid), BIN_TO_UUID(a.item_uuid), BIN_TO_UUID(i.owner_uuid), a.starting_price, a.current_bid, BIN_TO_UUID(a.current_bidder), end_time FROM auctions a JOIN inventories i ON a.item_uuid = i.item_uuid WHERE i.owner_uuid = UUID_TO_BIN(%s) OR a.current_bidder = UUID_TO_BIN(%s) LIMIT %s OFFSET %s',
-                (user_uuid, user_uuid, items_per_page, offset)
+            cursor.execute(
+                "SELECT BIN_TO_UUID(a.uuid), BIN_TO_UUID(a.item_uuid), BIN_TO_UUID(i.owner_uuid), a.starting_price, a.current_bid, BIN_TO_UUID(a.current_bidder), end_time FROM auctions a JOIN inventories i ON a.item_uuid = i.item_uuid WHERE i.owner_uuid = UUID_TO_BIN(%s) OR a.current_bidder = UUID_TO_BIN(%s) LIMIT %s OFFSET %s",
+                (user_uuid, user_uuid, items_per_page, offset),
             )
             return cursor.fetchall()
-        
+
         auction_list = make_request_to_db()
 
     except OperationalError:
@@ -399,7 +410,7 @@ def get_user_involved_auctions(get_user_involved_auctions_request=None):
     except IntegrityError:
         logging.error("Query: Integrity error.")
         return "", 500
-    except DataError: # if data format is invalid or out of range or size
+    except DataError:  # if data format is invalid or out of range or size
         logging.error("Query: Data error.")
         return "", 500
     except InternalError:
@@ -414,29 +425,31 @@ def get_user_involved_auctions(get_user_involved_auctions_request=None):
     except CircuitBreakerError:
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
         return "", 503
-    
+
     if not auction_list:
         return "", 404
-    
+
     # Prepare the response data
     auctions = []
     now = datetime.now()
     for auction in auction_list:
         auction_uuid, item_id, owner_id, starting_price, current_bid, current_bidder, end_time = auction
-        
+
         # Determine auction status based on the end time
         status = "closed" if end_time < now else "open"
-        
-        auctions.append({
-            "auction_uuid": auction_uuid,
-            "inventory_item_id": item_id,
-            "inventory_item_owner_id": owner_id,
-            "starting_price": starting_price,
-            "current_bid": current_bid,
-            "current_bidder": current_bidder, #if this is the user it's an auction he has bid on, otherwise the user is the owner of the item or the auction hasn't been claimed yet
-            "end_time": end_time,
-            "status": status
-        })
+
+        auctions.append(
+            {
+                "auction_uuid": auction_uuid,
+                "inventory_item_id": item_id,
+                "inventory_item_owner_id": owner_id,
+                "starting_price": starting_price,
+                "current_bid": current_bid,
+                "current_bidder": current_bidder,  # if this is the user it's an auction he has bid on, otherwise the user is the owner of the item or the auction hasn't been claimed yet
+                "end_time": end_time,
+                "status": status,
+            }
+        )
 
     return jsonify(auctions), 200
 
@@ -444,55 +457,55 @@ def get_user_involved_auctions(get_user_involved_auctions_request=None):
 def list_auctions(list_auctions_request=None):
     if not connexion.request.is_json:
         return "", 400
-    
+
     list_auctions_request = ListAuctionsRequest.from_dict(connexion.request.get_json())
-    
+
     status = list_auctions_request.status
     rarity = list_auctions_request.rarity
     page_number = list_auctions_request.page_number
 
     page_number = min(page_number, MAX_PAGE_NUMBER)
     items_per_page = 10
-    offset = (page_number-1)*10
+    offset = (page_number - 1) * 10
     now = datetime.now()
 
-
     try:
+
         @circuit_breaker
         def make_request_to_db():
             connection = get_db()
             cursor = connection.cursor()
 
-            query = '''
+            query = """
                 SELECT BIN_TO_UUID(a.uuid) AS auction_id, a.end_time
                 FROM auctions a
                 JOIN inventories i ON a.item_uuid = i.item_uuid
                 JOIN gachas_types g ON i.stand_uuid = g.uuid
                 WHERE a.end_time {}
-                '''.format('< %s' if status == 'closed' else '> %s')
+                """.format("< %s" if status == "closed" else "> %s")
 
             # Parameters for the query
             params = [now]
 
             if rarity:
-                query += 'AND g.rarity = %s '
+                query += "AND g.rarity = %s "
                 params.append(rarity)
 
-            query += 'LIMIT %s OFFSET %s'
+            query += "LIMIT %s OFFSET %s"
             params.extend([items_per_page, offset])
 
             # Execute the query
             cursor.execute(query, tuple(params))
 
             auction_data = cursor.fetchall()
-            
+
             return auction_data
-        
+
         auction_list = make_request_to_db()
-        
-        if not auction_list: # rimuovere 404, restituire lista vuota
+
+        if not auction_list:  # rimuovere 404, restituire lista vuota
             return "", 404
-        
+
         auctions = []
         for auction in auction_list:
             auction_uuid, end_time = auction
@@ -500,8 +513,8 @@ def list_auctions(list_auctions_request=None):
             status = "closed" if end_time < now else "open"
 
             auctions.append(auction_uuid)
-        
-        payload = {"auctions":auctions}
+
+        payload = {"auctions": auctions}
         return jsonify(payload), 200
 
     except OperationalError:
@@ -513,7 +526,7 @@ def list_auctions(list_auctions_request=None):
     except IntegrityError:
         logging.error("Query: Integrity error.")
         return "", 500
-    except DataError: # if data format is invalid or out of range or size
+    except DataError:  # if data format is invalid or out of range or size
         logging.error("Query: Data error.")
         return "", 500
     except InternalError:
@@ -533,7 +546,7 @@ def list_auctions(list_auctions_request=None):
 def place_bid(place_bid_request=None):
     if not connexion.request.is_json:
         return "", 400
-        
+
     place_bid_request = PlaceBidRequest.from_dict(connexion.request.get_json())
 
     user_uuid = place_bid_request._user_uuid
@@ -542,60 +555,60 @@ def place_bid(place_bid_request=None):
 
     connection = None
     try:
+
         @circuit_breaker
         def make_request_to_db():
             connection = get_db()
             cursor = connection.cursor()
             # Updates auction bid details in the database
             cursor.execute(
-                'SELECT BIN_TO_UUID(current_bidder), current_bid FROM auctions WHERE uuid = UUID_TO_BIN(%s)',
-                (auction_uuid,)
+                "SELECT BIN_TO_UUID(current_bidder), current_bid FROM auctions WHERE uuid = UUID_TO_BIN(%s)",
+                (auction_uuid,),
             )
             previous_bidder, previous_bid = cursor.fetchone()
-            
-            cursor.execute( 
-                'UPDATE auctions SET current_bid = %s, current_bidder = UUID_TO_BIN(%s) WHERE uuid = UUID_TO_BIN(%s)',
-                (new_bid, user_uuid, auction_uuid)
-            )
-            #updates user funds
+
             cursor.execute(
-                'UPDATE profiles SET currency = currency - %s WHERE uuid = UUID_TO_BIN(%s)',
-                (new_bid, user_uuid)
+                "UPDATE auctions SET current_bid = %s, current_bidder = UUID_TO_BIN(%s) WHERE uuid = UUID_TO_BIN(%s)",
+                (new_bid, user_uuid, auction_uuid),
             )
-            #gives old bidder his funds back
+            # updates user funds
+            cursor.execute(
+                "UPDATE profiles SET currency = currency - %s WHERE uuid = UUID_TO_BIN(%s)", (new_bid, user_uuid)
+            )
+            # gives old bidder his funds back
             if previous_bidder is not None:
                 cursor.execute(
-                    'UPDATE profiles SET currency = currency + %s WHERE BIN_TO_UUID(uuid) = %s',
-                    (previous_bid, previous_bidder)
+                    "UPDATE profiles SET currency = currency + %s WHERE BIN_TO_UUID(uuid) = %s",
+                    (previous_bid, previous_bidder),
                 )
             connection.commit()
             return
-        
+
         make_request_to_db()
 
         return "", 200
     except OperationalError:
-        logging.error("Query ["+ user_uuid + ", " + auction_uuid +"]: Operational error.")
+        logging.error("Query [" + user_uuid + ", " + auction_uuid + "]: Operational error.")
         return "", 500
     except ProgrammingError:
-        logging.error("Query ["+ user_uuid + ", " + auction_uuid +"]: Programming error.")
+        logging.error("Query [" + user_uuid + ", " + auction_uuid + "]: Programming error.")
         return "", 500
     except IntegrityError:
-        logging.error("Query ["+ user_uuid + ", " + auction_uuid +"]: Integrity error.")
+        logging.error("Query [" + user_uuid + ", " + auction_uuid + "]: Integrity error.")
         if connection:
             connection.rollback()
         return "", 500
-    except DataError: # if data format is invalid or out of range or size
-        logging.error("Query ["+ user_uuid + ", " + auction_uuid +"]: Data error.")
+    except DataError:  # if data format is invalid or out of range or size
+        logging.error("Query [" + user_uuid + ", " + auction_uuid + "]: Data error.")
         return "", 500
     except InternalError:
-        logging.error("Query ["+ user_uuid + ", " + auction_uuid +"]: Internal error.")
+        logging.error("Query [" + user_uuid + ", " + auction_uuid + "]: Internal error.")
         return "", 500
     except InterfaceError:
-        logging.error("Query ["+ user_uuid + ", " + auction_uuid +"]: Interface error.")
+        logging.error("Query [" + user_uuid + ", " + auction_uuid + "]: Interface error.")
         return "", 500
     except DatabaseError:
-        logging.error("Query ["+ user_uuid + ", " + auction_uuid +"]: Database error.")
+        logging.error("Query [" + user_uuid + ", " + auction_uuid + "]: Database error.")
         return "", 500
     except CircuitBreakerError:
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")

@@ -51,11 +51,7 @@ stop:
 ps:
     #!/bin/bash
     if systemctl --quiet is-active docker; then
-        if [ $(docker compose ps | wc -l) -ne 1 ]; then
-            docker ps --format "table {{{{.ID}}\t{{{{.Names}}\t{{{{.Status}}"
-        else
-            echo "No containers are up."
-        fi
+        docker ps --format "table {{{{.ID}}\t{{{{.Names}}\t{{{{.Status}}"
     else
         echo "Docker daemon is stopped."
     fi

@@ -1,4 +1,3 @@
-import logging
 
 import bcrypt
 
@@ -12,16 +11,17 @@ from openapi_server.helpers.logging import send_log
 from openapi_server.models.delete_profile_request import DeleteProfileRequest
 from openapi_server.models.edit_profile_request import EditProfileRequest
 from openapi_server.models.user import User
+from openapi_server.controllers.profile_internal_controller import (
+    delete_profile_by_uuid,
+)
 
 from openapi_server.helpers.input_checks import sanitize_email_input, sanitize_uuid_input
 
 circuit_breaker = CircuitBreaker(
-    fail_max=1000, reset_timeout=5, exclude=[requests.HTTPError]
+    fail_max=5, reset_timeout=5, exclude=[requests.HTTPError]
 )
 
-from openapi_server.controllers.profile_internal_controller import (
-    delete_profile_by_uuid,
-)
+
 
 SERVICE_TYPE="profile"
 
@@ -213,7 +213,7 @@ def delete_profile():
         if e.response.status_code == 404:
             return jsonify({"error": "Item not found."}), 404
         else:
-            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
@@ -327,7 +327,7 @@ def edit_profile():
         if e.response.status_code == 404:
             return jsonify({"error": "User not found"}), 404
         else:
-            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
@@ -368,7 +368,7 @@ def get_user_info(uuid):
         if e.response.status_code == 404:
             return jsonify({"error": "User not found."}), 404
         else:
-            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:

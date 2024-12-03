@@ -23,7 +23,7 @@ from openapi_server.models.exists_inventory200_response import (
 from openapi_server.models.inventory_item import InventoryItem
 
 SERVICE_TYPE="inventory"
-circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5)
+circuit_breaker = CircuitBreaker(fail_max=5, reset_timeout=5)
 
 def check_owner_of_team(check_owner_of_team_request=None, session=None, user_uuid=None):
     """Checks if a team is actually owned by the user."""

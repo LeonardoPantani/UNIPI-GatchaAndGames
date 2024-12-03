@@ -17,7 +17,7 @@ from openapi_server.helpers.input_checks import sanitize_string_input
 from openapi_server.helpers.logging import send_log
 
 circuit_breaker = CircuitBreaker(
-    fail_max=1000, reset_timeout=5, exclude=[requests.HTTPError]
+    fail_max=5, reset_timeout=5, exclude=[requests.HTTPError]
 )
 
 SERVICE_TYPE="currency"
@@ -118,7 +118,7 @@ def buy_currency(bundle_id):
         if e.response.status_code == 404: 
             return jsonify({"error": "User not found."}), 404
         else:
-            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:

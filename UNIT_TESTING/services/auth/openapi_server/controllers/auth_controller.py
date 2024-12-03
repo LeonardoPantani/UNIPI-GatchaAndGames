@@ -34,7 +34,7 @@ from openapi_server.controllers.auth_internal_controller import MOCK_TABLE_USERS
 
 
 SERVICE_TYPE = "auth"
-circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5, exclude=[requests.HTTPError, OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError])
+circuit_breaker = CircuitBreaker(fail_max=5, reset_timeout=5, exclude=[requests.HTTPError, OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError])
 
 
 """ Returns 200 if service is healthy. """

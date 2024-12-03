@@ -36,7 +36,7 @@ MOCK_FEEDBACKS = [
 MOCK_USERNAME = { 'username': 'DIOBrando' }
 
 SERVICE_TYPE="feedback"
-circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5)
+circuit_breaker = CircuitBreaker(fail_max=5, reset_timeout=5)
 
 def delete_user_feedbacks(session=None, uuid=None):
     if not uuid:
@@ -92,7 +92,7 @@ def feedback_info(session=None, feedback_id=None):
         if e.response.status_code == 404: 
             return jsonify({"error": "User not found."}), 404
         else:
-            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:

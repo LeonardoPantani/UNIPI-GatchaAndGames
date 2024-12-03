@@ -27,12 +27,26 @@ from openapi_server.models.get_uuid_from_username200_response import (
 from openapi_server.models.user import User
 from openapi_server.models.user_full import UserFull
 
-SERVICE_TYPE="profile"
-circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5, exclude=[requests.HTTPError, OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError])
+SERVICE_TYPE = "profile"
+circuit_breaker = CircuitBreaker(
+    fail_max=5,
+    reset_timeout=5,
+    exclude=[
+        requests.HTTPError,
+        OperationalError,
+        DataError,
+        DatabaseError,
+        IntegrityError,
+        InterfaceError,
+        InternalError,
+        ProgrammingError,
+    ],
+)
+
 
 def add_currency(session=None, uuid=None, amount=None):
     """Adds amount to user currency field by uuid.
-    
+
     :param session: Session cookie
     :type session: str
     :param uuid: User UUID
@@ -45,11 +59,12 @@ def add_currency(session=None, uuid=None, amount=None):
         return "", 400
 
     try:
+
         @circuit_breaker
         def update_user_currency():
             connection = get_db()
             cursor = connection.cursor()
-            
+
             # First check if user exists
             check_query = """
             SELECT uuid 
@@ -67,7 +82,7 @@ def add_currency(session=None, uuid=None, amount=None):
             SET currency = currency + %s
             WHERE BIN_TO_UUID(uuid) = %s
             """
-            
+
             cursor.execute(query, (amount, uuid))
             connection.commit()
             cursor.close()
@@ -75,8 +90,15 @@ def add_currency(session=None, uuid=None, amount=None):
 
         return update_user_currency()
 
-    except (OperationalError, DataError, DatabaseError, IntegrityError, 
-            InterfaceError, InternalError, ProgrammingError):
+    except (
+        OperationalError,
+        DataError,
+        DatabaseError,
+        IntegrityError,
+        InterfaceError,
+        InternalError,
+        ProgrammingError,
+    ):
         return "", 503
     except CircuitBreakerError:
         return "", 503
@@ -84,7 +106,7 @@ def add_currency(session=None, uuid=None, amount=None):
 
 def add_pvp_score(session=None, uuid=None, points_to_add=None):
     """Adds amount to user pvp_score field by uuid.
-    
+
     :param session: Session cookie
     :type session: str
     :param uuid: User UUID
@@ -97,11 +119,12 @@ def add_pvp_score(session=None, uuid=None, points_to_add=None):
         return "", 400
 
     try:
+
         @circuit_breaker
         def update_user_pvp_score():
             connection = get_db()
             cursor = connection.cursor()
-            
+
             # Check if user exists
             check_query = """
             SELECT uuid 
@@ -119,7 +142,7 @@ def add_pvp_score(session=None, uuid=None, points_to_add=None):
             SET pvp_score = pvp_score + %s
             WHERE BIN_TO_UUID(uuid) = %s
             """
-            
+
             cursor.execute(query, (points_to_add, uuid))
             connection.commit()
             cursor.close()
@@ -127,8 +150,15 @@ def add_pvp_score(session=None, uuid=None, points_to_add=None):
 
         return update_user_pvp_score()
 
-    except (OperationalError, DataError, DatabaseError, IntegrityError, 
-            InterfaceError, InternalError, ProgrammingError):
+    except (
+        OperationalError,
+        DataError,
+        DatabaseError,
+        IntegrityError,
+        InterfaceError,
+        InternalError,
+        ProgrammingError,
+    ):
         return "", 503
     except CircuitBreakerError:
         return "", 503
@@ -136,7 +166,7 @@ def add_pvp_score(session=None, uuid=None, points_to_add=None):
 
 def delete_profile_by_uuid(session=None, uuid=None):
     """Deletes user profile by uuid.
-    
+
     :param session: Session cookie
     :type session: str
     :param uuid: User UUID
@@ -147,11 +177,12 @@ def delete_profile_by_uuid(session=None, uuid=None):
         return "", 400
 
     try:
+
         @circuit_breaker
         def delete_user_profile():
             connection = get_db()
             cursor = connection.cursor()
-            
+
             # Check if user exists
             check_query = """
             SELECT uuid 
@@ -168,7 +199,7 @@ def delete_profile_by_uuid(session=None, uuid=None):
             DELETE FROM profiles 
             WHERE BIN_TO_UUID(uuid) = %s
             """
-            
+
             cursor.execute(query, (uuid,))
             connection.commit()
             cursor.close()
@@ -176,8 +207,15 @@ def delete_profile_by_uuid(session=None, uuid=None):
 
         return delete_user_profile()
 
-    except (OperationalError, DataError, DatabaseError, IntegrityError, 
-            InterfaceError, InternalError, ProgrammingError):
+    except (
+        OperationalError,
+        DataError,
+        DatabaseError,
+        IntegrityError,
+        InterfaceError,
+        InternalError,
+        ProgrammingError,
+    ):
         return "", 503
     except CircuitBreakerError:
         return "", 503
@@ -185,7 +223,7 @@ def delete_profile_by_uuid(session=None, uuid=None):
 
 def edit_username(session=None, uuid=None, username=None):
     """Edits the username.
-    
+
     :param session: Session cookie
     :type session: str
     :param uuid: User UUID
@@ -198,11 +236,12 @@ def edit_username(session=None, uuid=None, username=None):
         return "", 400
 
     try:
+
         @circuit_breaker
         def update_username():
             connection = get_db()
             cursor = connection.cursor()
-            
+
             # Check if user exists and get current username
             check_query = """
             SELECT username 
@@ -211,23 +250,23 @@ def edit_username(session=None, uuid=None, username=None):
             """
             cursor.execute(check_query, (uuid,))
             result = cursor.fetchone()
-            
+
             if not result:
                 cursor.close()
                 return "", 404
-                
+
             # Check if username is the same
             if result[0] == username:
                 cursor.close()
                 return "", 304
-            
+
             # Update username
             query = """
             UPDATE profiles 
             SET username = %s
             WHERE BIN_TO_UUID(uuid) = %s
             """
-            
+
             cursor.execute(query, (username, uuid))
             connection.commit()
             cursor.close()
@@ -235,8 +274,15 @@ def edit_username(session=None, uuid=None, username=None):
 
         return update_username()
 
-    except (OperationalError, DataError, DatabaseError, IntegrityError, 
-            InterfaceError, InternalError, ProgrammingError):
+    except (
+        OperationalError,
+        DataError,
+        DatabaseError,
+        IntegrityError,
+        InterfaceError,
+        InternalError,
+        ProgrammingError,
+    ):
         return "", 503
     except CircuitBreakerError:
         return "", 503
@@ -244,7 +290,7 @@ def edit_username(session=None, uuid=None, username=None):
 
 def exists_profile(session=None, uuid=None):
     """Returns true if a profile exists, false otherwise.
-    
+
     :param session: Session cookie
     :type session: str
     :param uuid: User UUID
@@ -255,28 +301,36 @@ def exists_profile(session=None, uuid=None):
         return "", 400
 
     try:
+
         @circuit_breaker
         def check_profile_exists():
             connection = get_db()
             cursor = connection.cursor()
-            
+
             query = """
             SELECT uuid
             FROM profiles 
             WHERE BIN_TO_UUID(uuid) = %s
             """
-            
+
             cursor.execute(query, (uuid,))
             result = cursor.fetchone()
-            
+
             cursor.close()
             return result is not None
 
         exists = check_profile_exists()
         return jsonify({"exists": exists}), 200
 
-    except (OperationalError, DataError, DatabaseError, IntegrityError, 
-            InterfaceError, InternalError, ProgrammingError):
+    except (
+        OperationalError,
+        DataError,
+        DatabaseError,
+        IntegrityError,
+        InterfaceError,
+        InternalError,
+        ProgrammingError,
+    ):
         return "", 503
     except CircuitBreakerError:
         return "", 503
@@ -284,7 +338,7 @@ def exists_profile(session=None, uuid=None):
 
 def get_currency_from_uuid(session=None, user_uuid=None):
     """Returns currency of the requested user.
-    
+
     :param session: Session cookie
     :type session: str
     :param user_uuid: User UUID
@@ -295,32 +349,40 @@ def get_currency_from_uuid(session=None, user_uuid=None):
         return "", 400
 
     try:
+
         @circuit_breaker
         def get_user_currency():
             connection = get_db()
             cursor = connection.cursor()
-            
+
             # Check if user exists and get currency
             query = """
             SELECT currency 
             FROM profiles 
             WHERE BIN_TO_UUID(uuid) = %s
             """
-            
+
             cursor.execute(query, (user_uuid,))
             result = cursor.fetchone()
-            
+
             cursor.close()
-            
+
             if not result:
                 return "", 404
-                
+
             return jsonify({"currency": result[0]}), 200
 
         return get_user_currency()
 
-    except (OperationalError, DataError, DatabaseError, IntegrityError, 
-            InterfaceError, InternalError, ProgrammingError):
+    except (
+        OperationalError,
+        DataError,
+        DatabaseError,
+        IntegrityError,
+        InterfaceError,
+        InternalError,
+        ProgrammingError,
+    ):
         return "", 503
     except CircuitBreakerError:
         return "", 503
@@ -328,7 +390,7 @@ def get_currency_from_uuid(session=None, user_uuid=None):
 
 def get_profile(session=None, user_uuid=None):
     """Returns profile info.
-    
+
     :param session: Session cookie
     :type session: str
     :param user_uuid: User UUID
@@ -339,47 +401,54 @@ def get_profile(session=None, user_uuid=None):
         return "", 400
 
     try:
+
         @circuit_breaker
         def get_user_profile():
             connection = get_db()
             cursor = connection.cursor()
-            
+
             query = """
             SELECT username, currency, pvp_score, created_at
             FROM profiles 
             WHERE BIN_TO_UUID(uuid) = %s
             """
-            
+
             cursor.execute(query, (user_uuid,))
             result = cursor.fetchone()
-            
+
             cursor.close()
-            
+
             if not result:
                 return "", 404
-                
+
             profile = {
                 "username": result[0],
                 "currency": result[1],
                 "pvp_score": result[2],
-                "created_at": result[3].strftime("%Y-%m-%d %H:%M:%S")
+                "created_at": result[3].strftime("%Y-%m-%d %H:%M:%S"),
             }
-            
+
             return jsonify(profile), 200
 
         return get_user_profile()
 
-    except (OperationalError, DataError, DatabaseError, IntegrityError, 
-            InterfaceError, InternalError, ProgrammingError):
+    except (
+        OperationalError,
+        DataError,
+        DatabaseError,
+        IntegrityError,
+        InterfaceError,
+        InternalError,
+        ProgrammingError,
+    ):
         return "", 503
     except CircuitBreakerError:
         return "", 503
 
 
-
 def get_username_from_uuid(session=None, user_uuid=None):
     """Returns username of the requested user.
-    
+
     :param session: Session cookie
     :type session: str
     :param user_uuid: User UUID
@@ -390,40 +459,50 @@ def get_username_from_uuid(session=None, user_uuid=None):
         return "", 400
 
     try:
+
         @circuit_breaker
         def get_user_username():
             connection = get_db()
             cursor = connection.cursor()
-            
+
             query = """
             SELECT username 
             FROM profiles 
             WHERE BIN_TO_UUID(uuid) = %s
             """
-            
+
             cursor.execute(query, (user_uuid,))
             result = cursor.fetchone()
-            
+
             cursor.close()
-            
+
             if not result:
                 return "", 404
-                
+
             return jsonify({"username": result[0]}), 200
 
         return get_user_username()
 
-    except (OperationalError, DataError, DatabaseError, IntegrityError, 
-            InterfaceError, InternalError, ProgrammingError):
+    except (
+        OperationalError,
+        DataError,
+        DatabaseError,
+        IntegrityError,
+        InterfaceError,
+        InternalError,
+        ProgrammingError,
+    ):
         return "", 503
     except CircuitBreakerError:
         return "", 503
 
+
 def get_uuid_from_username(session=None, username=None):
     if not username:
         return jsonify({"error": "Invalid request."}), 400
-    
+
     try:
+
         @circuit_breaker
         def make_request_to_db():
             connection = get_db()
@@ -435,21 +514,29 @@ def get_uuid_from_username(session=None, username=None):
             """
             cursor.execute(query, (username,))
             return cursor.fetchone()
-        
+
         result = make_request_to_db()
 
         if not result:
             return "", 404
         return result["uuid"]
 
-    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
+    except (
+        OperationalError,
+        DataError,
+        ProgrammingError,
+        IntegrityError,
+        InternalError,
+        InterfaceError,
+        DatabaseError,
+    ) as e:
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
 
 
 def insert_profile(session=None, user_uuid=None, username=None):
     """Creates a profile.
-    
+
     :param session: Session cookie
     :type session: str
     :param user_uuid: User UUID
@@ -462,16 +549,17 @@ def insert_profile(session=None, user_uuid=None, username=None):
         return "", 400
 
     try:
+
         @circuit_breaker
         def create_profile():
             connection = get_db()
             cursor = connection.cursor()
-            
+
             query = """
             INSERT INTO profiles (uuid, username, currency, pvp_score, created_at)
             VALUES (UUID_TO_BIN(%s), %s, 0, 0, NOW())
             """
-            
+
             cursor.execute(query, (user_uuid, username))
             connection.commit()
             cursor.close()
@@ -479,20 +567,19 @@ def insert_profile(session=None, user_uuid=None, username=None):
 
         return create_profile()
 
-    except (OperationalError, DataError,
-            InterfaceError, InternalError, ProgrammingError):
+    except (OperationalError, DataError, InterfaceError, InternalError, ProgrammingError):
         return "", 503
     except DatabaseError:
         return "", 409
     except IntegrityError:
-        return "",409
+        return "", 409
     except CircuitBreakerError:
         return "", 503
 
 
 def profile_list(session=None, page_number=None):
     """Returns list of profiles based on pagenumber.
-    
+
     :param session: Session cookie
     :type session: str
     :param page_number: Page number of the list
@@ -502,7 +589,7 @@ def profile_list(session=None, page_number=None):
     # Validate page_number
     if page_number and not isinstance(page_number, (int, str)):
         return "", 400
-        
+
     try:
         page_number = int(page_number) if page_number is not None else 1
         if page_number < 1:
@@ -511,25 +598,26 @@ def profile_list(session=None, page_number=None):
         return "", 400
 
     try:
+
         @circuit_breaker
         def get_profiles():
             connection = get_db()
             cursor = connection.cursor()
-            
+
             items_per_page = 10
             offset = (page_number - 1) * items_per_page
-            
+
             query = """
             SELECT BIN_TO_UUID(uuid), username, currency, pvp_score, created_at
             FROM profiles 
             LIMIT %s OFFSET %s
             """
-            
+
             cursor.execute(query, (items_per_page, offset))
             results = cursor.fetchall()
-            
+
             cursor.close()
-            
+
             profiles = []
             for row in results:
                 profile = {
@@ -537,16 +625,23 @@ def profile_list(session=None, page_number=None):
                     "username": row[1],
                     "currency": row[2],
                     "pvp_score": row[3],
-                    "created_at": row[4].strftime("%Y-%m-%d %H:%M:%S")
+                    "created_at": row[4].strftime("%Y-%m-%d %H:%M:%S"),
                 }
                 profiles.append(profile)
-            
+
             return jsonify(profiles), 200
 
         return get_profiles()
 
-    except (OperationalError, DataError, DatabaseError, IntegrityError, 
-            InterfaceError, InternalError, ProgrammingError):
+    except (
+        OperationalError,
+        DataError,
+        DatabaseError,
+        IntegrityError,
+        InterfaceError,
+        InternalError,
+        ProgrammingError,
+    ):
         return "", 503
     except CircuitBreakerError:
         return "", 503

@@ -1,9 +1,8 @@
-import logging
 from datetime import datetime
 
 import connexion
 import requests
-from flask import jsonify, current_app
+from flask import current_app, jsonify
 from mysql.connector.errors import (
     DatabaseError,
     DataError,
@@ -21,14 +20,28 @@ from openapi_server.models.auction import Auction
 from openapi_server.models.auction_status import AuctionStatus
 from openapi_server.models.gacha_rarity import GachaRarity
 
-SERVICE_TYPE="auction"
-circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5)
+SERVICE_TYPE = "auction"
+circuit_breaker = CircuitBreaker(
+    fail_max=5,
+    reset_timeout=5,
+    exclude=[
+        requests.HTTPError,
+        OperationalError,
+        DataError,
+        DatabaseError,
+        IntegrityError,
+        InterfaceError,
+        InternalError,
+        ProgrammingError,
+    ],
+)
 
-def create_auction(auction = None, session=None):
+
+def create_auction(auction=None, session=None):
     if not auction:
         if not connexion.request.is_json:
             return "", 400
-            
+
         auction = Auction.from_dict(connexion.request.get_json())
 
         uuid = auction.auction_uuid
@@ -45,6 +58,7 @@ def create_auction(auction = None, session=None):
         return "", 400
 
     try:
+
         @circuit_breaker
         def insert_auction():
             connection = get_db()
@@ -64,9 +78,17 @@ def create_auction(auction = None, session=None):
 
         insert_auction()
 
-        return jsonify({"message":"Auction created."}), 201
+        return jsonify({"message": "Auction created."}), 201
 
-    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
+    except (
+        OperationalError,
+        DataError,
+        ProgrammingError,
+        IntegrityError,
+        InternalError,
+        InterfaceError,
+        DatabaseError,
+    ) as e:
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
@@ -78,6 +100,7 @@ def exists_auctions(session=None, uuid=None):
         return "", 400
 
     try:
+
         @circuit_breaker
         def search_auction():
             connection = get_db()
@@ -100,16 +123,22 @@ def exists_auctions(session=None, uuid=None):
         auction = search_auction()
 
         exists = False
-        if auction: 
+        if auction:
             exists = True
 
-        payload = {
-            "exists": exists
-        }
+        payload = {"exists": exists}
 
         return jsonify(payload), 200
 
-    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
+    except (
+        OperationalError,
+        DataError,
+        ProgrammingError,
+        IntegrityError,
+        InternalError,
+        InterfaceError,
+        DatabaseError,
+    ) as e:
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
@@ -121,6 +150,7 @@ def get_auction(session=None, uuid=None):
         return "", 400
 
     try:
+
         @circuit_breaker
         def search_auction():
             connection = get_db()
@@ -144,27 +174,30 @@ def get_auction(session=None, uuid=None):
 
         if not auction:
             return "", 404
-        
+
         try:
+
             @circuit_breaker
             def make_request_to_inventory_service():
                 params = {"uuid": auction[1]}
                 url = "https://service_inventory/inventory/internal/get_by_item_uuid"
-                response = requests.get(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
+                response = requests.get(
+                    url, params=params, verify=False, timeout=current_app.config["requests_timeout"]
+                )
                 response.raise_for_status()
                 return response.json()
-            
+
             item = make_request_to_inventory_service()
         except requests.HTTPError as e:
-            if e.response.status_code == 404: 
+            if e.response.status_code == 404:
                 return jsonify({"error": "Item not found."}), 404
             else:
-                return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+                return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
         except requests.RequestException:
             return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
         except CircuitBreakerError:
-            return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503  
-        
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
+
         owner_uuid = item["owner_id"]
 
         status = "open" if auction[5] > datetime.now() else "closed"
@@ -177,12 +210,20 @@ def get_auction(session=None, uuid=None):
             "starting_price": auction[2],
             "current_bid": auction[3],
             "current_bidder": auction[4],
-            "end_time": auction[5]
+            "end_time": auction[5],
         }
 
         return jsonify(payload), 200
 
-    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
+    except (
+        OperationalError,
+        DataError,
+        ProgrammingError,
+        IntegrityError,
+        InternalError,
+        InterfaceError,
+        DatabaseError,
+    ) as e:
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
@@ -191,23 +232,24 @@ def get_auction(session=None, uuid=None):
 
 def get_auction_list(session=None, status=None, rarity=None, page_number=None):
     if connexion.request.is_json:
-        status =  AuctionStatus.from_dict(connexion.request.get_json())
+        status = AuctionStatus.from_dict(connexion.request.get_json())
     if connexion.request.is_json:
-        rarity =  GachaRarity.from_dict(connexion.request.get_json())
-    
+        rarity = GachaRarity.from_dict(connexion.request.get_json())
+
     if not status or (status != "open" and status != "closed"):
         return "", 400
-    
+
     if rarity and (rarity != "common" and rarity != "rare" and rarity != "epic" and rarity != "legendary"):
         return "", 400
 
     items_per_page = 10
-    offset = (page_number - 1) * items_per_page 
+    offset = (page_number - 1) * items_per_page
 
     if rarity:
-        rarity=rarity.upper()
+        rarity = rarity.upper()
 
     try:
+
         @circuit_breaker
         def get_auction_list():
             connection = get_db()
@@ -240,49 +282,63 @@ def get_auction_list(session=None, status=None, rarity=None, page_number=None):
         keep = True
         for auction in auction_list:
             try:
+
                 @circuit_breaker
                 def make_request_to_inventory_service():
                     params = {"uuid": auction[1]}
                     url = "https://service_inventory/inventory/internal/get_by_item_uuid"
-                    response = requests.get(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
+                    response = requests.get(
+                        url, params=params, verify=False, timeout=current_app.config["requests_timeout"]
+                    )
                     response.raise_for_status()
                     return response.json()
-                
+
                 item = make_request_to_inventory_service()
             except requests.HTTPError as e:
-                if e.response.status_code == 404: # user not found, hiding as 401
+                if e.response.status_code == 404:  # user not found, hiding as 401
                     return jsonify({"error": "Item not found."}), 404
                 else:
-                    return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+                    return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
             except requests.RequestException:
-                return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
+                return jsonify(
+                    {"error": "Service temporarily unavailable. Please try again later. [RequestError]"}
+                ), 503
             except CircuitBreakerError:
-                return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503 
+                return jsonify(
+                    {"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}
+                ), 503
 
             if rarity:
                 try:
+
                     @circuit_breaker
                     def make_request_to_gacha_service():
                         params = {"uuid": item["gacha_uuid"]}
                         url = "https://service_gacha/gacha/internal/get_rarity_by_uuid"
-                        response = requests.get(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
+                        response = requests.get(
+                            url, params=params, verify=False, timeout=current_app.config["requests_timeout"]
+                        )
                         response.raise_for_status()
                         return response.json()
-                    
+
                     obtained_rarity = make_request_to_gacha_service()
                 except requests.HTTPError as e:
-                    if e.response.status_code == 404: # user not found, hiding as 401
+                    if e.response.status_code == 404:  # user not found, hiding as 401
                         return jsonify({"error": "Item not found."}), 404
                     else:
-                        return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+                        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
                 except requests.RequestException:
-                    return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
+                    return jsonify(
+                        {"error": "Service temporarily unavailable. Please try again later. [RequestError]"}
+                    ), 503
                 except CircuitBreakerError:
-                    return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503  
+                    return jsonify(
+                        {"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}
+                    ), 503
 
                 if not obtained_rarity:
                     return "", 404
-                
+
                 if rarity != obtained_rarity["rarity"]:
                     keep = False
 
@@ -299,14 +355,22 @@ def get_auction_list(session=None, status=None, rarity=None, page_number=None):
                     "starting_price": auction[2],
                     "current_bid": auction[3],
                     "current_bidder": auction[4],
-                    "end_time": auction[5]
-                } 
+                    "end_time": auction[5],
+                }
                 response.append(payload)
             keep = True
 
-        return jsonify(response[offset:(offset+items_per_page)]), 200
+        return jsonify(response[offset : (offset + items_per_page)]), 200
 
-    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
+    except (
+        OperationalError,
+        DataError,
+        ProgrammingError,
+        IntegrityError,
+        InternalError,
+        InterfaceError,
+        DatabaseError,
+    ) as e:
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
@@ -318,26 +382,28 @@ def get_user_auctions(session=None, user_uuid=None):
         return "", 400
 
     try:
+
         @circuit_breaker
         def make_request_to_inventory_service():
             params = {"uuid": user_uuid}
             url = "https://service_inventory/inventory/internal/get_items_by_owner_uuid"
-            response = requests.get(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
+            response = requests.get(url, params=params, verify=False, timeout=current_app.config["requests_timeout"])
             response.raise_for_status()
             return response.json()
-        
+
         item_list = make_request_to_inventory_service()
     except requests.HTTPError as e:
-        if e.response.status_code == 404: 
+        if e.response.status_code == 404:
             return jsonify({"error": "User not found."}), 404
         else:
-            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
-        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503  
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
     try:
+
         @circuit_breaker
         def get_user_auctions():
             connection = get_db()
@@ -349,7 +415,7 @@ def get_user_auctions(session=None, user_uuid=None):
                     FROM auctions
                     WHERE item_uuid IN ({})
                     OR current_bidder = %s
-                """.format(','.join(['UUID_TO_BIN(%s)'] * len(item_list)))
+                """.format(",".join(["UUID_TO_BIN(%s)"] * len(item_list)))
                 params = item_list + [user_uuid]
             else:
                 query = """
@@ -365,7 +431,7 @@ def get_user_auctions(session=None, user_uuid=None):
             cursor.close()
 
             return auctions_data
-        
+
         auction_list = get_user_auctions()
 
         response = []
@@ -379,13 +445,21 @@ def get_user_auctions(session=None, user_uuid=None):
                 "starting_price": auction[2],
                 "current_bid": auction[3],
                 "current_bidder": auction[4],
-                "end_time": auction[5]
+                "end_time": auction[5],
             }
             response.append(payload)
-        
+
         return jsonify(response), 200
 
-    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
+    except (
+        OperationalError,
+        DataError,
+        ProgrammingError,
+        IntegrityError,
+        InternalError,
+        InterfaceError,
+        DatabaseError,
+    ) as e:
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
@@ -397,6 +471,7 @@ def is_open_by_item_uuid(session=None, uuid=None):
         return "", 400
     print(uuid)
     try:
+
         @circuit_breaker
         def search_auction():
             connection = get_db()
@@ -415,15 +490,23 @@ def is_open_by_item_uuid(session=None, uuid=None):
             cursor.close()
 
             return result
-        
+
         auction_data = search_auction()
         print(auction_data)
         if not auction_data or auction_data[5] < datetime.now():
-            return jsonify({"found":False}), 200
+            return jsonify({"found": False}), 200
 
-        return jsonify({"found":True}), 200
+        return jsonify({"found": True}), 200
 
-    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
+    except (
+        OperationalError,
+        DataError,
+        ProgrammingError,
+        IntegrityError,
+        InternalError,
+        InterfaceError,
+        DatabaseError,
+    ) as e:
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
@@ -438,8 +521,9 @@ def refund_bidders(request_body=None, session=None):
 
     if not request_body:
         return "", 400
-    
+
     try:
+
         @circuit_breaker
         def get_auctions():
             connection = get_db()
@@ -450,7 +534,7 @@ def refund_bidders(request_body=None, session=None):
                 FROM auctions
                 WHERE item_uuid IN ({})
                 AND end_time > %s
-            """.format(','.join(['UUID_TO_BIN(%s)'] * len(request_body)))
+            """.format(",".join(["UUID_TO_BIN(%s)"] * len(request_body)))
             params = request_body + [datetime.now()]
 
             cursor.execute(query, params)
@@ -459,35 +543,50 @@ def refund_bidders(request_body=None, session=None):
             cursor.close()
 
             return auctions_data
-        
+
         auction_list = get_auctions()
-        
+
         for auction in auction_list:
             if auction[4] is not None:
                 try:
+
                     @circuit_breaker
                     def make_request_to_profile_service():
                         params = {"uuid": auction[4], "amount": auction[3]}
                         url = "https://service_profile/profile/internal/add_currency"
-                        response = requests.post(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
+                        response = requests.post(
+                            url, params=params, verify=False, timeout=current_app.config["requests_timeout"]
+                        )
                         response.raise_for_status()
                         return response.json()
-                    
+
                     make_request_to_profile_service()
                 except requests.HTTPError as e:
                     print(e)
-                    if e.response.status_code == 404: 
+                    if e.response.status_code == 404:
                         return jsonify({"error": "User not found."}), 404
                     else:
-                        return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
+                        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
                 except requests.RequestException:
-                    return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
+                    return jsonify(
+                        {"error": "Service temporarily unavailable. Please try again later. [RequestError]"}
+                    ), 503
                 except CircuitBreakerError:
-                    return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503  
+                    return jsonify(
+                        {"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}
+                    ), 503
 
-        return jsonify({"message":"Bidders refunded."}), 200
+        return jsonify({"message": "Bidders refunded."}), 200
 
-    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
+    except (
+        OperationalError,
+        DataError,
+        ProgrammingError,
+        IntegrityError,
+        InternalError,
+        InterfaceError,
+        DatabaseError,
+    ) as e:
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
@@ -503,8 +602,8 @@ def remove_by_item_uuid(request_body=None, session=None):
     if not request_body:
         return "", 400
 
-    
     try:
+
         @circuit_breaker
         def delete_auctions():
             connection = get_db()
@@ -514,7 +613,7 @@ def remove_by_item_uuid(request_body=None, session=None):
                 DELETE
                 FROM auctions
                 WHERE item_uuid IN ({})
-            """.format(','.join(['UUID_TO_BIN(%s)'] * len(request_body)))
+            """.format(",".join(["UUID_TO_BIN(%s)"] * len(request_body)))
 
             cursor.execute(query, request_body)
 
@@ -523,9 +622,17 @@ def remove_by_item_uuid(request_body=None, session=None):
 
         delete_auctions()
 
-        return jsonify({"message":"Auctions deleted."}), 200
-        
-    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
+        return jsonify({"message": "Auctions deleted."}), 200
+
+    except (
+        OperationalError,
+        DataError,
+        ProgrammingError,
+        IntegrityError,
+        InternalError,
+        InterfaceError,
+        DatabaseError,
+    ) as e:
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
@@ -537,6 +644,7 @@ def reset_current_bidder(session=None, uuid=None):
         return "", 400
 
     try:
+
         @circuit_breaker
         def update_auction():
             connection = get_db()
@@ -560,11 +668,19 @@ def reset_current_bidder(session=None, uuid=None):
         status_code = update_auction()
 
         if status_code == 304:
-            return jsonify({"message":"No changes applied."}), 304
+            return jsonify({"message": "No changes applied."}), 304
 
-        return jsonify({"message":"Bid updated."}), 200
+        return jsonify({"message": "Bid updated."}), 200
 
-    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
+    except (
+        OperationalError,
+        DataError,
+        ProgrammingError,
+        IntegrityError,
+        InternalError,
+        InterfaceError,
+        DatabaseError,
+    ) as e:
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
@@ -576,6 +692,7 @@ def set_bid(session=None, auction_uuid=None, user_uuid=None, new_bid=None):
         return "", 400
 
     try:
+
         @circuit_breaker
         def update_auction():
             connection = get_db()
@@ -602,7 +719,7 @@ def set_bid(session=None, auction_uuid=None, user_uuid=None, new_bid=None):
             cursor.execute(query, (new_bid, user_uuid, auction_uuid, datetime.now()))
             if cursor.rowcount == 0:
                 return 403
-            
+
             connection.commit()
 
             cursor.close()
@@ -612,14 +729,22 @@ def set_bid(session=None, auction_uuid=None, user_uuid=None, new_bid=None):
         status_code = update_auction()
 
         if status_code == 404:
-            return jsonify({"error":"Auction not found."}), 404
-        
+            return jsonify({"error": "Auction not found."}), 404
+
         if status_code == 403:
-            return jsonify({"error":"Auction not open."}), 403
+            return jsonify({"error": "Auction not open."}), 403
 
-        return jsonify({"message":"Bid updated."}), 200
+        return jsonify({"message": "Bid updated."}), 200
 
-    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
+    except (
+        OperationalError,
+        DataError,
+        ProgrammingError,
+        IntegrityError,
+        InternalError,
+        InterfaceError,
+        DatabaseError,
+    ) as e:
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
@@ -629,7 +754,7 @@ def set_bid(session=None, auction_uuid=None, user_uuid=None, new_bid=None):
 def update_auction(session=None, auction=None):
     if not connexion.request.is_json:
         return "", 400
-        
+
     auction = Auction.from_dict(connexion.request.get_json())
 
     uuid = auction.auction_uuid
@@ -643,6 +768,7 @@ def update_auction(session=None, auction=None):
         return "", 400
 
     try:
+
         @circuit_breaker
         def update_auction():
             connection = get_db()
@@ -705,14 +831,22 @@ def update_auction(session=None, auction=None):
         status_code = update_auction()
 
         if status_code == 404:
-            return jsonify({"error":"Auction not found."}), 404
-        
+            return jsonify({"error": "Auction not found."}), 404
+
         if status_code == 304:
-            return jsonify({"message":"No changes applied."}), 304
+            return jsonify({"message": "No changes applied."}), 304
 
-        return jsonify({"message":"Auction updated."}), 200
+        return jsonify({"message": "Auction updated."}), 200
 
-    except (OperationalError, DataError, ProgrammingError, IntegrityError, InternalError, InterfaceError, DatabaseError) as e:
+    except (
+        OperationalError,
+        DataError,
+        ProgrammingError,
+        IntegrityError,
+        InternalError,
+        InterfaceError,
+        DatabaseError,
+    ) as e:
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
