@@ -64,7 +64,7 @@ def introspect(access_token, audience_required):
 
     if audience_required != "public_services" and audience_required != "private_services":
         return "", 400
-    
+
     try:
         decoded_token = jwt.decode(access_token, current_app.config['jwt_secret_key'], algorithms=["HS256"], audience=audience_required)
         result = {
@@ -78,7 +78,7 @@ def introspect(access_token, audience_required):
 
         # obtaining token saved in Redis (mock)
         saved_token = access_token
-        
+
         # if no token is saved probably is because Redis was restarted since user logged in
         if saved_token is None:
             send_log(f"Token for user {decoded_token["username"]} is valid but was not found in Redis.", level="warning", service_type="auth")

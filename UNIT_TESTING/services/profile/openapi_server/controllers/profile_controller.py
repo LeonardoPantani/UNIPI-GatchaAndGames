@@ -15,7 +15,7 @@ from openapi_server.models.user import User
 
 from openapi_server.helpers.input_checks import sanitize_email_input, sanitize_uuid_input
 
-from openapi_server.controllers.profile_internal_controller import MOCK_AUCTIONS, MOCK_BUNDLESTRANSACTIONS, MOCK_FEEDBACKS, MOCK_INGAMETRANSACTIONS, MOCK_INVENTORIES, MOCK_PROFILES, MOCK_PVPMATCHES, MOCK_USERS
+from openapi_server.controllers.profile_internal_controller import edit_username, get_profile, MOCK_AUCTIONS, MOCK_BUNDLESTRANSACTIONS, MOCK_FEEDBACKS, MOCK_INGAMETRANSACTIONS, MOCK_INVENTORIES, MOCK_PROFILES, MOCK_PVPMATCHES, MOCK_USERS
 
 circuit_breaker = CircuitBreaker(
     fail_max=1000, reset_timeout=5, exclude=[requests.HTTPError]
@@ -47,7 +47,8 @@ def delete_profile():
         except Exception:
             return jsonify({"error": "Invalid request"}), 400
 
-    
+    session["uuid"] =''.join(char for char in session["uuid"] if char not in string.punctuation)
+        
     if session["uuid"] not in MOCK_USERS:
         return jsonify({"error": "User not found"}), 404
     
@@ -229,19 +230,18 @@ def edit_profile():
         logging.error(f"Error parsing request: {str(e)}")
         return jsonify({"error": "Invalid request."}), 400
     
-    # Verify password before proceeding with edit
+    session["uuid"] =''.join(char for char in session["uuid"] if char not in string.punctuation)
+    if session["uuid"] not in MOCK_USERS:
+        return jsonify({"error": "User not found"}), 404
+    
+    # Verify password
     @circuit_breaker
     def verify_password():
-        response = requests.get(
-            f"{AUTH_SERVICE_URL}/auth/internal/get_hashed_password",
-            params={"uuid": session.get("uuid")},
-            verify=False, timeout=current_app.config['requests_timeout']
-        )
-        response.raise_for_status()
-        stored_hash = response.json()["password"]
-        
+        global MOCK_USERS
+        stored_hash = MOCK_USERS[session["uuid"]][1]
+
         # Compare provided password with stored hash
-        if not bcrypt.checkpw(edit_request.password.encode('utf-8'), stored_hash.encode('utf-8')):
+        if not bcrypt.checkpw(edit_request.password.encode("utf-8"), stored_hash.encode("utf-8")):
             return False
         return True
 
@@ -255,13 +255,9 @@ def edit_profile():
         # Check if profile exists
         @circuit_breaker
         def check_profile_exists():
-            response = requests.get(
-                f"{PROFILE_SERVICE_URL}/profile/internal/exists",
-                params={"uuid": user_uuid},
-                verify=False, timeout=current_app.config['requests_timeout']
-            )
-            response.raise_for_status()
-            return response.json()
+            global MOCK_PROFILES
+            return user_uuid in MOCK_PROFILES
+
 
         if not check_profile_exists():
             return jsonify({"error": "Profile not found"}), 404
@@ -276,13 +272,14 @@ def edit_profile():
 
             @circuit_breaker
             def update_email():
-                response = requests.post(
-                    f"{AUTH_SERVICE_URL}/auth/internal/edit_email",
-                    params={"uuid": user_uuid, "email": email},
-                verify=False, timeout=current_app.config['requests_timeout']
-                )
-                response.raise_for_status()
-                return response
+                if user_uuid not in MOCK_USERS:
+                    return jsonify({"error": "User not found."}), 404
+                
+                if email == MOCK_USERS[user_uuid][0]:
+                    return jsonify({"error": "No changes applied."}), 304
+                
+                MOCK_USERS[user_uuid] = (email, MOCK_USERS[user_uuid][1], MOCK_USERS[user_uuid][2])
+                return jsonify({"message": "Email updated."}), 200
 
             result1=update_email()
 
@@ -291,18 +288,12 @@ def edit_profile():
         if edit_request.username:
             @circuit_breaker
             def update_username():
-                response = requests.post(
-                    f"{PROFILE_SERVICE_URL}/profile/internal/edit_username",
-                    params={"uuid": user_uuid, "username": edit_request.username},
-                verify=False, timeout=current_app.config['requests_timeout']
-                )
-                
-                response.raise_for_status()
-                return response
+                return edit_username(user_uuid, username)
 
             result2=update_username()
+
                 
-            if result1.status_code == 304 and result2.status_code == 304:
+            if result1[1] == 304 and result2[1] == 304:
                 return jsonify({"error": "No changes detected"}), 304
             session['username'] = edit_request.username
             
@@ -336,20 +327,19 @@ def get_user_info(uuid):
     if not valid:
         return jsonify({"error": "Invalid input."}), 400
 
+    uuid =''.join(char for char in uuid if char not in string.punctuation)
     try:
         @circuit_breaker
         def get_user_profile():
-            response = requests.get(
-                f"{PROFILE_SERVICE_URL}/profile/internal/get_profile",
-                params={"user_uuid": uuid},
-                verify=False, timeout=current_app.config['requests_timeout']
-            )
-            response.raise_for_status()
-            return response.json()
-            
-        profile = get_user_profile()
-        return profile, 200
+            return get_profile(user_uuid=uuid)
 
+        profile, code = get_user_profile()
+        if code == 404:
+            return jsonify({"error": "User not found."}), 404
+        if code == 200:
+            return profile, code
+        else:
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
     except requests.HTTPError as e:
         if e.response.status_code == 404:
             return jsonify({"error": "User not found."}), 404
