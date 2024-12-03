@@ -3,6 +3,8 @@ import json
 import requests
 import uuid
 
+from datetime import datetime
+
 from openapi_server.models.auction import Auction
 from openapi_server.models.feedback_preview import FeedbackPreview
 from openapi_server.models.feedback_with_username import FeedbackWithUsername
@@ -807,10 +809,16 @@ def get_system_logs():
 
     service_type = connexion.request.args.get('service_type')
     endpoint = connexion.request.args.get('endpoint')
-    interval = connexion.request.args.get('interval', default=3600)
+    interval = connexion.request.args.get('interval', default=3600, type=int)
     level = connexion.request.args.get('level', default="info")
     start_time = connexion.request.args.get('start_time', type=int)
     
+    if interval < 1 or interval > 2595600:
+        return jsonify({"error":"Invalid input."}), 400
+    
+    if start_time > int(datetime.now().timestamp()):
+        return jsonify({"error":"Invalid input."}), 400
+
     try:
         @circuit_breaker
         def make_request_to_auth_service():
