@@ -1,41 +1,57 @@
-import connexion
-from typing import Dict
-from typing import Tuple
-from typing import Union
 
+import connexion
+from flask import jsonify
+from mysql.connector.errors import (
+    DatabaseError,
+    DataError,
+    IntegrityError,
+    InterfaceError,
+    InternalError,
+    OperationalError,
+    ProgrammingError,
+)
+from pybreaker import CircuitBreaker, CircuitBreakerError
+
+from openapi_server import util
+from openapi_server.helpers.db import get_db
+from openapi_server.helpers.logging import send_log
 from openapi_server.models.get_inventory_item_request import GetInventoryItemRequest
 from openapi_server.models.get_user_involved_auctions_request import GetUserInvolvedAuctionsRequest
 from openapi_server.models.inventory_item import InventoryItem
-from openapi_server import util
-from openapi_server.helpers.logging import send_log
-from flask import jsonify
-from mysql.connector.errors import (
-    OperationalError, DataError, DatabaseError, IntegrityError,
-    InterfaceError, InternalError, ProgrammingError
-)
-from pybreaker import CircuitBreaker, CircuitBreakerError
-from openapi_server.helpers.db import get_db
-import logging
 
 # circuit breaker to stop requests when dbmanager fails
-circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5, exclude=[OperationalError, DataError, DatabaseError, IntegrityError, InterfaceError, InternalError, ProgrammingError])
+circuit_breaker = CircuitBreaker(
+    fail_max=5,
+    reset_timeout=5,
+    exclude=[
+        OperationalError,
+        DataError,
+        DatabaseError,
+        IntegrityError,
+        InterfaceError,
+        InternalError,
+        ProgrammingError,
+    ],
+)
 
 
 def get_inventory_item(get_inventory_item_request=None):
     if not connexion.request.is_json:
         return "", 400
-    
+
     get_inventory_item_request = GetInventoryItemRequest.from_dict(connexion.request.get_json())
 
     user_uuid = get_inventory_item_request.user_uuid
     item_id = get_inventory_item_request.inventory_item_id
 
     try:
+
         @circuit_breaker
         def make_request_to_db():
             connection = get_db()
             cursor = connection.cursor()
-            cursor.execute('''
+            cursor.execute(
+                """
                 SELECT 
                     BIN_TO_UUID(item_uuid) as item_id,
                     BIN_TO_UUID(owner_uuid) as owner_id,
@@ -46,45 +62,47 @@ def get_inventory_item(get_inventory_item_request=None):
                 FROM inventories
                 WHERE owner_uuid = UUID_TO_BIN(%s) 
                 AND item_uuid = UUID_TO_BIN(%s)
-        ''', (user_uuid, item_id))
+        """,
+                (user_uuid, item_id),
+            )
             item_data = cursor.fetchone()
             return item_data
-        
+
         item = make_request_to_db()
         if not item:
             return "", 404
-            
+
         payload = {
             "owner_id": item[1],
             "item_id": item[0],
             "gacha_uuid": item[2],
             "obtained_date": item[3].strftime("%Y-%m-%d %H:%M:%S"),
             "owners_no": item[4],
-            "price_paid": item[5]
+            "price_paid": item[5],
         }
 
         return jsonify(payload), 200
-    
+
     except OperationalError:
-        logging.error("Query ["+ item_id +"]: Operational error.")
+        logging.error("Query [" + item_id + "]: Operational error.")
         return "", 500
     except ProgrammingError:
-        logging.error("Query ["+ item_id +"]: Programming error.")
+        logging.error("Query [" + item_id + "]: Programming error.")
         return "", 500
     except IntegrityError:
-        logging.error("Query ["+ item_id +"]: Integrity error.")
+        logging.error("Query [" + item_id + "]: Integrity error.")
         return "", 500
-    except DataError: # if data format is invalid or out of range or size
-        logging.error("Query ["+ item_id +"]: Data error.")
+    except DataError:  # if data format is invalid or out of range or size
+        logging.error("Query [" + item_id + "]: Data error.")
         return "", 500
     except InternalError:
-        logging.error("Query ["+ item_id +"]: Internal error.")
+        logging.error("Query [" + item_id + "]: Internal error.")
         return "", 500
     except InterfaceError:
-        logging.error("Query ["+ item_id +"]: Interface error.")
+        logging.error("Query [" + item_id + "]: Interface error.")
         return "", 500
     except DatabaseError:
-        logging.error("Query ["+ item_id +"]: Database error.")
+        logging.error("Query [" + item_id + "]: Database error.")
         return "", 500
     except CircuitBreakerError:
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
@@ -93,13 +111,14 @@ def get_inventory_item(get_inventory_item_request=None):
 
 def get_user_inventory_items(get_user_involved_auctions_request=None):
     if not connexion.request.is_json:
-        return "", 400    
+        return "", 400
     get_user_inventory_request = GetUserInvolvedAuctionsRequest.from_dict(connexion.request.get_json())
 
     user_uuid = get_user_inventory_request.user_uuid
     page_number = get_user_inventory_request.page_number
 
     try:
+
         @circuit_breaker
         def make_request_to_db():
             connection = get_db()
@@ -108,7 +127,8 @@ def get_user_inventory_items(get_user_involved_auctions_request=None):
             items_per_page = 10
             offset = (page_number - 1) * items_per_page
 
-            cursor.execute('''
+            cursor.execute(
+                """
                 SELECT 
                     BIN_TO_UUID(item_uuid),
                     BIN_TO_UUID(owner_uuid),
@@ -119,10 +139,12 @@ def get_user_inventory_items(get_user_involved_auctions_request=None):
                 FROM inventories
                 WHERE owner_uuid = UUID_TO_BIN(%s)
                 LIMIT %s OFFSET %s
-            ''', (user_uuid, items_per_page, offset))
+            """,
+                (user_uuid, items_per_page, offset),
+            )
 
             return cursor.fetchall()
-        
+
         item_list = make_request_to_db()
 
         inventory_items = []
@@ -133,103 +155,110 @@ def get_user_inventory_items(get_user_involved_auctions_request=None):
                 "gacha_uuid": row[2],
                 "obtained_date": row[3].strftime("%Y-%m-%d %H:%M:%S"),
                 "owners_no": row[4],
-                "price_paid": row[5]
+                "price_paid": row[5],
             }
             inventory_items.append(item)
-            
+
         return jsonify(inventory_items), 200
 
     except OperationalError:
-        logging.error("Query ["+ user_uuid +"]: Operational error.")
+        logging.error("Query [" + user_uuid + "]: Operational error.")
         return "", 500
     except ProgrammingError:
-        logging.error("Query ["+ user_uuid +"]: Programming error.")
+        logging.error("Query [" + user_uuid + "]: Programming error.")
         return "", 500
     except IntegrityError:
-        logging.error("Query ["+ user_uuid +"]: Integrity error.")
+        logging.error("Query [" + user_uuid + "]: Integrity error.")
         return "", 500
-    except DataError: # if data format is invalid or out of range or size
-        logging.error("Query ["+ user_uuid +"]: Data error.")
+    except DataError:  # if data format is invalid or out of range or size
+        logging.error("Query [" + user_uuid + "]: Data error.")
         return "", 500
     except InternalError:
-        logging.error("Query ["+ user_uuid +"]: Internal error.")
+        logging.error("Query [" + user_uuid + "]: Internal error.")
         return "", 500
     except InterfaceError:
-        logging.error("Query ["+ user_uuid +"]: Interface error.")
+        logging.error("Query [" + user_uuid + "]: Interface error.")
         return "", 500
     except DatabaseError:
-        logging.error("Query ["+ user_uuid +"]: Database error.")
+        logging.error("Query [" + user_uuid + "]: Database error.")
         return "", 500
     except CircuitBreakerError:
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")
-        return "", 503       
+        return "", 503
 
 
 def remove_item(get_inventory_item_request=None):
     if not connexion.request.is_json:
         return "", 400
-    
+
     get_inventory_item_request = GetInventoryItemRequest.from_dict(connexion.request.get_json())
 
     user_uuid = get_inventory_item_request.user_uuid
     item_id = get_inventory_item_request.inventory_item_id
 
     try:
+
         @circuit_breaker
         def make_request_to_db():
             connection = get_db()
             cursor = connection.cursor()
 
-            cursor.execute('''
+            cursor.execute(
+                """
                 SELECT 1 FROM auctions 
                 WHERE item_uuid = UUID_TO_BIN(%s)
                 AND end_time > NOW()
-            ''', (item_id,))
+            """,
+                (item_id,),
+            )
 
             if cursor.fetchone():
                 return 409
 
             # Delete the item
-            cursor.execute('''
+            cursor.execute(
+                """
                 DELETE FROM inventories 
                 WHERE item_uuid = UUID_TO_BIN(%s)
                 AND owner_uuid = UUID_TO_BIN(%s)
-            ''', (item_id, user_uuid))
-            
+            """,
+                (item_id, user_uuid),
+            )
+
             if cursor.rowcount == 0:
                 return 404
 
             connection.commit()
             return 200
-        
+
         response = make_request_to_db()
         if response == 409:
             return "", 409
         elif response == 404:
             return "", 404
-        
+
         return "", 200
-        
+
     except OperationalError:
-        logging.error("Query ["+ item_id +"]: Operational error.")
+        logging.error("Query [" + item_id + "]: Operational error.")
         return "", 500
     except ProgrammingError:
-        logging.error("Query ["+ item_id +"]: Programming error.")
+        logging.error("Query [" + item_id + "]: Programming error.")
         return "", 500
     except IntegrityError:
-        logging.error("Query ["+ item_id +"]: Integrity error.")
+        logging.error("Query [" + item_id + "]: Integrity error.")
         return "", 500
-    except DataError: # if data format is invalid or out of range or size
-        logging.error("Query ["+ item_id +"]: Data error.")
+    except DataError:  # if data format is invalid or out of range or size
+        logging.error("Query [" + item_id + "]: Data error.")
         return "", 500
     except InternalError:
-        logging.error("Query ["+ item_id +"]: Internal error.")
+        logging.error("Query [" + item_id + "]: Internal error.")
         return "", 500
     except InterfaceError:
-        logging.error("Query ["+ item_id +"]: Interface error.")
+        logging.error("Query [" + item_id + "]: Interface error.")
         return "", 500
     except DatabaseError:
-        logging.error("Query ["+ item_id +"]: Database error.")
+        logging.error("Query [" + item_id + "]: Database error.")
         return "", 500
     except CircuitBreakerError:
         logging.error("Circuit Breaker Open: Timeout not elapsed yet, circuit breaker still open.")

@@ -21,7 +21,6 @@ from mysql.connector.errors import (
 )
 from pybreaker import CircuitBreaker, CircuitBreakerError
 from openapi_server.helpers.db import get_db
-import logging
 from datetime import datetime
 
 # Circuit breaker to stop requests when dbmanager fails

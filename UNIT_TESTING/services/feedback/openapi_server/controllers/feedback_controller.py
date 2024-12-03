@@ -15,7 +15,7 @@ from openapi_server.helpers.input_checks import sanitize_string_input
 from openapi_server.controllers.feedback_internal_controller import submit_feedback
 
 SERVICE_TYPE="admin"
-circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5)
+circuit_breaker = CircuitBreaker(fail_max=5, reset_timeout=5)
 
 
 def feedback_health_check_get():

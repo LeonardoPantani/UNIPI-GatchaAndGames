@@ -42,7 +42,7 @@ MOCK_INGAMETRANSACTIONS = {
 }
 
 SERVICE_TYPE="currency"
-circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5)
+circuit_breaker = CircuitBreaker(fail_max=5, reset_timeout=5)
 
 def delete_user_transactions(session=None, uuid=None):
     if not uuid:
