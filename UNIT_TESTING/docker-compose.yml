@@ -84,15 +84,17 @@ services:
   #   restart: always
 
   # ########################## PROFILE
-  # service_profile:
-  #   image: service_profile
-  #   build: ./services/profile/
-  #   env_file: ./services/profile/.env
-  #   volumes:
-  #     - ./services/profile:/usr/src/app/
-  #     - ./common/:/usr/src/app/openapi_server/helpers/
-  #   tty: true
-  #   restart: always
+  service_profile:
+    image: service_profile
+    build: ./services/profile/
+    env_file: ./services/profile/.env
+    ports:
+      - "1004:443"
+    volumes:
+      - ./services/profile:/usr/src/app/
+      - ./common/:/usr/src/app/openapi_server/helpers/
+    tty: true
+    restart: always
 
   # ########################## PVP
   # service_pvp:
