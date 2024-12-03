@@ -1,0 +1,661 @@
+openapi: 3.0.0
+info:
+  title: Gacha System - OpenAPI 3.0
+  description: >-
+    API for managing gacha items, auctions, PVP battles, currency, and user
+    authentication.
+
+
+    Useful links:
+
+    - [Project
+    repository](https://github.com/LeonardoPantani/UNIPI-GachaAndGames)
+  version: 2.0.0
+  license:
+    name: GPL-3.0
+    url: https://www.gnu.org/licenses/gpl-3.0.html#license-text
+  contact:
+    email: support@gachaandgames.it
+  termsOfService: https://localhost/tos
+servers:
+  - url: https://localhost
+    description: Local server
+paths:
+  ############################################
+  ################ AUCTIONS ##################
+  ############################################
+  /auction/health_check:
+    get:
+      tags:
+      - auction
+      description: Returns 200 if service is healthy.
+      summary: Gives information on service status.
+      responses:
+        '200':
+          description: Service operational.
+  /auction/history:
+    get:
+      tags:
+        - auction
+      summary: Retrieve history of my auctions.
+      description: Returns a list of all my auctions for gacha items.
+      operationId: getAuctionsHistory
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: page_number
+          in: query
+          description: Page number of the list.
+          required: false
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+      responses:
+        '200':
+          description: List of my auctions.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Auction'
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not logged in.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /auction/list:
+    get:
+      tags:
+        - auction
+      summary: Retrieve the list of auctions.
+      description: Returns a list of all open auctions for gacha items.
+      operationId: getAuctionsList
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: Filter auctions by status.
+          required: false
+          schema:
+            type: string
+            default: open
+            enum:
+              - open
+              - closed
+        - name: rarity
+          in: query
+          description: Filter auctions by type of gacha item.
+          required: false
+          schema:
+            $ref: '#/components/schemas/GachaRarity'
+        - name: page_number
+          in: query
+          description: Page number of the list.
+          required: false
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+      responses:
+        '200':
+          description: List of auctions, filtered.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Auction'
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not logged in.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /auction/status/{auction_uuid}:
+    get:
+      tags:
+        - auction
+      summary: Retrieve info on specific auction.
+      description: Returns info on the auction with a specific id.
+      operationId: getAuctionStatus
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: auction_uuid
+          in: path
+          description: The id of the auction to obtain info
+          required: true
+          schema:
+            $ref: '#/components/schemas/AuctionId'
+      responses:
+        '200':
+          description: The auction required.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Auction'
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not logged in.
+        '404':
+          description: Auction not found.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /auction/create:
+    post:
+      tags:
+        - auction
+      summary: Creates an auction.
+      description: Creates an auction for an item in player's inventory.
+      operationId: createAuction
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: starting_price
+          in: query
+          description: The starting price of the auction.
+          required: false
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 1000000
+        - name: inventory_item_owner_id
+          in: query
+          description: The owner id of the item.
+          required: true
+          schema:
+            $ref: '#/components/schemas/UserId'
+        - name: inventory_item_id
+          in: query
+          description: The inventory item id.
+          required: true
+          schema:
+            $ref: '#/components/schemas/ItemId'
+      responses:
+        '201':
+          description: Auction created successfully.
+        '400':
+          description: Invalid request.
+        '401':
+          description: This item is not yours.
+        '403':
+          description: Not logged in.
+        '404':
+          description: Item not found.
+        '409':
+          description: Another auction on the same item is still active.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /auction/bid/{auction_uuid}:
+    post:
+      tags:
+        - auction
+      summary: Bids on an open auction
+      description: Sends a bid to an open auction, if the user has enough currency.
+      operationId: bidOnAuction
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: auction_uuid
+          in: path
+          description: Id of the auction to bid on.
+          required: true
+          schema:
+            $ref: '#/components/schemas/AuctionId'
+        - name: bid
+          in: query
+          description: Bid increment value. #if no bid is present it will be put a starting price bid, otherwise the current bid will be incremented by the value sent in the request
+          required: true
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+      responses:
+        '200':
+          description: Bid sent successfully.
+        '400':
+          description: Invalid query parameters.
+        '403':
+          description: Auction is closed.
+        '404':
+          description: Auction or user not found.
+        '406':
+          description: Insufficient funds.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /auction/internal/refund_bidders:
+    post:
+      tags:
+        - auction_internal
+      description: Returns inventory items owned by user with UUID requested.
+      operationId: refund_bidders
+      parameters:
+      - name: session
+        in: cookie
+        required: false
+        schema:
+          type: string
+      requestBody:
+        description: List of the item_uuid whose eventual auctions must be refunded to eventual bidders.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/ItemId'
+      responses:
+        '200':
+          description: Bidders refunded.
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '503':
+          description: Service unavailable. Please try again later.
+  /auction/internal/reset_current_bidder:
+    post:
+      tags:
+        - auction_internal
+      description: Sets current bid to 0 and current bidder to NULL.
+      operationId: reset_current_bidder
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+        - name: uuid
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/UserId'
+      responses:
+        '200':
+          description: Bid updated.
+        '304':
+          description: No changes applied.
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '404':
+          description: Auction not found.
+        '503':
+          description: Service unavailable. Please try again later.
+  /auction/internal/remove_by_item_uuid:
+    post:
+      tags:
+        - auction_internal
+      description: Deletes eventual auctions where item_uuid is in list.
+      operationId: remove_by_item_uuid
+      parameters:
+      - name: session
+        in: cookie
+        required: false
+        schema:
+          type: string
+      requestBody:
+        description: List of the item_uuid whose eventual auctions must be deleted.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/ItemId'
+      responses:
+        '200':
+          description: Auctions deleted.
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '503':
+          description: Service unavailable. Please try again later.
+  /auction/internal/exists:
+    get:
+      tags:
+        - auction_internal
+      description: Returns true if an auction exists, false otherwise.
+      operationId: exists_auctions
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+        - name: uuid
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/AuctionId'
+      responses:
+        '200':
+          description: Result of search.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exists: 
+                    type: boolean
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /auction/internal/update:
+    post:
+      tags:
+        - auction_internal
+      description: Updates an auction.
+      operationId: update_auction
+      parameters:
+      - name: session
+        in: cookie
+        required: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Auction'
+      responses:
+        '200':
+          description: Auction updated.
+        '304':
+          description: No changes applied.
+        '400':
+          description: Invalid request.
+        '404':
+          description: Auction not found.
+        '403':
+          description: Not authorized.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /auction/internal/is_open_by_item_uuid:
+    get:
+      tags:
+        - auction_internal
+      description: Returns true if an open auction is found, false otherwise.
+      operationId: is_open_by_item_uuid
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string 
+        - name: uuid
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/ItemId'      
+      responses:
+        '200':
+          description: auction.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  found: 
+                    type: boolean
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /auction/internal/create:
+    post:
+      tags:
+        - auction_internal
+      description: Inserts new auction into db.
+      operationId: create_auction
+      parameters:
+      - name: session
+        in: cookie
+        required: false
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Auction'
+      responses:
+        '201':
+          description: Auction created.
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /auction/internal/get_user_auctions:
+    get:
+      tags:
+        - auction_internal
+      description: Returns list of auctions where user is the owner of the item or the current highest bidder.
+      operationId: get_user_auctions
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+        - name: user_uuid
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/UserId'
+      responses:
+        '200':
+          description: Auction list.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Auction'
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /auction/internal/list:
+    get:
+      tags:
+        - auction_internal
+      description: Returns the list of auctions filtered by status and rarity, organized in pages
+      operationId: get_auction_list
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/AuctionStatus'
+        - name: rarity
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/GachaRarity'
+        - name: page_number
+          in: query
+          description: Page number of the list.
+          required: false
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+      responses:
+        '200':
+          description: List of auctions, filtered.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Auction'
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '503':
+          description: Service temporarily unavailable. Please try again later. 
+  /auction/internal/get_auction:
+    get:
+      tags:
+        - auction_internal
+      description: Returns information of an auction by its uuid.
+      operationId: get_auction
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+        - name: uuid
+          required: false
+          in: query
+          schema:
+            $ref: '#/components/schemas/AuctionId'
+      responses:
+        '200':
+          description: Auction info.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Auction'
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '404':
+          description: Not found.
+        '503':
+          description: Service temporarily unavailable. Please try again later. 
+  /auction/internal/set_bid:
+    post:
+      tags:
+        - auction_internal
+      description: Updates current bid and current bidder.
+      operationId: set_bid
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+        - name: auction_uuid
+          required: false
+          in: query
+          schema:
+            $ref: '#/components/schemas/AuctionId'
+        - name: user_uuid
+          required: false
+          in: query
+          schema:
+            $ref: '#/components/schemas/UserId'
+        - name: new_bid
+          required: false
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Bid set.
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '404':
+          description: Auction not found.
+        '503':
+          description: Service temporarily unavailable. Please try again later. 
+          
+components:
+  schemas:
+    GachaRarity:
+      type: string
+      enum:
+        - common
+        - rare
+        - epic
+        - legendary
+      example: rare
+      description: Rarity level of the gacha.
+    UserId:
+      type: string
+      format: uuid
+      description: UUID of user.
+    AuctionStatus:
+      type: string
+      default: open
+      enum:
+        - open
+        - closed
+    ItemId:
+      type: string
+      format: uuid
+      description: UUID of single item.
+    AuctionId:
+      type: string
+      format: uuid
+      description: UUID of the auction.
+    Auction:
+      type: object
+      properties:
+        auction_uuid:
+          $ref: '#/components/schemas/AuctionId'
+        status:
+          $ref: '#/components/schemas/AuctionStatus'
+        inventory_item_owner_id:
+          $ref: '#/components/schemas/UserId'
+        inventory_item_id:
+          $ref: '#/components/schemas/ItemId'
+        starting_price:
+          type: number
+          format: float
+          description: Initial price set for the auction
+        current_bid:
+          type: number
+          format: float
+          description: Current highest bid
+        current_bidder:
+          $ref: '#/components/schemas/UserId'
+        end_time:
+          type: string
+          format: date-time
+          description: When the auction ends, in UTC timestamp
