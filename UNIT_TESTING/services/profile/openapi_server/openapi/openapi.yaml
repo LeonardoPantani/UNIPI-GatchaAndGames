@@ -1,0 +1,744 @@
+openapi: 3.0.0
+info:
+  contact:
+    email: support@gachaandgames.it
+  description: |-
+    API for managing gacha items, auctions, PVP battles, currency, and user authentication.
+
+    Useful links:
+    - [Project repository](https://github.com/LeonardoPantani/UNIPI-GachaAndGames)
+  license:
+    name: GPL-3.0
+    url: https://www.gnu.org/licenses/gpl-3.0.html#license-text
+  termsOfService: https://localhost/tos
+  title: Gacha System - OpenAPI 3.0
+  version: 2.0.0
+servers:
+- description: Local server
+  url: https://localhost
+paths:
+  /profile/delete:
+    post:
+      description: Allows a user to delete their account.
+      operationId: delete_profile
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/deleteProfile_request'
+        required: true
+      responses:
+        "200":
+          description: Profile deleted successfully.
+        "401":
+          description: Invalid password.
+        "403":
+          description: Not logged in.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      summary: Deletes this account.
+      tags:
+      - profile
+      x-openapi-router-controller: openapi_server.controllers.profile_controller
+  /profile/edit:
+    put:
+      description: Allows a user to edit their profile.
+      operationId: edit_profile
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/editProfile_request'
+        required: true
+      responses:
+        "200":
+          description: Profile updated.
+        "304":
+          description: No changes needed.
+        "400":
+          description: Invalid request.
+        "401":
+          description: Invalid password.
+        "403":
+          description: Not logged in.
+        "404":
+          description: User not found.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      summary: Edits properties of the profile.
+      tags:
+      - profile
+      x-openapi-router-controller: openapi_server.controllers.profile_controller
+  /profile/health_check:
+    get:
+      description: Returns 200 if service is healthy.
+      operationId: profile_health_check_get
+      responses:
+        "200":
+          description: Service operational.
+      summary: Gives information on service status.
+      tags:
+      - profile
+      x-openapi-router-controller: openapi_server.controllers.profile_controller
+  /profile/internal/add_currency:
+    post:
+      description: Adds amount to user currency field by uuid.
+      operationId: add_currency
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/UserId'
+        style: form
+      - explode: true
+        in: query
+        name: amount
+        required: false
+        schema:
+          type: integer
+        style: form
+      responses:
+        "200":
+          description: Currency changed.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "404":
+          description: User not found.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - profile_internal
+      x-openapi-router-controller: openapi_server.controllers.profile_internal_controller
+  /profile/internal/add_pvp_score:
+    post:
+      description: Increases pvp score by points value.
+      operationId: add_pvp_score
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/UserId'
+        style: form
+      - explode: true
+        in: query
+        name: points_to_add
+        required: false
+        schema:
+          type: integer
+        style: form
+      responses:
+        "200":
+          description: PvP score changed.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "404":
+          description: User not found.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - profile_internal
+      x-openapi-router-controller: openapi_server.controllers.profile_internal_controller
+  /profile/internal/delete_profile_by_uuid:
+    delete:
+      description: Deletes a user's profile.
+      operationId: delete_profile_by_uuid
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/UserId'
+        style: form
+      responses:
+        "200":
+          description: Profile deleted.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - profile_internal
+      x-openapi-router-controller: openapi_server.controllers.profile_internal_controller
+  /profile/internal/edit_username:
+    post:
+      description: Edits the username.
+      operationId: edit_username
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/UserId'
+        style: form
+      - explode: true
+        in: query
+        name: username
+        required: false
+        schema:
+          $ref: '#/components/schemas/Username'
+        style: form
+      responses:
+        "200":
+          description: Username updated.
+        "304":
+          description: No changes applied.
+        "400":
+          description: Invalid request.
+        "404":
+          description: User not found.
+        "403":
+          description: Not authorized.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - profile_internal
+      x-openapi-router-controller: openapi_server.controllers.profile_internal_controller
+  /profile/internal/exists:
+    get:
+      description: "Returns true if a profile exists, false otherwise."
+      operationId: exists_profile
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/UserId'
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/exists_profile_200_response'
+          description: Result of search.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - profile_internal
+      x-openapi-router-controller: openapi_server.controllers.profile_internal_controller
+  /profile/internal/get_currency_from_uuid:
+    get:
+      description: Returns currency of the requested user.
+      operationId: get_currency_from_uuid
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: user_uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/UserId'
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/get_currency_from_uuid_200_response'
+          description: Currency field.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "404":
+          description: User not found.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - profile_internal
+      x-openapi-router-controller: openapi_server.controllers.profile_internal_controller
+  /profile/internal/get_profile:
+    get:
+      description: Returns profile info.
+      operationId: get_profile
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: user_uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/UserId'
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: Profile info.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "404":
+          description: Item not found.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - profile_internal
+      x-openapi-router-controller: openapi_server.controllers.profile_internal_controller
+  /profile/internal/get_username_from_uuid:
+    get:
+      description: Returns username of the requested user.
+      operationId: get_username_from_uuid
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: user_uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/UserId'
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/get_username_from_uuid_200_response'
+          description: Username.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "404":
+          description: User not found.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - profile_internal
+      x-openapi-router-controller: openapi_server.controllers.profile_internal_controller
+  /profile/internal/get_uuid_from_username:
+    get:
+      description: Returns uuid of the requested user.
+      operationId: get_uuid_from_username
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: username
+        required: false
+        schema:
+          $ref: '#/components/schemas/Username'
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/get_uuid_from_username_200_response'
+          description: UUID.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "404":
+          description: User not found.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - profile_internal
+      x-openapi-router-controller: openapi_server.controllers.profile_internal_controller
+  /profile/internal/insert_profile:
+    post:
+      description: Creates a profile.
+      operationId: insert_profile
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: user_uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/UserId'
+        style: form
+      - explode: true
+        in: query
+        name: username
+        required: false
+        schema:
+          $ref: '#/components/schemas/Username'
+        style: form
+      responses:
+        "201":
+          description: Profile created.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - profile_internal
+      x-openapi-router-controller: openapi_server.controllers.profile_internal_controller
+  /profile/internal/list:
+    get:
+      description: Returns list of profiles based on pagenumber.
+      operationId: profile_list
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: Page number of the list.
+        explode: true
+        in: query
+        name: page_number
+        required: false
+        schema:
+          default: 1
+          minimum: 1
+          type: integer
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/UserFull'
+                type: array
+          description: Profile list.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "503":
+          description: Service unavailable. Please try again later.
+      tags:
+      - profile_internal
+      x-openapi-router-controller: openapi_server.controllers.profile_internal_controller
+  /profile/{uuid}/info:
+    get:
+      description: Allows to retrieve the profile of a user by UUID.
+      operationId: get_user_info
+      parameters:
+      - explode: false
+        in: path
+        name: uuid
+        required: true
+        schema:
+          $ref: '#/components/schemas/UserId'
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: User profile.
+        "400":
+          description: Invalid username.
+        "403":
+          description: Not logged in.
+        "404":
+          description: User not found.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      summary: Returns infos about a UUID.
+      tags:
+      - profile
+      x-openapi-router-controller: openapi_server.controllers.profile_controller
+components:
+  schemas:
+    UserFull:
+      example:
+        joindate: 2000-01-23T04:56:07.000+00:00
+        role: USER
+        pvp_score: 5
+        currency: 100
+        id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        email: l.pantani5@studenti.unipi.it
+        username: LeoPanta01_
+      properties:
+        id:
+          description: UUID of user.
+          format: uuid
+          title: uuid
+          type: string
+        username:
+          description: "The user's username. Must be at least 5 characters long and\
+            \ contain only letters, numbers, and underscores."
+          example: LeoPanta01_
+          minLength: 5
+          pattern: "^[a-zA-Z0-9_]+$"
+          title: username
+          type: string
+        email:
+          description: The user's email.
+          example: l.pantani5@studenti.unipi.it
+          title: email
+          type: string
+        joindate:
+          description: Timestamp when user created their account
+          format: date-time
+          title: joindate
+          type: string
+        currency:
+          description: In-game currency of the user.
+          example: 100
+          title: currency
+          type: integer
+        pvp_score:
+          description: PvP score of the user.
+          example: 5
+          title: pvp_score
+          type: integer
+        role:
+          $ref: '#/components/schemas/Roles'
+      title: UserFull
+      type: object
+    Roles:
+      description: User's role in the system.
+      enum:
+      - USER
+      - ADMIN
+      title: Roles
+      type: string
+    UserId:
+      description: UUID of user.
+      format: uuid
+      title: uuid
+      type: string
+    Username:
+      description: "The user's username. Must be at least 5 characters long and contain\
+        \ only letters, numbers, and underscores."
+      example: LeoPanta01_
+      minLength: 5
+      pattern: "^[a-zA-Z0-9_]+$"
+      title: username
+      type: string
+    Email:
+      description: The user's email.
+      example: l.pantani5@studenti.unipi.it
+      title: email
+      type: string
+    Password:
+      description: The user's password must be at least 8 characters and can accept
+        all characters.
+      example: Th1s_c4n_b3_a_good_passw0rd...maybe
+      minLength: 8
+      title: password
+      type: string
+    User:
+      example:
+        joindate: 2000-01-23T04:56:07.000+00:00
+        pvp_score: 6
+        currency: 0
+        uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        email: l.pantani5@studenti.unipi.it
+        username: LeoPanta01_
+      properties:
+        uuid:
+          description: UUID of user.
+          format: uuid
+          title: uuid
+          type: string
+        username:
+          description: "The user's username. Must be at least 5 characters long and\
+            \ contain only letters, numbers, and underscores."
+          example: LeoPanta01_
+          minLength: 5
+          pattern: "^[a-zA-Z0-9_]+$"
+          title: username
+          type: string
+        email:
+          description: The user's email.
+          example: l.pantani5@studenti.unipi.it
+          title: email
+          type: string
+        joindate:
+          description: Timestamp when user created their account
+          format: date-time
+          title: joindate
+          type: string
+        currency:
+          description: Ingame currency of the user
+          title: currency
+          type: integer
+        pvp_score:
+          description: Pvp score of the user
+          title: pvp_score
+          type: integer
+      title: User
+      type: object
+    deleteProfile_request:
+      properties:
+        password:
+          description: The user's password must be at least 8 characters and can accept
+            all characters.
+          example: Th1s_c4n_b3_a_good_passw0rd...maybe
+          minLength: 8
+          title: password
+          type: string
+      title: deleteProfile_request
+      type: object
+    editProfile_request:
+      properties:
+        email:
+          description: The user's email.
+          example: l.pantani5@studenti.unipi.it
+          title: email
+          type: string
+        username:
+          description: "The user's username. Must be at least 5 characters long and\
+            \ contain only letters, numbers, and underscores."
+          example: LeoPanta01_
+          minLength: 5
+          pattern: "^[a-zA-Z0-9_]+$"
+          title: username
+          type: string
+        password:
+          description: The user's password must be at least 8 characters and can accept
+            all characters.
+          example: Th1s_c4n_b3_a_good_passw0rd...maybe
+          minLength: 8
+          title: password
+          type: string
+      title: editProfile_request
+      type: object
+    exists_profile_200_response:
+      example:
+        exists: true
+      properties:
+        exists:
+          title: exists
+          type: boolean
+      title: exists_profile_200_response
+      type: object
+    get_username_from_uuid_200_response:
+      example:
+        username: LeoPanta01_
+      properties:
+        username:
+          description: "The user's username. Must be at least 5 characters long and\
+            \ contain only letters, numbers, and underscores."
+          example: LeoPanta01_
+          minLength: 5
+          pattern: "^[a-zA-Z0-9_]+$"
+          title: username
+          type: string
+      title: get_username_from_uuid_200_response
+      type: object
+    get_uuid_from_username_200_response:
+      example:
+        username: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+      properties:
+        username:
+          description: UUID of user.
+          format: uuid
+          title: uuid
+          type: string
+      title: get_uuid_from_username_200_response
+      type: object
+    get_currency_from_uuid_200_response:
+      example:
+        currency: 0
+      properties:
+        currency:
+          title: currency
+          type: integer
+      title: get_currency_from_uuid_200_response
+      type: object

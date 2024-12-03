@@ -52,7 +52,6 @@ def delete_user_transactions(session=None, uuid=None):
     try:
         @circuit_breaker
         def delete_transactions():
-            # Eliminare le transazioni da MOCK_BUNDLESTRANSACTIONS e MOCK_INGAMETRANSACTIONS
             global MOCK_BUNDLESTRANSACTIONS, MOCK_INGAMETRANSACTIONS
 
             MOCK_BUNDLESTRANSACTIONS = {
