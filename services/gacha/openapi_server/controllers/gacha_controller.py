@@ -9,11 +9,9 @@ from flask import current_app, jsonify, request, session
 from pybreaker import CircuitBreaker, CircuitBreakerError
 from werkzeug.exceptions import BadRequest, InternalServerError, NotFound
 
-from openapi_server.helpers.authorization import verify_login
-
-from openapi_server.helpers.input_checks import sanitize_uuid_input, sanitize_string_input
-
 from openapi_server.controllers.gacha_internal_controller import get_gacha
+from openapi_server.helpers.authorization import verify_login
+from openapi_server.helpers.input_checks import sanitize_string_input, sanitize_uuid_input
 
 # Circuit breaker instance
 circuit_breaker = CircuitBreaker(fail_max=5, reset_timeout=5, exclude=[requests.HTTPError])
@@ -48,8 +46,9 @@ def get_gacha_info(gacha_uuid):
         return jsonify({"error": "Gacha not found."}), 404
     elif response[1] != 200:
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    
+
     return response[0], 200
+
 
 def pull_gacha(pool_id):
     """Pull a random gacha from a specific pool."""
@@ -175,7 +174,7 @@ def pull_gacha(pool_id):
             response.raise_for_status()
             return response
 
-        response = get_gacha(None,selected_item)
+        response = get_gacha(None, selected_item)
         if response[1] == 404:
             return response
         elif response[1] == 503 or response[1] == 400:
@@ -234,7 +233,7 @@ def get_pool_info():
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
 
 
-def get_gachas(not_owned): # --> To do 
+def get_gachas(not_owned):  # --> To do
     """Returns a list of gacha items based on ownership filter."""
     # Auth verification
     session = verify_login(connexion.request.headers.get("Authorization"), service_type=SERVICE_TYPE)
