@@ -145,3 +145,18 @@ def sanitize_auction_input(input_auction):
   except Exception as e:
     print(e)
     return False
+  
+def sanitize_team_input(input_team):
+    try:
+        for item in input_team:
+           valid, item = sanitize_uuid_input(item)
+           if not valid:
+              return False
+           
+        if len(input_team)!=7:
+           return False
+        
+    except Exception as e:
+        return False
+    
+    return input_team

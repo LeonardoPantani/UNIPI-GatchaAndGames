@@ -19,7 +19,7 @@ from openapi_server.helpers.logging import send_log
 from openapi_server.models.pending_pv_p_requests import PendingPvPRequests
 from openapi_server.models.pv_p_request import PvPRequest
 
-SERVICE_TYPE="pvp"
+SERVICE_TYPE = "pvp"
 circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5)
 
 
@@ -139,6 +139,9 @@ def get_status(session=None, uuid=None):
         
         match = get_match()
 
+        if not match:
+            return jsonify({"error":"Match not found"}), 404
+
         response = {
             "pvp_match_uuid": match[0],
             "sender_id": match[1],
@@ -159,24 +162,30 @@ def get_status(session=None, uuid=None):
 
 
 def insert_match(pv_p_request=None, session=None):
-    if not connexion.request.is_json:
-        return "", 400
-        
-    pv_p_request = PvPRequest.from_dict(connexion.request.get_json())
+    if pv_p_request is None:
+        if not connexion.request.is_json:
+            return "", 400
+        pv_p_request = PvPRequest.from_dict(connexion.request.get_json()).to_dict()
     
-    match_uuid = pv_p_request.pvp_match_uuid
-    player1_uuid = pv_p_request.sender_id
-    player2_uuid = pv_p_request.receiver_id
-    teams = pv_p_request.teams
-    winner = True if pv_p_request.winner_id == player1_uuid else False
-    match_log = pv_p_request.match_log
-    timestamp = pv_p_request.match_timestamp
+    match_uuid = pv_p_request["pvp_match_uuid"]
+    player1_uuid = pv_p_request["sender_id"]
+    player2_uuid = pv_p_request["receiver_id"]
+    teams = pv_p_request["teams"]
+    match_log = pv_p_request["match_log"]
+    timestamp = pv_p_request["match_timestamp"]
+
+    if pv_p_request['winner_id'] == player1_uuid:
+        winner = True
+    elif pv_p_request['winner_id'] == player2_uuid:
+        winner = False
+    else:
+        winner = None
 
     if not match_uuid or not player1_uuid or not player2_uuid or not teams or not timestamp:
         return "", 400
     
-    match_log_json = json.dumps(match_log.to_dict())
-    teams_json = json.dumps(teams.to_dict())
+    match_log_json = json.dumps(match_log)
+    teams_json = json.dumps(teams)
 
     try:
         @circuit_breaker
