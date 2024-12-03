@@ -28,11 +28,11 @@ def upload_image():
     session = verify_login(
         request.headers.get("Authorization"), service_type=SERVICE_TYPE, audience_required="private_services"
     )
-    if session[1] != 200:  # se dà errore, il risultato della verify_login è: (messaggio, codice_errore)
+    if session[1] != 200:
         return session
-    else:  # altrimenti, va preso il primo valore (0) per i dati di sessione già pronti
+    else:
         session = session[0]
-    # fine controllo autenticazione
+    #### END AUTH CHECK
 
     # Controlla se l'UUID è fornito nella query string
     file_uuid = request.args.get("uuid")
@@ -95,11 +95,11 @@ def delete_image(file_uuid):
     session = verify_login(
         request.headers.get("Authorization"), service_type=SERVICE_TYPE, audience_required="private_services"
     )
-    if session[1] != 200:  # se dà errore, il risultato della verify_login è: (messaggio, codice_errore)
+    if session[1] != 200:
         return session
-    else:  # altrimenti, va preso il primo valore (0) per i dati di sessione già pronti
+    else:
         session = session[0]
-    # fine controllo autenticazione
+    #### END AUTH CHECK
 
     if not is_valid_uuid(file_uuid):
         return jsonify({"error": "Invalid UUID format."}), 400

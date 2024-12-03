@@ -22,10 +22,11 @@ def verify_login(auth_header=None, audience_required="public_services", service_
     access_token = auth_header.split(" ")[1]
     if not access_token:  # checks if after "Bearer " there is text
         send_log("VerifyLogin: Empty Bearer token.", service_type=service_type, level="general", endpoint=log_endpoint)
-        return "", 400
+        return jsonify({"error": "Invalid request."}), 400
 
     if audience_required != "public_services" and audience_required != "private_services":
-        return "", 400
+        send_log("VerifyLogin: Invalid audience_required.", service_type=service_type, level="general", endpoint=log_endpoint)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
 
     try:
 

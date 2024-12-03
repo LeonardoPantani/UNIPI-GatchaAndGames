@@ -1,4 +1,3 @@
-
 import bcrypt
 
 import connexion
@@ -41,11 +40,11 @@ def profile_health_check_get():
 @circuit_breaker
 def delete_profile():
     # Auth verification
-    session = verify_login(connexion.request.headers.get('Authorization'), service_type=SERVICE_TYPE)
-    if session[1] != 200:
-        return session
+    response = verify_login(connexion.request.headers.get("Authorization"), service_type=SERVICE_TYPE)
+    if response[1] != 200:
+        return response
     else:
-        session = session[0]
+        session = response[0]
 
         try:
             delete_request = DeleteProfileRequest.from_dict(connexion.request.get_json())
@@ -233,9 +232,6 @@ def edit_profile():
 
     username = session["username"]
     
-    if not username:
-        return jsonify({"error": "Not logged in."}), 403
-    
     try:
         edit_request = EditProfileRequest.from_dict(connexion.request.get_json())
         logging.info(f"Request data: {edit_request}")
@@ -336,15 +332,12 @@ def edit_profile():
 
 def get_user_info(uuid):
  # Auth verification
-    session = verify_login(connexion.request.headers.get('Authorization'), service_type=SERVICE_TYPE)
-    if session[1] != 200:
-        return session
+    response = verify_login(connexion.request.headers.get("Authorization"), service_type=SERVICE_TYPE)
+    if response[1] != 200:
+        return response
     else:
-        session = session[0]
+        session = response[0]
 
-
-    if 'username' not in session:
-        return jsonify({"error": "Not logged in."}), 403
     
     valid, uuid = sanitize_uuid_input(uuid)
     if not valid:

@@ -42,12 +42,12 @@ def auction_health_check_get():
 
 
 def bid_on_auction(auction_uuid):
-    session = verify_login(connexion.request.headers.get("Authorization"), service_type=SERVICE_TYPE)
-    if session[1] != 200:  # se dà errore, il risultato della verify_login è: (messaggio, codice_errore)
-        return session
-    else:  # altrimenti, va preso il primo valore (0) per i dati di sessione già pronti
-        session = session[0]
-    # fine controllo autenticazione
+    response = verify_login(connexion.request.headers.get("Authorization"), service_type=SERVICE_TYPE)
+    if response[1] != 200:
+        return response
+    else:
+        session = response[0]
+    #### END AUTH CHECK
     increment = request.args.get("bid", type=int)
 
     if increment < 1:
@@ -174,12 +174,12 @@ def bid_on_auction(auction_uuid):
 
 
 def create_auction():
-    session = verify_login(connexion.request.headers.get("Authorization"), service_type=SERVICE_TYPE)
-    if session[1] != 200:  # se dà errore, il risultato della verify_login è: (messaggio, codice_errore)
-        return session
-    else:  # altrimenti, va preso il primo valore (0) per i dati di sessione già pronti
-        session = session[0]
-    # fine controllo autenticazione
+    response = verify_login(connexion.request.headers.get("Authorization"), service_type=SERVICE_TYPE)
+    if response[1] != 200:
+        return response
+    else:
+        session = response[0]
+    #### END AUTH CHECK
 
     starting_price = request.args.get("starting_price", default=10, type=int)
 
@@ -255,11 +255,11 @@ def create_auction():
 
 
 def get_auction_status(auction_uuid):
-    session = verify_login(connexion.request.headers.get("Authorization"), service_type=SERVICE_TYPE)
-    if session[1] != 200:  # se dà errore, il risultato della verify_login è: (messaggio, codice_errore)
-        return session
-    else:  # altrimenti, va preso il primo valore (0) per i dati di sessione già pronti
-        session = session[0]
+    response = verify_login(connexion.request.headers.get("Authorization"), service_type=SERVICE_TYPE)
+    if response[1] != 200:
+        return response
+    else:
+        session = response[0]
 
     valid, auction_uuid = sanitize_uuid_input(auction_uuid)
     if not valid:
@@ -399,11 +399,11 @@ def get_auction_status(auction_uuid):
 
 
 def get_auctions_history(page_number=None):
-    session = verify_login(connexion.request.headers.get("Authorization"), service_type=SERVICE_TYPE)
-    if session[1] != 200:  # se dà errore, il risultato della verify_login è: (messaggio, codice_errore)
-        return session
-    else:  # altrimenti, va preso il primo valore (0) per i dati di sessione già pronti
-        session = session[0]
+    response = verify_login(connexion.request.headers.get("Authorization"), service_type=SERVICE_TYPE)
+    if response[1] != 200:
+        return response
+    else:
+        session = response[0]
 
     user_uuid = session["uuid"]
     page_number = int(request.args.get("page_number", 1))
@@ -424,11 +424,11 @@ def get_auctions_history(page_number=None):
 
 
 def get_auctions_list(status=None, rarity=None, page_number=None):
-    session = verify_login(connexion.request.headers.get("Authorization"), service_type=SERVICE_TYPE)
-    if session[1] != 200:  # se dà errore, il risultato della verify_login è: (messaggio, codice_errore)
-        return session
-    else:  # altrimenti, va preso il primo valore (0) per i dati di sessione già pronti
-        session = session[0]
+    response = verify_login(connexion.request.headers.get("Authorization"), service_type=SERVICE_TYPE)
+    if response[1] != 200:
+        return response
+    else:
+        session = response[0]
 
     status = request.args.get("status", "open")
     rarity = request.args.get("rarity")

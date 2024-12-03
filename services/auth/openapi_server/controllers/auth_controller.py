@@ -1,7 +1,6 @@
 import datetime
 import re
 import uuid
-
 import bcrypt
 import connexion
 import jwt
@@ -165,12 +164,12 @@ def login(login_request=None):
 
 
 def logout():
-    session = verify_login(connexion.request.headers.get("Authorization"), service_type=SERVICE_TYPE)
-    if session[1] != 200:  # se dà errore, il risultato della verify_login è: (messaggio, codice_errore)
-        return session
-    else:  # altrimenti, va preso il primo valore (0) per i dati di sessione già pronti
-        session = session[0]
-    # fine controllo autenticazione
+    response = verify_login(connexion.request.headers.get("Authorization"), service_type=SERVICE_TYPE)
+    if response[1] != 200:
+        return response
+    else:
+        session = response[0]
+    #### END AUTH CHECK
 
     user_id = session["uuid"]
     username = session["username"]
@@ -199,8 +198,8 @@ def register(register_request=None):
         return jsonify({"message": "Invalid request."}), 400
 
     # authentication check
-    session = verify_login(connexion.request.headers.get("Authorization"), service_type=SERVICE_TYPE)
-    if session[1] == 200:  # is logged
+    response = verify_login(connexion.request.headers.get("Authorization"), service_type=SERVICE_TYPE)
+    if response[1] == 200:  # is logged
         return jsonify({"message": "You are already logged in."}), 401
 
     # defines role for registration based on source gateway header

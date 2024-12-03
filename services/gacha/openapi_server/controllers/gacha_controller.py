@@ -30,11 +30,11 @@ INVENTORY_SERVICE_URL = "https://service_inventory"
 def get_gacha_info(gacha_uuid):
     """Get information about a specific gacha."""
     # Auth verification
-    session = verify_login(connexion.request.headers.get("Authorization"), service_type=SERVICE_TYPE)
-    if session[1] != 200:
-        return session
+    response = verify_login(connexion.request.headers.get("Authorization"), service_type=SERVICE_TYPE)
+    if response[1] != 200:
+        return response
     else:
-        session = session[0]
+        session = response[0]
 
     valid, gacha_uuid = sanitize_uuid_input(gacha_uuid)
     if not valid:
@@ -54,11 +54,11 @@ def pull_gacha(pool_id):
     """Pull a random gacha from a specific pool."""
 
     # Auth verification
-    session = verify_login(connexion.request.headers.get("Authorization"), service_type=SERVICE_TYPE)
-    if session[1] != 200:
-        return session
+    response = verify_login(connexion.request.headers.get("Authorization"), service_type=SERVICE_TYPE)
+    if response[1] != 200:
+        return response
     else:
-        session = session[0]
+        session = response[0]
 
     user_uuid = session.get("uuid")
     if not user_uuid:
@@ -197,11 +197,11 @@ def pull_gacha(pool_id):
 def get_pool_info():
     """Returns a list of available gacha pools."""
     # Auth verification
-    session = verify_login(connexion.request.headers.get("Authorization"), service_type=SERVICE_TYPE)
-    if session[1] != 200:
-        return session
+    response = verify_login(connexion.request.headers.get("Authorization"), service_type=SERVICE_TYPE)
+    if response[1] != 200:
+        return response
     else:
-        session = session[0]
+        session = response[0]
 
     user_uuid = session.get("uuid")
     if not user_uuid:
@@ -236,11 +236,11 @@ def get_pool_info():
 def get_gachas(not_owned):  # --> To do
     """Returns a list of gacha items based on ownership filter."""
     # Auth verification
-    session = verify_login(connexion.request.headers.get("Authorization"), service_type=SERVICE_TYPE)
-    if session[1] != 200:
-        return session
+    response = verify_login(connexion.request.headers.get("Authorization"), service_type=SERVICE_TYPE)
+    if response[1] != 200:
+        return response
     else:
-        session = session[0]
+        session = response[0]
 
     user_uuid = session.get("uuid")
     if not user_uuid:

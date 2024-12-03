@@ -45,17 +45,17 @@ redis_client = redis.Redis(host="redis", port=6380, db=0)
 
 def introspect(introspect_request=None):
     if not connexion.request.is_json:  # checks if the request is a correct json
-        return "", 400
+        return jsonify(), 400
 
     introspect_request = IntrospectRequest.from_dict(connexion.request.get_json())
     if not introspect_request.access_token or not introspect_request.audience_required:
-        return "", 400
+        return jsonify(), 400
 
     if (
         introspect_request.audience_required != "public_services"
         and introspect_request.audience_required != "private_services"
     ):
-        return "", 400
+        return jsonify(), 400
 
     try:
         decoded_token = jwt.decode(
@@ -78,7 +78,7 @@ def introspect(introspect_request=None):
             saved_token = redis_client.get(decoded_token["uuid"])
         except redis.RedisError as e:
             send_log(f"Redis error {e}", level="error", service_type=SERVICE_TYPE)
-            return jsonify({"error": "Service unavailable. Please try again later."}), 503
+            return jsonify({"error": "Service unavailable. Please try again later."}, 503)
 
         # if no token is saved probably is because Redis was restarted since user logged in
         if saved_token is None:
@@ -87,7 +87,7 @@ def introspect(introspect_request=None):
                 level="warning",
                 service_type=SERVICE_TYPE,
             )
-            return jsonify({"error": "Unauthorized."}), 401
+            return jsonify({"error": "Unauthorized."}, 401)
         else:
             saved_token = saved_token.decode("utf-8")
 
@@ -98,13 +98,13 @@ def introspect(introspect_request=None):
                 level="info",
                 service_type=SERVICE_TYPE,
             )
-            return jsonify({"error": "Unauthorized."}), 401
+            return jsonify({"error": "Unauthorized."}, 401)
 
         return result, 200
     except jwt.ExpiredSignatureError:
-        return jsonify({"error": "Token expired."}), 402
+        return jsonify({"error": "Token expired."}, 402)
     except jwt.InvalidTokenError:
-        return jsonify({"error": "Unauthorized."}), 401
+        return jsonify({"error": "Unauthorized."}, 401)
 
 
 """

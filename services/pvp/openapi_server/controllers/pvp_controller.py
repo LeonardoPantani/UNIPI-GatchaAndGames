@@ -35,12 +35,12 @@ def pvp_health_check_get():
 
 
 def accept_pvp_request(pvp_match_uuid):
-    session = verify_login(connexion.request.headers.get("Authorization"), service_type=SERVICE_TYPE)
-    if session[1] != 200:  # se dà errore, il risultato della verify_login è: (messaggio, codice_errore)
-        return session
-    else:  # altrimenti, va preso il primo valore (0) per i dati di sessione già pronti
-        session = session[0]
-    # fine controllo autenticazione
+    response = verify_login(connexion.request.headers.get("Authorization"), service_type=SERVICE_TYPE)
+    if response[1] != 200:
+        return response
+    else:
+        session = response[0]
+    #### END AUTH CHECK
 
     valid, pvp_match_uuid = sanitize_uuid_input(pvp_match_uuid)
     if not valid:
@@ -251,12 +251,12 @@ def accept_pvp_request(pvp_match_uuid):
 
 
 def check_pending_pvp_requests():
-    session = verify_login(connexion.request.headers.get("Authorization"), service_type=SERVICE_TYPE)
-    if session[1] != 200:  # se dà errore, il risultato della verify_login è: (messaggio, codice_errore)
-        return session
-    else:  # altrimenti, va preso il primo valore (0) per i dati di sessione già pronti
-        session = session[0]
-    # fine controllo autenticazione
+    response = verify_login(connexion.request.headers.get("Authorization"), service_type=SERVICE_TYPE)
+    if response[1] != 200:
+        return response
+    else:
+        session = response[0]
+    #### END AUTH CHECK
 
     response = get_pending_list(None, session["uuid"])
 
@@ -267,12 +267,12 @@ def check_pending_pvp_requests():
 
 
 def get_pvp_status(pvp_match_uuid):
-    session = verify_login(connexion.request.headers.get("Authorization"), service_type=SERVICE_TYPE)
-    if session[1] != 200:  # se dà errore, il risultato della verify_login è: (messaggio, codice_errore)
-        return session
-    else:  # altrimenti, va preso il primo valore (0) per i dati di sessione già pronti
-        session = session[0]
-    # fine controllo autenticazione
+    response = verify_login(connexion.request.headers.get("Authorization"), service_type=SERVICE_TYPE)
+    if response[1] != 200:
+        return response
+    else:
+        session = response[0]
+    #### END AUTH CHECK
 
     valid, pvp_match_uuid = sanitize_uuid_input(pvp_match_uuid)
     if not valid:
@@ -289,12 +289,12 @@ def get_pvp_status(pvp_match_uuid):
 
 
 def reject_pv_prequest(pvp_match_uuid):
-    session = verify_login(connexion.request.headers.get("Authorization"), service_type=SERVICE_TYPE)
-    if session[1] != 200:  # se dà errore, il risultato della verify_login è: (messaggio, codice_errore)
-        return session
-    else:  # altrimenti, va preso il primo valore (0) per i dati di sessione già pronti
-        session = session[0]
-    # fine controllo autenticazione
+    response = verify_login(connexion.request.headers.get("Authorization"), service_type=SERVICE_TYPE)
+    if response[1] != 200:
+        return response
+    else:
+        session = response[0]
+    #### END AUTH CHECK
 
     valid, pvp_match_uuid = sanitize_uuid_input(pvp_match_uuid)
     if not valid:
@@ -311,12 +311,12 @@ def reject_pv_prequest(pvp_match_uuid):
 
 
 def send_pvp_request(user_uuid):
-    session = verify_login(connexion.request.headers.get("Authorization"), service_type=SERVICE_TYPE)
-    if session[1] != 200:  # se dà errore, il risultato della verify_login è: (messaggio, codice_errore)
-        return session
-    else:  # altrimenti, va preso il primo valore (0) per i dati di sessione già pronti
-        session = session[0]
-    # fine controllo autenticazione
+    response = verify_login(connexion.request.headers.get("Authorization"), service_type=SERVICE_TYPE)
+    if response[1] != 200:
+        return response
+    else:
+        session = response[0]
+    #### END AUTH CHECK
 
     valid, user_uuid = sanitize_uuid_input(user_uuid)
     if not valid:
