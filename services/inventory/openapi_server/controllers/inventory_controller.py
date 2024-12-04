@@ -6,7 +6,7 @@ from flask import current_app, jsonify, session
 from pybreaker import CircuitBreaker, CircuitBreakerError
 
 from openapi_server import util
-from openapi_server.controllers.inventory_internal_controller import remove_item
+from openapi_server.controllers.inventory_internal_controller import remove_item, get_inventory_items_by_owner_uuid, get_item_by_uuid
 from openapi_server.helpers.authorization import verify_login
 from openapi_server.helpers.input_checks import sanitize_uuid_input
 from openapi_server.helpers.logging import send_log
@@ -40,31 +40,12 @@ def get_inventory():
 
     page_number = connexion.request.args.get("page_number", default=1, type=int)
 
-    try:
+    response = get_inventory_items_by_owner_uuid(None, session['uuid'], page_number)
 
-        @circuit_breaker
-        def get_inventory_items():
-            response = requests.get(
-                f"{INVENTORY_SERVICE_URL}/inventory/internal/list_inventory_items",
-                params={"uuid": user_uuid, "page_number": page_number, "session": None},
-                verify=False,
-                timeout=current_app.config["requests_timeout"],
-            )
-            response.raise_for_status()
-            return response.json()
-
-        inventory_items = get_inventory_items()
-        return jsonify(inventory_items), 200
-
-    except requests.HTTPError as e:
-        if e.response.status_code == 404:
-            return jsonify({"error": "No items found"}), 404
-        else:
-            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    except requests.RequestException:
+    if response[1] != 200:
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    except CircuitBreakerError:
-        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+    
+    return response
 
 
 def get_inventory_item_info(inventory_item_id):
@@ -82,36 +63,19 @@ def get_inventory_item_info(inventory_item_id):
     if not valid:
         return jsonify({"message": "Invalid input."}), 400
 
-    try:
+    response = get_item_by_uuid(None, inventory_item_id)
 
-        @circuit_breaker
-        def get_item_info():
-            response = requests.get(
-                f"{INVENTORY_SERVICE_URL}/inventory/internal/get_by_item_uuid",
-                params={"uuid": inventory_item_id},
-                verify=False,
-                timeout=current_app.config["requests_timeout"],
-            )
-            response.raise_for_status()
-            return response.json()
-
-        item_info = get_item_info()
-
-        # Check if the item belongs to the requesting user
-        if item_info.get("owner_id") != user_uuid:
-            return jsonify({"error": "Not authorized to access this item"}), 403
-
-        return jsonify(item_info), 200
-
-    except requests.HTTPError as e:
-        if e.response.status_code == 404:
-            return jsonify({"error": "Item not found"}), 404
-        else:
-            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    except requests.RequestException:
+    if response[1] == 404:
+        return jsonify({"error": "Item not found."}), 404
+    if response[1] != 200:
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    except CircuitBreakerError:
-        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+    
+    item = response[0].get_json()
+
+    if item["owner_id"] != user_uuid:
+        return jsonify({"error": "Not authorized to access this item."}), 403
+    
+    return response
 
 
 def remove_inventory_item():
@@ -123,18 +87,25 @@ def remove_inventory_item():
     else:
         session = response[0]
 
-    user_uuid = session.get("uuid")
-    if not user_uuid:
-        return jsonify({"error": "Not logged in"}), 403
-
     # Get item_uuid from request args
     item_uuid = connexion.request.args.get("inventory_item_id")
+    owner_id = connexion.request.args.get("inventory_item_owner_id")
     if not item_uuid:
         return jsonify({"error": "Missing item_uuid parameter"}), 400
 
     valid, item_uuid = sanitize_uuid_input(item_uuid)
     if not valid:
         return jsonify({"message": "Invalid input."}), 400
+    
+    if not owner_id:
+        return jsonify({"error": "Missing item_uuid parameter"}), 400
+
+    valid, owner_id = sanitize_uuid_input(owner_id)
+    if not valid:
+        return jsonify({"message": "Invalid input."}), 400
+    
+    if owner_id != session['uuid']:
+        return jsonify({"error": "Not authorized to access this item."}), 403
 
     try:
         # First check if item is in auction
@@ -163,7 +134,7 @@ def remove_inventory_item():
     if auction_check.get("found", False):
         return jsonify({"error": "Cannot remove item that is currently in auction"}), 400
 
-    response = remove_item(None, item_uuid, user_uuid)
+    response = remove_item(None, item_uuid, session['uuid'])
 
     if response[1] == 404:
         return jsonify({"error": "Item not found."}), 404
