@@ -575,9 +575,9 @@ def list_gachas(requestBody=None, session=None, not_owned=None): #TODO
         requestBody = connexion.request.get_json()
     
     try:
-        if not requestBody:
+        if not requestBody and requestBody != []:
             return "", 400
-        
+
         @circuit_breaker
         def get_gachas_from_db():
             connection = get_db()
@@ -597,7 +597,7 @@ def list_gachas(requestBody=None, session=None, not_owned=None): #TODO
             return results
 
         results = get_gachas_from_db()
-
+        
         gachas = []
         for result in results:
             gacha = {
@@ -613,6 +613,7 @@ def list_gachas(requestBody=None, session=None, not_owned=None): #TODO
                     "potential": map_number_to_grade(result[8]),
                 },
             }
+            print(not_owned,result[0],requestBody)
             if not_owned and result[0] not in requestBody:
                 gachas.append(gacha)
             elif not not_owned and result[0] in requestBody:
