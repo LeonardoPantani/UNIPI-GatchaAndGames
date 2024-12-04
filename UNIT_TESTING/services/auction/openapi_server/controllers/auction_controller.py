@@ -14,7 +14,7 @@ from openapi_server.models.gacha_rarity import GachaRarity
 from openapi_server.models.is_open_by_item_uuid200_response import IsOpenByItemUuid200Response
 from openapi_server import util
 
-from openapi_server.controllers.auction_internal_controller import get_auction, set_bid, is_open_by_item_uuid, create_auction as create, get_user_auctions, get_auction_list as list_auctions
+from openapi_server.controllers.auction_internal_controller import get_auction, set_bid, is_open_by_item_uuid, create_auction as create, get_user_auctions, get_auction_list as list_auctions, MOCK_AUCTIONS, MOCK_GACHAS, MOCK_INVENTORIES, MOCK_PROFILES
 
 from openapi_server.helpers.logging import send_log
 from openapi_server.helpers.authorization import verify_login
@@ -27,6 +27,14 @@ import uuid
 from datetime import datetime, timedelta
 import logging
 from pybreaker import CircuitBreaker, CircuitBreakerError
+
+MOCK_INGAMETRANSACTIONS = {
+    ("e3b0c44298fc1c14b39f92d1282048c0", "2024-01-05 10:00:00"): ("e3b0c44298fc1c14b39f92d1282048c0", 1000, "bought_bundle", "2024-01-05 10:00:00"),
+    ("87f3b5d15e8e4fa4909b3cd29f4b1f09", "2024-01-06 11:30:00"): ("87f3b5d15e8e4fa4909b3cd29f4b1f09", 5000, "bought_bundle", "2024-01-06 11:30:00"),
+    ("a4f0c59212af4bdeaacd94cd0f27c57e", "2024-01-07 15:45:00"): ("a4f0c59212af4bdeaacd94cd0f27c57e", 3000, "bought_bundle", "2024-01-07 15:45:00"),
+    ("e3b0c44298fc1c14b39f92d1282048c0", "2024-01-08 09:15:00"): ("e3b0c44298fc1c14b39f92d1282048c0", -1000, "gacha_pull", "2024-01-08 09:15:00"),
+    ('87f3b5d15e8e4fa4909b3cd29f4b1f09', '2024-01-09 14:20:00'): ('87f3b5d15e8e4fa4909b3cd29f4b1f09', -1200, "gacha_pull", '2024-01-09 14:20:00')
+}
 
 # Circuit breaker instance
 circuit_breaker = CircuitBreaker(fail_max=1000, reset_timeout=5, exclude=[requests.HTTPError])
@@ -45,6 +53,8 @@ def bid_on_auction(auction_uuid):
     else: # altrimenti, va preso il primo valore (0) per i dati di sessione già pronti
         session = session[0]
     # fine controllo autenticazione    
+    _, session['uuid'] = sanitize_uuid_input(session['uuid'])
+
     increment = request.args.get('bid', type=int)
     
     if increment < 1:
@@ -74,7 +84,7 @@ def bid_on_auction(auction_uuid):
         new_bid = starting_price
     else:    
         new_bid = current_bid + increment
-
+    
     if session['uuid'] == owner_uuid:
         return jsonify({"error":"Cannot bid on your own auctions"}), 400
 
@@ -86,14 +96,13 @@ def bid_on_auction(auction_uuid):
     try:
         @circuit_breaker
         def make_request_to_profile_service():
-            params = {"user_uuid": session['uuid']}
-            url = "https://service_profile/profile/internal/get_profile"
-            response = requests.get(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
-            response.raise_for_status()
-            return response.json()
+            global MOCK_PROFILES
+            
+            return MOCK_PROFILES.get(session['uuid'])
         
         user_profile = make_request_to_profile_service()
-
+        if not user_profile:
+            return jsonify({"error": "User not found."}), 404
     except requests.HTTPError as e:
         if e.response.status_code == 404: 
             return jsonify({"error": "User not found."}), 404
@@ -104,7 +113,7 @@ def bid_on_auction(auction_uuid):
     except CircuitBreakerError:
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503  
 
-    user_currency = user_profile['currency']
+    user_currency = user_profile[1]
 
     if user_currency < new_bid:
         return jsonify({"error": "Insufficient funds."}), 406
@@ -120,11 +129,18 @@ def bid_on_auction(auction_uuid):
     try:
         @circuit_breaker
         def make_request_to_profile_service():
-            params = {"uuid": session['uuid'], "amount": new_bid * (-1)}
-            url = "https://service_profile/profile/internal/add_currency"
-            response = requests.post(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
-            response.raise_for_status()
-            return response.json()
+            global MOCK_PROFILES
+
+            if session['uuid'] not in MOCK_PROFILES:
+                return 404
+            
+            MOCK_PROFILES[session['uuid']] = (
+                MOCK_PROFILES[session['uuid']][0],
+                MOCK_PROFILES[session['uuid']][1] + (new_bid * -1),
+                MOCK_PROFILES[session['uuid']][2],
+                MOCK_PROFILES[session['uuid']][3],
+            )
+            return 200
         
         make_request_to_profile_service()
 
@@ -145,11 +161,18 @@ def bid_on_auction(auction_uuid):
         try:
             @circuit_breaker
             def make_request_to_profile_service():
-                params = {"uuid": previous_bidder, "amount": previous_bid}
-                url = "https://service_profile/profile/internal/add_currency"
-                response = requests.post(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
-                response.raise_for_status()
-                return response.json()
+                global MOCK_PROFILES
+
+                if previous_bidder not in MOCK_PROFILES:
+                    return 404
+                
+                MOCK_PROFILES[previous_bidder] = (
+                    MOCK_PROFILES[previous_bidder][0],
+                    MOCK_PROFILES[previous_bidder][1] + previous_bid,
+                    MOCK_PROFILES[previous_bidder][2],
+                    MOCK_PROFILES[previous_bidder][3],
+                )
+                return 200
             
             make_request_to_profile_service()
 
@@ -172,7 +195,8 @@ def create_auction():
     else: # altrimenti, va preso il primo valore (0) per i dati di sessione già pronti
         session = session[0]
     # fine controllo autenticazione    
-
+    _, session['uuid'] = sanitize_uuid_input(session['uuid'])
+    
     starting_price = request.args.get('starting_price', default=10, type=int)
 
     if starting_price < 1:
@@ -196,11 +220,9 @@ def create_auction():
     try:
         @circuit_breaker
         def make_request_to_inventory_service():
-            params = {"uuid": item_id}
-            url = "https://service_inventory/inventory/internal/get_by_item_uuid"
-            response = requests.get(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
-            response.raise_for_status()
-            return response.json()
+            global MOCK_INVENTORIES
+            
+            return MOCK_INVENTORIES.get(item_id)
         
         item = make_request_to_inventory_service()
 
@@ -213,8 +235,8 @@ def create_auction():
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503  
-
-    if item['owner_id'] != session['uuid']:
+    
+    if item[0] != session['uuid']:
         return jsonify({"error": "This item is not yours."}), 401
 
     auction_id = str(uuid.uuid4())
@@ -277,11 +299,9 @@ def get_auction_status(auction_uuid):
         try:
             @circuit_breaker
             def make_request_to_inventory_service():
-                params = {"uuid": item_uuid}
-                url = "https://service_inventory/inventory/internal/get_by_item_uuid"
-                response = requests.get(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
-                response.raise_for_status()
-                return response.json()
+                global MOCK_INVENTORIES
+            
+                return MOCK_INVENTORIES.get(item_uuid)
             
             item = make_request_to_inventory_service()
 
@@ -295,16 +315,23 @@ def get_auction_status(auction_uuid):
         except CircuitBreakerError:
             return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503  
 
-        old_owner_uuid = item['owner_id']
+        old_owner_uuid = item[0]
 
         try:
             @circuit_breaker
             def make_request_to_profile_service():
-                params = {"uuid": old_owner_uuid, "amount": current_bid}
-                url = "https://service_profile/profile/internal/add_currency"
-                response = requests.post(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
-                response.raise_for_status()
-                return response.json()
+                global MOCK_PROFILES
+
+                if old_owner_uuid not in MOCK_PROFILES:
+                    return 404
+                
+                MOCK_PROFILES[old_owner_uuid] = (
+                    MOCK_PROFILES[old_owner_uuid][0],
+                    MOCK_PROFILES[old_owner_uuid][1] + current_bid,
+                    MOCK_PROFILES[old_owner_uuid][2],
+                    MOCK_PROFILES[old_owner_uuid][3],
+                )
+                return 200
             
             make_request_to_profile_service()
 
@@ -322,11 +349,15 @@ def get_auction_status(auction_uuid):
 
             @circuit_breaker
             def make_request_to_currency_service():
-                params = {"uuid": old_owner_uuid, "current_bid": current_bid, "transaction_type": TRANSACTION_TYPE_SELL}
-                url = "https://service_currency/currency/internal/insert_ingame_transaction"
-                response = requests.post(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
-                response.raise_for_status()
-                return response.json()
+                global MOCK_INGAMETRANSACTIONS
+
+                timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                MOCK_INGAMETRANSACTIONS[(old_owner_uuid, timestamp)] = (
+                    old_owner_uuid,
+                    current_bid,
+                    TRANSACTION_TYPE_SELL,
+                    timestamp
+                )
             
             make_request_to_currency_service()
 
@@ -340,13 +371,19 @@ def get_auction_status(auction_uuid):
         try:
             @circuit_breaker
             def make_request_to_inventory_service():
-                params = {"new_owner_uuid": session['uuid'], "item_uuid": item_uuid, "price_paid": current_bid}
-                url = "https://service_inventory/inventory/internal/update_item_owner"
-                response = requests.post(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
-                response.raise_for_status()
-                return response.json()
+                global MOCK_INVENTORIES
+
+                if item_uuid not in MOCK_INVENTORIES:
+                    return 404
+
+                MOCK_INVENTORIES[item_uuid]['owner_uuid'] = session['uuid']
+                MOCK_INVENTORIES[item_uuid]['currency_spent'] = current_bid
+                MOCK_INVENTORIES[item_uuid]['owners_no'] += 1
+                return 200
             
-            make_request_to_inventory_service()
+            status_code = make_request_to_inventory_service()
+            if status_code != 200:
+                return jsonify({"error": "Item not found."})
 
         except requests.HTTPError as e:
             return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
@@ -360,11 +397,15 @@ def get_auction_status(auction_uuid):
 
             @circuit_breaker
             def make_request_to_currency_service():
-                params = {"uuid": session['uuid'], "current_bid": current_bid, "transaction_type": TRANSACTION_TYPE_BUY}
-                url = "https://service_currency/currency/internal/insert_ingame_transaction"
-                response = requests.post(url, params=params, verify=False, timeout=current_app.config['requests_timeout'])
-                response.raise_for_status()
-                return response.json()
+                global MOCK_INGAMETRANSACTIONS
+
+                timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                MOCK_INGAMETRANSACTIONS[(session['uuid'], timestamp)] = (
+                    session['uuid'],
+                    current_bid,
+                    TRANSACTION_TYPE_BUY,
+                    timestamp
+                )
             
             make_request_to_currency_service()
 

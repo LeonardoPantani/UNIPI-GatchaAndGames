@@ -9,7 +9,7 @@ def sanitize_uuid_input(input_string):
     # Check if sanitized input is a valid UUIDv4
     try:
         uuid_obj = uuid.UUID(input_string, version=4)
-        if str(uuid_obj).replace("-", "").lower() == input_string.lower():
+        if str(uuid_obj).lower() == input_string.lower():
             # Input is a valid UUIDv4, return True with input
             return True, input_string
     except ValueError:
