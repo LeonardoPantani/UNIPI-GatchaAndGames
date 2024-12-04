@@ -130,7 +130,8 @@ def main():
     app.config["requests_timeout"] = int(os.environ.get("REQUESTS_TIMEOUT"))
     app.config["database_timeout"] = int(os.environ.get("DATABASE_TIMEOUT"))
 
-    app.run(host="0.0.0.0", port=443, debug=True, ssl_context=("/usr/src/app/ssl/cdn-cert.pem", "/usr/src/app/ssl/cdn-key.pem"))
+    # do not provide CA since we do not want to authenticate clients
+    app.run(host="0.0.0.0", port=443, debug=True, ssl_context=("/usr/src/app/ssl/cdn.crt", "/usr/src/app/ssl/cdn.key"))
 
 
 if __name__ == "__main__":

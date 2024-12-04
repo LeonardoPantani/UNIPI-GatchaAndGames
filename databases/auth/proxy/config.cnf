@@ -48,7 +48,7 @@ mysql_variables=
 	sessions_sort=true
 	connect_retries_on_failure=10
 
-    ssl_p2s_key="/etc/proxysql/ssl/server-key.pem"
-    ssl_p2s_cert="/etc/proxysql/ssl/server-cert.pem"
-    ssl_p2s_ca="/etc/proxysql/ssl/ca-cert.pem"
+    ssl_p2s_key="/etc/proxysql/ssl/db-auth-proxy.key"
+    ssl_p2s_cert="/etc/proxysql/ssl/db-auth-proxy.crt"
+    ssl_p2s_ca="/etc/proxysql/ssl/dbCA.crt"
 }
