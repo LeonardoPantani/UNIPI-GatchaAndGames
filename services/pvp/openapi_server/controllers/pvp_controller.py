@@ -19,7 +19,7 @@ from openapi_server.controllers.pvp_internal_controller import (
 from openapi_server.helpers.authorization import verify_login
 from openapi_server.helpers.input_checks import sanitize_team_input, sanitize_uuid_input
 from openapi_server.helpers.logging import send_log
-from openapi_server.helpers.stats import map_number_to_grade
+from openapi_server.helpers.stats import map_number_to_grade, map_grade_to_number
 from openapi_server.models.pending_pv_p_requests import PendingPvPRequests
 from openapi_server.models.pending_pv_p_requests_inner import PendingPvPRequestsInner
 from openapi_server.models.pv_p_request import PvPRequest
@@ -45,7 +45,7 @@ def accept_pvp_request(pvp_match_uuid):
     valid, pvp_match_uuid = sanitize_uuid_input(pvp_match_uuid)
     if not valid:
         return jsonify({"error": "Invalid input"}), 400
-
+    
     response = get_status(None, pvp_match_uuid)
 
     if response[1] == 404:
@@ -53,7 +53,7 @@ def accept_pvp_request(pvp_match_uuid):
     elif response[1] != 200:
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
 
-    match_data = response
+    match_data = response[0].get_json()
 
     sender_uuid = match_data["sender_id"]
     receiver_uuid = match_data["receiver_id"]
@@ -61,7 +61,12 @@ def accept_pvp_request(pvp_match_uuid):
     if receiver_uuid != session["uuid"]:
         return jsonify({"error": "This request is not for you"}), 401
 
-    winner = match_data["winner"]
+    if match_data["winner_id"] == "":
+        winner = None
+    elif match_data["winner_id"] == match_data["sender_id"]:
+        winner = True
+    else:
+        winner = False
 
     if winner is not None:
         return jsonify({"error": "Match already ended"}), 406
@@ -98,8 +103,8 @@ def accept_pvp_request(pvp_match_uuid):
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
-
-    player1_team = match_data["teams"]["team1"]
+    
+    player1_team = json.loads(match_data["teams"])["team1"]
 
     random.shuffle(player2_team)
 
@@ -151,14 +156,15 @@ def accept_pvp_request(pvp_match_uuid):
             return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
         try:
-
+            
             @circuit_breaker
             def make_request_to_gacha_service():
                 params = {"uuid": player1_stand}
-                url = "https://service_inventory/gacha/internal/gacha/get"
+                url = "https://service_gacha/gacha/internal/gacha/get"
                 response = requests.get(
                     url, params=params, verify=False, timeout=current_app.config["requests_timeout"]
                 )
+
                 response.raise_for_status()
                 return response.json()
 
@@ -167,7 +173,7 @@ def accept_pvp_request(pvp_match_uuid):
             @circuit_breaker
             def make_request_to_gacha_service():
                 params = {"uuid": player2_stand}
-                url = "https://service_inventory/gacha/internal/gacha/get"
+                url = "https://service_gacha/gacha/internal/gacha/get"
                 response = requests.get(
                     url, params=params, verify=False, timeout=current_app.config["requests_timeout"]
                 )
@@ -190,45 +196,74 @@ def accept_pvp_request(pvp_match_uuid):
         player2_stand_name = player2_stand_data["name"]
         player1_stand_potential = player1_stand_data["attributes"]["potential"]
         player2_stand_potential = player2_stand_data["attributes"]["potential"]
-        player1_stand_stat = player1_stand_data["attributes"][extracted_stat.replace("stat_", "")]
-        player2_stand_stat = player2_stand_data["attributes"][extracted_stat.replace("stat_", "")]
-
+        player1_stand_stat = map_grade_to_number(player1_stand_data["attributes"][extracted_stat.replace("stat_", "")])
+        player2_stand_stat = map_grade_to_number(player2_stand_data["attributes"][extracted_stat.replace("stat_", "")])
         if player1_stand_stat > player2_stand_stat:
             points += 1
             round_winner = "Player 1"
+            winner_name = player1_stand_name
         elif player1_stand_stat < player2_stand_stat:
             points -= 1
             round_winner = "Player 2"
+            winner_name = player2_stand_name
         else:
             if player1_stand_potential > player2_stand_potential:
                 points += 1
                 round_winner = "Player 1"
+                winner_name = player1_stand_name
             elif player1_stand_potential < player2_stand_potential:
                 points -= 1
                 round_winner = "Player 2"
+                winner_name = player2_stand_name
             else:
                 random_choice = random.choice([1, -1])
                 points += random_choice
                 if random_choice > 0:
                     round_winner = "Player 1"
+                    winner_name = player1_stand_name
                 else:
                     round_winner = "Player 2"
-
+                    winner_name = player2_stand_name
+        print(points)
         log["rounds"].append(
             {
                 "extracted_stat": extracted_stat.replace("stat_", ""),
                 "player1": {"stand_name": player1_stand_name, "stand_stat": map_number_to_grade(player1_stand_stat)},
                 "player2": {"stand_name": player2_stand_name, "stand_stat": map_number_to_grade(player2_stand_stat)},
-                "round_winner": round_winner,
+                "round_winner": round_winner+"'s "+winner_name,
             }
         )
-
+    print(points)
     if points > 0:
         winner = True
         winner_id = sender_uuid
     else:
         winner = False
         winner_id = receiver_uuid
+    print(winner,winner_id)
+    try:
+
+        @circuit_breaker
+        def make_request_to_profile_service():
+            params = {"uuid": session["uuid"], "points_to_add": abs(points)}
+            url = "https://service_profile/profile/internal/add_pvp_score"
+            response = requests.post(
+                url, params=params, verify=False, timeout=current_app.config["requests_timeout"]
+            )
+            response.raise_for_status()
+
+        make_request_to_profile_service()
+
+    except requests.HTTPError as e:
+        if e.response.status_code == 404:
+            return jsonify({"error": "User not found."}), 404
+        else:
+            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+    except requests.RequestException:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
+
 
     log_json = json.dumps(log)
 
@@ -238,12 +273,12 @@ def accept_pvp_request(pvp_match_uuid):
         "receiver_id": receiver_uuid,
         "teams": {"team1": player1_team, "team2": player2_team},
         "winner_id": winner_id,
-        "match_log": {log_json},
+        "match_log": log_json,
         "match_timestamp": datetime.now(),
     }
-
+    
     response = set_results(payload, None)
-
+    print(response)
     if response[1] == 200:
         return response
     else:
@@ -391,7 +426,7 @@ def send_pvp_request(user_uuid):
         "teams": {"team1": team, "team2": ["", "", "", "", "", "", ""]},
         "winner_id": "",
         "match_log": {},
-        "match_timestamp": datetime.now(),
+        "match_timestamp": datetime.now()
     }
 
     response = insert_match(payload, None)

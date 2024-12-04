@@ -241,10 +241,10 @@ def get_gachas(not_owned):
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-
+    print(owned_gachas)
     # Then get filtered gacha list
     response = list_gachas(owned_gachas, None, not_owned)
-
+    print(response)
     if response[1] != 200:
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     

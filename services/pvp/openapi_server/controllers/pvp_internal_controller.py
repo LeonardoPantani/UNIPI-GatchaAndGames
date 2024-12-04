@@ -169,12 +169,19 @@ def get_status(session=None, uuid=None):
         if not match:
             return jsonify({"error": "Match not found"}), 404
 
+        if match[3] is None:
+            winner_id = ""
+        elif match[3]:
+            winner_id = match[1]
+        else:
+            winner_id = match[2]
+
         response = {
             "pvp_match_uuid": match[0],
             "sender_id": match[1],
             "receiver_id": match[2],
             "teams": match[6],
-            "winner_id": match[1] if match[3] else match[2],
+            "winner_id": winner_id,
             "match_log": match[4],
             "match_timestamp": match[5],
         }
@@ -215,7 +222,7 @@ def insert_match(pv_p_request=None, session=None):
         winner = False
     else:
         winner = None
-
+    print(winner)
     if not match_uuid or not player1_uuid or not player2_uuid or not teams or not timestamp:
         return "", 400
 
@@ -303,25 +310,24 @@ def remove_by_user_uuid(session=None, uuid=None):
         return "", 503
 
 
-def set_results(pv_p_request=None, session=None):
-    if not connexion.request.is_json:
+def set_results(pv_p_request=None, session=None):    
+    if not pv_p_request:
         return "", 400
-
-    pv_p_request = PvPRequest.from_dict(connexion.request.get_json())
-
-    match_uuid = pv_p_request.pvp_match_uuid
-    player1_uuid = pv_p_request.sender_id
-    player2_uuid = pv_p_request.receiver_id
-    teams = pv_p_request.teams
-    winner = True if pv_p_request.winner_id == player1_uuid else False
-    match_log = pv_p_request.match_log
-    timestamp = pv_p_request.match_timestamp
+    
+    print(pv_p_request)
+    match_uuid = pv_p_request["pvp_match_uuid"]
+    player1_uuid = pv_p_request["sender_id"]
+    player2_uuid = pv_p_request["receiver_id"]
+    teams = pv_p_request["teams"]
+    winner = True if pv_p_request["winner_id"] == player1_uuid else False
+    match_log = pv_p_request["match_log"]
+    timestamp = pv_p_request["match_timestamp"]
 
     if not match_uuid or not player1_uuid or not player2_uuid or not teams or not timestamp:
         return "", 400
 
-    match_log_json = json.dumps(match_log.to_dict())
-    teams_json = json.dumps(teams.to_dict())
+    match_log_json = json.dumps(match_log)
+    teams_json = json.dumps(teams)
 
     try:
 
