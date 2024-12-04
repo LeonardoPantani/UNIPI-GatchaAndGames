@@ -13,8 +13,17 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
+        
+      - name: Check if Docker is installed
+        id: check_docker
+        run: |
+          if ! command -v docker &> /dev/null
+          then
+            echo "not_installed"
+          fi
+          
       - name: Install Docker
+        if: steps.check_docker.outputs.result == 'not_installed'
         run: |
           sudo apt-get update
           sudo apt-get install ca-certificates curl
@@ -27,10 +36,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install docker-compose-plugin
           
-      - name: Disable HTTPS certificate verification
-        run: |
-          export NODE_TLS_REJECT_UNAUTHORIZED=0
-
       - name: Build and run Docker containers
         run: |
           docker compose up --build -d
