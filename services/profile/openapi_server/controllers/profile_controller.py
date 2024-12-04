@@ -5,7 +5,7 @@ from flask import current_app, jsonify
 from pybreaker import CircuitBreaker, CircuitBreakerError
 
 from openapi_server.controllers.profile_internal_controller import (
-    delete_profile_by_uuid,
+    delete_profile_by_uuid, exists_profile, edit_username, get_profile
 )
 from openapi_server.helpers.authorization import verify_login
 from openapi_server.helpers.input_checks import sanitize_email_input, sanitize_uuid_input
@@ -274,20 +274,12 @@ def edit_profile():
         user_uuid = session["uuid"]
 
         # Check if profile exists
-        @circuit_breaker
-        def check_profile_exists():
-            response = requests.get(
-                f"{PROFILE_SERVICE_URL}/profile/internal/exists",
-                params={"uuid": user_uuid},
-                verify=False,
-                timeout=current_app.config["requests_timeout"],
-            )
-            response.raise_for_status()
-            return response.json()
-
-        if not check_profile_exists():
-            return jsonify({"error": "Profile not found"}), 404
-
+        response = exists_profile(None, user_uuid)
+        if response[1] != 200:
+            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+        
+        if not response[0].get_json()["exists"]:
+            return jsonify({"error":"User not found"}), 404
         # Update email if provided
 
         if edit_request.email:
@@ -311,22 +303,16 @@ def edit_profile():
         # Update username if provided
         if edit_request.username:
 
-            @circuit_breaker
-            def update_username():
-                response = requests.post(
-                    f"{PROFILE_SERVICE_URL}/profile/internal/edit_username",
-                    params={"uuid": user_uuid, "username": edit_request.username},
-                    verify=False,
-                    timeout=current_app.config["requests_timeout"],
-                )
+            result2 = edit_username(None, session['uuid'],edit_request.username)
 
-                response.raise_for_status()
-                return response
-
-            result2 = update_username()
-
-            if result1.status_code == 304 and result2.status_code == 304:
+            if result2[1] == 404:
+                return jsonify({"error": "User not found."}), 404
+            elif result2[1] == 409:
+                return jsonify({"error": "Username already taken."}), 409
+            elif result2[1] == 304 and result1.status_code == 304:
                 return jsonify({"error": "No changes detected"}), 304
+            elif result2[1] != 200:
+                return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
 
         ### Invalidation of token for user uuid = user_uuid...
         try:
@@ -379,28 +365,11 @@ def get_user_info(uuid):
     if not valid:
         return jsonify({"error": "Invalid input."}), 400
 
-    try:
+    response = get_profile(None, uuid)
 
-        @circuit_breaker
-        def get_user_profile():
-            response = requests.get(
-                f"{PROFILE_SERVICE_URL}/profile/internal/get_profile",
-                params={"user_uuid": uuid},
-                verify=False,
-                timeout=current_app.config["requests_timeout"],
-            )
-            response.raise_for_status()
-            return response.json()
-
-        profile = get_user_profile()
-        return profile, 200
-
-    except requests.HTTPError as e:
-        if e.response.status_code == 404:
-            return jsonify({"error": "User not found."}), 404
-        else:
-            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    except requests.RequestException:
-        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
-    except CircuitBreakerError:
-        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
+    if response[1] == 404:
+        return jsonify({"error": "User not found."}), 404
+    elif response[1] != 200:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+    
+    return response
