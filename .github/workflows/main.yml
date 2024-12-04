@@ -41,4 +41,4 @@ jobs:
         run: postman login --with-api-key ${{ secrets.POSTMAN_API_KEY }}
       - name: Run API tests with delay
         run: |
-          postman collection run "30494225-8185439b-cba4-4980-94db-ea40a0302d13" -e "39565350-35070c76-3ef3-4890-a054-2e2fd59d7358" --delay-request 750
+          postman collection run "30494225-8185439b-cba4-4980-94db-ea40a0302d13" -k -e "39565350-35070c76-3ef3-4890-a054-2e2fd59d7358" --delay-request 750
