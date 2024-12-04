@@ -261,30 +261,33 @@ def edit_username(session=None, uuid=None, username=None):
                 return "", 304
 
             # Update username
+            print("sto qua")
             query = """
             UPDATE profiles 
             SET username = %s
             WHERE BIN_TO_UUID(uuid) = %s
             """
-
             cursor.execute(query, (username, uuid))
             connection.commit()
             cursor.close()
             return "", 200
 
         return update_username()
-
+    except IntegrityError as e:
+        send_log(f"Query: {type(e).__name__}", level="error", service_type=SERVICE_TYPE)
+        return "", 409
     except (
         OperationalError,
         DataError,
         DatabaseError,
-        IntegrityError,
         InterfaceError,
         InternalError,
         ProgrammingError,
-    ):
+    ) as e:
+        send_log(f"Query: {type(e).__name__}", level="error", service_type=SERVICE_TYPE)
         return "", 503
     except CircuitBreakerError:
+        send_log("CircuitBreaker Error: request_to_db", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 

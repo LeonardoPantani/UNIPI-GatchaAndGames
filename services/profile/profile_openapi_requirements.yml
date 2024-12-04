@@ -287,10 +287,12 @@ paths:
           description: No changes applied.
         '400':
           description: Invalid request.
-        '404':
-          description: User not found.
         '403':
           description: Not authorized.
+        '404':
+          description: User not found.
+        '409':
+          description: Username is already taken.
         '503':
           description: Service temporarily unavailable. Please try again later.
   /profile/internal/list:

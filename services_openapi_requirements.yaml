@@ -122,6 +122,36 @@ paths:
           description: The provided username / email is already in use.
         '503':
           description: Service unavailable. Please try again later.
+  /auth/internal/token/invalidate:
+    delete:
+      tags:
+        - auth_internal
+      summary: Invalidates and removes a JWT token.
+      description: This endpoint receives a UUID and removes the JWT Token assigned to them on Redis.
+      operationId: token_invalidate
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+        - name: uuid
+          in: query
+          description: User whom JWT token will be invalidated.
+          required: true
+          schema:
+            $ref: "#/components/schemas/UserId"
+      responses:
+        '200':
+          description: Token invalidated.
+        '400':
+          description: Invalid request.
+        '401':
+          description: Unauthorized.
+        '404':
+          description: Unable to find token.
+        '503':
+          description: Service unavailable. Please try again later.
   /auth/internal/userinfo/:
     post:
       tags:
@@ -272,10 +302,12 @@ paths:
           description: No changes applied.
         '400':
           description: Invalid request.
-        '404':
-          description: User not found.
         '403':
           description: Not authorized.
+        '404':
+          description: User not found.
+        '409':
+          description: Email already in use.
         '503':
           description: Service temporarily unavailable. Please try again later.
   /auth/internal/get_user:
@@ -440,6 +472,8 @@ paths:
           description: Not authorized to perform this action.
         '404':
           description: User not found.
+        '409':
+          description: Email or username already in use.
         '503':
           description: Service unavailable. Please try again later.
   /admin/profile/{user_uuid}/ban:
@@ -3265,10 +3299,12 @@ paths:
           description: No changes applied.
         '400':
           description: Invalid request.
-        '404':
-          description: User not found.
         '403':
           description: Not authorized.
+        '404':
+          description: User not found.
+        '409':
+          description: Username is already taken.
         '503':
           description: Service temporarily unavailable. Please try again later.
   /profile/internal/list:

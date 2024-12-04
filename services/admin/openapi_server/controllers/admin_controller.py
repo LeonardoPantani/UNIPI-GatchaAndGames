@@ -275,6 +275,33 @@ def ban_profile(user_uuid):
     except CircuitBreakerError:
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
+    ### Invalidation of token for user uuid = user_uuid...
+    # we ignore 404 error since it means that the user is not logged, good for them.
+    try:
+
+        @circuit_breaker
+        def make_request_to_auth_service():
+            params = {"uuid": user_uuid}
+            url = "https://service_auth/auth/internal/token/invalidate"
+            response = requests.delete(url, params=params, verify=False, timeout=current_app.config["requests_timeout"])
+            response.raise_for_status()
+            return response.json()
+
+        make_request_to_auth_service()
+        
+    except requests.HTTPError as e:
+        if e.response.status_code == 404: # user not logged in, no need to invalidate session
+            send_log(f"User with uuid '{session.get("uuid")} is not logged in. No need to invalidate session.", level="info")
+        else:
+            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+    except requests.RequestException:
+        send_log("RequestException Error.", level="error")
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+    except CircuitBreakerError:
+        send_log("CircuitBreaker Error.", level="warning")
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+    ## end of token invalidation
+
     return jsonify({"message": "Profile deleted."}), 200
 
 
@@ -615,7 +642,7 @@ def edit_user_profile(user_uuid, email=None, username=None):
     except CircuitBreakerError:
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
-    if exist_data["exists"] == False:
+    if exist_data["exists"] == False:  # noqa: E712
         return jsonify({"error": "User not found."}), 404
 
     if email:
@@ -628,7 +655,6 @@ def edit_user_profile(user_uuid, email=None, username=None):
                 response = requests.post(
                     url, params=params, verify=False, timeout=current_app.config["requests_timeout"]
                 )
-                print(response)
                 response.raise_for_status()
 
             make_request_to_auth_service()
@@ -638,13 +664,14 @@ def edit_user_profile(user_uuid, email=None, username=None):
                 return jsonify({"error": "User not found."}), 404
             elif e.response.status_code == 304:
                 pass
+            elif e.response.status_code == 409: # cant update email since it is already in use
+                return jsonify({"error": "That email is already in use."}), 409
             else:
                 return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
         except requests.RequestException:
             return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
         except CircuitBreakerError:
             return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
-
     if username:
         try:
 
@@ -662,6 +689,8 @@ def edit_user_profile(user_uuid, email=None, username=None):
         except requests.HTTPError as e:
             if e.response.status_code == 404:
                 return jsonify({"error": "User not found."}), 404
+            elif e.response.status_code == 409: # cant update username since it is taken
+                return jsonify({"error": "That username is already taken."}), 409
             elif e.response.status_code == 304:
                 pass
             else:
@@ -671,7 +700,38 @@ def edit_user_profile(user_uuid, email=None, username=None):
         except CircuitBreakerError:
             return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
-    return jsonify({"message": "Profile successfully updated."}), 200
+
+    ### Invalidation of token for user uuid = user_uuid...
+    # we ignore 404 error since it means that the user is not logged, good for them.
+    try:
+
+        @circuit_breaker
+        def make_request_to_auth_service_2():
+            params = {"uuid": user_uuid}
+            url = "https://service_auth/auth/internal/token/invalidate"
+            response = requests.delete(url, params=params, verify=False, timeout=current_app.config["requests_timeout"])
+            response.raise_for_status()
+            return response.json()
+
+        make_request_to_auth_service_2()
+        
+    except requests.HTTPError as e:
+        if e.response.status_code == 404: # user not logged in, no need to invalidate session
+            send_log(f"User with uuid '{user_uuid} is not logged in. No need to invalidate session.", level="info")
+        else:
+            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+    except requests.RequestException:
+        send_log("RequestException Error.", level="error")
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+    except CircuitBreakerError:
+        send_log("CircuitBreaker Error.", level="warning")
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+    ## end of token invalidation
+
+    if session["uuid"] != user_uuid:
+        return jsonify({"message": "Profile successfully updated."}), 200
+    else:
+        return jsonify({"message": "Profile successfully updated. You were also logged out, please re-authenticate."}), 200
 
 
 def get_all_feedbacks(page_number=None):

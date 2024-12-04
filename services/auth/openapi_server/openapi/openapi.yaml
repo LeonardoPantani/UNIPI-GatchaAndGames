@@ -94,10 +94,12 @@ paths:
           description: No changes applied.
         "400":
           description: Invalid request.
-        "404":
-          description: User not found.
         "403":
           description: Not authorized.
+        "404":
+          description: User not found.
+        "409":
+          description: Email already in use.
         "503":
           description: Service temporarily unavailable. Please try again later.
       tags:
@@ -237,6 +239,42 @@ paths:
         "503":
           description: Service unavailable. Please try again later.
       summary: Validates a Token.
+      tags:
+      - auth_internal
+      x-openapi-router-controller: openapi_server.controllers.auth_internal_controller
+  /auth/internal/token/invalidate:
+    delete:
+      description: This endpoint receives a UUID and removes the JWT Token assigned
+        to them on Redis.
+      operationId: token_invalidate
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: User whom JWT token will be invalidated.
+        explode: true
+        in: query
+        name: uuid
+        required: true
+        schema:
+          $ref: '#/components/schemas/UserId'
+        style: form
+      responses:
+        "200":
+          description: Token invalidated.
+        "400":
+          description: Invalid request.
+        "401":
+          description: Unauthorized.
+        "404":
+          description: Unable to find token.
+        "503":
+          description: Service unavailable. Please try again later.
+      summary: Invalidates and removes a JWT token.
       tags:
       - auth_internal
       x-openapi-router-controller: openapi_server.controllers.auth_internal_controller
