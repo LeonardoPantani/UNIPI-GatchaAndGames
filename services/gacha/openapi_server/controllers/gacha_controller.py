@@ -9,7 +9,7 @@ from flask import current_app, jsonify, request, session
 from pybreaker import CircuitBreaker, CircuitBreakerError
 from werkzeug.exceptions import BadRequest, InternalServerError, NotFound
 
-from openapi_server.controllers.gacha_internal_controller import get_gacha
+from openapi_server.controllers.gacha_internal_controller import get_gacha, list_gachas, exists_pool, get_pool, list_pools
 from openapi_server.helpers.authorization import verify_login
 from openapi_server.helpers.input_checks import sanitize_string_input, sanitize_uuid_input
 
@@ -68,34 +68,23 @@ def pull_gacha(pool_id):
 
     try:
         # Check if pool exists
-        @circuit_breaker
-        def check_pool_exists():
-            response = requests.get(
-                f"{GACHA_SERVICE_URL}/gacha/internal/pool/exists",
-                params={"uuid": pool_id},
-                verify=False,
-                timeout=current_app.config["requests_timeout"],
-            )
-            response.raise_for_status()
-            return response.json()
+        response = exists_pool(None, pool_id)
 
-        pool_exists = check_pool_exists()
-        if not pool_exists.get("exists"):
+        if response[1] != 200:
+            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+        
+        if not response[0].get_json().get("exists"):
             return jsonify({"error": "Pool not found"}), 404
 
         # Get pool info
-        @circuit_breaker
-        def get_pool_info():
-            response = requests.get(
-                f"{GACHA_SERVICE_URL}/gacha/internal/pool/get",
-                params={"uuid": pool_id},
-                verify=False,
-                timeout=current_app.config["requests_timeout"],
-            )
-            response.raise_for_status()
-            return response.json()
+        response = get_pool(None, pool_id)
 
-        pool = get_pool_info()
+        if response[1] == 404:
+            return jsonify({"error": "Pool not found"}), 404
+        elif response[1] != 200:
+            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+        
+        pool = response[0].get_json()
 
         # Check user currency
         @circuit_breaker
@@ -207,33 +196,15 @@ def get_pool_info():
     if not user_uuid:
         return jsonify({"error": "Not logged in"}), 403
 
-    try:
+    response = list_pools()
 
-        @circuit_breaker
-        def get_pools():
-            response = requests.post(
-                f"{GACHA_SERVICE_URL}/gacha/internal/pool/list",
-                verify=False,
-                timeout=current_app.config["requests_timeout"],
-            )
-            response.raise_for_status()
-            return response.json()
-
-        pools = get_pools()
-        return jsonify(pools), 200
-
-    except requests.HTTPError as e:
-        if e.response.status_code == 404:
-            return jsonify({"error": "No pools found"}), 404
-        else:
-            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    except requests.RequestException:
+    if response[1] != 200:
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    except CircuitBreakerError:
-        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+    
+    return response
 
 
-def get_gachas(not_owned):  # --> To do
+def get_gachas(not_owned):  
     """Returns a list of gacha items based on ownership filter."""
     # Auth verification
     response = verify_login(connexion.request.headers.get("Authorization"), service_type=SERVICE_TYPE)
@@ -260,23 +231,7 @@ def get_gachas(not_owned):  # --> To do
             return response.json()
 
         owned_gachas = get_owned_gachas()
-        print(owned_gachas)
-
-        # Then get filtered gacha list
-        @circuit_breaker
-        def get_gacha_list():
-            response = requests.post(
-                f"{GACHA_SERVICE_URL}/gacha/internal/gacha/list",
-                json=owned_gachas,
-                verify=False,
-                timeout=current_app.config["requests_timeout"],
-            )
-            response.raise_for_status()
-            return response.json()
-
-        gacha_list = get_gacha_list()
-        return jsonify(gacha_list), 200
-
+        
     except requests.HTTPError as e:
         if e.response.status_code == 404:
             return jsonify({"error": "No gachas found"}), 404
@@ -286,3 +241,12 @@ def get_gachas(not_owned):  # --> To do
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+
+    # Then get filtered gacha list
+    response = list_gachas(owned_gachas, None, not_owned)
+
+    if response[1] != 200:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+    
+    return response[0]
+

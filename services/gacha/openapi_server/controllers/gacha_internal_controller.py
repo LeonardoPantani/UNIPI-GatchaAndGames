@@ -569,54 +569,55 @@ def get_rarity_by_uuid(session=None, uuid=None):
         return "", 503
 
 
-def list_gachas(requestBody=None, session=None, not_owned=None):
+def list_gachas(requestBody=None, session=None, not_owned=None): #TODO
     """Returns a list of gachas by UUIDs."""
-
-    if not connexion.request.is_json:
-        return "", 400
-
-    try:
+    if connexion.request.is_json:
         requestBody = connexion.request.get_json()
+    
+    try:
         if not requestBody:
             return "", 400
-
+        
         @circuit_breaker
         def get_gachas_from_db():
             connection = get_db()
             cursor = connection.cursor()
 
-            placeholders = ",".join(["UUID_TO_BIN(%s)" for _ in requestBody])
-            query = f"""
+            query = """
                 SELECT BIN_TO_UUID(uuid), name, rarity, 
                        stat_power, stat_speed, stat_durability, stat_precision, 
                        stat_range, stat_potential
                 FROM gachas_types 
-                WHERE uuid IN ({placeholders})
             """
-            cursor.execute(query, requestBody)
+            cursor.execute(query)
             results = cursor.fetchall()
 
-            gachas = []
-            for result in results:
-                gacha = {
-                    "gacha_uuid": result[0],
-                    "name": result[1],
-                    "rarity": result[2],
-                    "attributes": {
-                        "power": map_number_to_grade(result[3]),
-                        "speed": map_number_to_grade(result[4]),
-                        "durability": map_number_to_grade(result[5]),
-                        "precision": map_number_to_grade(result[6]),
-                        "range": map_number_to_grade(result[7]),
-                        "potential": map_number_to_grade(result[8]),
-                    },
-                }
-                gachas.append(gacha)
-
             cursor.close()
-            return jsonify(gachas), 200
+            
+            return results
 
-        return get_gachas_from_db()
+        results = get_gachas_from_db()
+
+        gachas = []
+        for result in results:
+            gacha = {
+                "gacha_uuid": result[0],
+                "name": result[1],
+                "rarity": result[2],
+                "attributes": {
+                    "power": map_number_to_grade(result[3]),
+                    "speed": map_number_to_grade(result[4]),
+                    "durability": map_number_to_grade(result[5]),
+                    "precision": map_number_to_grade(result[6]),
+                    "range": map_number_to_grade(result[7]),
+                    "potential": map_number_to_grade(result[8]),
+                },
+            }
+            if not_owned and result[0] not in requestBody:
+                gachas.append(gacha)
+            elif not not_owned and result[0] in requestBody:
+                gachas.append(gacha)
+        return jsonify(gachas), 200
 
     except (
         OperationalError,
