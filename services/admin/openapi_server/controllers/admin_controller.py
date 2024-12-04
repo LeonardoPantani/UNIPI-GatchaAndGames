@@ -939,7 +939,7 @@ def get_system_logs():
     if interval < 1 or interval > 2595600:
         return jsonify({"error": "Invalid input."}), 400
 
-    if start_time > int(datetime.now().timestamp()):
+    if start_time and start_time > int(datetime.now().timestamp()):
         return jsonify({"error": "Invalid input."}), 400
 
     try:
