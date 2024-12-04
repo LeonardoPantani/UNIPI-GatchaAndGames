@@ -1,5 +1,4 @@
 import inspect
-
 import requests
 from flask import current_app, jsonify
 from openapi_server.helpers.logging import send_log
@@ -13,8 +12,8 @@ circuit_breaker = CircuitBreaker(
 
 
 def verify_login(auth_header=None, audience_required="public_services", service_type="unknown"):
-    log_endpoint = inspect.stack()[1][3] # obtains function that called me to insert into logs
-    
+    log_endpoint = inspect.stack()[1][3]  # obtains function that called me to insert into logs
+
     if not auth_header or not auth_header.startswith("Bearer "):
         send_log("VerifyLogin: Not logged in.", service_type=service_type, level="general", endpoint=log_endpoint)
         return jsonify({"error": "Not logged in."}), 401
@@ -25,7 +24,9 @@ def verify_login(auth_header=None, audience_required="public_services", service_
         return jsonify({"error": "Invalid request."}), 400
 
     if audience_required != "public_services" and audience_required != "private_services":
-        send_log("VerifyLogin: Invalid audience_required.", service_type=service_type, level="general", endpoint=log_endpoint)
+        send_log(
+            "VerifyLogin: Invalid audience_required.", service_type=service_type, level="general", endpoint=log_endpoint
+        )
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
 
     try:
@@ -39,6 +40,7 @@ def verify_login(auth_header=None, audience_required="public_services", service_
             return response.json()
 
         session = make_request_to_auth()
+        
 
         return session, 200
     except requests.HTTPError as e:

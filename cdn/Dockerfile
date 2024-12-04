@@ -1,25 +1,14 @@
-# Usa l'immagine base Python slim
-FROM python:3.10-slim
+FROM python:3-alpine
 
-# Imposta la directory di lavoro
-WORKDIR /app
+WORKDIR /usr/src/app
 
-# Copia i file requirements e app nella directory di lavoro
-COPY requirements.txt /app/requirements.txt
+RUN apk update && apk add --no-cache curl libjpeg-turbo-dev zlib-dev
 
-# Installa dipendenze di sistema per Pillow
-RUN apt-get update && apt-get install -y \
-    libjpeg-dev \
-    zlib1g-dev \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+COPY requirements.txt /usr/src/app
 
-# Installa le dipendenze Python
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Espone la porta 443
 EXPOSE 443
 
-# Comando per avviare l'applicazione
 ENTRYPOINT ["python3"]
 CMD ["-m", "openapi_server"]

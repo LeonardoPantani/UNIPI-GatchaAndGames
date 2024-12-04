@@ -1,8 +1,10 @@
-from flask import g, current_app
 import mysql.connector
+from flask import current_app, g
+
 
 def get_db():
-    if 'db' not in g:
-        db_config = current_app.config['DB_CONFIG']
+    """Warning: this function must be called where app context is available."""
+    if "db" not in g:
+        db_config = current_app.config["db_config"]
         g.db = mysql.connector.connect(**db_config)
     return g.db

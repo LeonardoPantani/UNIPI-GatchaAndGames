@@ -1,7 +1,5 @@
 USE gacha_test_db;
 
-USE gacha_test_db;
-
 CREATE TABLE profiles (
     uuid BINARY(16),
     username VARCHAR(100) NOT NULL UNIQUE,

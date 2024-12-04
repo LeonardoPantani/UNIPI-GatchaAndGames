@@ -78,7 +78,7 @@ def introspect(introspect_request=None):
             saved_token = redis_client.get(decoded_token["uuid"])
         except redis.RedisError as e:
             send_log(f"Redis error {e}", level="error", service_type=SERVICE_TYPE)
-            return jsonify({"error": "Service unavailable. Please try again later."}, 503)
+            return jsonify({"error": "Service unavailable. Please try again later."}), 503
 
         # if no token is saved probably is because Redis was restarted since user logged in
         if saved_token is None:
@@ -87,7 +87,7 @@ def introspect(introspect_request=None):
                 level="warning",
                 service_type=SERVICE_TYPE,
             )
-            return jsonify({"error": "Unauthorized."}, 401)
+            return jsonify({"error": "Unauthorized."}), 401
         else:
             saved_token = saved_token.decode("utf-8")
 
@@ -98,13 +98,13 @@ def introspect(introspect_request=None):
                 level="info",
                 service_type=SERVICE_TYPE,
             )
-            return jsonify({"error": "Unauthorized."}, 401)
+            return jsonify({"error": "Unauthorized."}), 401
 
         return result, 200
     except jwt.ExpiredSignatureError:
-        return jsonify({"error": "Token expired."}, 402)
+        return jsonify({"error": "Token expired."}), 402
     except jwt.InvalidTokenError:
-        return jsonify({"error": "Unauthorized."}, 401)
+        return jsonify({"error": "Unauthorized."}), 401
 
 
 """
@@ -144,10 +144,29 @@ def userinfo(userinfo_request=None):
         return jsonify({"error": "Invalid token"}), 401
 
 
-""" Deletes a user. """
+def token_invalidate(uuid, session=None):
+    """
+        Invalidates and removes a JWT token.
+        This endpoint receives a UUID and removes the JWT Token assigned to them on Redis. # noqa: E501
+    """
+    try:
+        if not redis_client.exists(uuid):
+            return jsonify({"error": "Unable to find token."}), 404
+
+        if redis_client.delete(uuid) == 0:
+            send_log(f"Cannot delete key for uuid '{uuid}'.", level="error", service_type=SERVICE_TYPE)
+            return jsonify({"error": "Service unavailable. Please try again later."}), 503
+    except redis.RedisError as e:
+        send_log(f"Redis error {e}", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service unavailable. Please try again later."}), 503
+    
+    return jsonify({"message": "Token invalidated."}), 200
 
 
 def delete_user_by_uuid(session=None, uuid=None):
+    """
+        Deletes a user. 
+    """
     if not uuid:
         return jsonify({"error": "Invalid request."}), 400
 
@@ -244,11 +263,13 @@ def edit_email(session=None, uuid=None, email=None):
 
         return jsonify({"message": "Email updated."}), 200
 
+    except IntegrityError as e:
+        send_log(f"Query 2: {type(e).__name__}", level="error", service_type=SERVICE_TYPE)
+        return "", 409
     except (
         OperationalError,
         DataError,
         ProgrammingError,
-        IntegrityError,
         InternalError,
         InterfaceError,
         DatabaseError,

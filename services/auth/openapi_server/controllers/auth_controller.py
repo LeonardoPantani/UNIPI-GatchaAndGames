@@ -23,11 +23,12 @@ from openapi_server.helpers.input_checks import sanitize_email_input
 from openapi_server.helpers.logging import send_log
 from openapi_server.models.login_request import LoginRequest
 from openapi_server.models.register_request import RegisterRequest
+from __main__ import CONFIG
 
 SERVICE_TYPE = "auth"
 circuit_breaker = CircuitBreaker(
-    fail_max=5,
-    reset_timeout=5,
+    fail_max=CONFIG["circuit_breaker_fails"],
+    reset_timeout=CONFIG["requests_timeout"],
     exclude=[
         requests.HTTPError,
         OperationalError,
