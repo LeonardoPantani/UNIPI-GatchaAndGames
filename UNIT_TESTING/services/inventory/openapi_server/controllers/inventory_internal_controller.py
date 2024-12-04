@@ -406,7 +406,7 @@ def get_item_by_uuid(session=None, uuid=None):
             global MOCK_INVENTORY_DATA
             item_data = MOCK_INVENTORY_DATA.get(uuid)
             if not item_data:
-                return None, 404
+                return "", 404
 
             inventory_item = {
                 "owner_id": item_data['owner_uuid'],
@@ -416,12 +416,13 @@ def get_item_by_uuid(session=None, uuid=None):
                 "owners_no": item_data['owners_no'],
                 "price_paid": item_data['currency_spent']
             }
+            
             return inventory_item, 200
 
         inventory_item, status_code = get_item_info()
         if status_code == 404:
-            return jsonify({"error": "Item not found"}), 404
-        return jsonify(inventory_item), status_code
+            return "", 404
+        return inventory_item, status_code
 
     except (OperationalError, DataError, DatabaseError, IntegrityError,
             InterfaceError, InternalError, ProgrammingError) as e:
