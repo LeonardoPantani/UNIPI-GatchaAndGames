@@ -264,8 +264,8 @@ services:
     depends_on:
       service_auction_db_primary:
         condition: service_healthy
-      service_auction_db_replica:
-        condition: service_healthy
+      # service_auction_db_replica:
+      #   condition: service_healthy
     restart: always
 
   ########################## CURRENCY
