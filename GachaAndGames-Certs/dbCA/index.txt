@@ -16,3 +16,9 @@ V	271205173330Z		0F	unknown	/C=IT/ST=Tuscany/L=Pisa/O=GachaAndGames/OU=Develop/C
 V	271205191059Z		10	unknown	/C=IT/ST=Tuscany/L=Pisa/O=inventoryAndGames/OU=Develop/CN=service_inventory_db_primary
 V	271205191126Z		11	unknown	/C=IT/ST=Tuscany/L=Pisa/O=inventoryAndGames/OU=Develop/CN=service_inventory_db_proxy
 V	271205191157Z		12	unknown	/C=IT/ST=Tuscany/L=Pisa/O=inventoryAndGames/OU=Develop/CN=service_inventory_db_replica
+V	271205193407Z		13	unknown	/C=IT/ST=Tuscany/L=Pisa/O=profileAndGames/OU=Develop/CN=service_profile_db_primary
+V	271205193437Z		14	unknown	/C=IT/ST=Tuscany/L=Pisa/O=profileAndGames/OU=Develop/CN=service_profile_db_proxy
+V	271205193501Z		15	unknown	/C=IT/ST=Tuscany/L=Pisa/O=profileAndGames/OU=Develop/CN=service_profile_db_replica
+V	271205193635Z		16	unknown	/C=IT/ST=Tuscany/L=Pisa/O=GachaAndGames/OU=Develop/CN=service_pvp_db_primary
+V	271205193711Z		17	unknown	/C=IT/ST=Tuscany/L=Pisa/O=GachaAndGames/OU=Develop/CN=service_pvp_db_proxy
+V	271205193742Z		18	unknown	/C=IT/ST=Tuscany/L=Pisa/O=GachaAndGames/OU=Develop/CN=service_pvp_db_replica
