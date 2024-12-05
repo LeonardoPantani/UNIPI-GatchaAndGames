@@ -40,7 +40,7 @@ circuit_breaker = CircuitBreaker(
         ProgrammingError,
     ],
 )
-redis_client = redis.Redis(host="redis", port=6380, db=0, ssl=True, ssl_certfile="/usr/src/app/ssl/auth.crt", ssl_keyfile="/usr/src/app/ssl/auth.key", ssl_ca_certs="/usr/src/app/ssl/ca.crt", ssl_cert_reqs="none")
+redis_client = redis.Redis(host="redis", port=6379, db=0, ssl=True, ssl_certfile="/usr/src/app/ssl/auth.crt", ssl_keyfile="/usr/src/app/ssl/auth.key", ssl_ca_certs="/usr/src/app/ssl/ca.crt", ssl_cert_reqs="none")
 
 
 """ Returns 200 if service is healthy. """
@@ -153,7 +153,7 @@ def login(login_request=None):
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
 
     send_log(f"User '{result["username"]}' logged in.", level="general", service_type=SERVICE_TYPE)
-    response = jsonify({"message": "Login successful."})
+    response = jsonify({"message": "Login successful.", "uuid": user_uuid_str})
     response.headers["Authorization"] = token
     return response, 200
 
@@ -291,7 +291,7 @@ def register(register_request=None):
         level="general",
         service_type=SERVICE_TYPE,
     )
-    response = jsonify({"message": "Registration successful."})
+    response = jsonify({"message": "Registration successful.", "uuid": uuid_to_register})
     response.headers["Authorization"] = token
     return response, 201
 

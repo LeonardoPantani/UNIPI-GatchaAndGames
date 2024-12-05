@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import os
-
 import connexion
 import urllib3
 from flask import g
