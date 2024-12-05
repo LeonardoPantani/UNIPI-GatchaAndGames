@@ -101,12 +101,14 @@ services:
     restart: always
 
   # ########################## PVP
-  # service_pvp:
-  #   image: service_pvp
-  #   build: ./services/pvp/
-  #   env_file: ./services/pvp/.env
-  #   volumes:
-  #     - ./services/pvp:/usr/src/app/
-  #     - ./common/:/usr/src/app/openapi_server/helpers/
-  #   tty: true
-  #   restart: always
+  service_pvp:
+    image: service_pvp
+    build: ./services/pvp/
+    env_file: ./services/pvp/.env
+    ports:
+      - "1007:443"
+    volumes:
+      - ./services/pvp:/usr/src/app/
+      - ./common/:/usr/src/app/openapi_server/helpers/
+    tty: true
+    restart: always
