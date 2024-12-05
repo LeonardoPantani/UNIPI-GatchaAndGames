@@ -79,7 +79,7 @@ def bid_on_auction(auction_uuid):
         new_bid = current_bid + increment
 
     if session["uuid"] == owner_uuid:
-        return jsonify({"error": "Cannot bid on your own auctions"}), 400
+        return jsonify({"error": "Cannot bid on your own auctions"}), 403
 
     if session["uuid"] == current_bidder:
         return jsonify({"message": "Already the highest bidder"}), 200

@@ -19,7 +19,6 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 1,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -59,12 +58,12 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 15,
-        "w": 12,
+        "h": 7,
+        "w": 24,
         "x": 0,
         "y": 0
       },
-      "id": 3,
+      "id": 1,
       "options": {
         "cellHeight": "lg",
         "footer": {
@@ -92,12 +91,12 @@
             "uid": "P8E80F9AEF21F6940"
           },
           "editorMode": "builder",
-          "expr": "{level=\"error\"} |= ``",
+          "expr": "{level=\"general\"} |= ``",
           "queryType": "range",
-          "refId": "Filtra per warning"
+          "refId": "Filtra per general"
         }
       ],
-      "title": "Error Logs",
+      "title": "General Logs",
       "transformations": [
         {
           "id": "extractFields",
@@ -179,10 +178,143 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 15,
-        "w": 12,
-        "x": 12,
-        "y": 0
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 7
+      },
+      "id": 4,
+      "options": {
+        "cellHeight": "lg",
+        "footer": {
+          "countRows": false,
+          "enablePagination": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Timestamp"
+          }
+        ]
+      },
+      "pluginVersion": "10.1.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "P8E80F9AEF21F6940"
+          },
+          "editorMode": "builder",
+          "expr": "{level=\"info\"} |= ``",
+          "queryType": "range",
+          "refId": "Filtra per warning"
+        }
+      ],
+      "title": "Info Logs",
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": {
+            "format": "json",
+            "jsonPaths": [],
+            "keepTime": false,
+            "replace": false,
+            "source": "labels"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "detected_level": true,
+              "id": true,
+              "labels": true,
+              "level": true,
+              "service_name": true,
+              "tsNs": true
+            },
+            "indexByName": {
+              "Line": 0,
+              "Time": 2,
+              "detected_level": 5,
+              "endpoint": 9,
+              "id": 4,
+              "labels": 1,
+              "level": 6,
+              "service": 7,
+              "service_name": 8,
+              "tsNs": 3
+            },
+            "renameByName": {
+              "Line": "Message",
+              "Time": "Timestamp",
+              "endpoint": "Endpoint",
+              "service": "Service"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "P8E80F9AEF21F6940"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true,
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Message"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 270
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 15
       },
       "id": 2,
       "options": {
@@ -299,12 +431,12 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 15,
-        "w": 12,
+        "h": 7,
+        "w": 24,
         "x": 0,
-        "y": 15
+        "y": 23
       },
-      "id": 4,
+      "id": 3,
       "options": {
         "cellHeight": "lg",
         "footer": {
@@ -332,132 +464,12 @@
             "uid": "P8E80F9AEF21F6940"
           },
           "editorMode": "builder",
-          "expr": "{level=\"info\"} |= ``",
+          "expr": "{level=\"error\"} |= ``",
           "queryType": "range",
           "refId": "Filtra per warning"
         }
       ],
-      "title": "Info Logs",
-      "transformations": [
-        {
-          "id": "extractFields",
-          "options": {
-            "format": "json",
-            "jsonPaths": [],
-            "keepTime": false,
-            "replace": false,
-            "source": "labels"
-          }
-        },
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {
-              "detected_level": true,
-              "id": true,
-              "labels": true,
-              "level": true,
-              "service_name": true,
-              "tsNs": true
-            },
-            "indexByName": {
-              "Line": 0,
-              "Time": 2,
-              "detected_level": 5,
-              "endpoint": 9,
-              "id": 4,
-              "labels": 1,
-              "level": 6,
-              "service": 7,
-              "service_name": 8,
-              "tsNs": 3
-            },
-            "renameByName": {
-              "Line": "Message",
-              "Time": "Timestamp",
-              "endpoint": "Endpoint",
-              "service": "Service"
-            }
-          }
-        }
-      ],
-      "type": "table"
-    },
-    {
-      "datasource": {
-        "type": "loki",
-        "uid": "P8E80F9AEF21F6940"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "custom": {
-            "align": "auto",
-            "cellOptions": {
-              "type": "auto"
-            },
-            "filterable": true,
-            "inspect": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 15,
-        "w": 12,
-        "x": 12,
-        "y": 15
-      },
-      "id": 1,
-      "options": {
-        "cellHeight": "lg",
-        "footer": {
-          "countRows": false,
-          "enablePagination": false,
-          "fields": "",
-          "reducer": [
-            "sum"
-          ],
-          "show": false
-        },
-        "showHeader": true,
-        "sortBy": [
-          {
-            "desc": true,
-            "displayName": "Timestamp"
-          }
-        ]
-      },
-      "pluginVersion": "10.1.2",
-      "targets": [
-        {
-          "datasource": {
-            "type": "loki",
-            "uid": "P8E80F9AEF21F6940"
-          },
-          "editorMode": "builder",
-          "expr": "{level=\"general\"} |= ``",
-          "queryType": "range",
-          "refId": "Filtra per general"
-        }
-      ],
-      "title": "General Logs",
+      "title": "Error Logs",
       "transformations": [
         {
           "id": "extractFields",
@@ -512,13 +524,13 @@
     "list": []
   },
   "time": {
-    "from": "now-15m",
+    "from": "now-5m",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "",
   "title": "Logging",
   "uid": "caa548a6-3138-4d11-804a-52988664142d",
-  "version": 9,
+  "version": 1,
   "weekStart": ""
 }
