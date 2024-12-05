@@ -1,0 +1,8 @@
+V	271205103413Z		01	unknown	/C=IT/ST=Tuscany/L=Pisa/O=GachaAndGames/OU=Develop/CN=service_auth
+V	271205112000Z		02	unknown	/C=IT/ST=Tuscany/L=Pisa/O=GachaAndGames/OU=Develop/CN=service_admin
+V	271205112057Z		03	unknown	/C=IT/ST=Tuscany/L=Pisa/O=GachaAndGames/OU=Develop/CN=service_auction
+V	271205112138Z		04	unknown	/C=IT/ST=Tuscany/L=Pisa/O=GachaAndGames/OU=Develop/CN=service_currency
+V	271205112217Z		05	unknown	/C=IT/ST=Tuscany/L=Pisa/O=GachaAndGames/OU=Develop/CN=service_feedback
+V	271205112252Z		06	unknown	/C=IT/ST=Tuscany/L=Pisa/O=GachaAndGames/OU=Develop/CN=service_gacha
+V	271205112444Z		07	unknown	/C=IT/ST=Tuscany/L=Pisa/O=GachaAndGames/OU=Develop/CN=service_inventory
+V	271205112512Z		08	unknown	/C=IT/ST=Tuscany/L=Pisa/O=GachaAndGames/OU=Develop/CN=service_profile

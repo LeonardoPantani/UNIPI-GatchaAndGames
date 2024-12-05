@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import os
-
 import connexion
 import urllib3
 from flask import g
@@ -41,18 +40,17 @@ def main():
     app.config["database_timeout"] = int(os.environ.get("DATABASE_TIMEOUT"))
 
     # these certificates must be stored in the ssl folder for the DB connection to work:
-    # database-ca-cert.pem
-    # <service_type>-cert.pem
-    # <service_type>-key.pem
+    # <service_type>.crt
+    # <service_type>.key
     app.config["db_config"] = {
         "host": os.environ.get("MYSQL_HOST"),
         "user": os.environ.get("MYSQL_USER"),
         "password": os.environ.get("MYSQL_PASSWORD"),
         "database": os.environ.get("MYSQL_DB"),
         "port": os.environ.get("MYSQL_PORT"),
-        "ssl_ca": "/usr/src/app/ssl/database-ca-cert.pem",
-        "ssl_cert": "/usr/src/app/ssl/" + CONFIG["service_type"] + "-cert.pem",
-        "ssl_key": "/usr/src/app/ssl/" + CONFIG["service_type"] + "-key.pem",
+        "ssl_ca": "/usr/src/app/ssl/ca.crt",
+        "ssl_cert": "/usr/src/app/ssl/" + CONFIG["service_type"] + ".crt",
+        "ssl_key": "/usr/src/app/ssl/" + CONFIG["service_type"] + ".key",
     }
 
     # close db after request
@@ -67,16 +65,15 @@ def main():
 
     # starting flask
     # these certificates must be stored in the ssl folder to activate HTTPS for this service:
-    # database-ca-cert.pem
-    # <service_type>-cert.pem
-    # <service_type>-key.pem
+    # <service_type>.crt
+    # <service_type>.key
     connexion_app.run(
         host="0.0.0.0",
         port=443,
         debug=True,
         ssl_context=(
-            "/usr/src/app/ssl/" + CONFIG["service_type"] + "-cert.pem",
-            "/usr/src/app/ssl/" + CONFIG["service_type"] + "-key.pem",
+            "/usr/src/app/ssl/" + CONFIG["service_type"] + ".crt",
+            "/usr/src/app/ssl/" + CONFIG["service_type"] + ".key",
         ),
     )
 
