@@ -34,17 +34,15 @@ def get_inventory():
     else:
         session = response[0]
 
-    user_uuid = session.get("uuid")
-    if not user_uuid:
-        return jsonify({"error": "Not logged in"}), 403
-
     page_number = connexion.request.args.get("page_number", default=1, type=int)
 
     response = get_inventory_items_by_owner_uuid(None, session['uuid'], page_number)
 
     if response[1] != 200:
+        send_log(f"get_inventory: HttpError {response} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     
+    send_log(f"get_inventory: User {session['username']} has successfully gotten inventory info.", level="general", service_type=SERVICE_TYPE)
     return response
 
 
@@ -66,8 +64,10 @@ def get_inventory_item_info(inventory_item_id):
     response = get_item_by_uuid(None, inventory_item_id)
 
     if response[1] == 404:
+        send_log(f"get_inventory_item_info: No item found with uuid {inventory_item_id} by user {session['username']}.", level="info", service_type=SERVICE_TYPE)
         return jsonify({"error": "Item not found."}), 404
     if response[1] != 200:
+        send_log(f"get_inventory_item_info: HttpError {response} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     
     item = response[0].get_json()
@@ -75,6 +75,7 @@ def get_inventory_item_info(inventory_item_id):
     if item["owner_id"] != user_uuid:
         return jsonify({"error": "Not authorized to access this item."}), 403
     
+    send_log(f"get_gacha_info: User {session['username']} has successfully gotten item {inventory_item_id} info.", level="general", service_type=SERVICE_TYPE)
     return response
 
 
@@ -122,23 +123,27 @@ def remove_inventory_item():
         auction_check = check_auction_status()
 
     except requests.HTTPError as e:
-        if e.response.status_code == 404:
-            return jsonify({"error": "Item not found"}), 404
-        else:
-            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+        send_log(f"check_auction_status: HttpError {e} for uuid {session['username']} on item {item_uuid}.", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException as e:
+        send_log(f"check_auction_status: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
+        send_log(f"check_currency: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
 
     if auction_check.get("found", False):
+        send_log(f"remove_inventory_item: User {session['username']} tried to remove item {item_uuid} but it's on an open auction.", level="info", service_type=SERVICE_TYPE)
         return jsonify({"error": "Cannot remove item that is currently in auction"}), 400
 
     response = remove_item(None, item_uuid, session['uuid'])
 
     if response[1] == 404:
+        send_log(f"remove_item: No item found with uuid {item_uuid} by user {session['username']}.", level="info", service_type=SERVICE_TYPE)
         return jsonify({"error": "Item not found."}), 404
     elif response[1] != 200:
+        send_log(f"remove_item: HttpError {response} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service unavailable. Please try again later."}), 503
 
+    send_log(f"remove_inventory_item: User {session['username']} has successfully removed item {item_uuid}.", level="general", service_type=SERVICE_TYPE)
     return jsonify({"message": "Item removed from inventory."}), 200
