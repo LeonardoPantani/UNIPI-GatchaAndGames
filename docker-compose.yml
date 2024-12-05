@@ -816,9 +816,6 @@ volumes:
   service_feedback_db_proxy_data:
   service_feedback_db_primary_data:
   service_feedback_db_replica_data:
-  service_auction_db_proxy_data:
-  service_auction_db_primary_data:
-  service_auction_db_replica_data:
   service_gacha_db_proxy_data:
   service_gacha_db_primary_data:
   service_gacha_db_replica_data:
