@@ -5,6 +5,12 @@ from collections import defaultdict
 from locust import HttpUser, between, task, SequentialTaskSet, events
 import numpy as np
 
+
+# Probabilità di creare un'asta dopo aver effettuato un acquisto --> non necessariamente ogni utente mette all'asta i propri item
+AUCTION_CREATION_PROBABILITY = 0.2
+DELETE_ITEM_PROBABILITY = 0.1 # Probabilità di eliminare un item dall'inventario
+AUCTION_BID_PROBABILITY = 0.5 # Probabilità di fare un'offerta su un'asta
+
 class GachaStats:
     def __init__(self):
         self.pull_results = defaultdict(int)
@@ -41,7 +47,7 @@ class GachaStats:
             "b4c5d6e7-f8a9-0123-4567-23456789abcd": "LEGENDARY",
             "c5d6e7f8-a9b0-1234-5678-3456789abcde": "EPIC"
         }
-        self.pool_ids = []
+        self.pool_ids = ["bundle_arrowEUR","bundle_requiemEUR","bundle_heavenEUR"]
 
     def record_pull(self, pool_id, gacha_uuid):
         rarity = self.gacha_rarities.get(gacha_uuid)
@@ -65,32 +71,61 @@ class GachaStats:
 gacha_stats = GachaStats()
 
 class GachaTaskSequence(SequentialTaskSet):
-    has_registered = False
+    registered= False
     count = 0
     auth_token = None
     has_credits = False
-    pools_list = ["bundle_arrowEUR","bundle_requiemEUR","bundle_heavenEUR"]
+    pools_list = ["bundle_heavenEUR"]
     inventory = []
     auction_created = False
     auction_id = None
+
+    def on_start(self):  
+        if not self.registered:
+            username = f"testuser_{random.randint(1, 100000000000)}"
+            self.credentials = {
+                "username": username,
+                "email": f"{username}@example.com",
+                "password": "test1234567"
+            }
+            register_response = self.client.post("/auth/register", json=self.credentials, verify=False, name="/auth/register")
+            if register_response.status_code == 201:
+                auth_header = register_response.headers.get("Authorization")
+                if auth_header and "Bearer" in auth_header:
+                    self.auth_token = auth_header.split("Bearer ")[1]
+                    self.client.headers.update({"Authorization": f"Bearer {self.auth_token}"})
+                    self.credentials["uuid"] = register_response.json().get("uuid")
+                else:
+                    response_json = register_response.json()
+                    self.auth_token = response_json.get("token") or response_json.get("access_token")
+
+                if self.auth_token:
+                    self.client.headers.update({"Authorization": f"Bearer {self.auth_token}"})
+                    print("Registrazione effettuata con successo")
+                self.registered = True 
+            else:
+                print(f"Errore durante la registrazione: {register_response.status_code}")
+                print(register_response.text)
+                exit() # Termina il test in caso di errore durante la registrazione
 
     
     @task
     def view_gacha_pools(self):
         self.client.get("/gacha/pools", verify=False, name="/gacha/pools")
 
-    @task
-    def buy_initial_currency(self):
-        self._buy_initial_currency()
-              
-    def _buy_initial_currency(self):
-        if self.count >= 1:
-            response = self.client.post("/currency/buy/add_myself_some_currency", verify=False, name="/currency/buy")
-            self.count = 0
-        else:
-            response = self.client.post(f"/currency/buy/{random.choice(self.pools_list)}", verify=False, name="/currency/buy")
-            if response.status_code == 200:
-                self.count += 1
+    def _buy_bundle(self): 
+        response = self.client.post(f"/currency/buy/{random.choice(self.pools_list)}", verify=False, name="/currency/buy")
+        if response.status_code != 200:
+            response.failure(f"Failed to buy bundle: {response.status_code}")
+            return False  # Indica l'errore nell'acquisto del bundle
+        return True  # Acquisto del bundle avvenuto con successo
+
+    def _add_currency(self): # Nuova funzione per aggiungere currency
+        response = self.client.post("/currency/buy/add_myself_some_currency", verify=False, name="/currency/buy_myself_some_currency")
+        if response.status_code != 200:
+            response.failure(f"Failed to add currency: {response.status_code}")
+            return False
+        return True
 
 
     @task
@@ -99,18 +134,17 @@ class GachaTaskSequence(SequentialTaskSet):
 
     @task
     def pull_gacha(self):
-        self._buy_initial_currency()
-        if gacha_stats.pool_ids:
-            chosen_pool = random.choice(gacha_stats.pool_ids)
-            with self.client.post(f"/gacha/pull/{chosen_pool}", verify=False, catch_response=True, name="/gacha/pull") as response:
-                if response.status_code == 200:
-                    pull_data = response.json()
-                    if "gacha_uuid" in pull_data:
-                        gacha_uuid = pull_data["gacha_uuid"]
-                        gacha_stats.record_pull(chosen_pool, gacha_uuid)
-                    response.success()
-                else:
-                    response.failure(f"Failed to pull: {response.status_code}")
+        if self._buy_bundle():
+            if self._add_currency():
+                with self.client.post(f"/gacha/pull/pool_pucci", verify=False, catch_response=True, name="/gacha/pull") as response:
+                    if response.status_code == 200:
+                        pull_data = response.json()
+                        if "gacha_uuid" in pull_data:
+                            gacha_uuid = pull_data["gacha_uuid"]
+                            gacha_stats.record_pull("pool_pucci", gacha_uuid)
+                        response.success()
+                    else:
+                        response.failure(f"Failed to pull: {response.status_code}")
 
     @task
     def view_gacha_details(self):
@@ -124,6 +158,7 @@ class GachaTaskSequence(SequentialTaskSet):
         response = self.client.get("/inventory?page_number=1", verify=False, name="/inventory?page_number=1")
         if response.status_code == 200:
             inventory_data = response.json()
+            print("The inventory data is: ", inventory_data)
             if inventory_data:
                 self.inventory = [item.get("item_id") for item in inventory_data if "item_id" in item]
                 return random.choice(self.inventory) if self.inventory else None
@@ -138,41 +173,47 @@ class GachaTaskSequence(SequentialTaskSet):
 
     @task
     def create_auction(self):
-        if not self.auction_created: # Create only one auction per user
+        if not self.auction_created and random.random() < AUCTION_CREATION_PROBABILITY: # Create only one auction per user + random auction creation condition
             item_id = self._get_user_item_id()
             if item_id:
                 response = self.client.post(f"/auction/create?starting_price=10&inventory_item_owner_id={self.credentials['uuid']}&inventory_item_id={item_id}", verify=False, name="/auction/create")
-                print(f"/auction/create?starting_price=10&inventory_item_owner_id={self.credentials['uuid']}&inventory_item_id={item_id}")
-                if response.status_code == 200:
+                print("Response status code:",response.status_code)
+                if response.status_code == 201:
                     auction_data = response.json()
                     self.auction_id = auction_data.get("auction_uuid")
                     self.auction_created = True
+                print("auction created:",self.auction_created)
 
 
-    @task
     def get_auctions_list(self):
-        self.client.get("/auction/list?status=open", verify=False, name="/auction/list?status=open")
-
+        response=self.client.get("/auction/list?status=open&page_number=1", verify=False, name="/auction/list?status=open")
+        return response
 
     @task
     def bid_on_auction(self): # Updated bid_on_auction task
-        response = self.get_auctions_list()
-        if response.status_code == 200:
-            auctions = response.json()
-            if auctions:
-                suitable_auctions = [
-                    auction for auction in auctions if auction.get("inventory_item_owner_id") != self.credentials["uuid"]
-                ]
-                if suitable_auctions:
-                    chosen_auction = random.choice(suitable_auctions)
-                    auction_id = chosen_auction.get("auction_uuid")
-                    self._buy_initial_currency()
-                    self.client.get(
-                        f"/auction/bid/{auction_id}?bid=1",
-                        verify=False,
-                        name=f"/auction/bid/{{auction_id}}",
-                        catch_response=True
-                    )
+        if random.random() < AUCTION_BID_PROBABILITY:
+            if self._buy_bundle():
+                self._add_currency()
+                response = self.get_auctions_list()
+            if response.status_code == 200:
+                auctions = response.json()
+
+                if auctions:
+                    suitable_auctions = [
+                        auction for auction in auctions if auction.get("inventory_item_owner_id") != self.credentials["uuid"]
+                    ]
+
+                    if suitable_auctions:
+                        chosen_auction = random.choice(suitable_auctions)
+                        auction_id = chosen_auction.get("auction_uuid")
+                        print(auction_id)
+                        print(f"/auction/bid/{auction_id}")
+                        self._add_currency()
+                        self.client.post(
+                            f"/auction/bid/{auction_id}?bid=1",
+                            verify=False,
+                            name=f"/auction/bid/{auction_id}"
+                        )
 
     @task
     def get_auction_status(self):
@@ -184,63 +225,48 @@ class GachaTaskSequence(SequentialTaskSet):
     def get_auctions_history(self):
         self.client.get(f"/auction/history?page_number=1", verify=False, name="/auction/history")
 
+
+    def get_all_auctions(self):
+        all_auctions = []
+        page_number = 1
+        max_pages=1000000
+        while True and page_number<=max_pages:
+            response = self.client.get(f"/auction/list?status=open&page_number={page_number}", verify=False, name="/auction/list?status=open")
+            if response.status_code != 200:
+                print(f"Error getting auction list (page {page_number}): {response.status_code}")
+                break  # Stop if there's an error fetching a page
+
+            auctions = response.json()
+            if not auctions:  # Check if the returned list is empty
+                break  # Stop when a page returns an empty list
+
+            all_auctions.extend(auctions)
+            page_number += 1
+        if page_number>max_pages:
+            print("Max pages reached")
+            exit()
+        return all_auctions
+
     @task
     def delete_item(self):
-        item_to_delete = self._get_user_item_id()
-        if item_to_delete:
-            self.client.delete(f"/inventory/remove?inventory_item_owner_id={self.credentials['uuid']}&inventory_item_id={item_to_delete}", verify=False, name="/inventory/remove")
+        if random.random() < DELETE_ITEM_PROBABILITY:
+            item_to_delete = self._get_user_item_id()
+            if item_to_delete:
+                all_auctions = self.get_all_auctions()  # Get all auctions across all pages
+                item_in_auction = any(auction.get("inventory_item_id") == item_to_delete for auction in all_auctions)
+
+                if not item_in_auction:
+                    self.client.delete(f"/inventory/?inventory_item_owner_id={self.credentials['uuid']}&inventory_item_id={item_to_delete}", verify=False, name=f"/inventory/?inventory_item_owner_id={self.credentials['uuid']}&inventory_item_id={item_to_delete}")
+                    print("url",f"/inventory/?inventory_item_owner_id={self.credentials['uuid']}&inventory_item_id={item_to_delete}")
+                else:
+                    print(f"Item {item_to_delete} is currently in an auction and cannot be deleted.")
 
         
 
 class GachaPlayer(HttpUser):
     wait_time = between(1, 3)
     tasks = [GachaTaskSequence]
-    def on_start(self):
-        username = f"testuser_{random.randint(1, 100000000000)}"
-        self.credentials = {
-            "username": username,
-            "email": f"{username}@example.com",
-            "password": "test1234567"
-        }
-        # --- Registrazione ---
-        register_response = self.client.post("/auth/register", json=self.credentials, verify=False)
-        if register_response.status_code == 201:
-            auth_header = register_response.headers.get("Authorization")
-            if auth_header and "Bearer" in auth_header:
-                self.auth_token = auth_header.split("Bearer ")[1]
-            else:
-                response_json = register_response.json()
-                self.auth_token = response_json.get("token") or response_json.get("access_token")
 
-            if self.auth_token:
-                self.client.headers.update({"Authorization": f"Bearer {self.auth_token}"})
-                print("Registrazione effettuata con successo")
-
-            print(self.auth_token)
-            # --- Logout dopo la registrazione ---
-            logout_response = self.client.delete("/auth/logout", verify=False, name="/auth/logout")
-
-            if logout_response.status_code == 200:
-                print("Logout effettuato con successo")
-            else:
-                print(f"Errore nel logout: codice {logout_response.status_code}")
-
-            # --- Esegui login per ottenere UUID e token ---
-            login_response = self.client.post("/auth/login", json={"username": username, "password": "test1234567"}, verify=False)
-            if login_response.status_code == 200:
-                auth_header = login_response.headers.get("Authorization")
-                if auth_header and "Bearer" in auth_header:
-                    self.auth_token = auth_header.split("Bearer ")[1]
-                    self.client.headers.update({"Authorization": f"Bearer {self.auth_token}"})
-                    self.credentials["uuid"] = login_response.json().get("uuid")
-                    print(login_response)
-                    print("UUID ottenuto:", self.credentials["uuid"])
-                else:
-                    print("Header di autorizzazione mancante o malformato")
-            else:
-                print(f"Errore nel login: codice {login_response.status_code}")
-        else:
-            print(f"Errore nella registrazione: codice {register_response.status_code}")
 
 @events.test_stop.add_listener
 def on_test_stop(environment, **kwargs):
