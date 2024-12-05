@@ -7,9 +7,9 @@ import numpy as np
 
 
 # Probabilità di creare un'asta dopo aver effettuato un acquisto --> non necessariamente ogni utente mette all'asta i propri item
-AUCTION_CREATION_PROBABILITY = 0.2
-DELETE_ITEM_PROBABILITY = 0.1 # Probabilità di eliminare un item dall'inventario
-AUCTION_BID_PROBABILITY = 0.5 # Probabilità di fare un'offerta su un'asta
+#AUCTION_CREATION_PROBABILITY = 0.2
+#DELETE_ITEM_PROBABILITY = 0.1 # Probabilità di eliminare un item dall'inventario
+#AUCTION_BID_PROBABILITY = 0.5 # Probabilità di fare un'offerta su un'asta
 
 class GachaStats:
     def __init__(self):
@@ -114,7 +114,7 @@ class GachaTaskSequence(SequentialTaskSet):
         self.client.get("/gacha/pools", verify=False, name="/gacha/pools")
 
     def _buy_bundle(self): 
-        response = self.client.post(f"/currency/buy/{random.choice(self.pools_list)}", verify=False, name="/currency/buy")
+        response = self.client.post(f"/currency/buy/{random.choice(self.pools_list)}",catch_response=True ,verify=False, name="/currency/buy")
         if response.status_code != 200:
             response.failure(f"Failed to buy bundle: {response.status_code}")
             return False  # Indica l'errore nell'acquisto del bundle
@@ -173,7 +173,7 @@ class GachaTaskSequence(SequentialTaskSet):
 
     @task
     def create_auction(self):
-        if not self.auction_created and random.random() < AUCTION_CREATION_PROBABILITY: # Create only one auction per user + random auction creation condition
+        if not self.auction_created: #and random.random() < AUCTION_CREATION_PROBABILITY: # Create only one auction per user + random auction creation condition
             item_id = self._get_user_item_id()
             if item_id:
                 response = self.client.post(f"/auction/create?starting_price=10&inventory_item_owner_id={self.credentials['uuid']}&inventory_item_id={item_id}", verify=False, name="/auction/create")
@@ -191,29 +191,29 @@ class GachaTaskSequence(SequentialTaskSet):
 
     @task
     def bid_on_auction(self): # Updated bid_on_auction task
-        if random.random() < AUCTION_BID_PROBABILITY:
-            if self._buy_bundle():
-                self._add_currency()
-                response = self.get_auctions_list()
-            if response.status_code == 200:
-                auctions = response.json()
+            
+        if self._buy_bundle():
+            self._add_currency()
+            response = self.get_auctions_list()
+        if response.status_code == 200:
+            auctions = response.json()
 
-                if auctions:
-                    suitable_auctions = [
-                        auction for auction in auctions if auction.get("inventory_item_owner_id") != self.credentials["uuid"]
-                    ]
+            if auctions:
+                suitable_auctions = [
+                    auction for auction in auctions if auction.get("inventory_item_owner_id") != self.credentials["uuid"]
+                ]
 
-                    if suitable_auctions:
-                        chosen_auction = random.choice(suitable_auctions)
-                        auction_id = chosen_auction.get("auction_uuid")
-                        print(auction_id)
-                        print(f"/auction/bid/{auction_id}")
-                        self._add_currency()
-                        self.client.post(
-                            f"/auction/bid/{auction_id}?bid=1",
-                            verify=False,
-                            name=f"/auction/bid/{auction_id}"
-                        )
+                if suitable_auctions:
+                    chosen_auction = random.choice(suitable_auctions)
+                    auction_id = chosen_auction.get("auction_uuid")
+                    print(auction_id)
+                    print(f"/auction/bid/{auction_id}")
+                    self._add_currency()
+                    self.client.post(
+                        f"/auction/bid/{auction_id}?bid=1",
+                        verify=False,
+                        name=f"/auction/bid/{auction_id}"
+                    )
 
     @task
     def get_auction_status(self):
@@ -249,17 +249,16 @@ class GachaTaskSequence(SequentialTaskSet):
 
     @task
     def delete_item(self):
-        if random.random() < DELETE_ITEM_PROBABILITY:
-            item_to_delete = self._get_user_item_id()
-            if item_to_delete:
-                all_auctions = self.get_all_auctions()  # Get all auctions across all pages
-                item_in_auction = any(auction.get("inventory_item_id") == item_to_delete for auction in all_auctions)
+        item_to_delete = self._get_user_item_id()
+        if item_to_delete:
+            all_auctions = self.get_all_auctions()  # Get all auctions across all pages
+            item_in_auction = any(auction.get("inventory_item_id") == item_to_delete for auction in all_auctions)
 
-                if not item_in_auction:
-                    self.client.delete(f"/inventory/?inventory_item_owner_id={self.credentials['uuid']}&inventory_item_id={item_to_delete}", verify=False, name=f"/inventory/?inventory_item_owner_id={self.credentials['uuid']}&inventory_item_id={item_to_delete}")
-                    print("url",f"/inventory/?inventory_item_owner_id={self.credentials['uuid']}&inventory_item_id={item_to_delete}")
-                else:
-                    print(f"Item {item_to_delete} is currently in an auction and cannot be deleted.")
+            if not item_in_auction:
+                self.client.delete(f"/inventory/?inventory_item_owner_id={self.credentials['uuid']}&inventory_item_id={item_to_delete}", verify=False, name=f"/inventory/?inventory_item_owner_id={self.credentials['uuid']}&inventory_item_id={item_to_delete}")
+                print("url",f"/inventory/?inventory_item_owner_id={self.credentials['uuid']}&inventory_item_id={item_to_delete}")
+            else:
+                print(f"Item {item_to_delete} is currently in an auction and cannot be deleted.")
 
         
 
