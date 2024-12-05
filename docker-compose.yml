@@ -228,24 +228,24 @@ services:
       retries: 15
     restart: always
   
-  service_auction_db_replica:
-    build: ./databases/auction/replica/
-    container_name: unipi-gatchaandgames-service_auction_db_replica
-    env_file: ./databases/auction/replica/replica.env
-    volumes:
-    - ./databases/auction/replica/init.sql:/docker-entrypoint-initdb.d/init.sql
-    networks:
-    - public_gachaandgames_network
-    depends_on:
-      service_auction_db_primary:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      start_period: 5s
-      interval: 3s
-      timeout: 2s
-      retries: 20
-    restart: always
+  # service_auction_db_replica:
+  #   build: ./databases/auction/replica/
+  #   container_name: unipi-gatchaandgames-service_auction_db_replica
+  #   env_file: ./databases/auction/replica/replica.env
+  #   volumes:
+  #   - ./databases/auction/replica/init.sql:/docker-entrypoint-initdb.d/init.sql
+  #   networks:
+  #   - public_gachaandgames_network
+  #   depends_on:
+  #     service_auction_db_primary:
+  #       condition: service_healthy
+  #   healthcheck:
+  #     test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+  #     start_period: 5s
+  #     interval: 3s
+  #     timeout: 2s
+  #     retries: 20
+  #   restart: always
   
   service_auction_db_proxy:
     image: proxysql/proxysql:2.7.1
@@ -264,8 +264,8 @@ services:
     depends_on:
       service_auction_db_primary:
         condition: service_healthy
-      service_auction_db_replica:
-        condition: service_healthy
+      # service_auction_db_replica:
+      #   condition: service_healthy
     restart: always
 
   ########################## CURRENCY
