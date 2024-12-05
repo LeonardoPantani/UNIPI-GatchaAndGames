@@ -2,8 +2,8 @@ FROM mysql:9.1.0
 
 COPY ./init.sql /docker-entrypoint-initdb.d/
 COPY ./mock_data.sql /docker-entrypoint-initdb.d/
-COPY ./ssl/ /etc/mysql/ssl/
+COPY ./ssl/ /etc/mysql/certs/
 
-RUN chown -R mysql:mysql /etc/mysql/ssl/ && chmod 600 /etc/mysql/ssl/*
+RUN chown -R mysql:mysql /etc/mysql/certs && chmod 600 /etc/mysql/certs/*
 
-CMD ["mysqld", "--ssl-ca=/etc/mysql/ssl/ca-cert.pem", "--ssl-cert=/etc/mysql/ssl/server-cert.pem", "--ssl-key=/etc/mysql/ssl/server-key.pem"]
+CMD ["mysqld", "--require_secure_transport=ON", "--ssl-ca=/etc/mysql/certs/ca.crt", "--ssl-cert=/etc/mysql/certs/db-feedback-primary.crt", "--ssl-key=/etc/mysql/certs/db-feedback-primary.key"]

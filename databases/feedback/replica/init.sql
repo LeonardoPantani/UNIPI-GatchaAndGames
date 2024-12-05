@@ -3,8 +3,8 @@ CHANGE REPLICATION SOURCE TO
     SOURCE_USER='replication',
     SOURCE_PASSWORD='Slaverepl123',
     SOURCE_SSL=1,
-    SOURCE_SSL_CA='/etc/mysql/ssl/ca-cert.pem',
-    SOURCE_SSL_CERT='/etc/mysql/ssl/server-cert.pem',
-    SOURCE_SSL_KEY='/etc/mysql/ssl/server-key.pem';
+    SOURCE_SSL_CA='/etc/mysql/certs/ca.crt',
+    SOURCE_SSL_CERT='/etc/mysql/certs/db-feedback-replica.crt',
+    SOURCE_SSL_KEY='/etc/mysql/certs/db-feedback-replica.key';
 
 START REPLICA;
