@@ -9,7 +9,7 @@ services:
       - ./common/:/usr/src/app/openapi_server/helpers/
     restart: always
     healthcheck:
-      test: ["CMD", "curl", "-f", "--cert", "/usr/src/app/ssl/cdn-cert.pem", "--key", "/usr/src/app/ssl/cdn-key.pem", "--cacert", "/usr/src/app/ssl/cdn-ca-cert.pem", "https://cdn/health_check"]
+      test: ["CMD", "curl", "-f", "--cert", "/usr/src/app/ssl/cdn.crt", "--key", "/usr/src/app/ssl/cdn.key", "--cacert", "/usr/src/app/ssl/ca.crt", "https://cdn/health_check"]
       interval: 15s
       timeout: 3s
       retries: 3
@@ -40,7 +40,7 @@ services:
       - cdn
     restart: always
     healthcheck:
-      test: ["CMD", "curl", "-f", "--cert", "/etc/nginx/ssl/apigateways-cert.pem", "--key", "/etc/nginx/ssl/apigateways-key.pem", "--cacert", "/etc/nginx/ssl/apigateways-ca-cert.pem", "https://localhost/health_check"]
+      test: ["CMD", "curl", "-f", "-k", "https://localhost/health_check"]
       interval: 30s
       timeout: 3s
       retries: 3
@@ -62,7 +62,7 @@ services:
       - service_auth
     restart: always
     healthcheck:
-      test: ["CMD", "curl", "-f", "--cert", "/etc/nginx/ssl/apigateways-cert.pem", "--key", "/etc/nginx/ssl/apigateways-key.pem", "--cacert", "/etc/nginx/ssl/apigateways-ca-cert.pem", "https://localhost:444/health_check"]
+      test: ["CMD", "curl", "-f", "-k", "https://localhost:444/health_check"]
       interval: 15s
       timeout: 3s
       retries: 3
@@ -75,11 +75,11 @@ services:
     build: ./redis/
     container_name: unipi-gatchaandgames-redis
     volumes:
-      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
-      - ./redis/ssl:/usr/local/etc/redis/ssl:ro
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
+      - ./redis/ssl:/usr/local/etc/redis/ssl
     restart: always
     healthcheck:
-      test: ["CMD", "redis-cli", "--tls", "--cert", "/usr/local/etc/redis/ssl/redis-cert.pem", "--key", "/usr/local/etc/redis/ssl/redis-key.pem", "--cacert", "/usr/local/etc/redis/ssl/cas/redis-ca-cert.pem", "-h", "redis", "ping"]
+      test: ["CMD", "redis-cli", "-h", "redis", "-p", "6380", "ping"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -126,7 +126,7 @@ services:
       - public_gachaandgames_network
       - private_gachaandgames_network
     healthcheck:
-      test: ["CMD", "curl", "-f", "--cert", "/usr/src/app/ssl/auth-cert.pem", "--key", "/usr/src/app/ssl/auth-key.pem", "--cacert", "/usr/src/app/ssl/services-ca-cert.pem", "https://service_auth/auth/health_check"]
+      test: ["CMD", "curl", "-f", "--cert", "/usr/src/app/ssl/auth.crt", "--key", "/usr/src/app/ssl/auth.key", "--cacert", "/usr/src/app/ssl/ca.crt", "https://service_auth/auth/health_check"]
       start_period: 10s
       interval: 1m
       timeout: 2s
@@ -138,11 +138,8 @@ services:
     container_name: unipi-gatchaandgames-service_auth_db_primary
     env_file: ./databases/auth/primary/primary.env
     volumes:
-      - ./databases/auth/primary/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-      - ./databases/auth/primary/mock_data.sql:/docker-entrypoint-initdb.d/mock_data.sql:ro
-
-      - ./databases/auth/primary/ssl:/etc/mysql/ssl:ro
-      - service_auth_db_primary_data:/var/lib/mysql
+      - ./databases/auth/primary/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./databases/auth/primary/mock_data.sql:/docker-entrypoint-initdb.d/mock_data.sql
     networks:
       - public_gachaandgames_network
     healthcheck:
@@ -158,12 +155,9 @@ services:
     container_name: unipi-gatchaandgames-service_auth_db_replica
     env_file: ./databases/auth/replica/replica.env
     volumes:
-    - ./databases/auth/replica/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-
-    - ./databases/auth/replica/ssl:/etc/mysql/ssl:ro
-    - service_auth_db_replica_data:/var/lib/mysql
+      - ./databases/auth/replica/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     networks:
-    - public_gachaandgames_network
+      - public_gachaandgames_network
     depends_on:
       service_auth_db_primary:
         condition: service_healthy
@@ -179,21 +173,21 @@ services:
     image: proxysql/proxysql:2.7.1
     container_name: unipi-gatchaandgames-service_auth_db_proxy
     volumes:
-    - ./databases/auth/proxy/config.cnf:/etc/proxysql.cnf
-    - ./databases/auth/proxy/ssl:/etc/proxysql/ssl:ro
+      - ./databases/auth/proxy/config.cnf:/etc/proxysql.cnf
+      - ./databases/auth/proxy/ssl:/var/lib/proxysql
     networks:
-    - public_gachaandgames_network
+      - public_gachaandgames_network
+    depends_on:
+      service_auth_db_primary:
+        condition: service_healthy
+      service_auth_db_replica:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-P", "6032", "-uradmin", "-pradmin"]
       start_period: 5s
       interval: 3s
       timeout: 2s
       retries: 20
-    depends_on:
-      service_auth_db_primary:
-        condition: service_healthy
-      service_auth_db_replica:
-        condition: service_healthy
     restart: always
   
   ########################## AUCTION

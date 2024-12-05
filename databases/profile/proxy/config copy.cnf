@@ -30,7 +30,6 @@ mysql_variables=
 	have_compress=true
 	poll_timeout=2000
 	interfaces="0.0.0.0:6033"
-	use_ssl=1
 	default_schema="information_schema"
 	stacksize=1048576
 	server_version="5.5.30"

@@ -1,4 +1,3 @@
-import json
 import os
 import random
 import matplotlib.pyplot as plt
@@ -270,6 +269,7 @@ def on_test_stop(environment, **kwargs):
 
 if __name__ == "__main__":
     import sys
+
     if len(sys.argv) == 1:
         os.system("locust -f locustfile.py --host=http://localhost:8080")
     else:

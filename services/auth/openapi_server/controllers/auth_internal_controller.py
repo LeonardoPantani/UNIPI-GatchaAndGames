@@ -34,7 +34,7 @@ circuit_breaker = CircuitBreaker(
         ProgrammingError,
     ],
 )
-redis_client = redis.Redis(host="redis", port=6380, db=0)
+redis_client = redis.Redis(host="redis", port=6379, db=0, ssl=True, ssl_certfile="/usr/src/app/ssl/auth.crt", ssl_keyfile="/usr/src/app/ssl/auth.key", ssl_ca_certs="/usr/src/app/ssl/ca.crt", ssl_cert_reqs="none")
 
 
 """
