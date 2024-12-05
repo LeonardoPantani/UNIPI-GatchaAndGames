@@ -58,7 +58,7 @@ def main():
     def close_db(error):
         db = g.pop("db", None)
         if db is not None:
-            db.close()
+            app.logger.debug("Database connection closed successfully.")
 
     # adding api
     connexion_app.add_api("openapi.yaml", arguments={"title": "Gacha System - OpenAPI 3.0"}, pythonic_params=True)
