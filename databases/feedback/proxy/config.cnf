@@ -1,3 +1,5 @@
+datadir="/var/lib/proxysql"
+
 admin_variables=
 {
 	admin_credentials="admin:admin;radmin:radmin"
@@ -6,12 +8,12 @@ admin_variables=
 
 mysql_servers =
 (
-    { address="service_feedback_db_primary", port=3306, hostgroup=1, max_connections=300 }
+    { address="service_feedback_db_primary", port=3306, hostgroup=1, max_connections=300, use_ssl=1 }
 )
 
 mysql_users =
 (
-    { username="gacha_test_user", password="gacha_test_password", default_hostgroup=1, max_connections=300 }
+    { username="gacha_test_user", password="gacha_test_password", default_hostgroup=1, max_connections=300, use_ssl=1 }
 )
 
 mysql_query_rules =
@@ -45,7 +47,8 @@ mysql_variables=
 	sessions_sort=true
 	connect_retries_on_failure=10
 
-    ssl_p2s_key="/etc/proxysql/ssl/server-key.pem"
-    ssl_p2s_cert="/etc/proxysql/ssl/server-cert.pem"
-    ssl_p2s_ca="/etc/proxysql/ssl/ca-cert.pem"
+	ssl_p2s_ca="/var/lib/proxysql/proxysql-ca.pem"
+	ssl_p2s_cert="/var/lib/proxysql/proxysql-cert.pem"
+	ssl_p2s_key="/var/lib/proxysql/proxysql-key.pem"
+	ssl_p2s_cipher="ECDHE-RSA-AES256-SHA"
 }
