@@ -31,16 +31,16 @@ openssl x509 -req -in dbCA.csr -CA ../rootCA.crt -CAkey ../rootCA.key -CAcreates
 
 
 # Crea chiave privata di un db
-openssl genrsa -out db-auction-replica.key 4096
+openssl genrsa -out db-currency-replica.key 4096
 
 # Crea richiesta di firma del certificato (CSR) di un db
-openssl req -new -key db-auction-replica.key -out db-auction-replica.csr -subj "/C=IT/ST=Tuscany/L=Pisa/O=GachaAndGames/OU=Develop/CN=service_auction_db_replica"
+openssl req -new -key db-currency-replica.key -out db-currency-replica.csr -subj "/C=IT/ST=Tuscany/L=Pisa/O=GachaAndGames/OU=Develop/CN=service_currency_db_replica"
 
 (torna a "dbCA")
 (esegui: touch index.txt)
 (esegui: echo 01 > serial)
 # Come dbCA, approva la richiesta di firma del certificato di un db generandone il certificato
-openssl ca -in db/db-auction-replica.csr -out db/db-auction-replica.crt -config createCSR.conf
+openssl ca -in db/db-currency-replica.csr -out db/db-currency-replica.crt -config createCSR.conf
 
 
 

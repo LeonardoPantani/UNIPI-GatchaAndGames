@@ -296,9 +296,6 @@ services:
     volumes:
     - ./databases/currency/primary/init.sql:/docker-entrypoint-initdb.d/init.sql
     - ./databases/currency/primary/mock_data.sql:/docker-entrypoint-initdb.d/mock_data.sql
-
-    - ./databases/currency/primary/ssl:/etc/mysql/ssl
-    - service_currency_db_primary_data:/var/lib/mysql
     networks:
     - public_gachaandgames_network
     healthcheck:
@@ -309,33 +306,31 @@ services:
       retries: 15
     restart: always
   
-  # service_currency_db_replica:
-  #   build: ./databases/currency/replica/
-  #   container_name: unipi-gatchaandgames-service_currency_db_replica
-  #   env_file: ./databases/currency/replica/replica.env
-  #   volumes:
-  #   - ./databases/currency/replica/init.sql:/docker-entrypoint-initdb.d/init.sql
-  #   - ./databases/currency/replica/ssl:/etc/mysql/ssl
-  #   - service_currency_db_replica_data:/var/lib/mysql
-  #   networks:
-  #   - public_gachaandgames_network
-  #   depends_on:
-  #     service_currency_db_primary:
-  #       condition: service_healthy
-  #   healthcheck:
-  #     test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-  #     start_period: 5s
-  #     interval: 3s
-  #     timeout: 2s
-  #     retries: 20
-  #   restart: always
+  service_currency_db_replica:
+    build: ./databases/currency/replica/
+    container_name: unipi-gatchaandgames-service_currency_db_replica
+    env_file: ./databases/currency/replica/replica.env
+    volumes:
+    - ./databases/currency/replica/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+    - public_gachaandgames_network
+    depends_on:
+      service_currency_db_primary:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      start_period: 5s
+      interval: 3s
+      timeout: 2s
+      retries: 20
+    restart: always
   
   service_currency_db_proxy:
     image: proxysql/proxysql:2.7.1
     container_name: unipi-gatchaandgames-service_currency_db_proxy
     volumes:
-    - ./databases/currency/proxy/config.cnf:/etc/proxysql.cnf
-    - ./databases/currency/proxy/ssl:/etc/proxysql/ssl
+      - ./databases/currency/proxy/config.cnf:/etc/proxysql.cnf
+      - ./databases/currency/proxy/ssl:/var/lib/proxysql
     networks:
     - public_gachaandgames_network
     healthcheck:
@@ -347,8 +342,8 @@ services:
     depends_on:
       service_currency_db_primary:
         condition: service_healthy
-      # service_currency_db_replica:
-      #   condition: service_healthy
+      service_currency_db_replica:
+        condition: service_healthy
     restart: always
 
   ########################## FEEDBACK
@@ -818,15 +813,6 @@ networks:
 volumes:
   loki_data:
   grafana_data:
-  service_auth_db_proxy_data:
-  service_auth_db_primary_data:
-  service_auth_db_replica_data:
-  service_profile_db_proxy_data:
-  service_profile_db_primary_data:
-  service_profile_db_replica_data:
-  service_currency_db_proxy_data:
-  service_currency_db_primary_data:
-  service_currency_db_replica_data:
   service_feedback_db_proxy_data:
   service_feedback_db_primary_data:
   service_feedback_db_replica_data:
