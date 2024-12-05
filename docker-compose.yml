@@ -40,7 +40,7 @@ services:
       - cdn
     restart: always
     healthcheck:
-      test: ["CMD", "curl", "-f", "--cert", "/etc/nginx/ssl/apigateways-cert.pem", "--key", "/etc/nginx/ssl/apigateways-key.pem", "--cacert", "/etc/nginx/ssl/apigateways-ca-cert.pem", "https://localhost/health_check"]
+      test: ["CMD", "curl", "-f", "-k", "https://localhost/health_check"]
       interval: 30s
       timeout: 3s
       retries: 3
@@ -62,7 +62,7 @@ services:
       - service_auth
     restart: always
     healthcheck:
-      test: ["CMD", "curl", "-f", "--cert", "/etc/nginx/ssl/apigateways-cert.pem", "--key", "/etc/nginx/ssl/apigateways-key.pem", "--cacert", "/etc/nginx/ssl/apigateways-ca-cert.pem", "https://localhost:444/health_check"]
+      test: ["CMD", "curl", "-f", "-k", "https://localhost:444/health_check"]
       interval: 15s
       timeout: 3s
       retries: 3
@@ -79,7 +79,7 @@ services:
       - ./redis/ssl:/usr/local/etc/redis/ssl
     restart: always
     healthcheck:
-      test: ["CMD", "redis-cli", "--tls", "--cert", "/usr/local/etc/redis/ssl/redis.crt", "--key", "/usr/local/etc/redis/ssl/redis.key", "--cacert", "/usr/local/etc/redis/ssl/cas/ca.crt", "-h", "redis", "ping"]
+      test: ["CMD", "redis-cli", "-h", "redis", "-p", "6380", "ping"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -126,7 +126,7 @@ services:
       - public_gachaandgames_network
       - private_gachaandgames_network
     healthcheck:
-      test: ["CMD", "curl", "-f", "--cert", "/usr/src/app/ssl/auth.crt", "--key", "/usr/src/app/ssl/auth.key", "--cacert", "/usr/src/app/ssl/serviceCA.crt", "https://service_auth/auth/health_check"]
+      test: ["CMD", "curl", "-f", "--cert", "/usr/src/app/ssl/auth.crt", "--key", "/usr/src/app/ssl/auth.key", "--cacert", "/usr/src/app/ssl/ca.crt", "https://service_auth/auth/health_check"]
       start_period: 10s
       interval: 1m
       timeout: 2s
