@@ -68,6 +68,7 @@ def check_owner_of_team(check_owner_of_team_request=None, session=None, user_uui
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
+        send_log(f"Inventory_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -107,6 +108,7 @@ def delete_by_stand_uuid(session=None, uuid=None):
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
+        send_log(f"Inventory_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -138,9 +140,11 @@ def delete_user_inventory(uuid=None, session=None):
         return "", 200
 
     except (OperationalError, DataError, DatabaseError, IntegrityError, 
-            InterfaceError, InternalError, ProgrammingError):
+            InterfaceError, InternalError, ProgrammingError) as e:
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return "", 503
     except CircuitBreakerError:
+        send_log(f"Inventory_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -175,9 +179,11 @@ def exists_inventory(uuid=None, session=None):
         return jsonify(response), 200
 
     except (OperationalError, DataError, DatabaseError, IntegrityError, 
-            InterfaceError, InternalError, ProgrammingError):
+            InterfaceError, InternalError, ProgrammingError) as e:
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return "", 503
     except CircuitBreakerError:
+        send_log(f"Inventory_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -209,9 +215,11 @@ def get_gachas_types_of_user(session=None, user_uuid=None):
         return jsonify(gacha_types), 200
 
     except (OperationalError, DataError, DatabaseError, IntegrityError, 
-            InterfaceError, InternalError, ProgrammingError):
+            InterfaceError, InternalError, ProgrammingError) as e:
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return "", 503
     except CircuitBreakerError:
+        send_log(f"Inventory_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -250,9 +258,11 @@ def get_inventory_by_owner_uuid(session=None, uuid=None):
         return jsonify(inventory_items), 200
 
     except (OperationalError, DataError, DatabaseError, IntegrityError, 
-            InterfaceError, InternalError, ProgrammingError):
+            InterfaceError, InternalError, ProgrammingError) as e:
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return "", 503
     except CircuitBreakerError:
+        send_log(f"Inventory_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -318,9 +328,11 @@ def get_inventory_items_by_owner_uuid(session=None, uuid=None, page_number=None)
         return jsonify(inventory_items), 200
 
     except (OperationalError, DataError, DatabaseError, IntegrityError, 
-            InterfaceError, InternalError, ProgrammingError):
+            InterfaceError, InternalError, ProgrammingError) as e:
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return "", 503
     except CircuitBreakerError:
+        send_log(f"Inventory_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -366,9 +378,11 @@ def get_item_by_uuid(session=None, uuid=None):
         return jsonify(inventory_item), 200
         
     except (OperationalError, DataError, DatabaseError, IntegrityError, 
-            InterfaceError, InternalError, ProgrammingError):
+            InterfaceError, InternalError, ProgrammingError) as e:
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return "", 503
     except CircuitBreakerError:
+        send_log(f"Inventory_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -419,9 +433,11 @@ def get_items_by_stand_uuid(session=None, uuid=None):
         return jsonify(inventory_items), 200
 
     except (OperationalError, DataError, DatabaseError, IntegrityError, 
-            InterfaceError, InternalError, ProgrammingError):
+            InterfaceError, InternalError, ProgrammingError) as e:
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return "", 503
     except CircuitBreakerError:
+        send_log(f"Inventory_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -466,9 +482,11 @@ def get_stand_uuid_by_item_uuid(session=None, uuid=None):
         return jsonify(stand_info), 200
 
     except (OperationalError, DataError, DatabaseError, IntegrityError, 
-            InterfaceError, InternalError, ProgrammingError):
+            InterfaceError, InternalError, ProgrammingError) as e:
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return "", 503
     except CircuitBreakerError:
+        send_log(f"Inventory_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -517,9 +535,11 @@ def insert_item(inventory_item=None, session=None):
         return "", 200
 
     except (OperationalError, DataError, DatabaseError, IntegrityError, 
-            InterfaceError, InternalError, ProgrammingError):
+            InterfaceError, InternalError, ProgrammingError) as e:
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return "", 503
     except CircuitBreakerError:
+        send_log(f"Inventory_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -562,9 +582,11 @@ def remove_item(session=None, item_uuid=None, owner_uuid=None):
         return response
 
     except (OperationalError, DataError, DatabaseError, IntegrityError, 
-            InterfaceError, InternalError, ProgrammingError):
+            InterfaceError, InternalError, ProgrammingError) as e:
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return "", 503
     except CircuitBreakerError:
+        send_log(f"Inventory_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -614,7 +636,9 @@ def update_item_ownership(session=None, new_owner_uuid=None, item_uuid=None, pri
         return "", 200
 
     except (OperationalError, DataError, DatabaseError, IntegrityError, 
-            InterfaceError, InternalError, ProgrammingError):
+            InterfaceError, InternalError, ProgrammingError) as e:
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return "", 503
     except CircuitBreakerError:
+        send_log(f"Inventory_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
