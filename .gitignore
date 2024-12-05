@@ -68,3 +68,5 @@ target/
 # custom
 */cookies.txt
 */__pycache__/
+proxysql_stats.db
+proxysql.db

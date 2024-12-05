@@ -49,7 +49,7 @@ def main():
         "password": os.environ.get("MYSQL_PASSWORD"),
         "database": os.environ.get("MYSQL_DB"),
         "port": os.environ.get("MYSQL_PORT"),
-        "ssl_ca": "/usr/src/app/ssl/rootCA.crt",
+        "ssl_ca": "/usr/src/app/ssl/ca.crt",
         "ssl_cert": "/usr/src/app/ssl/" + CONFIG["service_type"] + ".crt",
         "ssl_key": "/usr/src/app/ssl/" + CONFIG["service_type"] + ".key",
     }

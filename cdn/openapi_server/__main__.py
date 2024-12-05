@@ -19,6 +19,7 @@ SERVICE_TYPE = "cdn"
 STORAGE_DIR = "/usr/src/app/openapi_server/storage"
 os.makedirs(STORAGE_DIR, exist_ok=True)
 
+
 def is_valid_uuid(value):
     try:
         uuid.UUID(value)
@@ -123,6 +124,7 @@ def delete_image(file_uuid):
 def health_check():
     return jsonify({"message": "Service operational."}), 200
 
+
 def main():
     app.secret_key = os.environ.get("FLASK_SECRET_KEY")
     app.config["jwt_secret_key"] = os.environ.get("JWT_SECRET_KEY")
@@ -130,8 +132,15 @@ def main():
     app.config["requests_timeout"] = int(os.environ.get("REQUESTS_TIMEOUT"))
     app.config["database_timeout"] = int(os.environ.get("DATABASE_TIMEOUT"))
 
-    # do not provide CA since we do not want to authenticate clients
-    app.run(host="0.0.0.0", port=443, debug=True, ssl_context=("/usr/src/app/ssl/cdn.crt", "/usr/src/app/ssl/cdn.key"))
+    app.run(
+        host="0.0.0.0",
+        port=443,
+        debug=True,
+        ssl_context=(
+            "/usr/src/app/ssl/cdn.crt",
+            "/usr/src/app/ssl/cdn.key",
+        ),
+    )
 
 
 if __name__ == "__main__":
