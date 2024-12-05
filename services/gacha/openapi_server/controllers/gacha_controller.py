@@ -170,7 +170,11 @@ def pull_gacha(pool_id):
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
 
         add_to_inventory()
-        return response
+
+        response_data = response[0].get_json()
+        image_url = f"https://localhost/cdn/image/{response_data["gacha_uuid"]}"
+
+        return jsonify({"gacha": response_data, "image": image_url})
 
     except requests.HTTPError as e:
         if e.response.status_code == 404:
