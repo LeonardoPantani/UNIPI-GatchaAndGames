@@ -334,6 +334,20 @@ def reject_pv_prequest(pvp_match_uuid):
     valid, pvp_match_uuid = sanitize_uuid_input(pvp_match_uuid)
     if not valid:
         return jsonify({"error": "Invalid input"}), 400
+    
+    response = get_status(None, pvp_match_uuid)
+
+    if response[1] == 404:
+        return response
+    elif response[1] != 200:
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+
+    match_data = response[0].get_json()
+    if match_data["receiver_id"] != session['uuid']:
+        return jsonify({"error": "Cannot reject this match."}), 403
+    
+    if match_data["winner_id"] != "":
+        return jsonify({"error": "Match already disputed."}), 403
 
     response = delete_match(None, pvp_match_uuid)
 

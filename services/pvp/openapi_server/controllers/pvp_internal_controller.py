@@ -311,10 +311,11 @@ def remove_by_user_uuid(session=None, uuid=None):
 
 
 def set_results(pv_p_request=None, session=None):    
-    if not pv_p_request:
-        return "", 400
-    
-    print(pv_p_request)
+    if pv_p_request is None:
+        if not connexion.request.is_json:
+            return "", 400
+        pv_p_request = PvPRequest.from_dict(connexion.request.get_json()).to_dict()
+
     match_uuid = pv_p_request["pvp_match_uuid"]
     player1_uuid = pv_p_request["sender_id"]
     player2_uuid = pv_p_request["receiver_id"]
