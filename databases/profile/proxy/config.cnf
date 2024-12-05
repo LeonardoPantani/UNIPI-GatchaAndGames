@@ -8,7 +8,7 @@ admin_variables=
 
 mysql_servers =
 (
-    { address="service_inventory_db_primary", port=3306, hostgroup=1, max_connections=155, use_ssl=1 }
+    { address="service_profile_db_primary", port=3306, hostgroup=1, max_connections=155, use_ssl=1 }
 )
 
 mysql_users =

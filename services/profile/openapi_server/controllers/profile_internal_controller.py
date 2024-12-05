@@ -261,7 +261,6 @@ def edit_username(session=None, uuid=None, username=None):
                 return "", 304
 
             # Update username
-            print("sto qua")
             query = """
             UPDATE profiles 
             SET username = %s
