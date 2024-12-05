@@ -453,19 +453,16 @@ services:
     container_name: unipi-gatchaandgames-service_gacha_db_primary
     env_file: ./databases/gacha/primary/primary.env
     volumes:
-    - ./databases/gacha/primary/init.sql:/docker-entrypoint-initdb.d/init.sql
-    - ./databases/gacha/primary/mock_data.sql:/docker-entrypoint-initdb.d/mock_data.sql
-
-    - ./databases/gacha/primary/ssl:/etc/mysql/ssl
-    - service_gacha_db_primary_data:/var/lib/mysql
+      - ./databases/gacha/primary/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./databases/gacha/primary/mock_data.sql:/docker-entrypoint-initdb.d/mock_data.sql
     networks:
-    - public_gachaandgames_network
+      - public_gachaandgames_network
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       start_period: 10s
       interval: 3s
       timeout: 2s
-      retries: 15
+      retries: 20
     restart: always
   
   # service_gacha_db_replica:
@@ -473,11 +470,9 @@ services:
   #   container_name: unipi-gatchaandgames-service_gacha_db_replica
   #   env_file: ./databases/gacha/replica/replica.env
   #   volumes:
-  #   - ./databases/gacha/replica/init.sql:/docker-entrypoint-initdb.d/init.sql
-  #   - ./databases/gacha/replica/ssl:/etc/mysql/ssl
-  #   - service_gacha_db_replica_data:/var/lib/mysql
+  #     - ./databases/gacha/replica/init.sql:/docker-entrypoint-initdb.d/init.sql
   #   networks:
-  #   - public_gachaandgames_network
+  #     - public_gachaandgames_network
   #   depends_on:
   #     service_gacha_db_primary:
   #       condition: service_healthy
@@ -493,21 +488,21 @@ services:
     image: proxysql/proxysql:2.7.1
     container_name: unipi-gatchaandgames-service_gacha_db_proxy
     volumes:
-    - ./databases/gacha/proxy/config.cnf:/etc/proxysql.cnf
-    - ./databases/gacha/proxy/ssl:/etc/proxysql/ssl
+      - ./databases/gacha/proxy/config.cnf:/etc/proxysql.cnf
+      - ./databases/gacha/proxy/ssl:/var/lib/proxysql
     networks:
-    - public_gachaandgames_network
+      - public_gachaandgames_network
+    depends_on:
+      service_gacha_db_primary:
+        condition: service_healthy
+      # service_gacha_db_replica:
+      #   condition: service_healthy
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-P", "6032", "-uradmin", "-pradmin"]
       start_period: 5s
       interval: 3s
       timeout: 2s
       retries: 20
-    depends_on:
-      service_gacha_db_primary:
-        condition: service_healthy
-      # service_gacha_db_replica:
-      #   condition: service_healthy
     restart: always
 
   ########################## INVENTORY
@@ -809,9 +804,6 @@ networks:
 volumes:
   loki_data:
   grafana_data:
-  service_gacha_db_proxy_data:
-  service_gacha_db_primary_data:
-  service_gacha_db_replica_data:
   service_inventory_db_proxy_data:
   service_inventory_db_primary_data:
   service_inventory_db_replica_data:
