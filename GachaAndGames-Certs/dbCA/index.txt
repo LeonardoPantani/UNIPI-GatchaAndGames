@@ -10,3 +10,6 @@ V	271205150852Z		09	unknown	/C=IT/ST=Tuscany/L=Pisa/O=GachaAndGames/OU=Develop/C
 V	271205160039Z		0A	unknown	/C=IT/ST=Tuscany/L=Pisa/O=GachaAndGames/OU=Develop/CN=service_feedback_db_primary
 V	271205160111Z		0B	unknown	/C=IT/ST=Tuscany/L=Pisa/O=GachaAndGames/OU=Develop/CN=service_feedback_db_replica
 V	271205160140Z		0C	unknown	/C=IT/ST=Tuscany/L=Pisa/O=GachaAndGames/OU=Develop/CN=service_feedback_db_proxy
+V	271205173232Z		0D	unknown	/C=IT/ST=Tuscany/L=Pisa/O=GachaAndGames/OU=Develop/CN=service_gacha_db_primary
+V	271205173303Z		0E	unknown	/C=IT/ST=Tuscany/L=Pisa/O=GachaAndGames/OU=Develop/CN=service_gacha_db_replica
+V	271205173330Z		0F	unknown	/C=IT/ST=Tuscany/L=Pisa/O=GachaAndGames/OU=Develop/CN=service_gacha_db_proxy
