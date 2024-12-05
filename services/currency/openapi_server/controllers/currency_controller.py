@@ -91,7 +91,7 @@ def buy_currency(bundle_id):
             candidate_user_account_no = index
 
     if user_accounts["accounts"][candidate_user_account_no]["currency"] != currency_name:
-        return jsonify({"error": "Different currency needed, contact your bank."}), 400
+        return jsonify({"error": "Different currency needed, contact your bank."}), 406
     
     if user_accounts["accounts"][candidate_user_account_no]["amount"] < price:
         return jsonify({"error": "You cannot afford this bundle."}), 412
