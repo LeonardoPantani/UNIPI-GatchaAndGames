@@ -6,3 +6,6 @@ V	271205113522Z		05	unknown	/C=IT/ST=Tuscany/L=Pisa/O=GachaAndGames/OU=Develop/C
 V	271205113619Z		06	unknown	/C=IT/ST=Tuscany/L=Pisa/O=GachaAndGames/OU=Develop/CN=service_auction_db_replica
 V	271205150729Z		07	unknown	/C=IT/ST=Tuscany/L=Pisa/O=GachaAndGames/OU=Develop/CN=service_currency_db_primary
 V	271205150816Z		08	unknown	/C=IT/ST=Tuscany/L=Pisa/O=GachaAndGames/OU=Develop/CN=service_currency_db_proxy
+V	271205150852Z		09	unknown	/C=IT/ST=Tuscany/L=Pisa/O=GachaAndGames/OU=Develop/CN=service_currency_db_replica
+V	271205160039Z		0A	unknown	/C=IT/ST=Tuscany/L=Pisa/O=GachaAndGames/OU=Develop/CN=service_feedback_db_primary
+V	271205160111Z		0B	unknown	/C=IT/ST=Tuscany/L=Pisa/O=GachaAndGames/OU=Develop/CN=service_feedback_db_replica

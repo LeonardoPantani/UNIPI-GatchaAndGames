@@ -6,6 +6,7 @@ services:
     env_file: ./cdn/.env
     volumes:
       - ./cdn:/usr/src/app/
+      - ./image_storage/:/usr/src/app/openapi_server/storage/
       - ./common/:/usr/src/app/openapi_server/helpers/
     restart: always
     healthcheck:
@@ -306,24 +307,24 @@ services:
       retries: 15
     restart: always
   
-  service_currency_db_replica:
-    build: ./databases/currency/replica/
-    container_name: unipi-gatchaandgames-service_currency_db_replica
-    env_file: ./databases/currency/replica/replica.env
-    volumes:
-    - ./databases/currency/replica/init.sql:/docker-entrypoint-initdb.d/init.sql
-    networks:
-    - public_gachaandgames_network
-    depends_on:
-      service_currency_db_primary:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      start_period: 5s
-      interval: 3s
-      timeout: 2s
-      retries: 20
-    restart: always
+  # service_currency_db_replica:
+  #   build: ./databases/currency/replica/
+  #   container_name: unipi-gatchaandgames-service_currency_db_replica
+  #   env_file: ./databases/currency/replica/replica.env
+  #   volumes:
+  #   - ./databases/currency/replica/init.sql:/docker-entrypoint-initdb.d/init.sql
+  #   networks:
+  #   - public_gachaandgames_network
+  #   depends_on:
+  #     service_currency_db_primary:
+  #       condition: service_healthy
+  #   healthcheck:
+  #     test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+  #     start_period: 5s
+  #     interval: 3s
+  #     timeout: 2s
+  #     retries: 20
+  #   restart: always
   
   service_currency_db_proxy:
     image: proxysql/proxysql:2.7.1
@@ -342,8 +343,8 @@ services:
     depends_on:
       service_currency_db_primary:
         condition: service_healthy
-      service_currency_db_replica:
-        condition: service_healthy
+      # service_currency_db_replica:
+      #   condition: service_healthy
     restart: always
 
   ########################## FEEDBACK
@@ -375,9 +376,6 @@ services:
     volumes:
     - ./databases/feedback/primary/init.sql:/docker-entrypoint-initdb.d/init.sql
     - ./databases/feedback/primary/mock_data.sql:/docker-entrypoint-initdb.d/mock_data.sql
-
-    - ./databases/feedback/primary/ssl:/etc/mysql/ssl
-    - service_feedback_db_primary_data:/var/lib/mysql
     networks:
     - public_gachaandgames_network
     healthcheck:
@@ -387,15 +385,13 @@ services:
       timeout: 2s
       retries: 15
     restart: always
-  
+
   # service_feedback_db_replica:
   #   build: ./databases/feedback/replica/
   #   container_name: unipi-gatchaandgames-service_feedback_db_replica
   #   env_file: ./databases/feedback/replica/replica.env
   #   volumes:
   #   - ./databases/feedback/replica/init.sql:/docker-entrypoint-initdb.d/init.sql
-  #   - ./databases/feedback/replica/ssl:/etc/mysql/ssl
-  #   - service_feedback_db_replica_data:/var/lib/mysql
   #   networks:
   #   - public_gachaandgames_network
   #   depends_on:
@@ -413,8 +409,8 @@ services:
     image: proxysql/proxysql:2.7.1
     container_name: unipi-gatchaandgames-service_feedback_db_proxy
     volumes:
-    - ./databases/feedback/proxy/config.cnf:/etc/proxysql.cnf
-    - ./databases/feedback/proxy/ssl:/etc/proxysql/ssl
+      - ./databases/feedback/proxy/config.cnf:/etc/proxysql.cnf
+      - ./databases/feedback/proxy/ssl:/var/lib/proxysql
     networks:
     - public_gachaandgames_network
     healthcheck:
@@ -813,9 +809,6 @@ networks:
 volumes:
   loki_data:
   grafana_data:
-  service_feedback_db_proxy_data:
-  service_feedback_db_primary_data:
-  service_feedback_db_replica_data:
   service_gacha_db_proxy_data:
   service_gacha_db_primary_data:
   service_gacha_db_replica_data:

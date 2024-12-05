@@ -45,10 +45,13 @@ def get_gacha_info(gacha_uuid):
     response = get_gacha(None, gacha_uuid)
 
     if response[1] == 404:
+        send_log(f"get_gacha: No gacha found with uuid {gacha_uuid} by user {session['username']}.", level="info", service_type=SERVICE_TYPE)
         return jsonify({"error": "Gacha not found."}), 404
     elif response[1] != 200:
+        send_log(f"get_gacha: HttpError {response} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
 
+    send_log(f"get_gacha_info: User {session['username']} has successfully gotten gacha {gacha_uuid} info.", level="general", service_type=SERVICE_TYPE)
     return response[0], 200
 
 
@@ -61,10 +64,6 @@ def pull_gacha(pool_id):
         return response
     else:
         session = response[0]
-    
-    user_uuid = session.get("uuid")
-    if not user_uuid:
-        return jsonify({"error": "Not logged in"}), 403
 
     pool_id = sanitize_string_input(pool_id)
 
@@ -75,6 +74,7 @@ def pull_gacha(pool_id):
         send_log(f"get_pool: No pool found with name {pool_id} by user {session['username']}.", level="info", service_type=SERVICE_TYPE)
         return jsonify({"error": "Pool not found"}), 404
     elif response[1] != 200:
+        send_log(f"get_pool: HttpError {response} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     
     pool = response[0].get_json()
@@ -85,7 +85,7 @@ def pull_gacha(pool_id):
         def check_currency():
             response = requests.get(
                 f"{PROFILE_SERVICE_URL}/profile/internal/get_currency_from_uuid",
-                params={"user_uuid": user_uuid},
+                params={"user_uuid": session['uuid']},
                 verify=False,
                 timeout=current_app.config["requests_timeout"],
             )
@@ -141,7 +141,7 @@ def pull_gacha(pool_id):
         def deduct_currency():
             response = requests.post(
                 f"{PROFILE_SERVICE_URL}/profile/internal/add_currency",
-                params={"uuid": user_uuid, "amount": -pool["price"]},
+                params={"uuid": session['uuid'], "amount": -pool["price"]},
                 verify=False,
                 timeout=current_app.config["requests_timeout"],
             )
@@ -167,7 +167,7 @@ def pull_gacha(pool_id):
     new_item_uuid = str(uuid.uuid4())
 
     item_data = {
-        "owner_id": user_uuid,
+        "owner_id": session['uuid'],
         "item_id": new_item_uuid,
         "gacha_uuid": selected_item,
         "owners_no": 1,
@@ -192,7 +192,7 @@ def pull_gacha(pool_id):
     except requests.HTTPError as e:
         send_log(f"add_to_inventory: HttpError {e} for item {new_item_uuid} and user {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    except requests.RequestException:
+    except requests.RequestException as e:
         send_log(f"add_to_inventory: RequestException {e} for item {new_item_uuid} and user {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
@@ -201,8 +201,10 @@ def pull_gacha(pool_id):
 
     response = get_gacha(None, selected_item)
     if response[1] == 404:
+        send_log(f"get_gacha: No gacha found with uuid {selected_item} by user {session['username']}.", level="info", service_type=SERVICE_TYPE)
         return response
     elif response[1] == 503 or response[1] == 400:
+        send_log(f"get_gacha: HttpError {response} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
 
     add_to_inventory()
@@ -222,15 +224,12 @@ def get_pool_info():
     else:
         session = response[0]
 
-    user_uuid = session.get("uuid")
-    if not user_uuid:
-        return jsonify({"error": "Not logged in"}), 403
-
     response = list_pools()
 
     if response[1] != 200:
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     
+    send_log(f"get_pool_info: User {session['username']} has successfully gotten pools info.", level="general", service_type=SERVICE_TYPE)
     return response
 
 
@@ -243,17 +242,13 @@ def get_gachas(not_owned):
     else:
         session = response[0]
 
-    user_uuid = session.get("uuid")
-    if not user_uuid:
-        return jsonify({"error": "Not logged in"}), 403
-
     try:
         # First get user's owned gacha types
         @circuit_breaker
         def get_owned_gachas():
             response = requests.get(
                 f"{INVENTORY_SERVICE_URL}/inventory/internal/get_gachas_types_of_user",
-                params={"user_uuid": user_uuid},
+                params={"user_uuid": session['uuid']},
                 verify=False,
                 timeout=current_app.config["requests_timeout"],
             )
@@ -263,20 +258,21 @@ def get_gachas(not_owned):
         owned_gachas = get_owned_gachas()
         
     except requests.HTTPError as e:
-        if e.response.status_code == 404:
-            return jsonify({"error": "No gachas found"}), 404
-        else:
-            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+        send_log(f"get_owned_gachas: HttpError {e} for user {session['username']}.", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
+        send_log(f"get_owned_gachas: RequestException {e} for user {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
+        send_log(f"add_to_inventory: Circuit breaker is open for user {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    print(owned_gachas)
+    
     # Then get filtered gacha list
     response = list_gachas(owned_gachas, None, not_owned)
-    print(response)
+    
     if response[1] != 200:
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     
+    send_log(f"get_gachas: User {session['username']} has successfully gotten {"not" if not_owned else ""} owned gacha info.", level="general", service_type=SERVICE_TYPE)
     return response[0]
 
