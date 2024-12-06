@@ -96,12 +96,16 @@ def accept_pvp_request(pvp_match_uuid):
 
     except requests.HTTPError as e:
         if e.response.status_code == 404:
+            send_log(f"make_request_to_inventory_service: Some items not found in user {session['username']} inventory", level="info", service_type=SERVICE_TYPE)
             return jsonify({"error": "Items not found in user inventory."}), 404
         else:
+            send_log(f"make_request_to_inventory_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
+        send_log(f"make_request_to_inventory_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
+        send_log(f"make_request_to_inventory_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
     
     player1_team = json.loads(match_data["teams"])["team1"]
@@ -147,12 +151,16 @@ def accept_pvp_request(pvp_match_uuid):
 
         except requests.HTTPError as e:
             if e.response.status_code == 404:
+                send_log(f"make_request_to_inventory_service: Some items not found in user's inventory", level="info", service_type=SERVICE_TYPE)
                 return jsonify({"error": "Items not found in user inventory."}), 404
             else:
+                send_log(f"make_request_to_inventory_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
                 return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
         except requests.RequestException:
+            send_log(f"make_request_to_inventory_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
         except CircuitBreakerError:
+            send_log(f"make_request_to_inventory_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
         try:
@@ -184,12 +192,16 @@ def accept_pvp_request(pvp_match_uuid):
 
         except requests.HTTPError as e:
             if e.response.status_code == 404:
+                send_log(f"make_request_to_gacha_service: Gacha not found", level="info", service_type=SERVICE_TYPE)
                 return jsonify({"error": "Gacha not found."}), 404
             else:
+                send_log(f"make_request_to_gacha_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
                 return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
         except requests.RequestException:
+            send_log(f"make_request_to_gacha_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
         except CircuitBreakerError:
+            send_log(f"make_request_to_gacha_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
         player1_stand_name = player1_stand_data["name"]
@@ -224,7 +236,7 @@ def accept_pvp_request(pvp_match_uuid):
                 else:
                     round_winner = "Player 2"
                     winner_name = player2_stand_name
-        print(points)
+        
         log["rounds"].append(
             {
                 "extracted_stat": extracted_stat.replace("stat_", ""),
@@ -233,19 +245,19 @@ def accept_pvp_request(pvp_match_uuid):
                 "round_winner": round_winner+"'s "+winner_name,
             }
         )
-    print(points)
+    
     if points > 0:
         winner = True
         winner_id = sender_uuid
     else:
         winner = False
         winner_id = receiver_uuid
-    print(winner,winner_id)
+    
     try:
 
         @circuit_breaker
         def make_request_to_profile_service():
-            params = {"uuid": session["uuid"], "points_to_add": abs(points)}
+            params = {"uuid": winner_id, "points_to_add": abs(points)}
             url = "https://service_profile/profile/internal/add_pvp_score"
             response = requests.post(
                 url, params=params, verify=False, timeout=current_app.config["requests_timeout"]
@@ -256,12 +268,16 @@ def accept_pvp_request(pvp_match_uuid):
 
     except requests.HTTPError as e:
         if e.response.status_code == 404:
+            send_log(f"make_request_to_profile_service: No user found with uuid: {winner_id}", level="info", service_type=SERVICE_TYPE)
             return jsonify({"error": "User not found."}), 404
         else:
+            send_log(f"make_request_to_profile_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
+        send_log(f"make_request_to_profile_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
+        send_log(f"make_request_to_profile_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
 
@@ -278,10 +294,12 @@ def accept_pvp_request(pvp_match_uuid):
     }
     
     response = set_results(payload, None)
-    print(response)
+    
     if response[1] == 200:
+        send_log(f"accept_pvp_request: User {session['username']} has successfully accepted and performed match {pvp_match_uuid}.", level="general", service_type=SERVICE_TYPE)
         return response
     else:
+        send_log(f"set_results: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
 
 
@@ -296,8 +314,10 @@ def check_pending_pvp_requests():
     response = get_pending_list(None, session["uuid"])
 
     if response[1] == 200:
+        send_log(f"check_pending_pvp_requests: User {session['username']} has successfully gotten its pending match requests.", level="general", service_type=SERVICE_TYPE)
         return response
     else:
+        send_log(f"get_pending_list: HttpError {response} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
 
 
@@ -316,10 +336,13 @@ def get_pvp_status(pvp_match_uuid):
     response = get_status(None, pvp_match_uuid)
 
     if response[1] == 404:
+        send_log(f"get_status: No match found with uuid: {pvp_match_uuid} by user {session['username']}.", level="info", service_type=SERVICE_TYPE)
         return response
     elif response[1] == 200:
+        send_log(f"get_pvp_status: User {session['username']} has successfully gotten match {pvp_match_uuid} info.", level="general", service_type=SERVICE_TYPE)
         return response
     else:
+        send_log(f"get_status: HttpError {response} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
 
 
@@ -338,24 +361,31 @@ def reject_pv_prequest(pvp_match_uuid):
     response = get_status(None, pvp_match_uuid)
 
     if response[1] == 404:
+        send_log(f"get_status: No match found with uuid: {pvp_match_uuid} by user {session['username']}.", level="info", service_type=SERVICE_TYPE)
         return response
     elif response[1] != 200:
+        send_log(f"get_status: HttpError {response} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
 
     match_data = response[0].get_json()
     if match_data["receiver_id"] != session['uuid']:
+        send_log(f"reject_pv_prequest: User {session['username']} tried to reject match with uuid: {pvp_match_uuid} but it wasn't for him.", level="info", service_type=SERVICE_TYPE)
         return jsonify({"error": "Cannot reject this match."}), 403
     
     if match_data["winner_id"] != "":
+        send_log(f"reject_pv_prequest: User {session['username']} tried to reject match with uuid: {pvp_match_uuid} but it was already disputed.", level="info", service_type=SERVICE_TYPE)
         return jsonify({"error": "Match already disputed."}), 403
 
     response = delete_match(None, pvp_match_uuid)
 
     if response[1] == 404:
+        send_log(f"delete_match: No match found with uuid: {pvp_match_uuid} by user {session['username']}.", level="info", service_type=SERVICE_TYPE)
         return response
     elif response[1] == 200:
+        send_log(f"reject_pv_prequest: User {session['username']} has successfully rejected match {pvp_match_uuid}.", level="general", service_type=SERVICE_TYPE)
         return jsonify({"message": "Match rejected successfully."}), 200
     else:
+        send_log(f"delete_match: HttpError {response} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
 
 
@@ -396,13 +426,13 @@ def send_pvp_request(user_uuid):
         exist_data = make_request_to_profile_service()
 
     except requests.HTTPError as e:
-        if e.response.status_code == 404:
-            return jsonify({"error": "User not found."}), 404
-        else:
-            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+        send_log(f"make_request_to_profile_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
+        send_log(f"make_request_to_profile_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
+        send_log(f"make_request_to_profile_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
     if exist_data["exists"] == False:
@@ -424,12 +454,16 @@ def send_pvp_request(user_uuid):
 
     except requests.HTTPError as e:
         if e.response.status_code == 404:
+            send_log(f"make_request_to_inventory_service: Some items not found in user {session['username']} inventory", level="info", service_type=SERVICE_TYPE)
             return jsonify({"error": "Items not found in user inventory."}), 404
         else:
+            send_log(f"make_request_to_inventory_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
+        send_log(f"make_request_to_inventory_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
+        send_log(f"make_request_to_inventory_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
     match_uuid = str(uuid.uuid4())
@@ -446,6 +480,8 @@ def send_pvp_request(user_uuid):
     response = insert_match(payload, None)
 
     if response[1] != 201:
+        send_log(f"insert_match: HttpError {response} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
 
+    send_log(f"send_pvp_request: User {session['username']} has successfully sent a match request to user {user_uuid}.", level="general", service_type=SERVICE_TYPE)
     return jsonify({"message": "Match request sent successfully."}), 200
