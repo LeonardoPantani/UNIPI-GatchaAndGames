@@ -118,23 +118,43 @@ def pull_gacha(pool_id):
         pool["probability_epic"],
         pool["probability_legendary"],
     ]
-
+    
+    common_pool = []
+    rare_pool = []
+    epic_pool = []
+    legendary_pool = []
+    for item in pool["items"]:
+        if item[1] == "COMMON":
+            common_pool.append(item[0])
+        if item[1] == "RARE":
+            rare_pool.append(item[0])
+        if item[1] == "EPIC":
+            epic_pool.append(item[0])
+        if item[1] == "LEGENDARY":
+            legendary_pool.append(item[0])
+    
     # Generate random value between 0 and 1
     roll = random.random()
-
+    
     # Cumulative probability to determine item
     cumulative_prob = 0
     selected_index = 0
-
     for i, prob in enumerate(probabilities):
         cumulative_prob += prob
         if roll <= cumulative_prob:
             selected_index = i
             break
-
     # Get the selected item from pool items list
-    selected_item = pool["items"][selected_index]
-
+    
+    if selected_index == 0:
+        selected_item = random.choice(common_pool)
+    if selected_index == 1:
+        selected_item = random.choice(rare_pool)
+    if selected_index == 2:
+        selected_item = random.choice(epic_pool)
+    if selected_index == 3:
+        selected_item = random.choice(legendary_pool)
+    
     try:
         # Deduct currency
         @circuit_breaker
@@ -174,7 +194,7 @@ def pull_gacha(pool_id):
         "price_paid": pool["price"],
         "obtained_date": datetime.today().strftime("%Y-%m-%d %H:%M:%S"),
     }
-
+    
     try:
         # Add item to inventory
         @circuit_breaker
@@ -208,7 +228,7 @@ def pull_gacha(pool_id):
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
 
     add_to_inventory()
-
+    
     response_data = response[0].get_json()
     image_url = f"https://localhost/cdn/image/{response_data["gacha_uuid"]}"
     
