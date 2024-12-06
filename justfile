@@ -22,6 +22,8 @@ off: down
 
 up: on
     #!/bin/bash
+    find . -name "proxysql_stats.db" -type f -delete
+    find . -name "proxysql.db" -type f -delete
     echo "Starting containers..."
     docker compose up -d
 
@@ -30,12 +32,15 @@ down:
     if [ $(docker compose ps | wc -l) -ne 1 ]; then
         echo "Removing containers and resetting volumes..."
         docker compose down -v
+        docker compose down -v
     else
         echo "Containers are stopped..."
     fi
 
 start: on
     #!/bin/bash
+    find . -name "proxysql_stats.db" -type f -delete
+    find . -name "proxysql.db" -type f -delete
     echo "Starting containers and building..."
     docker compose up --build -d
 
