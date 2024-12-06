@@ -134,7 +134,7 @@ def remove_inventory_item():
 
     if auction_check.get("found", False):
         send_log(f"remove_inventory_item: User {session['username']} tried to remove item {item_uuid} but it's on an open auction.", level="info", service_type=SERVICE_TYPE)
-        return jsonify({"error": "Cannot remove item that is currently in auction"}), 400
+        return jsonify({"error": "Cannot remove item that is currently in auction"}), 409
 
     response = remove_item(None, item_uuid, session['uuid'])
 
