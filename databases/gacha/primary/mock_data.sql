@@ -73,7 +73,7 @@ INSERT INTO gachas_types (uuid, name, stat_power, stat_speed, stat_durability, s
 -- Insert into `gacha_pools` table
 INSERT INTO gacha_pools (codename, public_name, probability_common, probability_rare, probability_epic, probability_legendary, price) VALUES
 ('pool_joestar', 'Joestar Legacy Pool', 0.60, 0.20, 0.15, 0.05, 1000),
-('pool_passione', 'Passione Gang Pool', 0.60, 0.25, 0.15, 0.05, 1200),
+('pool_passione', 'Passione Gang Pool', 0.55, 0.25, 0.15, 0.05, 1200),
 ('pool_duwang', 'Morioh Pool', 0.40, 0.35, 0.20, 0.05, 1500),
 ('pool_pucci', 'Heaven Pool', 0.30, 0.30, 0.30, 0.10, 2000),
 ('pool_valentine', 'Patriot Pool', 0.40, 0.30, 0.20, 0.10, 1800);
