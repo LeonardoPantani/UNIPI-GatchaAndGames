@@ -64,17 +64,22 @@ def ban_profile(user_uuid):
 
     except requests.HTTPError as e:
         if e.response.status_code == 404:
+            send_log(f"make_request_to_auth_service: No user found with uuid: {session["uuid"]}", level="info", service_type=SERVICE_TYPE)
             return jsonify({"error": "User not found."}), 404
         else:
+            send_log(f"make_request_to_auth_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
+        send_log(f"make_request_to_auth_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
+        send_log(f"make_request_to_auth_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
     user_role = user_role_data["role"]
 
     if user_role != "ADMIN":
+        send_log(f"ban_profile: User {session["username"]} tried to use admin functions.", level="info", service_type=SERVICE_TYPE)
         return jsonify({"error": "This account is not authorized to perform this action."}), 403
 
     if session["uuid"] == user_uuid:
@@ -92,10 +97,13 @@ def ban_profile(user_uuid):
         make_request_to_feedback_service()
 
     except requests.HTTPError as e:
+        send_log(f"make_request_to_feedback_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException as e:
+        send_log(f"make_request_to_feedback_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": f"Service temporarily unavailable. Please try again later. [RequestError]{e}"}), 503
     except CircuitBreakerError:
+        send_log(f"make_request_to_feedback_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
     try:
@@ -111,10 +119,13 @@ def ban_profile(user_uuid):
         make_request_to_currency_service()
 
     except requests.HTTPError as e:
+        send_log(f"make_request_to_currency_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
+        send_log(f"make_request_to_currency_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
+        send_log(f"make_request_to_currency_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
     try:
@@ -130,10 +141,13 @@ def ban_profile(user_uuid):
         user_items = make_request_to_inventory_service()
 
     except requests.HTTPError as e:
+        send_log(f"make_request_to_inventory_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
+        send_log(f"make_request_to_inventory_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
+        send_log(f"make_request_to_inventory_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
     try:
@@ -148,10 +162,13 @@ def ban_profile(user_uuid):
         make_request_to_auction_service()
 
     except requests.HTTPError as e:
+        send_log(f"make_request_to_auction_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
+        send_log(f"make_request_to_auction_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
+        send_log(f"make_request_to_auction_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
     try:
@@ -169,10 +186,13 @@ def ban_profile(user_uuid):
         if e.response.status_code == 304:
             pass
         else:
+            send_log(f"make_request_to_auction_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
+        send_log(f"make_request_to_auction_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": f"Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
+        send_log(f"make_request_to_auction_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
     try:
@@ -188,10 +208,13 @@ def ban_profile(user_uuid):
         make_request_to_pvp_service()
 
     except requests.HTTPError as e:
+        send_log(f"make_request_to_pvp_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
+        send_log(f"make_request_to_pvp_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
+        send_log(f"make_request_to_pvp_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
     try:
@@ -206,10 +229,13 @@ def ban_profile(user_uuid):
         make_request_to_auction_service()
 
     except requests.HTTPError as e:
+        send_log(f"make_request_to_auction_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    except requests.RequestException:
+    except requests.RequestException as e:
+        send_log(f"make_request_to_auction_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
+        send_log(f"make_request_to_auction_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
     try:
@@ -225,10 +251,13 @@ def ban_profile(user_uuid):
         make_request_to_inventory_service()
 
     except requests.HTTPError as e:
+        send_log(f"make_request_to_inventory_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
+        send_log(f"make_request_to_inventory_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
+        send_log(f"make_request_to_inventory_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
     try:
@@ -245,12 +274,16 @@ def ban_profile(user_uuid):
 
     except requests.HTTPError as e:
         if e.response.status_code == 404:
+            send_log(f"make_request_to_profile_service: No user found with uuid: {user_uuid}", level="info", service_type=SERVICE_TYPE)
             return jsonify({"error": "User not found."}), 404
         else:
+            send_log(f"make_request_to_profile_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
+        send_log(f"make_request_to_profile_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
+        send_log(f"make_request_to_profile_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
     try:
@@ -267,12 +300,16 @@ def ban_profile(user_uuid):
 
     except requests.HTTPError as e:
         if e.response.status_code == 404:
+            send_log(f"make_request_to_auth_service: No user found with uuid: {user_uuid}", level="info", service_type=SERVICE_TYPE)
             return jsonify({"error": "User not found."}), 404
         else:
+            send_log(f"make_request_to_auth_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
+        send_log(f"make_request_to_auth_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
+        send_log(f"make_request_to_auth_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
     ### Invalidation of token for user uuid = user_uuid...
@@ -291,17 +328,19 @@ def ban_profile(user_uuid):
         
     except requests.HTTPError as e:
         if e.response.status_code == 404: # user not logged in, no need to invalidate session
-            send_log(f"User with uuid '{session.get("uuid")} is not logged in. No need to invalidate session.", level="info")
+            send_log(f"make_request_to_auth_service: User with uuid '{session["uuid"]} is not logged in. No need to invalidate session.", level="info")
         else:
+            send_log(f"make_request_to_auth_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    except requests.RequestException:
-        send_log("RequestException Error.", level="error")
+    except requests.RequestException as e:
+        send_log(f"make_request_to_auth_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
-        send_log("CircuitBreaker Error.", level="warning")
+        send_log(f"make_request_to_auth_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     ## end of token invalidation
 
+    send_log(f"ban_profile: Admin {session['username']} successfully banned user {user_uuid}.", level="general", service_type=SERVICE_TYPE)
     return jsonify({"message": "Profile deleted."}), 200
 
 
@@ -328,17 +367,22 @@ def create_gacha():
 
     except requests.HTTPError as e:
         if e.response.status_code == 404:
+            send_log(f"make_request_to_auth_service: No user found with uuid: {session["uuid"]}", level="info", service_type=SERVICE_TYPE)
             return jsonify({"error": "User not found."}), 404
         else:
+            send_log(f"make_request_to_auth_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
+        send_log(f"make_request_to_auth_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
+        send_log(f"make_request_to_auth_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
     user_role = user_role_data["role"]
 
     if user_role != "ADMIN":
+        send_log(f"create_gacha: User {session["username"]} tried to use admin functions.", level="info", service_type=SERVICE_TYPE)
         return jsonify({"error": "This account is not authorized to perform this action."}), 403
 
     if not connexion.request.is_json:
@@ -367,14 +411,19 @@ def create_gacha():
 
     except requests.HTTPError as e:
         if e.response.status_code == 404:
+            send_log(f"make_request_to_gacha_service: No item found with uuid: {new_uuid} by user {session['username']}", level="info", service_type=SERVICE_TYPE)
             return jsonify({"error": "User not found."}), 404
         else:
+            send_log(f"make_request_to_gacha_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
+        send_log(f"make_request_to_gacha_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
+        send_log(f"make_request_to_gacha_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
+    send_log(f"create_gacha: Admin {session['username']} successfully created gacha {new_uuid}.", level="general", service_type=SERVICE_TYPE)
     return jsonify({"message": "Gacha created with uuid: " + new_uuid}), 201
 
 
@@ -405,17 +454,22 @@ def delete_gacha(gacha_uuid):
 
     except requests.HTTPError as e:
         if e.response.status_code == 404:
+            send_log(f"make_request_to_auth_service: No user found with uuid: {session["uuid"]}", level="info", service_type=SERVICE_TYPE)
             return jsonify({"error": "User not found."}), 404
         else:
+            send_log(f"make_request_to_auth_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
+        send_log(f"make_request_to_auth_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
+        send_log(f"make_request_to_auth_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
     user_role = user_role_data["role"]
 
     if user_role != "ADMIN":
+        send_log(f"delete_gacha: User {session["username"]} tried to use admin functions.", level="info", service_type=SERVICE_TYPE)
         return jsonify({"error": "This account is not authorized to perform this action."}), 403
 
     try:
@@ -431,14 +485,19 @@ def delete_gacha(gacha_uuid):
 
     except requests.HTTPError as e:
         if e.response.status_code == 404:
+            send_log(f"make_request_to_gacha_service: No gacha found with uuid: {gacha_uuid} by user {session['username']}", level="info", service_type=SERVICE_TYPE)
             return jsonify({"error": "Gacha not found."}), 404
         else:
+            send_log(f"make_request_to_gacha_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
+        send_log(f"make_request_to_gacha_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
+        send_log(f"make_request_to_gacha_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
+    send_log(f"create_gacha: Admin {session['username']} successfully deleted gacha {gacha_uuid}.", level="general", service_type=SERVICE_TYPE)
     return jsonify({"message": "Gacha deleted."}), 200
 
 
@@ -465,17 +524,22 @@ def create_pool():
 
     except requests.HTTPError as e:
         if e.response.status_code == 404:
+            send_log(f"make_request_to_auth_service: No user found with uuid: {session["uuid"]}", level="info", service_type=SERVICE_TYPE)
             return jsonify({"error": "User not found."}), 404
         else:
+            send_log(f"make_request_to_auth_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
+        send_log(f"make_request_to_auth_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
+        send_log(f"make_request_to_auth_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
     user_role = user_role_data["role"]
 
     if user_role != "ADMIN":
+        send_log(f"create_pool: User {session["username"]} tried to use admin functions.", level="info", service_type=SERVICE_TYPE)
         return jsonify({"error": "This account is not authorized to perform this action."}), 403
 
     if not connexion.request.is_json:
@@ -500,14 +564,19 @@ def create_pool():
 
     except requests.HTTPError as e:
         if e.response.status_code == 404:
+            send_log(f"make_request_to_gacha_service: Some gacha item was not found by user {session['username']}", level="info", service_type=SERVICE_TYPE)
             return jsonify({"error": "Gacha not found."}), 404
         else:
+            send_log(f"make_request_to_gacha_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
+        send_log(f"make_request_to_gacha_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
+        send_log(f"make_request_to_gacha_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
+    send_log(f"create_pool: Admin {session['username']} successfully created pool {pool["codename"]}.", level="general", service_type=SERVICE_TYPE)
     return jsonify({"message": "Pool created."}), 201
 
 
@@ -536,17 +605,22 @@ def delete_pool(pool_id):
 
     except requests.HTTPError as e:
         if e.response.status_code == 404:
+            send_log(f"make_request_to_auth_service: No user found with uuid: {session["uuid"]}", level="info", service_type=SERVICE_TYPE)
             return jsonify({"error": "User not found."}), 404
         else:
+            send_log(f"make_request_to_auth_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
+        send_log(f"make_request_to_auth_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
+        send_log(f"make_request_to_auth_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
     user_role = user_role_data["role"]
 
     if user_role != "ADMIN":
+        send_log(f"delete_pool: User {session["username"]} tried to use admin functions.", level="info", service_type=SERVICE_TYPE)
         return jsonify({"error": "This account is not authorized to perform this action."}), 403
 
     try:
@@ -562,14 +636,19 @@ def delete_pool(pool_id):
 
     except requests.HTTPError as e:
         if e.response.status_code == 404:
+            send_log(f"make_request_to_gacha_service: No pool found with codename: {pool_id} by user {session['username']}", level="info", service_type=SERVICE_TYPE)
             return jsonify({"error": "Pool not found."}), 404
         else:
+            send_log(f"make_request_to_gacha_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
+        send_log(f"make_request_to_gacha_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
+        send_log(f"make_request_to_gacha_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
+    send_log(f"delete_pool: Admin {session['username']} successfully deleted pool {pool_id}.", level="general", service_type=SERVICE_TYPE)
     return jsonify({"message": "Pool deleted."}), 200
 
 
@@ -607,17 +686,22 @@ def edit_user_profile(user_uuid, email=None, username=None):
 
     except requests.HTTPError as e:
         if e.response.status_code == 404:
+            send_log(f"make_request_to_auth_service: No user found with uuid: {session["uuid"]}", level="info", service_type=SERVICE_TYPE)
             return jsonify({"error": "User not found."}), 404
         else:
+            send_log(f"make_request_to_auth_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
+        send_log(f"make_request_to_auth_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
+        send_log(f"make_request_to_auth_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
     user_role = user_role_data["role"]
 
     if user_role != "ADMIN":
+        send_log(f"edit_user_profile: User {session["username"]} tried to use admin functions.", level="info", service_type=SERVICE_TYPE)
         return jsonify({"error": "This account is not authorized to perform this action."}), 403
 
     try:
@@ -634,12 +718,16 @@ def edit_user_profile(user_uuid, email=None, username=None):
 
     except requests.HTTPError as e:
         if e.response.status_code == 404:
+            send_log(f"make_request_to_profile_service: No user found with uuid: {user_uuid} by user {session['username']}", level="info", service_type=SERVICE_TYPE)
             return jsonify({"error": "User not found."}), 404
         else:
+            send_log(f"make_request_to_profile_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
+        send_log(f"make_request_to_profile_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
+        send_log(f"make_request_to_profile_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
     if exist_data["exists"] == False:  # noqa: E712
@@ -661,16 +749,21 @@ def edit_user_profile(user_uuid, email=None, username=None):
 
         except requests.HTTPError as e:
             if e.response.status_code == 404:
+                send_log(f"make_request_to_auth_service: No user found with uuid: {session["uuid"]}", level="info", service_type=SERVICE_TYPE)
                 return jsonify({"error": "User not found."}), 404
             elif e.response.status_code == 304:
                 pass
             elif e.response.status_code == 409: # cant update email since it is already in use
+                send_log(f"make_request_to_auth_service: Email already in use, attempt by {session["uuid"]}", level="info", service_type=SERVICE_TYPE)
                 return jsonify({"error": "That email is already in use."}), 409
             else:
+                send_log(f"make_request_to_auth_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
                 return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
         except requests.RequestException:
+            send_log(f"make_request_to_auth_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
         except CircuitBreakerError:
+            send_log(f"make_request_to_auth_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
     if username:
         try:
@@ -688,16 +781,21 @@ def edit_user_profile(user_uuid, email=None, username=None):
 
         except requests.HTTPError as e:
             if e.response.status_code == 404:
+                send_log(f"make_request_to_profile_service: No user found with uuid: {user_uuid} by user {session['username']}", level="info", service_type=SERVICE_TYPE)
                 return jsonify({"error": "User not found."}), 404
             elif e.response.status_code == 409: # cant update username since it is taken
+                send_log(f"make_request_to_profile_service: Username already in use, attempt by {session["uuid"]}", level="info", service_type=SERVICE_TYPE)
                 return jsonify({"error": "That username is already taken."}), 409
             elif e.response.status_code == 304:
                 pass
             else:
+                send_log(f"make_request_to_profile_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
                 return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
         except requests.RequestException:
+            send_log(f"make_request_to_profile_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
         except CircuitBreakerError:
+            send_log(f"make_request_to_profile_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
 
@@ -717,17 +815,19 @@ def edit_user_profile(user_uuid, email=None, username=None):
         
     except requests.HTTPError as e:
         if e.response.status_code == 404: # user not logged in, no need to invalidate session
-            send_log(f"User with uuid '{user_uuid} is not logged in. No need to invalidate session.", level="info")
+            send_log(f"make_request_to_auth_service: No user found with uuid:{user_uuid} attempt by {session["uuid"]}", level="info", service_type=SERVICE_TYPE)
         else:
+            send_log(f"make_request_to_auth_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
-        send_log("RequestException Error.", level="error")
+        send_log(f"make_request_to_auth_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
-        send_log("CircuitBreaker Error.", level="warning")
+        send_log(f"make_request_to_auth_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     ## end of token invalidation
 
+    send_log(f"edit_user_profile: Admin {session['username']} successfully edited user {user_uuid} data.", level="general", service_type=SERVICE_TYPE)
     if session["uuid"] != user_uuid:
         return jsonify({"message": "Profile successfully updated."}), 200
     else:
@@ -762,17 +862,22 @@ def get_all_feedbacks(page_number=None):
 
     except requests.HTTPError as e:
         if e.response.status_code == 404:
+            send_log(f"make_request_to_auth_service: No user found with uuid: {session["uuid"]}", level="info", service_type=SERVICE_TYPE)
             return jsonify({"error": "User not found."}), 404
         else:
+            send_log(f"make_request_to_auth_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
+        send_log(f"make_request_to_auth_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
+        send_log(f"make_request_to_auth_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
     user_role = user_role_data["role"]
 
     if user_role != "ADMIN":
+        send_log(f"get_all_feedbacks: User {session["username"]} tried to use admin functions.", level="info", service_type=SERVICE_TYPE)
         return jsonify({"error": "This account is not authorized to perform this action."}), 403
 
     try:
@@ -788,12 +893,16 @@ def get_all_feedbacks(page_number=None):
         feedback_list = make_request_to_feedback_service()
 
     except requests.HTTPError as e:
+        send_log(f"make_request_to_feedback_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
+        send_log(f"make_request_to_feedback_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
+        send_log(f"make_request_to_feedback_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
+    send_log(f"get_all_feedbacks: Admin {session['username']} successfully got feedback list.", level="general", service_type=SERVICE_TYPE)
     return jsonify(feedback_list), 200
 
 
@@ -825,17 +934,22 @@ def get_all_profiles(page_number=None):
 
     except requests.HTTPError as e:
         if e.response.status_code == 404:
+            send_log(f"make_request_to_auth_service: No user found with uuid: {session["uuid"]}", level="info", service_type=SERVICE_TYPE)
             return jsonify({"error": "User not found."}), 404
         else:
+            send_log(f"make_request_to_auth_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
+        send_log(f"make_request_to_auth_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
+        send_log(f"make_request_to_auth_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
     user_role = user_role_data["role"]
 
     if user_role != "ADMIN":
+        send_log(f"get_all_profiles: User {session["username"]} tried to use admin functions.", level="info", service_type=SERVICE_TYPE)
         return jsonify({"error": "This account is not authorized to perform this action."}), 403
 
     try:
@@ -851,12 +965,16 @@ def get_all_profiles(page_number=None):
         profile_list = make_request_to_profile_service()
 
     except requests.HTTPError as e:
+        send_log(f"make_request_to_profile_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
+        send_log(f"make_request_to_profile_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
+        send_log(f"make_request_to_profile_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
+    send_log(f"get_all_profiles: Admin {session['username']} successfully got profile list.", level="general", service_type=SERVICE_TYPE)
     return jsonify(profile_list), 200
 
 
@@ -886,17 +1004,22 @@ def get_feedback_info(feedback_id=None):
 
     except requests.HTTPError as e:
         if e.response.status_code == 404:
+            send_log(f"make_request_to_auth_service: No user found with uuid: {session["uuid"]}", level="info", service_type=SERVICE_TYPE)
             return jsonify({"error": "User not found."}), 404
         else:
+            send_log(f"make_request_to_auth_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
+        send_log(f"make_request_to_auth_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
+        send_log(f"make_request_to_auth_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
     user_role = user_role_data["role"]
 
     if user_role != "ADMIN":
+        send_log(f"get_feedback_info: User {session["username"]} tried to use admin functions.", level="info", service_type=SERVICE_TYPE)
         return jsonify({"error": "This account is not authorized to perform this action."}), 403
 
     try:
@@ -913,14 +1036,19 @@ def get_feedback_info(feedback_id=None):
 
     except requests.HTTPError as e:
         if e.response.status_code == 404:
+            send_log(f"make_request_to_feedback_service: No feedback found with id: {feedback_id}, attempt by {session['username']}", level="info", service_type=SERVICE_TYPE)
             return jsonify({"error":"Feedback not found"}), 404
         else:
+            send_log(f"make_request_to_feedback_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
+        send_log(f"make_request_to_feedback_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
+        send_log(f"make_request_to_feedback_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
+    send_log(f"get_feedback_info: Admin {session['username']} successfully got feedback {feedback_id} info.", level="general", service_type=SERVICE_TYPE)
     return jsonify(feedback), 200
 
 
@@ -959,21 +1087,27 @@ def get_system_logs():
 
     except requests.HTTPError as e:
         if e.response.status_code == 404:
+            send_log(f"make_request_to_auth_service: No user found with uuid: {session["uuid"]}", level="info", service_type=SERVICE_TYPE)
             return jsonify({"error": "User not found."}), 404
         else:
+            send_log(f"make_request_to_auth_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
+        send_log(f"make_request_to_auth_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
+        send_log(f"make_request_to_auth_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
     user_role = user_role_data["role"]
 
     if user_role != "ADMIN":
+        send_log(f"get_system_logs: User {session["username"]} tried to use admin functions.", level="info", service_type=SERVICE_TYPE)
         return jsonify({"error": "This account is not authorized to perform this action."}), 403
 
     logs = query_logs(service_type, endpoint, interval, level, start_time)
 
+    send_log(f"get_system_logs: Admin {session['username']} successfully got logs.", level="general", service_type=SERVICE_TYPE)
     return jsonify(logs), 200
 
 
@@ -1009,17 +1143,22 @@ def get_user_history(user_uuid, history_type, page_number=None):
 
     except requests.HTTPError as e:
         if e.response.status_code == 404:
+            send_log(f"make_request_to_auth_service: No user found with uuid: {session["uuid"]}", level="info", service_type=SERVICE_TYPE)
             return jsonify({"error": "User not found."}), 404
         else:
+            send_log(f"make_request_to_auth_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
+        send_log(f"make_request_to_auth_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
+        send_log(f"make_request_to_auth_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
     user_role = user_role_data["role"]
 
     if user_role != "ADMIN":
+        send_log(f"get_user_history: User {session["username"]} tried to use admin functions.", level="info", service_type=SERVICE_TYPE)
         return jsonify({"error": "This account is not authorized to perform this action."}), 403
 
     try:
@@ -1035,12 +1174,16 @@ def get_user_history(user_uuid, history_type, page_number=None):
         transaction_list = make_request_to_currency_service()
 
     except requests.HTTPError as e:
+        send_log(f"make_request_to_currency_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException as e:
-        return jsonify({"error": f"Service temporarily unavailable. Please try again later. [RequestError]{e}"}), 503
+        send_log(f"make_request_to_currency_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": f"Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
+        send_log(f"make_request_to_currency_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
+    send_log(f"get_user_history: Admin {session['username']} successfully got user {user_uuid} transaction history.", level="general", service_type=SERVICE_TYPE)
     return jsonify(transaction_list), 200
 
 
@@ -1086,17 +1229,22 @@ def update_auction(auction_uuid):
 
     except requests.HTTPError as e:
         if e.response.status_code == 404:
+            send_log(f"make_request_to_auth_service: No user found with uuid: {session["uuid"]}", level="info", service_type=SERVICE_TYPE)
             return jsonify({"error": "User not found."}), 404
         else:
+            send_log(f"make_request_to_auth_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
+        send_log(f"make_request_to_auth_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
+        send_log(f"make_request_to_auth_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
     user_role = user_role_data["role"]
 
     if user_role != "ADMIN":
+        send_log(f"update_auction: User {session["username"]} tried to use admin functions.", level="info", service_type=SERVICE_TYPE)
         return jsonify({"error": "This account is not authorized to perform this action."}), 403
 
     try:
@@ -1110,16 +1258,22 @@ def update_auction(auction_uuid):
         make_request_to_auction_service()
     except requests.HTTPError as e:
         if e.response.status_code == 404:
+            send_log(f"make_request_to_auction_service: No auction found with uuid: {auction_uuid}, attempt by {session["username"]}", level="info", service_type=SERVICE_TYPE)
             return jsonify({"error": "Auctions not found."}), 404
         elif e.response.status_code == 417:
+            send_log(f"make_request_to_auction_service: Wrong date format sent, attempt by {session["username"]}", level="info", service_type=SERVICE_TYPE)
             return jsonify({"error": "Invalid date format."}), 417
         else:
+            send_log(f"make_request_to_auction_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
+        send_log(f"make_request_to_auction_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
+        send_log(f"make_request_to_auction_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
+    send_log(f"update_auction: Admin {session['username']} successfully updated auction {auction_uuid}.", level="general", service_type=SERVICE_TYPE)
     return jsonify({"message": "Auction updated."}), 200
 
 
@@ -1163,17 +1317,22 @@ def update_gacha(gacha_uuid):
 
     except requests.HTTPError as e:
         if e.response.status_code == 404:
+            send_log(f"make_request_to_auth_service: No user found with uuid: {session["uuid"]}", level="info", service_type=SERVICE_TYPE)
             return jsonify({"error": "User not found."}), 404
         else:
+            send_log(f"make_request_to_auth_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
+        send_log(f"make_request_to_auth_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
+        send_log(f"make_request_to_auth_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
     user_role = user_role_data["role"]
 
     if user_role != "ADMIN":
+        send_log(f"update_gacha: User {session["username"]} tried to use admin functions.", level="info", service_type=SERVICE_TYPE)
         return jsonify({"error": "This account is not authorized to perform this action."}), 403
 
     try:
@@ -1187,14 +1346,19 @@ def update_gacha(gacha_uuid):
         make_request_to_gacha_service()
     except requests.HTTPError as e:
         if e.response.status_code == 404:
+            send_log(f"make_request_to_gacha_service: No gacha found with uuid:{gacha_uuid}, attempt by {session["uuid"]}", level="info", service_type=SERVICE_TYPE)
             return jsonify({"error": "Gacha not found."}), 404
         else:
+            send_log(f"make_request_to_gacha_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
+        send_log(f"make_request_to_gacha_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
+        send_log(f"make_request_to_gacha_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
+    send_log(f"update_gacha: Admin {session['username']} successfully updated gacha {gacha_uuid}.", level="general", service_type=SERVICE_TYPE)
     return jsonify({"message": "Gacha updated."}), 200
 
 
@@ -1250,17 +1414,22 @@ def update_pool(pool_id):
 
     except requests.HTTPError as e:
         if e.response.status_code == 404:
+            send_log(f"make_request_to_auth_service: No user found with uuid: {session["uuid"]}", level="info", service_type=SERVICE_TYPE)
             return jsonify({"error": "User not found."}), 404
         else:
+            send_log(f"make_request_to_auth_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
+        send_log(f"make_request_to_auth_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
+        send_log(f"make_request_to_auth_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
     user_role = user_role_data["role"]
 
     if user_role != "ADMIN":
+        send_log(f"update_pool: User {session["username"]} tried to use admin functions.", level="info", service_type=SERVICE_TYPE)
         return jsonify({"error": "This account is not authorized to perform this action."}), 403
 
     try:
@@ -1274,12 +1443,17 @@ def update_pool(pool_id):
         make_request_to_gacha_service()
     except requests.HTTPError as e:
         if e.response.status_code == 404:
+            send_log(f"make_request_to_gacha_service: No pool found with codename: {pool_id}, attempt by {session['username']}", level="info", service_type=SERVICE_TYPE)
             return jsonify({"error": "Pool not found."}), 404
         else:
+            send_log(f"make_request_to_gacha_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
+        send_log(f"make_request_to_gacha_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
+        send_log(f"make_request_to_gacha_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
+    send_log(f"update_pool: Admin {session['username']} successfully updated pool {pool_id}.", level="general", service_type=SERVICE_TYPE)
     return jsonify({"message": "Pool updated."}), 200
