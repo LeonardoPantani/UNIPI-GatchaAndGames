@@ -912,7 +912,10 @@ def get_feedback_info(feedback_id=None):
         feedback = make_request_to_feedback_service()
 
     except requests.HTTPError as e:
-        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+        if e.response.status_code == 404:
+            return jsonify({"error":"Feedback not found"}), 404
+        else:
+            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:

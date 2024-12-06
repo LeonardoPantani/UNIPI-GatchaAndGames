@@ -657,7 +657,7 @@ def reset_current_bidder(session=None, uuid=None):
             """
 
             cursor.execute(query, (uuid,))
-            if cursor.rowcount == 0:
+            if cursor.rowcount < 1:
                 return 304
             connection.commit()
 
@@ -706,7 +706,7 @@ def set_bid(session=None, auction_uuid=None, user_uuid=None, new_bid=None):
 
             cursor.execute(query, (auction_uuid,))
             cursor.fetchone()
-            if cursor.rowcount == 0:
+            if cursor.rowcount < 1:
                 return 404
 
             query = """
@@ -717,7 +717,7 @@ def set_bid(session=None, auction_uuid=None, user_uuid=None, new_bid=None):
             """
 
             cursor.execute(query, (new_bid, user_uuid, auction_uuid, datetime.now()))
-            if cursor.rowcount == 0:
+            if cursor.rowcount < 1:
                 return 403
 
             connection.commit()
@@ -782,9 +782,9 @@ def update_auction(session=None, auction=None):
 
             cursor.execute(query, (uuid,))
             cursor.fetchone()
-            if cursor.rowcount == 0:
+            if cursor.rowcount < 1:
                 return 404
-
+            
             query = "UPDATE auctions SET "
             params = []
             updates = []
@@ -821,7 +821,7 @@ def update_auction(session=None, auction=None):
 
             # Execute the query with the parameters
             cursor.execute(query, params)
-            if cursor.rowcount == 0:
+            if cursor.rowcount < 1:
                 return 304
 
             connection.commit()
@@ -829,7 +829,7 @@ def update_auction(session=None, auction=None):
             cursor.close()
 
         status_code = update_auction()
-
+        
         if status_code == 404:
             return jsonify({"error": "Auction not found."}), 404
 
