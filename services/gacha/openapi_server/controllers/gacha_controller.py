@@ -78,7 +78,6 @@ def pull_gacha(pool_id):
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     
     pool = response[0].get_json()
-
     try:
         # Check user currency
         @circuit_breaker
@@ -132,20 +131,22 @@ def pull_gacha(pool_id):
             epic_pool.append(item[0])
         if item[1] == "LEGENDARY":
             legendary_pool.append(item[0])
-    
-    # Generate random value between 0 and 1
+
+    cumulative_probs = []
+    cumulative_sum = 0
+    for prob in probabilities:
+        cumulative_sum += prob
+        cumulative_probs.append(cumulative_sum)
+    # Generate a random roll between 0 and 1
     roll = random.random()
-    
-    # Cumulative probability to determine item
-    cumulative_prob = 0
-    selected_index = 0
-    for i, prob in enumerate(probabilities):
-        cumulative_prob += prob
+    # Determine the rarity based on the roll
+    for index, cumulative_prob in enumerate(cumulative_probs):
+        print(index, roll, cumulative_prob)
         if roll <= cumulative_prob:
-            selected_index = i
+            selected_index = index
             break
+        
     # Get the selected item from pool items list
-    
     if selected_index == 0:
         selected_item = random.choice(common_pool)
     if selected_index == 1:
@@ -154,7 +155,6 @@ def pull_gacha(pool_id):
         selected_item = random.choice(epic_pool)
     if selected_index == 3:
         selected_item = random.choice(legendary_pool)
-    
     try:
         # Deduct currency
         @circuit_breaker
