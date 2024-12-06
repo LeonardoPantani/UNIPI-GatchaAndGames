@@ -296,7 +296,6 @@ def get_inventory_items_by_owner_uuid(session=None, uuid=None, page_number=None)
             
             items_per_page = 10  
             offset = (page_number - 1) * items_per_page
-            print(items_per_page,offset)
             
             query = """
             SELECT BIN_TO_UUID(item_uuid), BIN_TO_UUID(owner_uuid), BIN_TO_UUID(stand_uuid), 
@@ -586,7 +585,7 @@ def remove_item(session=None, item_uuid=None, owner_uuid=None):
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return "", 503
     except CircuitBreakerError:
-        send_log(f"Inventory_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
+        send_log("Inventory_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -640,5 +639,5 @@ def update_item_ownership(session=None, new_owner_uuid=None, item_uuid=None, pri
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return "", 503
     except CircuitBreakerError:
-        send_log(f"Inventory_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
+        send_log("Inventory_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503

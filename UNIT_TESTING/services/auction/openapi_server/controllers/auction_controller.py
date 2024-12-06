@@ -109,8 +109,6 @@ def bid_on_auction(auction_uuid):
     else:
         new_bid = current_bid + increment
 
-    print(session["uuid"])
-    print(owner_uuid)
     if session["uuid"] == owner_uuid:
         return jsonify({"error": "Cannot bid on your own auctions"}), 400
 

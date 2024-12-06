@@ -77,7 +77,7 @@ def delete_user_transactions(session=None, uuid=None):
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
-        send_log(f"Currency_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
+        send_log("Currency_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -136,7 +136,7 @@ def get_bundle(session=None, codename=None):
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
-        send_log(f"Currency_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
+        send_log("Currency_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -217,7 +217,7 @@ def get_user_history(session=None, uuid=None, history_type=None, page_number=Non
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
-        send_log(f"Currency_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
+        send_log("Currency_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -260,7 +260,7 @@ def insert_bundle_transaction(session=None, uuid=None, bundle_codename=None, cur
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
-        send_log(f"Currency_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
+        send_log("Currency_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -311,7 +311,7 @@ def insert_ingame_transaction(session=None, uuid=None, current_bid=None, transac
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
-        send_log(f"Currency_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
+        send_log("Currency_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -350,7 +350,7 @@ def list_bundles(session=None):
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
-        send_log(f"Currency_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
+        send_log("Currency_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
     response = []

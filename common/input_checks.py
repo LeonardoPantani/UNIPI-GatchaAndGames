@@ -159,8 +159,7 @@ def sanitize_auction_input(input_auction):
 
         return input_auction
 
-    except Exception as e:
-        print(e)
+    except Exception:
         return False
 
 

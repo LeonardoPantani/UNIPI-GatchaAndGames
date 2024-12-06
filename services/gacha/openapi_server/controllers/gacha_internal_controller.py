@@ -111,7 +111,7 @@ def create_gacha(gacha=None, session=None):
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return "", 503
     except CircuitBreakerError:
-        send_log(f"Gacha_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
+        send_log("Gacha_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -201,7 +201,7 @@ def create_pool(pool=None, session=None):
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return "", 503
     except CircuitBreakerError:
-        send_log(f"Gacha_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
+        send_log("Gacha_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -257,7 +257,7 @@ def delete_gacha(session=None, uuid=None):
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return "", 503
     except CircuitBreakerError:
-        send_log(f"Gacha_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
+        send_log("Gacha_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -313,7 +313,7 @@ def delete_pool(session=None, codename=None):
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return "", 503
     except CircuitBreakerError:
-        send_log(f"Gacha_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
+        send_log("Gacha_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -357,7 +357,7 @@ def exists_gacha(session=None, uuid=None):
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return "", 503
     except CircuitBreakerError:
-        send_log(f"Gacha_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
+        send_log("Gacha_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -401,7 +401,7 @@ def exists_pool(session=None, uuid=None):  # note: uuid is actually the codename
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return "", 503
     except CircuitBreakerError:
-        send_log(f"Gacha_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
+        send_log("Gacha_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -469,7 +469,7 @@ def get_gacha(session=None, uuid=None):
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return "", 503
     except CircuitBreakerError:
-        send_log(f"Gacha_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
+        send_log("Gacha_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -541,7 +541,7 @@ def get_pool(session=None, uuid=None):  # note: uuid is actually the codename
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return "", 503
     except CircuitBreakerError:
-        send_log(f"Gacha_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
+        send_log("Gacha_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -589,7 +589,7 @@ def get_rarity_by_uuid(session=None, uuid=None):
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return "", 503
     except CircuitBreakerError:
-        send_log(f"Gacha_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
+        send_log("Gacha_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -637,7 +637,6 @@ def list_gachas(requestBody=None, session=None, not_owned=None):
                     "potential": map_number_to_grade(result[8]),
                 },
             }
-            print(not_owned,result[0],requestBody)
             if not_owned and result[0] not in requestBody:
                 gachas.append(gacha)
             elif not not_owned and result[0] in requestBody:
@@ -814,7 +813,7 @@ def update_gacha(gacha=None, session=None):
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return "", 503
     except CircuitBreakerError:
-        send_log(f"Gacha_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
+        send_log("Gacha_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -945,5 +944,5 @@ def update_pool(pool=None, session=None):
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return "", 503
     except CircuitBreakerError:
-        send_log(f"Gacha_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
+        send_log("Gacha_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503

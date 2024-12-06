@@ -141,7 +141,6 @@ def pull_gacha(pool_id):
     roll = random.random()
     # Determine the rarity based on the roll
     for index, cumulative_prob in enumerate(cumulative_probs):
-        print(index, roll, cumulative_prob)
         if roll <= cumulative_prob:
             selected_index = index
             break
@@ -177,7 +176,7 @@ def pull_gacha(pool_id):
         else:
             send_log(f"deduct_currency: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    except requests.RequestException:
+    except requests.RequestException as e:
         send_log(f"deduct_currency: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
@@ -280,7 +279,7 @@ def get_gachas(not_owned):
     except requests.HTTPError as e:
         send_log(f"get_owned_gachas: HttpError {e} for user {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    except requests.RequestException:
+    except requests.RequestException as e:
         send_log(f"get_owned_gachas: RequestException {e} for user {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:

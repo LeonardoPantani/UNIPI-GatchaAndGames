@@ -102,7 +102,7 @@ def add_currency(session=None, uuid=None, amount=None):
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return "", 503
     except CircuitBreakerError:
-        send_log(f"Profile_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
+        send_log("Profile_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -164,7 +164,7 @@ def add_pvp_score(session=None, uuid=None, points_to_add=None):
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return "", 503
     except CircuitBreakerError:
-        send_log(f"Profile_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
+        send_log("Profile_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -223,7 +223,7 @@ def delete_profile_by_uuid(session=None, uuid=None):
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return "", 503
     except CircuitBreakerError:
-        send_log(f"Profile_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
+        send_log("Profile_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -292,7 +292,7 @@ def edit_username(session=None, uuid=None, username=None):
         send_log(f"Query: {type(e).__name__}", level="error", service_type=SERVICE_TYPE)
         return "", 503
     except CircuitBreakerError:
-        send_log(f"Profile_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
+        send_log("Profile_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -342,7 +342,7 @@ def exists_profile(session=None, uuid=None):
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return "", 503
     except CircuitBreakerError:
-        send_log(f"Profile_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
+        send_log("Profile_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -396,7 +396,7 @@ def get_currency_from_uuid(session=None, user_uuid=None):
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return "", 503
     except CircuitBreakerError:
-        send_log(f"Profile_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
+        send_log("Profile_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -456,7 +456,7 @@ def get_profile(session=None, user_uuid=None):
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return "", 503
     except CircuitBreakerError:
-        send_log(f"Profile_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
+        send_log("Profile_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -509,7 +509,7 @@ def get_username_from_uuid(session=None, user_uuid=None):
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return "", 503
     except CircuitBreakerError:
-        send_log(f"Profile_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
+        send_log("Profile_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -549,7 +549,7 @@ def get_uuid_from_username(session=None, username=None):
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
-        send_log(f"Profile_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
+        send_log("Profile_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -595,8 +595,8 @@ def insert_profile(session=None, user_uuid=None, username=None):
     except IntegrityError as e:
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return "", 409
-    except CircuitBreakerError as e:
-        send_log(f"Profile_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
+    except CircuitBreakerError:
+        send_log("Profile_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -668,5 +668,5 @@ def profile_list(session=None, page_number=None):
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return "", 503
     except CircuitBreakerError:
-        send_log(f"Profile_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
+        send_log("Profile_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503

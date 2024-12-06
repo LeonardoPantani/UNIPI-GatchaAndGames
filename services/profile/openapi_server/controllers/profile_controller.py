@@ -132,7 +132,7 @@ def delete_profile():
     except requests.HTTPError as e:
         send_log(f"get_user_items: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    except requests.RequestException:
+    except requests.RequestException as e:
         send_log(f"get_user_items: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
@@ -162,7 +162,7 @@ def delete_profile():
         else:
             send_log(f"refund_bidders: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    except requests.RequestException:
+    except requests.RequestException as e:
         send_log(f"refund_bidders: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
@@ -187,7 +187,7 @@ def delete_profile():
         if e.response.status_code != 304:
             send_log(f"reset_current_bidder: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    except requests.RequestException:
+    except requests.RequestException as e:
         send_log(f"reset_current_bidder: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
@@ -211,7 +211,7 @@ def delete_profile():
     except requests.HTTPError as e:
         send_log(f"remove_pvp_matches: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    except requests.RequestException:
+    except requests.RequestException as e:
         send_log(f"remove_pvp_matches: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
@@ -237,7 +237,7 @@ def delete_profile():
         if e.response.status_code != 304:
             send_log(f"remove_auctions: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    except requests.RequestException:
+    except requests.RequestException as e:
         send_log(f"remove_auctions: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
@@ -262,7 +262,7 @@ def delete_profile():
     except requests.HTTPError as e:
         send_log(f"delete_user_inventory: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    except requests.RequestException:
+    except requests.RequestException as e:
         send_log(f"delete_user_inventory: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
@@ -295,7 +295,7 @@ def delete_profile():
         else:
             send_log(f"delete_auth_user: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    except requests.RequestException:
+    except requests.RequestException as e:
         send_log(f"delete_auth_user: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
@@ -321,7 +321,7 @@ def delete_profile():
         else:
             send_log(f"make_request_to_auth_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    except requests.RequestException:
+    except requests.RequestException as e:
         send_log(f"make_request_to_auth_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
@@ -343,7 +343,7 @@ def edit_profile():
 
     try:
         edit_request = EditProfileRequest.from_dict(connexion.request.get_json())
-    except Exception as e:
+    except Exception:
         return jsonify({"error": "Invalid request."}), 400
 
     # Verify password before proceeding with edit
@@ -404,7 +404,7 @@ def edit_profile():
             else:
                 send_log(f"update_email: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
                 return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-        except requests.RequestException:
+        except requests.RequestException as e:
             send_log(f"update_email: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
         except CircuitBreakerError:
@@ -425,7 +425,7 @@ def edit_profile():
         elif result2[1] == 304 and result1.status_code == 304:
             return jsonify({"error": "No changes detected"}), 304
         elif result2[1] != 200:
-            send_log(f"edit_username: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
+            send_log(f"edit_username: HttpError {result2} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
 
         ### Invalidation of token for user uuid = user_uuid...
@@ -447,7 +447,7 @@ def edit_profile():
         else:
             send_log(f"make_request_to_auth_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    except requests.RequestException:
+    except requests.RequestException as e:
         send_log(f"make_request_to_auth_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:

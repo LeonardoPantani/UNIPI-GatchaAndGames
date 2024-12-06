@@ -101,7 +101,7 @@ def accept_pvp_request(pvp_match_uuid):
         else:
             send_log(f"make_request_to_inventory_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    except requests.RequestException:
+    except requests.RequestException as e:
         send_log(f"make_request_to_inventory_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
@@ -151,12 +151,12 @@ def accept_pvp_request(pvp_match_uuid):
 
         except requests.HTTPError as e:
             if e.response.status_code == 404:
-                send_log(f"make_request_to_inventory_service: Some items not found in user's inventory", level="info", service_type=SERVICE_TYPE)
+                send_log("make_request_to_inventory_service: Some items not found in user's inventory", level="info", service_type=SERVICE_TYPE)
                 return jsonify({"error": "Items not found in user inventory."}), 404
             else:
                 send_log(f"make_request_to_inventory_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
                 return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-        except requests.RequestException:
+        except requests.RequestException as e:
             send_log(f"make_request_to_inventory_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
         except CircuitBreakerError:
@@ -192,12 +192,12 @@ def accept_pvp_request(pvp_match_uuid):
 
         except requests.HTTPError as e:
             if e.response.status_code == 404:
-                send_log(f"make_request_to_gacha_service: Gacha not found", level="info", service_type=SERVICE_TYPE)
+                send_log("make_request_to_gacha_service: Gacha not found", level="info", service_type=SERVICE_TYPE)
                 return jsonify({"error": "Gacha not found."}), 404
             else:
                 send_log(f"make_request_to_gacha_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
                 return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-        except requests.RequestException:
+        except requests.RequestException as e:
             send_log(f"make_request_to_gacha_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
         except CircuitBreakerError:
@@ -273,7 +273,7 @@ def accept_pvp_request(pvp_match_uuid):
         else:
             send_log(f"make_request_to_profile_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    except requests.RequestException:
+    except requests.RequestException as e:
         send_log(f"make_request_to_profile_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
@@ -299,7 +299,7 @@ def accept_pvp_request(pvp_match_uuid):
         send_log(f"accept_pvp_request: User {session['username']} has successfully accepted and performed match {pvp_match_uuid}.", level="general", service_type=SERVICE_TYPE)
         return response
     else:
-        send_log(f"set_results: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
+        send_log(f"set_results: HttpError {response} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
 
 
@@ -428,7 +428,7 @@ def send_pvp_request(user_uuid):
     except requests.HTTPError as e:
         send_log(f"make_request_to_profile_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    except requests.RequestException:
+    except requests.RequestException as e:
         send_log(f"make_request_to_profile_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
@@ -459,7 +459,7 @@ def send_pvp_request(user_uuid):
         else:
             send_log(f"make_request_to_inventory_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    except requests.RequestException:
+    except requests.RequestException as e:
         send_log(f"make_request_to_inventory_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:

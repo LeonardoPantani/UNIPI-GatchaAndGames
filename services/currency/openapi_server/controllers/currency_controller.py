@@ -131,7 +131,7 @@ def buy_currency(bundle_id):
         else:
             send_log(f"make_request_to_profile_service: HttpError {e} for user {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    except requests.RequestException:
+    except requests.RequestException as e:
         send_log(f"make_request_to_profile_service: RequestException {e} for user {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
@@ -149,5 +149,5 @@ def get_bundles():
         send_log(f"list_bundles: HttpError {response} for uuid.", level="error", service_type=SERVICE_TYPE)
         jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
 
-    send_log(f"get_bundles: User has successfully gotten bundles info.", level="general", service_type=SERVICE_TYPE)
+    send_log("get_bundles: User has successfully gotten bundles info.", level="general", service_type=SERVICE_TYPE)
     return response

@@ -77,7 +77,6 @@ def get_inventory():
 
         @circuit_breaker
         def get_inventory_items():
-            print(user_uuid)
             inventory_items, internal_status_code = get_inventory_items_internal(
                 uuid=user_uuid, page_number=page_number
             )

@@ -26,8 +26,8 @@ def send_log(message, level="general", service_type="unknown", endpoint="unknown
     try:
         response = requests.post(url, data=json.dumps(log_entry), headers={"Content-Type": "application/json"})
         response.raise_for_status()
-    except requests.exceptions.RequestException as e:
-        print(f"Error sending log: {e}")
+    except requests.exceptions.RequestException:
+        return
 
 
 def query_logs(service_type, endpoint="unknown", interval=3600, level="general", start_time=None):
@@ -70,11 +70,7 @@ def query_logs(service_type, endpoint="unknown", interval=3600, level="general",
                 )
 
         return log_values
-    except ValueError as ve:
-        # Handle invalid start_time or interval
-        print(f"Invalid input: start_time={start_time}, interval={interval}. Error: {ve}")
+    except ValueError:
         return None
-    except requests.exceptions.RequestException as re:
-        # Handle network errors
-        print(f"Request error: {re}")
+    except requests.exceptions.RequestException:
         return None
