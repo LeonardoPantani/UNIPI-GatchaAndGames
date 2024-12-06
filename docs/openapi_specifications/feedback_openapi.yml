@@ -1,0 +1,234 @@
+openapi: 3.0.0
+info:
+  title: Gacha System - Auth Service - OpenAPI 3.0
+  description: >-
+    API for managing authentication.
+
+
+    Useful links:
+
+    - [Project
+    repository](https://github.com/LeonardoPantani/UNIPI-GatchaAndGames)
+  version: 2.0.0
+  license:
+    name: GPL-3.0
+    url: https://www.gnu.org/licenses/gpl-3.0.html#license-text
+  contact:
+    email: support@gachaandgames.it
+  termsOfService: https://localhost/tos
+servers:
+  - url: https://localhost
+    description: Local server
+paths:
+  ############################################
+  ################# FEEDBACK #################
+  ############################################
+  /feedback/health_check:
+    get:
+      tags:
+      - feedback
+      description: Returns 200 if service is healthy.
+      summary: Gives information on service status.
+      responses:
+        '200':
+          description: Service operational.
+  /feedback/:
+    post:
+      tags:
+        - feedback
+      summary: Sends a feedback.
+      description: Creates a feedback to the admins.
+      operationId: postFeedback
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+        - name: string
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Feedback successfully submitted.
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not logged in.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /feedback/internal/delete_user_feedbacks:
+    delete:
+      tags:
+        - feedback_internal
+      description: Deletes feedbacks made by the user by UUID, if exist.
+      operationId: delete_user_feedbacks
+      parameters:
+      - name: session
+        in: cookie
+        required: false
+        schema:
+          type: string
+      - name: uuid
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/UserId'
+      responses:
+        '200':
+          description: Feedbacks deleted.
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '503':
+          description: Service unavailable. Please try again later.
+  /feedback/internal/list:
+    get:
+      tags:
+        - feedback_internal
+      description: Returns list of feedbacks based on pagenumber.
+      operationId: feedback_list
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+        - name: page_number
+          in: query
+          description: Page number of the list.
+          required: false
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+      responses:
+        '200':
+          description: Feedbacks list.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FeedbackPreview'
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '503':
+          description: Service unavailable. Please try again later.
+  /feedback/internal/info:
+    get:
+      tags:
+        - feedback_internal
+      description: Returns info of a feedback.
+      operationId: feedback_info
+      parameters:
+      - name: session
+        in: cookie
+        required: false
+        schema:
+          type: string
+      - name: feedback_id
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/FeedbackId'
+      responses:
+        '200':
+          description: Feedbacks list.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeedbackWithUsername'
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '404':
+          description: Feedback not found.
+        '503':
+          description: Service unavailable. Please try again later.
+  /feedback/internal/submit:
+    post:
+      tags:
+        - feedback_internal
+      description: Submits a feedback.
+      operationId: submit_feedback
+      parameters:
+      - name: session
+        in: cookie
+        required: false
+        schema:
+          type: string
+      - name: user_uuid
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: string
+      responses:
+        '201':
+          description: Feedbacks added.
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '503':
+          description: Service unavailable. Please try again later.
+
+components:
+  schemas:
+    UserId:
+      type: string
+      format: uuid
+      description: UUID of user.
+    Username:
+      type: string
+      minLength: 5
+      pattern: ^[a-zA-Z0-9_]+$
+      example: LeoPanta01_
+      description: The user's username. Must be at least 5 characters long and contain only letters, numbers, and underscores.
+    FeedbackPreview:
+      properties:
+        id:
+          $ref: '#/components/schemas/FeedbackId'
+        user_uuid:
+          $ref: '#/components/schemas/UserId'
+        timestamp:
+          description: Timestamp when user created feedback
+          format: date-time
+          type: string
+      type: object
+    FeedbackId:
+      description: Id of feedback.
+      type: integer
+      example: 7
+    FeedbackWithUsername:
+      properties:
+        id:
+          $ref: '#/components/schemas/FeedbackId'
+        user_uuid:
+          $ref: '#/components/schemas/UserId'
+        username:
+          $ref: '#/components/schemas/Username'
+        content:
+          description: Actual feedback content.
+          example: I love this game11!
+          type: string
+        timestamp:
+          description: Timestamp when user created feedback
+          format: date-time
+          type: string
+      type: object

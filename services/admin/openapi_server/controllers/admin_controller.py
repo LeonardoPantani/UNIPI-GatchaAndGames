@@ -49,12 +49,15 @@ def ban_profile(user_uuid):
     valid, user_uuid = sanitize_uuid_input(user_uuid)
     if not valid:
         return jsonify({"message": "Invalid input."}), 400
+    
+    if session["uuid"] == user_uuid:
+        return jsonify({"error": "You cannot delete your account like this."}), 406
 
     try:
 
         @circuit_breaker
         def make_request_to_auth_service():
-            params = {"uuid": session["uuid"]}
+            params = {"uuid": user_uuid}
             url = "https://service_auth/auth/internal/get_role_by_uuid"
             response = requests.get(url, params=params, verify=False, timeout=current_app.config["requests_timeout"])
             response.raise_for_status()
@@ -64,7 +67,7 @@ def ban_profile(user_uuid):
 
     except requests.HTTPError as e:
         if e.response.status_code == 404:
-            send_log(f"make_request_to_auth_service: No user found with uuid: {session["uuid"]}", level="info", service_type=SERVICE_TYPE)
+            send_log(f"make_request_to_auth_service: No user found with uuid: {user_uuid}", level="info", service_type=SERVICE_TYPE)
             return jsonify({"error": "User not found."}), 404
         else:
             send_log(f"make_request_to_auth_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
@@ -77,13 +80,10 @@ def ban_profile(user_uuid):
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
     user_role = user_role_data["role"]
-
-    if user_role != "ADMIN":
-        send_log(f"ban_profile: User {session["username"]} tried to use admin functions.", level="info", service_type=SERVICE_TYPE)
-        return jsonify({"error": "This account is not authorized to perform this action."}), 403
-
-    if session["uuid"] == user_uuid:
-        return jsonify({"error": "You cannot delete your account like this."}), 406
+    
+    if user_role == "ADMIN":
+        send_log(f"ban_profile: User {session["username"]} tried to ban Admin {user_uuid}.", level="info", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Cannot ban a user with the ADMIN role."}), 403
 
     try:
 
@@ -353,38 +353,6 @@ def create_gacha():
     else:
         session = session[0]
 
-    try:
-
-        @circuit_breaker
-        def make_request_to_auth_service():
-            params = {"uuid": session["uuid"]}
-            url = "https://service_auth/auth/internal/get_role_by_uuid"
-            response = requests.get(url, params=params, verify=False, timeout=current_app.config["requests_timeout"])
-            response.raise_for_status()
-            return response.json()
-
-        user_role_data = make_request_to_auth_service()
-
-    except requests.HTTPError as e:
-        if e.response.status_code == 404:
-            send_log(f"make_request_to_auth_service: No user found with uuid: {session["uuid"]}", level="info", service_type=SERVICE_TYPE)
-            return jsonify({"error": "User not found."}), 404
-        else:
-            send_log(f"make_request_to_auth_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
-            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    except requests.RequestException as e:
-        send_log(f"make_request_to_auth_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
-        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
-    except CircuitBreakerError:
-        send_log(f"make_request_to_auth_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
-        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
-
-    user_role = user_role_data["role"]
-
-    if user_role != "ADMIN":
-        send_log(f"create_gacha: User {session["username"]} tried to use admin functions.", level="info", service_type=SERVICE_TYPE)
-        return jsonify({"error": "This account is not authorized to perform this action."}), 403
-
     if not connexion.request.is_json:
         return jsonify({"message": "Invalid request."}), 400
 
@@ -443,38 +411,6 @@ def delete_gacha(gacha_uuid):
     try:
 
         @circuit_breaker
-        def make_request_to_auth_service():
-            params = {"uuid": session["uuid"]}
-            url = "https://service_auth/auth/internal/get_role_by_uuid"
-            response = requests.get(url, params=params, verify=False, timeout=current_app.config["requests_timeout"])
-            response.raise_for_status()
-            return response.json()
-
-        user_role_data = make_request_to_auth_service()
-
-    except requests.HTTPError as e:
-        if e.response.status_code == 404:
-            send_log(f"make_request_to_auth_service: No user found with uuid: {session["uuid"]}", level="info", service_type=SERVICE_TYPE)
-            return jsonify({"error": "User not found."}), 404
-        else:
-            send_log(f"make_request_to_auth_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
-            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    except requests.RequestException as e:
-        send_log(f"make_request_to_auth_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
-        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
-    except CircuitBreakerError:
-        send_log(f"make_request_to_auth_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
-        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
-
-    user_role = user_role_data["role"]
-
-    if user_role != "ADMIN":
-        send_log(f"delete_gacha: User {session["username"]} tried to use admin functions.", level="info", service_type=SERVICE_TYPE)
-        return jsonify({"error": "This account is not authorized to perform this action."}), 403
-
-    try:
-
-        @circuit_breaker
         def make_request_to_gacha_service():
             params = {"uuid": gacha_uuid}
             url = "https://service_gacha/gacha/internal/gacha/delete"
@@ -509,38 +445,6 @@ def create_pool():
         return session
     else:
         session = session[0]
-
-    try:
-
-        @circuit_breaker
-        def make_request_to_auth_service():
-            params = {"uuid": session["uuid"]}
-            url = "https://service_auth/auth/internal/get_role_by_uuid"
-            response = requests.get(url, params=params, verify=False, timeout=current_app.config["requests_timeout"])
-            response.raise_for_status()
-            return response.json()
-
-        user_role_data = make_request_to_auth_service()
-
-    except requests.HTTPError as e:
-        if e.response.status_code == 404:
-            send_log(f"make_request_to_auth_service: No user found with uuid: {session["uuid"]}", level="info", service_type=SERVICE_TYPE)
-            return jsonify({"error": "User not found."}), 404
-        else:
-            send_log(f"make_request_to_auth_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
-            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    except requests.RequestException as e:
-        send_log(f"make_request_to_auth_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
-        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
-    except CircuitBreakerError:
-        send_log(f"make_request_to_auth_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
-        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
-
-    user_role = user_role_data["role"]
-
-    if user_role != "ADMIN":
-        send_log(f"create_pool: User {session["username"]} tried to use admin functions.", level="info", service_type=SERVICE_TYPE)
-        return jsonify({"error": "This account is not authorized to perform this action."}), 403
 
     if not connexion.request.is_json:
         return jsonify({"message": "Invalid request."}), 400
@@ -594,38 +498,6 @@ def delete_pool(pool_id):
     try:
 
         @circuit_breaker
-        def make_request_to_auth_service():
-            params = {"uuid": session["uuid"]}
-            url = "https://service_auth/auth/internal/get_role_by_uuid"
-            response = requests.get(url, params=params, verify=False, timeout=current_app.config["requests_timeout"])
-            response.raise_for_status()
-            return response.json()
-
-        user_role_data = make_request_to_auth_service()
-
-    except requests.HTTPError as e:
-        if e.response.status_code == 404:
-            send_log(f"make_request_to_auth_service: No user found with uuid: {session["uuid"]}", level="info", service_type=SERVICE_TYPE)
-            return jsonify({"error": "User not found."}), 404
-        else:
-            send_log(f"make_request_to_auth_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
-            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    except requests.RequestException as e:
-        send_log(f"make_request_to_auth_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
-        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
-    except CircuitBreakerError:
-        send_log(f"make_request_to_auth_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
-        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
-
-    user_role = user_role_data["role"]
-
-    if user_role != "ADMIN":
-        send_log(f"delete_pool: User {session["username"]} tried to use admin functions.", level="info", service_type=SERVICE_TYPE)
-        return jsonify({"error": "This account is not authorized to perform this action."}), 403
-
-    try:
-
-        @circuit_breaker
         def make_request_to_gacha_service():
             params = {"codename": pool_id}
             url = "https://service_gacha/gacha/internal/pool/delete"
@@ -671,38 +543,6 @@ def edit_user_profile(user_uuid, email=None, username=None):
     valid, user_uuid = sanitize_uuid_input(user_uuid)
     if not valid:
         return jsonify({"message": "Invalid input."}), 400
-
-    try:
-
-        @circuit_breaker
-        def make_request_to_auth_service():
-            params = {"uuid": session["uuid"]}
-            url = "https://service_auth/auth/internal/get_role_by_uuid"
-            response = requests.get(url, params=params, verify=False, timeout=current_app.config["requests_timeout"])
-            response.raise_for_status()
-            return response.json()
-
-        user_role_data = make_request_to_auth_service()
-
-    except requests.HTTPError as e:
-        if e.response.status_code == 404:
-            send_log(f"make_request_to_auth_service: No user found with uuid: {session["uuid"]}", level="info", service_type=SERVICE_TYPE)
-            return jsonify({"error": "User not found."}), 404
-        else:
-            send_log(f"make_request_to_auth_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
-            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    except requests.RequestException as e:
-        send_log(f"make_request_to_auth_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
-        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
-    except CircuitBreakerError:
-        send_log(f"make_request_to_auth_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
-        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
-
-    user_role = user_role_data["role"]
-
-    if user_role != "ADMIN":
-        send_log(f"edit_user_profile: User {session["username"]} tried to use admin functions.", level="info", service_type=SERVICE_TYPE)
-        return jsonify({"error": "This account is not authorized to perform this action."}), 403
 
     try:
 
@@ -851,38 +691,6 @@ def get_all_feedbacks(page_number=None):
     try:
 
         @circuit_breaker
-        def make_request_to_auth_service():
-            params = {"uuid": session["uuid"]}
-            url = "https://service_auth/auth/internal/get_role_by_uuid"
-            response = requests.get(url, params=params, verify=False, timeout=current_app.config["requests_timeout"])
-            response.raise_for_status()
-            return response.json()
-
-        user_role_data = make_request_to_auth_service()
-
-    except requests.HTTPError as e:
-        if e.response.status_code == 404:
-            send_log(f"make_request_to_auth_service: No user found with uuid: {session["uuid"]}", level="info", service_type=SERVICE_TYPE)
-            return jsonify({"error": "User not found."}), 404
-        else:
-            send_log(f"make_request_to_auth_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
-            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    except requests.RequestException as e:
-        send_log(f"make_request_to_auth_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
-        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
-    except CircuitBreakerError:
-        send_log(f"make_request_to_auth_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
-        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
-
-    user_role = user_role_data["role"]
-
-    if user_role != "ADMIN":
-        send_log(f"get_all_feedbacks: User {session["username"]} tried to use admin functions.", level="info", service_type=SERVICE_TYPE)
-        return jsonify({"error": "This account is not authorized to perform this action."}), 403
-
-    try:
-
-        @circuit_breaker
         def make_request_to_feedback_service():
             params = {"page_number": page_number}
             url = "https://service_feedback/feedback/internal/list"
@@ -923,38 +731,6 @@ def get_all_profiles(page_number=None):
     try:
 
         @circuit_breaker
-        def make_request_to_auth_service():
-            params = {"uuid": session["uuid"]}
-            url = "https://service_auth/auth/internal/get_role_by_uuid"
-            response = requests.get(url, params=params, verify=False, timeout=current_app.config["requests_timeout"])
-            response.raise_for_status()
-            return response.json()
-
-        user_role_data = make_request_to_auth_service()
-
-    except requests.HTTPError as e:
-        if e.response.status_code == 404:
-            send_log(f"make_request_to_auth_service: No user found with uuid: {session["uuid"]}", level="info", service_type=SERVICE_TYPE)
-            return jsonify({"error": "User not found."}), 404
-        else:
-            send_log(f"make_request_to_auth_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
-            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    except requests.RequestException as e:
-        send_log(f"make_request_to_auth_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
-        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
-    except CircuitBreakerError:
-        send_log(f"make_request_to_auth_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
-        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
-
-    user_role = user_role_data["role"]
-
-    if user_role != "ADMIN":
-        send_log(f"get_all_profiles: User {session["username"]} tried to use admin functions.", level="info", service_type=SERVICE_TYPE)
-        return jsonify({"error": "This account is not authorized to perform this action."}), 403
-
-    try:
-
-        @circuit_breaker
         def make_request_to_profile_service():
             params = {"page_number": page_number}
             url = "https://service_profile/profile/internal/list"
@@ -989,38 +765,6 @@ def get_feedback_info(feedback_id=None):
 
     if not feedback_id:
         return jsonify({"message": "Invalid request."}), 400
-
-    try:
-
-        @circuit_breaker
-        def make_request_to_auth_service():
-            params = {"uuid": session["uuid"]}
-            url = "https://service_auth/auth/internal/get_role_by_uuid"
-            response = requests.get(url, params=params, verify=False, timeout=current_app.config["requests_timeout"])
-            response.raise_for_status()
-            return response.json()
-
-        user_role_data = make_request_to_auth_service()
-
-    except requests.HTTPError as e:
-        if e.response.status_code == 404:
-            send_log(f"make_request_to_auth_service: No user found with uuid: {session["uuid"]}", level="info", service_type=SERVICE_TYPE)
-            return jsonify({"error": "User not found."}), 404
-        else:
-            send_log(f"make_request_to_auth_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
-            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    except requests.RequestException as e:
-        send_log(f"make_request_to_auth_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
-        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
-    except CircuitBreakerError:
-        send_log(f"make_request_to_auth_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
-        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
-
-    user_role = user_role_data["role"]
-
-    if user_role != "ADMIN":
-        send_log(f"get_feedback_info: User {session["username"]} tried to use admin functions.", level="info", service_type=SERVICE_TYPE)
-        return jsonify({"error": "This account is not authorized to perform this action."}), 403
 
     try:
 
@@ -1073,38 +817,6 @@ def get_system_logs():
     if start_time and start_time > int(datetime.now().timestamp()):
         return jsonify({"error": "Invalid input."}), 400
 
-    try:
-
-        @circuit_breaker
-        def make_request_to_auth_service():
-            params = {"uuid": session["uuid"]}
-            url = "https://service_auth/auth/internal/get_role_by_uuid"
-            response = requests.get(url, params=params, verify=False, timeout=current_app.config["requests_timeout"])
-            response.raise_for_status()
-            return response.json()
-
-        user_role_data = make_request_to_auth_service()
-
-    except requests.HTTPError as e:
-        if e.response.status_code == 404:
-            send_log(f"make_request_to_auth_service: No user found with uuid: {session["uuid"]}", level="info", service_type=SERVICE_TYPE)
-            return jsonify({"error": "User not found."}), 404
-        else:
-            send_log(f"make_request_to_auth_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
-            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    except requests.RequestException as e:
-        send_log(f"make_request_to_auth_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
-        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
-    except CircuitBreakerError:
-        send_log(f"make_request_to_auth_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
-        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
-
-    user_role = user_role_data["role"]
-
-    if user_role != "ADMIN":
-        send_log(f"get_system_logs: User {session["username"]} tried to use admin functions.", level="info", service_type=SERVICE_TYPE)
-        return jsonify({"error": "This account is not authorized to perform this action."}), 403
-
     logs = query_logs(service_type, endpoint, interval, level, start_time)
 
     send_log(f"get_system_logs: Admin {session['username']} successfully got logs.", level="general", service_type=SERVICE_TYPE)
@@ -1128,38 +840,6 @@ def get_user_history(user_uuid, history_type, page_number=None):
         return jsonify({"message": "Invalid input."}), 400
 
     page_number = sanitize_pagenumber_input(page_number)
-
-    try:
-
-        @circuit_breaker
-        def make_request_to_auth_service():
-            params = {"uuid": session["uuid"]}
-            url = "https://service_auth/auth/internal/get_role_by_uuid"
-            response = requests.get(url, params=params, verify=False, timeout=current_app.config["requests_timeout"])
-            response.raise_for_status()
-            return response.json()
-
-        user_role_data = make_request_to_auth_service()
-
-    except requests.HTTPError as e:
-        if e.response.status_code == 404:
-            send_log(f"make_request_to_auth_service: No user found with uuid: {session["uuid"]}", level="info", service_type=SERVICE_TYPE)
-            return jsonify({"error": "User not found."}), 404
-        else:
-            send_log(f"make_request_to_auth_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
-            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    except requests.RequestException as e:
-        send_log(f"make_request_to_auth_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
-        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
-    except CircuitBreakerError:
-        send_log(f"make_request_to_auth_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
-        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
-
-    user_role = user_role_data["role"]
-
-    if user_role != "ADMIN":
-        send_log(f"get_user_history: User {session["username"]} tried to use admin functions.", level="info", service_type=SERVICE_TYPE)
-        return jsonify({"error": "This account is not authorized to perform this action."}), 403
 
     try:
 
@@ -1218,38 +898,6 @@ def update_auction(auction_uuid):
     try:
 
         @circuit_breaker
-        def make_request_to_auth_service():
-            params = {"uuid": session["uuid"]}
-            url = "https://service_auth/auth/internal/get_role_by_uuid"
-            response = requests.get(url, params=params, verify=False, timeout=current_app.config["requests_timeout"])
-            response.raise_for_status()
-            return response.json()
-
-        user_role_data = make_request_to_auth_service()
-
-    except requests.HTTPError as e:
-        if e.response.status_code == 404:
-            send_log(f"make_request_to_auth_service: No user found with uuid: {session["uuid"]}", level="info", service_type=SERVICE_TYPE)
-            return jsonify({"error": "User not found."}), 404
-        else:
-            send_log(f"make_request_to_auth_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
-            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    except requests.RequestException as e:
-        send_log(f"make_request_to_auth_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
-        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
-    except CircuitBreakerError:
-        send_log(f"make_request_to_auth_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
-        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
-
-    user_role = user_role_data["role"]
-
-    if user_role != "ADMIN":
-        send_log(f"update_auction: User {session["username"]} tried to use admin functions.", level="info", service_type=SERVICE_TYPE)
-        return jsonify({"error": "This account is not authorized to perform this action."}), 403
-
-    try:
-
-        @circuit_breaker
         def make_request_to_auction_service():
             url = "https://service_auction/auction/internal/update"
             response = requests.post(url, json=auction, verify=False, timeout=current_app.config["requests_timeout"])
@@ -1302,38 +950,6 @@ def update_gacha(gacha_uuid):
 
     if gacha["gacha_uuid"] != gacha_uuid:
         return jsonify({"message": "Gacha UUID in request is different from the one inside the gacha object."}), 406
-
-    try:
-
-        @circuit_breaker
-        def make_request_to_auth_service():
-            params = {"uuid": session["uuid"]}
-            url = "https://service_auth/auth/internal/get_role_by_uuid"
-            response = requests.get(url, params=params, verify=False, timeout=current_app.config["requests_timeout"])
-            response.raise_for_status()
-            return response.json()
-
-        user_role_data = make_request_to_auth_service()
-
-    except requests.HTTPError as e:
-        if e.response.status_code == 404:
-            send_log(f"make_request_to_auth_service: No user found with uuid: {session["uuid"]}", level="info", service_type=SERVICE_TYPE)
-            return jsonify({"error": "User not found."}), 404
-        else:
-            send_log(f"make_request_to_auth_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
-            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    except requests.RequestException as e:
-        send_log(f"make_request_to_auth_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
-        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
-    except CircuitBreakerError:
-        send_log(f"make_request_to_auth_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
-        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
-
-    user_role = user_role_data["role"]
-
-    if user_role != "ADMIN":
-        send_log(f"update_gacha: User {session["username"]} tried to use admin functions.", level="info", service_type=SERVICE_TYPE)
-        return jsonify({"error": "This account is not authorized to perform this action."}), 403
 
     try:
 
@@ -1399,38 +1015,6 @@ def update_pool(pool_id):
         or pool["probability_common"] is None
     ):
         return jsonify({"message": "Invalid request."}), 400
-
-    try:
-
-        @circuit_breaker
-        def make_request_to_auth_service():
-            params = {"uuid": session["uuid"]}
-            url = "https://service_auth/auth/internal/get_role_by_uuid"
-            response = requests.get(url, params=params, verify=False, timeout=current_app.config["requests_timeout"])
-            response.raise_for_status()
-            return response.json()
-
-        user_role_data = make_request_to_auth_service()
-
-    except requests.HTTPError as e:
-        if e.response.status_code == 404:
-            send_log(f"make_request_to_auth_service: No user found with uuid: {session["uuid"]}", level="info", service_type=SERVICE_TYPE)
-            return jsonify({"error": "User not found."}), 404
-        else:
-            send_log(f"make_request_to_auth_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
-            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    except requests.RequestException as e:
-        send_log(f"make_request_to_auth_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
-        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
-    except CircuitBreakerError:
-        send_log(f"make_request_to_auth_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
-        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
-
-    user_role = user_role_data["role"]
-
-    if user_role != "ADMIN":
-        send_log(f"update_pool: User {session["username"]} tried to use admin functions.", level="info", service_type=SERVICE_TYPE)
-        return jsonify({"error": "This account is not authorized to perform this action."}), 403
 
     try:
 
