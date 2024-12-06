@@ -305,7 +305,7 @@ def complete_access(uuid, uuid_hex, email, username, role):
 
     # creating JWT token
     access_token_payload = {
-        "iss": "https://" + SERVICE_TYPE,
+        "iss": "https://service_" + SERVICE_TYPE,
         "sub": uuid,
         "email": email,
         "username": username,

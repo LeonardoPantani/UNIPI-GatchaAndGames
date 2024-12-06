@@ -1,4 +1,4 @@
-FROM redis:latest
+FROM redis:7.4.1
 
 COPY ./redis.conf /usr/local/etc/redis/redis.conf
 COPY ./ssl /usr/local/etc/redis/certs
