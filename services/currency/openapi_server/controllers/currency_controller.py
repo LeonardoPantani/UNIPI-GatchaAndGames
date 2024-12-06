@@ -146,8 +146,8 @@ def get_bundles():
     response = list_bundles(None)
     
     if response[1] != 200:
-        send_log(f"list_bundles: HttpError {response} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
+        send_log(f"list_bundles: HttpError {response} for uuid.", level="error", service_type=SERVICE_TYPE)
         jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
 
-    send_log(f"get_bundles: User {session['username']} has successfully gotten bundles info.", level="general", service_type=SERVICE_TYPE)
+    send_log(f"get_bundles: User has successfully gotten bundles info.", level="general", service_type=SERVICE_TYPE)
     return response
