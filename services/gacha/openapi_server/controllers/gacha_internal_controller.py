@@ -505,9 +505,13 @@ def get_pool(session=None, uuid=None):  # note: uuid is actually the codename
                 cursor.close()
                 return "", 404
 
-            items_query = "SELECT BIN_TO_UUID(gacha_uuid) FROM gacha_pools_items WHERE codename = %s"
+            items_query = "SELECT BIN_TO_UUID(gp.gacha_uuid), rarity FROM gacha_pools_items gp JOIN gachas_types gt ON gp.gacha_uuid = uuid WHERE codename = %s"
             cursor.execute(items_query, (uuid,))
-            items = [str(item[0]) for item in cursor.fetchall()]
+            item_data =  cursor.fetchall()
+
+            items = []
+            for item in item_data:
+                items.append((item))
 
             pool_data = {
                 "codename": result[0],
