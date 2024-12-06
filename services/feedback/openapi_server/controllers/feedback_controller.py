@@ -36,8 +36,10 @@ def post_feedback(string=None, session=None):
     feedback = {"content": feedback_request}
 
     response = submit_feedback(feedback, None, session["uuid"])
-    print(response)
+    
     if response[1] != 201:
+        send_log(f"submit_feedback: HttpError {response} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service unavailable. Please try again later."}), 503
 
+    send_log(f"post_feedback: User {session['username']} has successfully submitted a feedback.", level="general", service_type=SERVICE_TYPE)
     return jsonify({"message": "Feedback successfully submitted."}), 201
