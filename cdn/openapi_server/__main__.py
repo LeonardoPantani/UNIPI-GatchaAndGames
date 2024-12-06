@@ -135,7 +135,6 @@ def main():
     app.run(
         host="0.0.0.0",
         port=443,
-        debug=True,
         ssl_context=(
             "/usr/src/app/ssl/cdn.crt",
             "/usr/src/app/ssl/cdn.key",

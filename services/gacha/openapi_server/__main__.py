@@ -70,7 +70,6 @@ def main():
     connexion_app.run(
         host="0.0.0.0",
         port=443,
-        debug=True,
         ssl_context=(
             "/usr/src/app/ssl/" + CONFIG["service_type"] + ".crt",
             "/usr/src/app/ssl/" + CONFIG["service_type"] + ".key",
