@@ -8,10 +8,7 @@ import numpy as np
 
 
 
-# Probabilità di creare un'asta dopo aver effettuato un acquisto --> non necessariamente ogni utente mette all'asta i propri item
-AUCTION_CREATION_PROBABILITY = 0.2
-DELETE_ITEM_PROBABILITY = 0.1 # Probabilità di eliminare un item dall'inventario
-AUCTION_BID_PROBABILITY = 0.5 # Probabilità di fare un'offerta su un'asta
+
 
 class GachaStats:
     def __init__(self):
@@ -214,96 +211,6 @@ class GachaTaskSequence(SequentialTaskSet):
             item_id = random.choice(self.inventory)
             self.client.get(f"/inventory/{item_id}", verify=False, name="/inventory/{item_id}")
 
-
-    @task
-    def create_auction(self):
-        if not self.auction_created and random.random() < AUCTION_CREATION_PROBABILITY: # Create only one auction per user + random auction creation condition
-            item_id = self._get_user_item_id()
-            if item_id:
-                response = self.client.post(f"/auction/create?starting_price=10&inventory_item_owner_id={self.credentials['uuid']}&inventory_item_id={item_id}", verify=False, name="/auction/create")
-                print("Response status code:",response.status_code)
-                if response.status_code == 201:
-                    auction_data = response.json()
-                    self.auction_id = auction_data.get("auction_uuid")
-                    self.auction_created = True
-                print("auction created:",self.auction_created)
-
-
-    def get_auctions_list(self):
-        response=self.client.get("/auction/list?status=open&page_number=1", verify=False, name="/auction/list?status=open")
-        return response
-
-    @task
-    def bid_on_auction(self): # Updated bid_on_auction task
-        if random.random() < AUCTION_BID_PROBABILITY:     
-            if self._buy_bundle():
-                self._add_currency()
-                response = self.get_auctions_list()
-            if response.status_code == 200:
-                auctions = response.json()
-
-                if auctions:
-                    suitable_auctions = [
-                        auction for auction in auctions if auction.get("inventory_item_owner_id") != self.credentials["uuid"]
-                    ]
-
-                    if suitable_auctions:
-                        chosen_auction = random.choice(suitable_auctions)
-                        auction_id = chosen_auction.get("auction_uuid")
-                        print(auction_id)
-                        print(f"/auction/bid/{auction_id}")
-                        self._add_currency()
-                        self.client.post(
-                            f"/auction/bid/{auction_id}?bid=1",
-                            verify=False,
-                            name=f"/auction/bid/{auction_id}"
-                        )
-
-    @task
-    def get_auction_status(self):
-        if self.auction_id:
-            self.client.get(f"/auction/{self.auction_id}", verify=False, name="/auction/{auction_id}")
-
-
-    @task
-    def get_auctions_history(self):
-        self.client.get(f"/auction/history?page_number=1", verify=False, name="/auction/history")
-
-
-    def get_all_auctions(self):
-        all_auctions = []
-        page_number = 1
-        max_pages=1000000
-        while True and page_number<=max_pages:
-            response = self.client.get(f"/auction/list?status=open&page_number={page_number}", verify=False, name="/auction/list?status=open")
-            if response.status_code != 200:
-                print(f"Error getting auction list (page {page_number}): {response.status_code}")
-                break  # Stop if there's an error fetching a page
-
-            auctions = response.json()
-            if not auctions:  # Check if the returned list is empty
-                break  # Stop when a page returns an empty list
-
-            all_auctions.extend(auctions)
-            page_number += 1
-        if page_number>max_pages:
-            print("Max pages reached")
-            exit()
-        return all_auctions
-
-    @task
-    def delete_item(self):
-        if random.random() < DELETE_ITEM_PROBABILITY:
-            item_to_delete = self._get_user_item_id()
-            if item_to_delete:
-                all_auctions = self.get_all_auctions()  # Get all auctions across all pages
-                item_in_auction = any(auction.get("inventory_item_id") == item_to_delete for auction in all_auctions)
-
-                if not item_in_auction:
-                    self.client.delete(f"/inventory/?inventory_item_owner_id={self.credentials['uuid']}&inventory_item_id={item_to_delete}", verify=False, name=f"/inventory/?inventory_item_owner_id={self.credentials['uuid']}&inventory_item_id={item_to_delete}")
-                    print("url",f"/inventory/?inventory_item_owner_id={self.credentials['uuid']}&inventory_item_id={item_to_delete}")
-                else:
-                    print(f"Item {item_to_delete} is currently in an auction and cannot be deleted.")
 
         
 
