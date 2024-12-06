@@ -1,14 +1,4 @@
 services:
-  # ########################## CDN FOR IMAGES
-  # cdn:
-  #   build: ./cdn/
-  #   container_name: unipi-gatchaandgames-cdn
-  #   env_file: ./cdn/.env
-  #   volumes:
-  #     - ./common/:/app/openapi_server/helpers/
-  #     - ./cdn:/app
-  #   restart: always
-
   # ########################## AUTH
   service_auth:
     image: service_auth

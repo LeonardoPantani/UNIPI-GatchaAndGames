@@ -1,16 +1,12 @@
-import traceback
-
 import connexion
 import requests
-from flask import current_app, jsonify, session
+from flask import current_app, jsonify
 from pybreaker import CircuitBreaker, CircuitBreakerError
 
-from openapi_server import util
 from openapi_server.controllers.inventory_internal_controller import remove_item, get_inventory_items_by_owner_uuid, get_item_by_uuid
 from openapi_server.helpers.authorization import verify_login
 from openapi_server.helpers.input_checks import sanitize_uuid_input
 from openapi_server.helpers.logging import send_log
-from openapi_server.models.inventory_item import InventoryItem
 
 SERVICE_TYPE = "inventory"
 # Service URLs

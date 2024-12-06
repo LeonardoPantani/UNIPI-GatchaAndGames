@@ -6,4 +6,4 @@ COPY ./ssl/ /etc/mysql/certs/
 
 RUN chown -R mysql:mysql /etc/mysql/certs && chmod 600 /etc/mysql/certs/*
 
-CMD ["mysqld", "--require_secure_transport=ON", "--ssl-ca=/etc/mysql/certs/ca.crt", "--ssl-cert=/etc/mysql/certs/db-inventory-primary.crt", "--ssl-key=/etc/mysql/certs/db-inventory-primary.key"]
+CMD ["mysqld", "--max_connections=500", "--require_secure_transport=ON", "--ssl-ca=/etc/mysql/certs/ca.crt", "--ssl-cert=/etc/mysql/certs/db-inventory-primary.crt", "--ssl-key=/etc/mysql/certs/db-inventory-primary.key"]

@@ -148,10 +148,6 @@ class GachaTaskSequence(SequentialTaskSet):
                     self.client.headers.update({"Authorization": f"Bearer {self.auth_token}"})
                     print("Registrazione effettuata con successo")
                 self.registered = True 
-            else:
-                print(f"Errore durante la registrazione: {register_response.status_code}")
-                print(register_response.text)
-                exit() # Termina il test in caso di errore durante la registrazione
 
     
     @task

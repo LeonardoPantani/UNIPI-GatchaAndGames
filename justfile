@@ -32,15 +32,14 @@ down:
     if [ $(docker compose ps | wc -l) -ne 1 ]; then
         echo "Removing containers and resetting volumes..."
         docker compose down -v
-        docker compose down -v
+        find databases \( -name "proxysql_stats.db" -o -name "proxysql.db" \) -type f -delete
     else
         echo "Containers are stopped..."
     fi
 
 start: on
     #!/bin/bash
-    find . -name "proxysql_stats.db" -type f -delete
-    find . -name "proxysql.db" -type f -delete
+    find databases \( -name "proxysql_stats.db" -o -name "proxysql.db" \) -type f -delete
     echo "Starting containers and building..."
     docker compose up --build -d
 
@@ -106,19 +105,19 @@ logs service_name db_type='' replica_number='1':
 
     if [[ "$service_name" == "redis" ]]; then
         container_name="unipi-gatchaandgames-redis"
-        echo "Showing logs for Redis at $container_name..."
+        echo "Showing logs for $container_name..."
         docker logs -f $container_name
     elif [[ "$service_name" == "cdn" ]]; then
         container_name="unipi-gatchaandgames-cdn"
-        echo "Showing logs for CDN..."
+        echo "Showing logs for $container_name..."
         docker logs -f $container_name
     elif [[ "$service_name" == "gwprivate" ]]; then
         container_name="unipi-gatchaandgames-api_gateway_private"
-        echo "Showing logs for private api gateway..."
+        echo "Showing logs for $container_name..."
         docker logs -f $container_name
     elif [[ "$service_name" == "gwpublic" ]]; then
         container_name="unipi-gatchaandgames-api_gateway_public"
-        echo "Showing logs for public api gateway..."
+        echo "Showing logs for $container_name..."
         docker logs -f $container_name
     elif [[ " $allowed_services " =~ (^|[[:space:]])"$service_name"($|[[:space:]]) ]]; then
         if [ -z "$db_type" ]; then

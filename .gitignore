@@ -70,3 +70,4 @@ target/
 */__pycache__/
 proxysql_stats.db
 proxysql.db
+.locust
