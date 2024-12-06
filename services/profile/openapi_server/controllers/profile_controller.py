@@ -40,10 +40,10 @@ def delete_profile():
     else:
         session = response[0]
 
-        try:
-            delete_request = DeleteProfileRequest.from_dict(connexion.request.get_json())
-        except Exception:
-            return jsonify({"error": "Invalid request"}), 400
+    try:
+        delete_request = DeleteProfileRequest.from_dict(connexion.request.get_json())
+    except Exception:
+        return jsonify({"error": "Invalid request"}), 400
 
     # Verify password
     @circuit_breaker
@@ -62,10 +62,11 @@ def delete_profile():
             return False
         return True
 
+    if not verify_password():
+        send_log(f"delete_profile: Wrong password inserted for user {session['username']}.", level="info", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Invalid password"}), 401
+    
     try:
-        if not verify_password():
-            return jsonify({"error": "Invalid password"}), 401
-
         # 1. Delete user feedbacks
         @circuit_breaker
         def delete_user_feedbacks():
@@ -79,6 +80,17 @@ def delete_profile():
 
         delete_user_feedbacks()
 
+    except requests.HTTPError as e:
+        send_log(f"delete_user_feedbacks: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+    except requests.RequestException as e:
+        send_log(f"delete_user_feedbacks: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:
+        send_log(f"delete_user_feedbacks: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
+
+    try:
         # 2. Delete currency transactions
         @circuit_breaker
         def delete_currency_transactions():
@@ -92,6 +104,17 @@ def delete_profile():
 
         delete_currency_transactions()
 
+    except requests.HTTPError as e:
+        send_log(f"delete_currency_transactions: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+    except requests.RequestException:
+        send_log(f"delete_currency_transactions: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:
+        send_log(f"delete_currency_transactions: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
+
+    try:
         # 3. Get user items
         @circuit_breaker
         def get_user_items():
@@ -106,6 +129,17 @@ def delete_profile():
 
         item_uuids = get_user_items()
 
+    except requests.HTTPError as e:
+        send_log(f"get_user_items: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+    except requests.RequestException:
+        send_log(f"get_user_items: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:
+        send_log(f"get_user_items: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
+
+    try:
         # 4. Refund bidders
         if item_uuids:
 
@@ -121,6 +155,21 @@ def delete_profile():
 
             refund_bidders()
 
+    except requests.HTTPError as e:
+        if e.response.status_code == 404:
+            send_log(f"refund_bidders: Some user was not found when refunding auctions of user: {session['username']}.", level="info", service_type=SERVICE_TYPE)
+            return jsonify({"error": "User not found."}), 404
+        else:
+            send_log(f"refund_bidders: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
+            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+    except requests.RequestException:
+        send_log(f"refund_bidders: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:
+        send_log(f"refund_bidders: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
+
+    try:
         # 5. Reset current bidder
         @circuit_breaker
         def reset_current_bidder():
@@ -134,6 +183,18 @@ def delete_profile():
 
         reset_current_bidder()
 
+    except requests.HTTPError as e:
+        if e.response.status_code != 304:
+            send_log(f"reset_current_bidder: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
+            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+    except requests.RequestException:
+        send_log(f"reset_current_bidder: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:
+        send_log(f"reset_current_bidder: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
+
+    try:
         # 6. Remove PVP matches
         @circuit_breaker
         def remove_pvp_matches():
@@ -147,24 +208,43 @@ def delete_profile():
 
         remove_pvp_matches()
 
-        try:
-            # 7. Remove auctions
-            if item_uuids:
+    except requests.HTTPError as e:
+        send_log(f"remove_pvp_matches: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+    except requests.RequestException:
+        send_log(f"remove_pvp_matches: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:
+        send_log(f"remove_pvp_matches: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
+       
+    try:
+        # 7. Remove auctions
+        if item_uuids:
 
-                @circuit_breaker
-                def remove_auctions():
-                    auction_response = requests.post(
-                        f"{AUCTION_SERVICE_URL}/auction/internal/remove_by_item_uuid",
-                        json=item_uuids,
-                        verify=False,
-                        timeout=current_app.config["requests_timeout"],
-                    )
-                    auction_response.raise_for_status()
+            @circuit_breaker
+            def remove_auctions():
+                auction_response = requests.post(
+                    f"{AUCTION_SERVICE_URL}/auction/internal/remove_by_item_uuid",
+                    json=item_uuids,
+                    verify=False,
+                    timeout=current_app.config["requests_timeout"],
+                )
+                auction_response.raise_for_status()
 
-                remove_auctions()
-        except requests.HTTPError as e:
-            if e.response.status_code == 304:
-                pass
+            remove_auctions()
+    except requests.HTTPError as e:
+        if e.response.status_code != 304:
+            send_log(f"remove_auctions: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
+            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+    except requests.RequestException:
+        send_log(f"remove_auctions: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:
+        send_log(f"remove_auctions: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
+    
+    try:
 
         # 8. Delete inventory
         @circuit_breaker
@@ -179,6 +259,17 @@ def delete_profile():
 
         delete_user_inventory()
 
+    except requests.HTTPError as e:
+        send_log(f"delete_user_inventory: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+    except requests.RequestException:
+        send_log(f"delete_user_inventory: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
+    except CircuitBreakerError:
+        send_log(f"delete_user_inventory: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
+    
+    try:
         # 9. Delete profile
         delete_profile_response = delete_profile_by_uuid(None, session.get("uuid"))
         if delete_profile_response[1] != 200:
@@ -197,43 +288,48 @@ def delete_profile():
 
         delete_auth_user()
 
-        ### Invalidation of token for user uuid = session.get("uuid")... 
-        try:
-
-            @circuit_breaker
-            def make_request_to_auth_service():
-                params = {"uuid": session.get("uuid")}
-                url = "https://service_auth/auth/internal/token/invalidate"
-                response = requests.delete(url, params=params, verify=False, timeout=current_app.config["requests_timeout"])
-                response.raise_for_status()
-                return response.json()
-
-            make_request_to_auth_service()
-            
-        except requests.HTTPError as e:
-            if e.response.status_code == 404: # user not logged in, no need to invalidate session
-                send_log(f"User with uuid '{session.get("uuid")} is not logged in, strange since they have called this function themselves.", level="info")
-            else:
-                return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-        except requests.RequestException:
-            send_log("RequestException Error.", level="error")
-            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-        except CircuitBreakerError:
-            send_log("CircuitBreaker Error.", level="warning")
-            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-        ## end of token invalidation
-
-        return jsonify({"message": "User profile and related data deleted successfully."}), 200
-
     except requests.HTTPError as e:
         if e.response.status_code == 404:
-            return jsonify({"error": "Item not found."}), 404
+            send_log(f"delete_auth_user: No user found with uuid: {session['uuid']}.", level="info", service_type=SERVICE_TYPE)
+            return jsonify({"error": "User not found."}), 404
         else:
+            send_log(f"delete_auth_user: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
+        send_log(f"delete_auth_user: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
+        send_log(f"delete_auth_user: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
+
+    ### Invalidation of token for user uuid = session.get("uuid")... 
+    try:
+
+        @circuit_breaker
+        def make_request_to_auth_service():
+            params = {"uuid": session.get("uuid")}
+            url = "https://service_auth/auth/internal/token/invalidate"
+            response = requests.delete(url, params=params, verify=False, timeout=current_app.config["requests_timeout"])
+            response.raise_for_status()
+            return response.json()
+
+        make_request_to_auth_service()
+        
+    except requests.HTTPError as e:
+        if e.response.status_code == 404: # user not logged in, no need to invalidate session
+            send_log(f"make_request_to_auth_service: User with uuid '{session.get("uuid")} is not logged in, strange since they have called this function themselves.", level="info")
+        else:
+            send_log(f"make_request_to_auth_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
+            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+    except requests.RequestException:
+        send_log(f"make_request_to_auth_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+    except CircuitBreakerError:
+        send_log(f"make_request_to_auth_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+    ## end of token invalidation
+
+    return jsonify({"message": "User profile and related data deleted successfully."}), 200
 
 
 @circuit_breaker
@@ -267,26 +363,27 @@ def edit_profile():
             return False
         return True
 
-    try:
-        if not verify_password():
-            return jsonify({"error": "Invalid password"}), 401
+    if not verify_password():
+        send_log(f"edit_profile: Wrong password inserted for user {session['username']}.", level="info", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Invalid password"}), 401
 
-        user_uuid = session["uuid"]
+    user_uuid = session["uuid"]
 
-        # Check if profile exists
-        response = exists_profile(None, user_uuid)
-        if response[1] != 200:
-            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-        
-        if not response[0].get_json()["exists"]:
-            return jsonify({"error":"User not found"}), 404
-        # Update email if provided
-
-        if edit_request.email:
-            valid, email = sanitize_email_input(edit_request.email)
-            if not valid:
-                return jsonify({"error": "Invalid input."}), 400
-
+    # Check if profile exists
+    response = exists_profile(None, user_uuid)
+    if response[1] != 200:
+        send_log(f"exists_profile: HttpError {response} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+    
+    if not response[0].get_json()["exists"]:
+        return jsonify({"error":"User not found"}), 404
+    
+    # Update email if provided
+    if edit_request.email:
+        valid, email = sanitize_email_input(edit_request.email)
+        if not valid:
+            return jsonify({"error": "Invalid input."}), 400
+        try:
             @circuit_breaker
             def update_email():
                 response = requests.post(
@@ -300,57 +397,66 @@ def edit_profile():
 
             result1 = update_email()
 
-        # Update username if provided
-        if edit_request.username:
-
-            result2 = edit_username(None, session['uuid'],edit_request.username)
-
-            if result2[1] == 404:
-                return jsonify({"error": "User not found."}), 404
-            elif result2[1] == 409:
-                return jsonify({"error": "Username already taken."}), 409
-            elif result2[1] == 304 and result1.status_code == 304:
-                return jsonify({"error": "No changes detected"}), 304
-            elif result2[1] != 200:
-                return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-
-        ### Invalidation of token for user uuid = user_uuid...
-        try:
-
-            @circuit_breaker
-            def make_request_to_auth_service():
-                params = {"uuid": user_uuid}
-                url = "https://service_auth/auth/internal/token/invalidate"
-                response = requests.delete(url, params=params, verify=False, timeout=current_app.config["requests_timeout"])
-                response.raise_for_status()
-                return response.json()
-
-            make_request_to_auth_service()
-            
         except requests.HTTPError as e:
-            if e.response.status_code == 404: # user not logged in, no need to invalidate session
-                send_log(f"User with uuid '{user_uuid} is not logged in, strange since they have called this function themselves.", level="info")
+            if e.response.status_code == 404:
+                send_log(f"update_email: No user found with uuid: {session['uuid']}.", level="info", service_type=SERVICE_TYPE)
+                return jsonify({"error": "User not found"}), 404
             else:
+                send_log(f"update_email: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
                 return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
         except requests.RequestException:
-            send_log("RequestException Error.", level="error")
-            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+            send_log(f"update_email: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
         except CircuitBreakerError:
-            send_log("CircuitBreaker Error.", level="warning")
+            send_log(f"update_email: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
+            return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
+
+        # Update username if provided
+    if edit_request.username:
+
+        result2 = edit_username(None, session['uuid'],edit_request.username)
+
+        if result2[1] == 404:
+            send_log(f"edit_username: No user found with uuid: {session['uuid']}.", level="info", service_type=SERVICE_TYPE)
+            return jsonify({"error": "User not found."}), 404
+        elif result2[1] == 409:
+            send_log(f"edit_username: User {session['username']} tried to change its username to {edit_request.username}, but it's already taken.", level="info", service_type=SERVICE_TYPE)
+            return jsonify({"error": "Username already taken."}), 409
+        elif result2[1] == 304 and result1.status_code == 304:
+            return jsonify({"error": "No changes detected"}), 304
+        elif result2[1] != 200:
+            send_log(f"edit_username: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-        ## end of token invalidation
 
-        return jsonify({"message": "Profile updated successfully. Please re-authenticate."}), 200
+        ### Invalidation of token for user uuid = user_uuid...
+    try:
 
+        @circuit_breaker
+        def make_request_to_auth_service():
+            params = {"uuid": user_uuid}
+            url = "https://service_auth/auth/internal/token/invalidate"
+            response = requests.delete(url, params=params, verify=False, timeout=current_app.config["requests_timeout"])
+            response.raise_for_status()
+            return response.json()
+
+        make_request_to_auth_service()
+        
     except requests.HTTPError as e:
-        if e.response.status_code == 404:
-            return jsonify({"error": "User not found"}), 404
+        if e.response.status_code == 404: # user not logged in, no need to invalidate session
+            send_log(f"make_request_to_auth_service: User with uuid '{user_uuid} is not logged in, strange since they have called this function themselves.", level="info")
         else:
+            send_log(f"make_request_to_auth_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
-        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
+        send_log(f"make_request_to_auth_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
-        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
+        send_log(f"make_request_to_auth_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+    ## end of token invalidation
+
+    send_log(f"edit_profile: User {session['username']} has successfully updated its profile.", level="general", service_type=SERVICE_TYPE)
+    return jsonify({"message": "Profile updated successfully. Please re-authenticate."}), 200
 
 
 def get_user_info(uuid):
@@ -368,8 +474,11 @@ def get_user_info(uuid):
     response = get_profile(None, uuid)
 
     if response[1] == 404:
+        send_log(f"get_profile: No user found with uuid: {uuid}.", level="info", service_type=SERVICE_TYPE)
         return jsonify({"error": "User not found."}), 404
     elif response[1] != 200:
+        send_log(f"get_profile: HttpError {response} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     
+    send_log(f"get_user_info: User {session['username']} has successfully gotten profile info of user with uuid {uuid}.", level="general", service_type=SERVICE_TYPE)
     return response
