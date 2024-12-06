@@ -1,0 +1,6323 @@
+{
+	"info": {
+		"_postman_id": "1a584dc6-ecea-49d5-8f6e-851fc3cdf524",
+		"name": "Integration Testing (External requests)",
+		"description": "Keep in mind that for simplicity (and clarity) tests here are not in order and will not work if you follow the order of the sequence. Most of them can be performed by loggin with the Admin Role of Speedwagon, as mentioned in the descriptions of some of the request.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "39565350",
+		"_collection_link": "https://gachaandgames.postman.co/workspace/GachaAndGames-Workspace~cb432b14-a1a2-4bdb-87b8-18f81b18016e/collection/39565350-1a584dc6-ecea-49d5-8f6e-851fc3cdf524?action=share&source=collection_link&creator=39565350"
+	},
+	"item": [
+		{
+			"name": "Auth Service Tests",
+			"item": [
+				{
+					"name": "Health check",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status is 200\", () => {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auth/health_check",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"health_check"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Register",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// POST {{baseUrl}}/auth/register\r",
+									"pm.test(\"Register Success\", () => {\r",
+									"    pm.response.to.have.status(201);\r",
+									"\r",
+									"    // Save bearer token from Authorization header without 'Bearer ' prefix\r",
+									"    const authHeader = pm.response.headers.get('Authorization');\r",
+									"    if (authHeader && authHeader.startsWith('Bearer ')) {\r",
+									"        const token = authHeader.replace('Bearer ', '');\r",
+									"        pm.environment.set('Authorization', token);\r",
+									"    }\r",
+									"});\r",
+									"\r",
+									"// Verify Authorization header exists and token was saved\r",
+									"pm.test(\"Authorization token saved correctly\", () => {\r",
+									"    const auth = pm.environment.get('Authorization');\r",
+									"    pm.expect(auth).to.exist;\r",
+									"    pm.expect(auth).to.not.include('Bearer');\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"username\": \"{{normal_username}}\",\r\n    \"email\": \"{{normal_email}}\",\r\n    \"password\": \"{{normal_password}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Register Admin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// POST {{baseUrl}}/auth/register\r",
+									"pm.test(\"Register Success\", () => {\r",
+									"    pm.response.to.have.status(201);\r",
+									"\r",
+									"    // Save bearer token from Authorization header without 'Bearer ' prefix\r",
+									"    const authHeader = pm.response.headers.get('Authorization');\r",
+									"    if (authHeader && authHeader.startsWith('Bearer ')) {\r",
+									"        const token = authHeader.replace('Bearer ', '');\r",
+									"        pm.environment.set('Authorization', token);\r",
+									"    }\r",
+									"});\r",
+									"\r",
+									"// Verify Authorization header exists and token was saved\r",
+									"pm.test(\"Authorization token saved correctly\", () => {\r",
+									"    const auth = pm.environment.get('Authorization');\r",
+									"    pm.expect(auth).to.exist;\r",
+									"    pm.expect(auth).to.not.include('Bearer');\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"username\": \"{{user_to_register}}\",\r\n    \"email\": \"{{email_to_register}}\",\r\n    \"password\": \"{{password_to_register}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl_admin}}/auth/register",
+							"host": [
+								"{{baseUrl_admin}}"
+							],
+							"path": [
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Register email already chosen",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// POST {{baseUrl}}/auth/register\r",
+									"pm.test(\"Register With invalid credentials\", () => {\r",
+									"    pm.response.to.have.status(503);\r",
+									"\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"username\": \"{{user_to_register}}\",\r\n    \"email\": \"speedwagon@foundation.org\",\r\n    \"password\": \"{{password_to_register}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl_admin}}/auth/register",
+							"host": [
+								"{{baseUrl_admin}}"
+							],
+							"path": [
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Test script for Logout\r",
+									"pm.test(\"Logout successful\", () => {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"// Rimuovi il token di autorizzazione dall'ambiente\r",
+									"pm.test(\"Bearer token removed\", () => {\r",
+									"    const token = pm.environment.get('Authorization');\r",
+									"    if (token) {\r",
+									"        pm.environment.set('Authorization', '');\r",
+									"    }\r",
+									"    pm.expect(pm.environment.get('Authorization')).to.be.empty;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/logout",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"logout"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login Normale",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Test script for Login\r",
+									"pm.test(\"Login successful\", () => {\r",
+									"    pm.response.to.have.status(200);\r",
+									"    \r",
+									"    // Save bearer token from Authorization header without 'Bearer ' prefix\r",
+									"    const authHeader = pm.response.headers.get('Authorization');\r",
+									"    if (authHeader && authHeader.startsWith('Bearer ')) {\r",
+									"        const token = authHeader.replace('Bearer ', '');\r",
+									"        pm.environment.set('Authorization', token);\r",
+									"    }\r",
+									"});\r",
+									"\r",
+									"// Verify Authorization header exists and token was saved\r",
+									"pm.test(\"Authorization token saved correctly\", () => {\r",
+									"    const auth = pm.environment.get('Authorization');\r",
+									"    pm.expect(auth).to.exist;\r",
+									"    pm.expect(auth).to.not.include('Bearer');\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"username\": \"{{normal_username}}\",  \r\n    \"password\": \"{{normal_password}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login Normale Invalid Credentials",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Test script for Login\r",
+									"pm.test(\"Login successfully failed\", () => {\r",
+									"    pm.response.to.have.status(401);\r",
+									"    \r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"username\": \"franco1234\",  \r\n    \"password\": \"{{normal_password}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login Admin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Test script for Login\r",
+									"pm.test(\"Login successful\", () => {\r",
+									"    pm.response.to.have.status(200);\r",
+									"    \r",
+									"    // Save bearer token from Authorization header without 'Bearer ' prefix\r",
+									"    const authHeader = pm.response.headers.get('Authorization');\r",
+									"    if (authHeader && authHeader.startsWith('Bearer ')) {\r",
+									"        const token = authHeader.replace('Bearer ', '');\r",
+									"        pm.environment.set('Authorization', token);\r",
+									"    }\r",
+									"});\r",
+									"\r",
+									"// Verify Authorization header exists and token was saved\r",
+									"pm.test(\"Authorization token saved correctly\", () => {\r",
+									"    const auth = pm.environment.get('Authorization');\r",
+									"    pm.expect(auth).to.exist;\r",
+									"    pm.expect(auth).to.not.include('Bearer');\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"username\": \"{{username}}\",  \r\n    \"password\": \"{{password}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl_admin}}/auth/login",
+							"host": [
+								"{{baseUrl_admin}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login Admin 2",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Test script for Login\r",
+									"pm.test(\"Login successful\", () => {\r",
+									"    pm.response.to.have.status(200);\r",
+									"    \r",
+									"    // Save bearer token from Authorization header without 'Bearer ' prefix\r",
+									"    const authHeader = pm.response.headers.get('Authorization');\r",
+									"    if (authHeader && authHeader.startsWith('Bearer ')) {\r",
+									"        const token = authHeader.replace('Bearer ', '');\r",
+									"        pm.environment.set('Authorization', token);\r",
+									"    }\r",
+									"});\r",
+									"\r",
+									"// Verify Authorization header exists and token was saved\r",
+									"pm.test(\"Authorization token saved correctly\", () => {\r",
+									"    const auth = pm.environment.get('Authorization');\r",
+									"    pm.expect(auth).to.exist;\r",
+									"    pm.expect(auth).to.not.include('Bearer');\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"username\": \"AdminUser\",  \r\n    \"password\": \"password\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl_admin}}/auth/login",
+							"host": [
+								"{{baseUrl_admin}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Admin Service Tests",
+			"item": [
+				{
+					"name": "Admin Health Check",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Health Check\", () => {\r",
+									"    pm.response.to.have.status(200);\r",
+									"    const response = pm.response.json();\r",
+									"    pm.expect(response.message).to.equal(\"Service operational.\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl_admin}}/admin/health_check",
+							"host": [
+								"{{baseUrl_admin}}"
+							],
+							"path": [
+								"admin",
+								"health_check"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Ban Profile",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Ban Profile\", () => {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Success\", () => {\r",
+									"    if (!pm.request.headers.has(\"Cookie\")) {\r",
+									"        pm.response.to.have.status(200);\r",
+									"    }\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl_admin}}/admin/profile/{{uuid_to_ban}}/ban",
+							"host": [
+								"{{baseUrl_admin}}"
+							],
+							"path": [
+								"admin",
+								"profile",
+								"{{uuid_to_ban}}",
+								"ban"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Ban your own profile",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Ban your profile\", () => {\r",
+									"    pm.response.to.have.status(406);\r",
+									"});\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl_admin}}/admin/profile/{{user_uuid}}/ban",
+							"host": [
+								"{{baseUrl_admin}}"
+							],
+							"path": [
+								"admin",
+								"profile",
+								"{{user_uuid}}",
+								"ban"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Gacha",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"gacha_uuid\": \"{{gacha_to_create}}\",\r\n    \"name\": \"Prova\",\r\n    \"attributes\": {\r\n        \"durability\": \"A\",\r\n        \"precision\": \"A\",\r\n        \"range\": \"A\", \r\n        \"power\": \"A\",\r\n        \"potential\": \"A\",\r\n        \"speed\": \"A\"\r\n    },\r\n    \"rarity\": \"rare\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl_admin}}/admin/gacha/create",
+							"host": [
+								"{{baseUrl_admin}}"
+							],
+							"path": [
+								"admin",
+								"gacha",
+								"create"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Gacha Invalid rarity",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Create an invalid gacha\", () => {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"gacha_uuid\": \"{{gacha_to_create}}\",\r\n    \"name\": \"Prova\",\r\n    \"attributes\": {\r\n        \"durability\": \"A\",\r\n        \"precision\": \"A\",\r\n        \"range\": \"A\", \r\n        \"power\": \"A\",\r\n        \"potential\": \"A\",\r\n        \"speed\": \"A\"\r\n    },\r\n    \"rarity\": \"uncommon\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl_admin}}/admin/gacha/create",
+							"host": [
+								"{{baseUrl_admin}}"
+							],
+							"path": [
+								"admin",
+								"gacha",
+								"create"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Gacha",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl_admin}}/admin/gacha/{{gacha_to_delete}}/delete",
+							"host": [
+								"{{baseUrl_admin}}"
+							],
+							"path": [
+								"admin",
+								"gacha",
+								"{{gacha_to_delete}}",
+								"delete"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete a not found Gacha",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Gacha not found\", () => {\r",
+									"    pm.response.to.have.status(404);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl_admin}}/admin/gacha/1b2f7b4e-5e1f-4112-a7c5-b7559dbb8ca1/delete",
+							"host": [
+								"{{baseUrl_admin}}"
+							],
+							"path": [
+								"admin",
+								"gacha",
+								"1b2f7b4e-5e1f-4112-a7c5-b7559dbb8ca1",
+								"delete"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Pool Create",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Create Pool Success\", () => {\r",
+									"    pm.response.to.have.status(201);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Validate Probabilities Sum\", () => {\r",
+									"    const requestData = JSON.parse(pm.request.body.raw);\r",
+									"    const probs = requestData.probabilities;\r",
+									"    const sum = probs.legendaryProbability + probs.epicProbability + \r",
+									"                probs.commonProbability + probs.rareProbability;\r",
+									"    pm.expect(sum).to.equal(1);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"public_name\": \"Spool Pool\",\r\n    \"codename\": \"sbrooolo\",\r\n    \"price\": 15,\r\n    \"probabilities\": {\r\n        \"legendaryProbability\": 0.05,\r\n        \"epicProbability\": 0.15,\r\n        \"commonProbability\": 0.4,\r\n        \"rareProbability\": 0.3\r\n    },\r\n    \"items\": []\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl_admin}}/admin/pool/create",
+							"host": [
+								"{{baseUrl_admin}}"
+							],
+							"path": [
+								"admin",
+								"pool",
+								"create"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Pool Create with invalid price",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Create Pool bad request\", () => {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"public_name\": \"Spool Pool\",\r\n    \"codename\": \"sbrooolo\",\r\n    \"price\": -1,\r\n    \"probabilities\": {\r\n        \"legendaryProbability\": 0.05,\r\n        \"epicProbability\": 0.15,\r\n        \"commonProbability\": 0.4,\r\n        \"rareProbability\": 0.3\r\n    },\r\n    \"items\": []\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl_admin}}/admin/pool/create",
+							"host": [
+								"{{baseUrl_admin}}"
+							],
+							"path": [
+								"admin",
+								"pool",
+								"create"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Pool",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl_admin}}/admin/pool/{{pool_to_delete}}/delete",
+							"host": [
+								"{{baseUrl_admin}}"
+							],
+							"path": [
+								"admin",
+								"pool",
+								"{{pool_to_delete}}",
+								"delete"
+							],
+							"query": [
+								{
+									"key": "",
+									"value": null,
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Not found Pool",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Not found\", () => {\r",
+									"    pm.response.to.have.status(404);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl_admin}}/admin/pool/pool_di_prova_invalida/delete",
+							"host": [
+								"{{baseUrl_admin}}"
+							],
+							"path": [
+								"admin",
+								"pool",
+								"pool_di_prova_invalida",
+								"delete"
+							],
+							"query": [
+								{
+									"key": "",
+									"value": null,
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Edit profile",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl_admin}}/admin/profile/{{user_uuid2}}/edit?email=jotaro24478686@joestar.com&username=ciaone113334555",
+							"host": [
+								"{{baseUrl_admin}}"
+							],
+							"path": [
+								"admin",
+								"profile",
+								"{{user_uuid2}}",
+								"edit"
+							],
+							"query": [
+								{
+									"key": "email",
+									"value": "jotaro24478686@joestar.com"
+								},
+								{
+									"key": "username",
+									"value": "ciaone113334555"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Edit profile not sanitized",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"\", () => {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl_admin}}/admin/profile/a4f0c592-12af-4bde-aacd-94cd0f27c57e/edit?email=jotaro@joestar.com&username=;-.\"----------",
+							"host": [
+								"{{baseUrl_admin}}"
+							],
+							"path": [
+								"admin",
+								"profile",
+								"a4f0c592-12af-4bde-aacd-94cd0f27c57e",
+								"edit"
+							],
+							"query": [
+								{
+									"key": "email",
+									"value": "jotaro@joestar.com"
+								},
+								{
+									"key": "user_uuid",
+									"value": "e3b0c442-98fc-1c14-b39f-92d1282048c0",
+									"disabled": true
+								},
+								{
+									"key": "username",
+									"value": ";-.\"----------"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List Feedbacks",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl_admin}}/admin/feedback/list?page_number=1",
+							"host": [
+								"{{baseUrl_admin}}"
+							],
+							"path": [
+								"admin",
+								"feedback",
+								"list"
+							],
+							"query": [
+								{
+									"key": "page_number",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List Feedbacks Negative integer",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"\", () => {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl_admin}}/admin/feedback/list?page_number=-1",
+							"host": [
+								"{{baseUrl_admin}}"
+							],
+							"path": [
+								"admin",
+								"feedback",
+								"list"
+							],
+							"query": [
+								{
+									"key": "page_number",
+									"value": "-1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Profiles",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Get Profiles Success\", () => {\r",
+									"    pm.response.to.have.status(200);\r",
+									"\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "session",
+								"value": "",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl_admin}}/admin/profile/list?page_number=1",
+							"host": [
+								"{{baseUrl_admin}}"
+							],
+							"path": [
+								"admin",
+								"profile",
+								"list"
+							],
+							"query": [
+								{
+									"key": "page_number",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Profiles Invalid",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"\", () => {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "session",
+								"value": "",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl_admin}}/admin/profile/list?page_number=1220000000000000002222222222222222222222222222222222222222222222222222222222222222222222444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444;",
+							"host": [
+								"{{baseUrl_admin}}"
+							],
+							"path": [
+								"admin",
+								"profile",
+								"list"
+							],
+							"query": [
+								{
+									"key": "page_number",
+									"value": "1220000000000000002222222222222222222222222222222222222222222222222222222222222222222222444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444;"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Info Feedback",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl_admin}}/admin/feedback/4",
+							"host": [
+								"{{baseUrl_admin}}"
+							],
+							"path": [
+								"admin",
+								"feedback",
+								"4"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Info Feedback Invalid",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl_admin}}/admin/feedback/-1",
+							"host": [
+								"{{baseUrl_admin}}"
+							],
+							"path": [
+								"admin",
+								"feedback",
+								"-1"
+							],
+							"query": [
+								{
+									"key": "feedback_id",
+									"value": "2",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get logs",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"\", () => {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl_admin}}/admin/logs/?service_type=auth&endpoint=login&level=general&interval=3600",
+							"host": [
+								"{{baseUrl_admin}}"
+							],
+							"path": [
+								"admin",
+								"logs",
+								""
+							],
+							"query": [
+								{
+									"key": "service_type",
+									"value": "auth"
+								},
+								{
+									"key": "endpoint",
+									"value": "login"
+								},
+								{
+									"key": "level",
+									"value": "general"
+								},
+								{
+									"key": "interval",
+									"value": "3600"
+								},
+								{
+									"key": "start_time",
+									"value": "1733057100",
+									"description": "Orario: Sun Dec 01 2024 13:45:00",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get logs invalid request",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"\", () => {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl_admin}}/admin/logs/?service_type=auth&endpoint=login&interval=-12&level=general",
+							"host": [
+								"{{baseUrl_admin}}"
+							],
+							"path": [
+								"admin",
+								"logs",
+								""
+							],
+							"query": [
+								{
+									"key": "service_type",
+									"value": "auth"
+								},
+								{
+									"key": "start_time",
+									"value": "1733057100",
+									"description": "Orario: Sun Dec 01 2024 13:45:00",
+									"disabled": true
+								},
+								{
+									"key": "endpoint",
+									"value": "login"
+								},
+								{
+									"key": "interval",
+									"value": "-12"
+								},
+								{
+									"key": "level",
+									"value": "general"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User History",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Debug Request\", () => {\r",
+									"    console.log(\"Full URL:\", pm.request.url.toString());\r",
+									"    console.log(\"User UUID used:\", pm.variables.get('user_uuid'));\r",
+									"    console.log(\"Session ID used:\", pm.variables.get('session_id'));\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Get History Success\", () => {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Cookie",
+								"value": "session={{session_id}}",
+								"type": "text",
+								"disabled": true
+							},
+							{
+								"key": "history_type",
+								"value": "",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl_admin}}/admin/profile/{{user_uuid2}}/history?history_type=bundle",
+							"host": [
+								"{{baseUrl_admin}}"
+							],
+							"path": [
+								"admin",
+								"profile",
+								"{{user_uuid2}}",
+								"history"
+							],
+							"query": [
+								{
+									"key": "history_type",
+									"value": "bundle"
+								},
+								{
+									"key": "history_type",
+									"value": "ingame",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User History Invalid Input",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"\", () => {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Cookie",
+								"value": "session={{session_id}}",
+								"type": "text",
+								"disabled": true
+							},
+							{
+								"key": "history_type",
+								"value": "",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl_admin}}/admin/profile/4f2e8bb5238e1-4537-9cfa-11425c3b42c1/history?history_type=bundle",
+							"host": [
+								"{{baseUrl_admin}}"
+							],
+							"path": [
+								"admin",
+								"profile",
+								"4f2e8bb5238e1-4537-9cfa-11425c3b42c1",
+								"history"
+							],
+							"query": [
+								{
+									"key": "history_type",
+									"value": "bundle"
+								},
+								{
+									"key": "history_type",
+									"value": "ingame",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Auction Update",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"\", () => {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"auction_uuid\": \"{{auction_to_bid_to_uuid}}\",\r\n    \"current_bid\": 5,\r\n    \"current_bidder\": \"{{user_uuid2}}\",\r\n    \"end_time\": \"2025-12-31T23:59:58Z\",\r\n    \"inventory_item_id\": \"e6d5c4b3-a291-8076-5432-109876fedcba\",\r\n    \"starting_price\": 1,\r\n    \"status\": \"open\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl_admin}}/admin/auction/{{auction_to_bid_to_uuid}}/update",
+							"host": [
+								"{{baseUrl_admin}}"
+							],
+							"path": [
+								"admin",
+								"auction",
+								"{{auction_to_bid_to_uuid}}",
+								"update"
+							],
+							"query": [
+								{
+									"key": "",
+									"value": null,
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Auction Update different body/request",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"\", () => {\r",
+									"    pm.response.to.have.status(406);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"auction_uuid\": \"aabbccdd-eeff-0011-2233-445566778897\",\r\n    \"current_bid\": 5,\r\n    \"current_bidder\": \"{{user_uuid}}\",\r\n    \"end_time\": \"2022-12-31T23:59:58Z\",\r\n    \"inventory_item_id\": \"e6d5c4b3-a291-8076-5432-109876fedcba\",\r\n    \"starting_price\": 1,\r\n    \"status\": \"closed\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl_admin}}/admin/auction/{{auction_to_bid_to_uuid}}/update",
+							"host": [
+								"{{baseUrl_admin}}"
+							],
+							"path": [
+								"admin",
+								"auction",
+								"{{auction_to_bid_to_uuid}}",
+								"update"
+							],
+							"query": [
+								{
+									"key": "",
+									"value": null,
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Gacha",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"\", () => {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"gacha_uuid\": \"{{gacha_uuid}}\",\r\n  \"name\": \"Tower of Gray\",\r\n  \"rarity\": \"legendary\",\r\n  \"attributes\": {\r\n    \"power\": \"E\",\r\n    \"speed\": \"A\",\r\n    \"durability\": \"E\",\r\n    \"precision\": \"E\",\r\n    \"range\": \"E\",\r\n    \"potential\": \"E\"\r\n  }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl_admin}}/admin/gacha/{{gacha_uuid}}/update",
+							"host": [
+								"{{baseUrl_admin}}"
+							],
+							"path": [
+								"admin",
+								"gacha",
+								"{{gacha_uuid}}",
+								"update"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Gacha different body/request",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"\", () => {\r",
+									"    pm.response.to.have.status(406);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"gacha_uuid\": \"{{gacha_uuid}}\",\r\n  \"name\": \"Tower of Gray\",\r\n  \"rarity\": \"legendary\",\r\n  \"attributes\": {\r\n    \"power\": \"E\",\r\n    \"speed\": \"A\",\r\n    \"durability\": \"E\",\r\n    \"precision\": \"E\",\r\n    \"range\": \"E\",\r\n    \"potential\": \"E\"\r\n  }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl_admin}}/admin/gacha/e7f8a9b0-c1d2-3e4f-5a6b-7c8d9e0f1a21/update",
+							"host": [
+								"{{baseUrl_admin}}"
+							],
+							"path": [
+								"admin",
+								"gacha",
+								"e7f8a9b0-c1d2-3e4f-5a6b-7c8d9e0f1a21",
+								"update"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Pool invalid request",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"\", () => {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"codename\": \"{{pool_id}}\",\r\n  \"public_name\": \"Starter Pool 2\",\r\n  \"price\": 50,\r\n  \"probability_common\": 0.80,\r\n  \"probability_rare\": 0.1,\r\n  \"probability_epic\": 0.05,\r\n  \"probability_legendary\": 1.05,\r\n  \"items\": [\r\n    \"1b2f7b4e-5e1f-4112-a7c5-b7559dbb8c76\"\r\n  ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl_admin}}/admin/pool/{{pool_id}}/update",
+							"host": [
+								"{{baseUrl_admin}}"
+							],
+							"path": [
+								"admin",
+								"pool",
+								"{{pool_id}}",
+								"update"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Auctions Service Tests",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auction/health_check",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auction",
+								"health_check"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Auction",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const createAuction = async (startingPrice, itemOwnerId, itemId) => {\r",
+									"    try {\r",
+									"        const response = await fetch(`${baseUrl}/create?starting_price=${startingPrice}&inventory_item_owner_id=${itemOwnerId}&inventory_item_id=${itemId}`, {\r",
+									"            method: 'POST',\r",
+									"            credentials: 'include'\r",
+									"        });\r",
+									"        return await response.json();\r",
+									"    } catch (error) {\r",
+									"        console.error('Error:', error);\r",
+									"    }\r",
+									"};"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auction/create?starting_price=10&inventory_item_owner_id={{user_uuid}}&inventory_item_id={{SpeedWagon_item#1}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auction",
+								"create"
+							],
+							"query": [
+								{
+									"key": "starting_price",
+									"value": "10"
+								},
+								{
+									"key": "inventory_item_owner_id",
+									"value": "{{user_uuid}}",
+									"description": "You could use any user, just make sure you have an item before hand. Here for simplicity we used SpeedWagon as it alread has items in the mock datas."
+								},
+								{
+									"key": "inventory_item_id",
+									"value": "{{SpeedWagon_item#1}}"
+								},
+								{
+									"key": "Cookie",
+									"value": "",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Auction not your item",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const createAuction = async (startingPrice, itemOwnerId, itemId) => {\r",
+									"    try {\r",
+									"        const response = await fetch(`${baseUrl}/create?starting_price=${startingPrice}&inventory_item_owner_id=${itemOwnerId}&inventory_item_id=${itemId}`, {\r",
+									"            method: 'POST',\r",
+									"            credentials: 'include'\r",
+									"        });\r",
+									"        return await response.json();\r",
+									"    } catch (error) {\r",
+									"        console.error('Error:', error);\r",
+									"    }\r",
+									"};\r",
+									"\r",
+									"\r",
+									"pm.test(\"\", () => {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auction/create?starting_price=10&inventory_item_owner_id={{user_uuid}}&inventory_item_id=f7e6d5c4-b3a2-9180-7654-321098fedcba",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auction",
+								"create"
+							],
+							"query": [
+								{
+									"key": "starting_price",
+									"value": "10"
+								},
+								{
+									"key": "inventory_item_owner_id",
+									"value": "{{user_uuid}}"
+								},
+								{
+									"key": "inventory_item_id",
+									"value": "f7e6d5c4-b3a2-9180-7654-321098fedcba"
+								},
+								{
+									"key": "Cookie",
+									"value": "",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create auction Invalid starting price",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const createAuction = async (startingPrice, itemOwnerId, itemId) => {\r",
+									"    try {\r",
+									"        const response = await fetch(`${baseUrl}/create?starting_price=${startingPrice}&inventory_item_owner_id=${itemOwnerId}&inventory_item_id=${itemId}`, {\r",
+									"            method: 'POST',\r",
+									"            credentials: 'include'\r",
+									"        });\r",
+									"        return await response.json();\r",
+									"    } catch (error) {\r",
+									"        console.error('Error:', error);\r",
+									"    }\r",
+									"};\r",
+									"\r",
+									"\r",
+									"// Test Script\r",
+									"pm.test(\"Should return 400 for invalid starting price\", function() {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auction/create?inventory_item_owner_id={{user_uuid}}&starting_price=0&inventory_item_id={{SpeedWagon_item#1}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auction",
+								"create"
+							],
+							"query": [
+								{
+									"key": "inventory_item_owner_id",
+									"value": "{{user_uuid}}"
+								},
+								{
+									"key": "Cookie",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "starting_price",
+									"value": "0"
+								},
+								{
+									"key": "inventory_item_id",
+									"value": "{{SpeedWagon_item#1}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Bid on Auction",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const bidOnAuction = async (auctionUuid, bidAmount) => {\r",
+									"    try {\r",
+									"        const response = await fetch(`${baseUrl}/bid/${auctionUuid}?bid=${bidAmount}`, {\r",
+									"            method: 'POST',\r",
+									"            credentials: 'include'\r",
+									"        });\r",
+									"        return await response.json();\r",
+									"    } catch (error) {\r",
+									"        console.error('Error:', error);\r",
+									"    }\r",
+									"};"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auction/bid/{{auction_to_bid_to_uuid}}?bid=1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auction",
+								"bid",
+								"{{auction_to_bid_to_uuid}}"
+							],
+							"query": [
+								{
+									"key": "bid",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Bid on your own  Auction",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const bidOnAuction = async (auctionUuid, bidAmount) => {\r",
+									"    try {\r",
+									"        const response = await fetch(`${baseUrl}/bid/${auctionUuid}?bid=${bidAmount}`, {\r",
+									"            method: 'POST',\r",
+									"            credentials: 'include'\r",
+									"        });\r",
+									"        return await response.json();\r",
+									"    } catch (error) {\r",
+									"        console.error('Error:', error);\r",
+									"    }\r",
+									"};\r",
+									"\r",
+									"pm.test(\"\", () => {\r",
+									"    pm.response.to.have.status(403);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auction/bid/{{auction_uuid}}?bid=1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auction",
+								"bid",
+								"{{auction_uuid}}"
+							],
+							"query": [
+								{
+									"key": "bid",
+									"value": "1"
+								},
+								{
+									"key": null,
+									"value": null,
+									"description": "Login as DioBrando",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Auction Status",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Get Auction Status\r",
+									"const getAuctionStatus = async (auctionUuid) => {\r",
+									"    try {\r",
+									"        const response = await fetch(`${baseUrl}/status/${auctionUuid}`, {\r",
+									"            credentials: 'include'\r",
+									"        });\r",
+									"        return await response.json();\r",
+									"    } catch (error) {\r",
+									"        console.error('Error:', error);\r",
+									"    }\r",
+									"};"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auction/status/{{auction_to_bid_to_uuid}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auction",
+								"status",
+								"{{auction_to_bid_to_uuid}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Auction Status Invalid input",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Get Auction Status\r",
+									"const getAuctionStatus = async (auctionUuid) => {\r",
+									"    try {\r",
+									"        const response = await fetch(`${baseUrl}/status/${auctionUuid}`, {\r",
+									"            credentials: 'include'\r",
+									"        });\r",
+									"        return await response.json();\r",
+									"    } catch (error) {\r",
+									"        console.error('Error:', error);\r",
+									"    }\r",
+									"};\r",
+									"\r",
+									"pm.test(\"\", () => {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auction/status/12",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auction",
+								"status",
+								"12"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Auctions History",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const getAuctionsHistory = async (pageNumber = 1) => {\r",
+									"    try {\r",
+									"        const response = await fetch(`${baseUrl}/history?page_number=${pageNumber}`, {\r",
+									"            credentials: 'include'\r",
+									"        });\r",
+									"        return await response.json();\r",
+									"    } catch (error) {\r",
+									"        console.error('Error:', error);\r",
+									"    }\r",
+									"};"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auction/history?page_number=1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auction",
+								"history"
+							],
+							"query": [
+								{
+									"key": "page_number",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Auctions History Bad request",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const getAuctionsHistory = async (pageNumber = 1) => {\r",
+									"    try {\r",
+									"        const response = await fetch(`${baseUrl}/history?page_number=${pageNumber}`, {\r",
+									"            credentials: 'include'\r",
+									"        });\r",
+									"        return await response.json();\r",
+									"    } catch (error) {\r",
+									"        console.error('Error:', error);\r",
+									"    }\r",
+									"};\r",
+									"\r",
+									"pm.test(\"\", () => {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auction/history?page_number=-1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auction",
+								"history"
+							],
+							"query": [
+								{
+									"key": "page_number",
+									"value": "-1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Auctions List",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const getAuctionsList = async (status = 'active', rarity = null, pageNumber = 1) => {\r",
+									"    try {\r",
+									"        let url = `${baseUrl}/list?status=${status}&page_number=${pageNumber}`;\r",
+									"        if (rarity) url += `&rarity=${rarity}`;\r",
+									"        \r",
+									"        const response = await fetch(url, {\r",
+									"            credentials: 'include'\r",
+									"        });\r",
+									"        return await response.json();\r",
+									"    } catch (error) {\r",
+									"        console.error('Error:', error);\r",
+									"    }\r",
+									"};\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auction/list?status=closed&page_number=1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auction",
+								"list"
+							],
+							"query": [
+								{
+									"key": "status",
+									"value": "closed"
+								},
+								{
+									"key": "page_number",
+									"value": "1"
+								},
+								{
+									"key": "rarity",
+									"value": "legendary",
+									"disabled": true
+								},
+								{
+									"key": "status",
+									"value": "open",
+									"disabled": true
+								},
+								{
+									"key": "",
+									"value": null,
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Auctions List Bad request",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const getAuctionsList = async (status = 'active', rarity = null, pageNumber = 1) => {\r",
+									"    try {\r",
+									"        let url = `${baseUrl}/list?status=${status}&page_number=${pageNumber}`;\r",
+									"        if (rarity) url += `&rarity=${rarity}`;\r",
+									"        \r",
+									"        const response = await fetch(url, {\r",
+									"            credentials: 'include'\r",
+									"        });\r",
+									"        return await response.json();\r",
+									"    } catch (error) {\r",
+									"        console.error('Error:', error);\r",
+									"    }\r",
+									"};\r",
+									"\r",
+									"pm.test(\"\", () => {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auction/list?status=closed&page_number=1&rarity=legendary1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auction",
+								"list"
+							],
+							"query": [
+								{
+									"key": "status",
+									"value": "closed"
+								},
+								{
+									"key": "page_number",
+									"value": "1"
+								},
+								{
+									"key": "status",
+									"value": "open",
+									"disabled": true
+								},
+								{
+									"key": "rarity",
+									"value": "legendary1"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Feedback Service Tests",
+			"item": [
+				{
+					"name": "Health check",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/feedback/health_check",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"feedback",
+								"health_check"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Post Feedback with invalid input",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Invalid input returns 400\", function() {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"string\": \"\"  // Empty string\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/feedback/",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"feedback",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Post Feedback",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const postFeedback = async (feedbackContent) => {\r",
+									"    try {\r",
+									"        const response = await fetch('{{baseUrl}}/feedback/', {\r",
+									"            method: 'POST',\r",
+									"            headers: {\r",
+									"                'Content-Type': 'application/json'\r",
+									"            },\r",
+									"            credentials: 'include', // Necessary for sending cookies\r",
+									"            body: JSON.stringify({\r",
+									"                string: feedbackContent\r",
+									"            })\r",
+									"        });\r",
+									"        return await response.json();\r",
+									"    } catch (error) {\r",
+									"        console.error('Error posting feedback:', error);\r",
+									"    }\r",
+									"};"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"string\": \"\"  // Empty string\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/feedback/?string=✨ OMG, THIS GAME IS A MASTERPIECE!!! 😭🔥 +1000 AURA",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"feedback",
+								""
+							],
+							"query": [
+								{
+									"key": "string",
+									"value": "✨ OMG, THIS GAME IS A MASTERPIECE!!! 😭🔥 +1000 AURA"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Gacha Service Tests",
+			"item": [
+				{
+					"name": "Health Check",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const healthCheck = async () => {\r",
+									"    try {\r",
+									"        const response = await fetch('{{baseUrl}}/gacha/health_check', {\r",
+									"            method: 'GET',\r",
+									"            headers: {\r",
+									"                'Content-Type': 'application/json'\r",
+									"            }\r",
+									"        });\r",
+									"        \r",
+									"        // Assertions\r",
+									"        expect(response.status).toBe(200);\r",
+									"        const data = await response.json();\r",
+									"        expect(data.message).toBe(\"Service operational.\");\r",
+									"        \r",
+									"        return data;\r",
+									"    } catch (error) {\r",
+									"        console.error('Health check error:', error);\r",
+									"    }\r",
+									"};"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/gacha/health_check",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"gacha",
+								"health_check"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Gacha Info",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Parse the response body as JSON\r",
+									"var response = pm.response.json();\r",
+									"\r",
+									"// Helper function to validate UUID format\r",
+									"function isValidUUID(uuid) {\r",
+									"    var regex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;\r",
+									"    return regex.test(uuid);\r",
+									"}\r",
+									"\r",
+									"// Test that the response has all required top-level properties\r",
+									"pm.test(\"Response has all required properties\", function () {\r",
+									"    pm.expect(response).to.have.property('gacha_uuid');\r",
+									"    pm.expect(response).to.have.property('name');\r",
+									"    pm.expect(response).to.have.property('rarity');\r",
+									"    pm.expect(response).to.have.property('attributes');\r",
+									"});\r",
+									"\r",
+									"// Test that 'gacha_uuid' is a valid UUID\r",
+									"pm.test(\"'gacha_uuid' is a valid UUID\", function () {\r",
+									"    pm.expect(response.gacha_uuid).to.be.a('string');\r",
+									"    pm.expect(isValidUUID(response.gacha_uuid)).to.be.true;\r",
+									"});\r",
+									"\r",
+									"// Test that 'name' is a non-empty string\r",
+									"pm.test(\"'name' is a non-empty string\", function () {\r",
+									"    pm.expect(response.name).to.be.a('string').and.to.not.be.empty;\r",
+									"});\r",
+									"\r",
+									"// Test that 'rarity' is a non-empty string\r",
+									"pm.test(\"'rarity' is a non-empty string\", function () {\r",
+									"    pm.expect(response.rarity).to.be.a('string').and.to.not.be.empty;\r",
+									"});\r",
+									"\r",
+									"// Test that 'attributes' is an object with required properties\r",
+									"pm.test(\"'attributes' has all required properties\", function () {\r",
+									"    pm.expect(response.attributes).to.be.an('object');\r",
+									"\r",
+									"    var requiredAttributes = ['power', 'speed', 'durability', 'precision', 'range', 'potential'];\r",
+									"    requiredAttributes.forEach(function(attr) {\r",
+									"        pm.expect(response.attributes).to.have.property(attr);\r",
+									"    });\r",
+									"});\r",
+									"\r",
+									"// Test that each attribute value is a non-empty string\r",
+									"pm.test(\"All attribute values are non-empty strings\", function () {\r",
+									"    Object.values(response.attributes).forEach(function(value) {\r",
+									"        pm.expect(value).to.be.a('string').and.to.not.be.empty;\r",
+									"    });\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/gacha/{{gacha_uuid}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"gacha",
+								"{{gacha_uuid}}"
+							],
+							"query": [
+								{
+									"key": "gachauuid",
+									"value": "1b2f7b4e-5e1f-4112-a7c5-b7559dbb8c76",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Gacha Info Not found",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Invalid input returns 404\", function() {\r",
+									"    pm.response.to.have.status(404);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/gacha/e7f8a9b0-c1d2-3e4f-5a6b-7c8d9e0f1a2a",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"gacha",
+								"e7f8a9b0-c1d2-3e4f-5a6b-7c8d9e0f1a2a"
+							],
+							"query": [
+								{
+									"key": "gachauuid",
+									"value": "1b2f7b4e-5e1f-4112-a7c5-b7559dbb8c76",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Pull Gacha",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Test status code\r",
+									"pm.test(\"Response status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"\r",
+									"// Test Content-Type header\r",
+									"pm.test(\"Content-Type header is application/json\", function () {\r",
+									"    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");\r",
+									"});\r",
+									"\r",
+									"// Parse response body and save gacha_uuid\r",
+									"let jsonData = pm.response.json();\r",
+									"pm.environment.set(\"pulled_gacha\", jsonData.gacha.gacha_uuid);\r",
+									"\r",
+									"// Optional: Add test to verify gacha_uuid was extracted\r",
+									"pm.test(\"gacha_uuid is saved correctly\", function () {\r",
+									"    pm.expect(jsonData.gacha.gacha_uuid).to.be.a('string');\r",
+									"    pm.expect(jsonData.gacha.gacha_uuid).to.not.be.empty;\r",
+									"});\r",
+									"\r",
+									"// Optional: Add test to verify image was extracted\r",
+									"pm.test(\"image is saved correctly\", function () {\r",
+									"    pm.expect(jsonData.image).to.be.a('string');\r",
+									"    pm.expect(jsonData.image).to.not.be.empty;\r",
+									"});\r",
+									"\r",
+									"// Test response time\r",
+									"pm.test(\"Response time is less than 1000ms\", function () {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(1000);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/gacha/pull/{{pool_id}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"gacha",
+								"pull",
+								"{{pool_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Pull Gacha Not found",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response status code is 404\", function () {\r",
+									"    pm.response.to.have.status(404);\r",
+									"});\r",
+									"\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/gacha/pull/pool_inesistente",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"gacha",
+								"pull",
+								"pool_inesistente"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Pools Info",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"\r",
+									"pm.test(\"Response time is less than 200ms\", function () {\r",
+									"  pm.expect(pm.response.responseTime).to.be.below(200);\r",
+									"});\r",
+									"\r",
+									"\r",
+									"pm.test(\"Content-Type header is application/json\", function () {\r",
+									"    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");\r",
+									"});\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/gacha/pools",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"gacha",
+								"pools"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Pools Info Unauthorized",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response status code is 401\", function () {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/gacha/pools",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"gacha",
+								"pools"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Gachas list",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"\r",
+									"pm.test(\"Response time is less than 200ms\", function () {\r",
+									"  pm.expect(pm.response.responseTime).to.be.below(200);\r",
+									"});\r",
+									"\r",
+									"\r",
+									"pm.test(\"Response has the required fields\", function () {\r",
+									"    const responseData = pm.response.json();\r",
+									"\r",
+									"    pm.expect(responseData).to.be.an('array');\r",
+									"    responseData.forEach(function(item) {\r",
+									"        pm.expect(item).to.have.property('attributes');\r",
+									"        pm.expect(item).to.have.property('gacha_uuid');\r",
+									"        pm.expect(item).to.have.property('name');\r",
+									"        pm.expect(item).to.have.property('rarity');\r",
+									"    });\r",
+									"});\r",
+									"\r",
+									"\r",
+									"pm.test(\"All attributes are present and not empty\", function () {\r",
+									"  const responseData = pm.response.json();\r",
+									"\r",
+									"  pm.expect(responseData).to.be.an('array');\r",
+									"  responseData.forEach(function(item) {\r",
+									"    pm.expect(item.attributes).to.exist.and.to.be.an('object');\r",
+									"    pm.expect(item.attributes.durability).to.exist.and.to.have.lengthOf.at.least(1, \"Value should not be empty\");\r",
+									"    pm.expect(item.attributes.potential).to.exist.and.to.have.lengthOf.at.least(1, \"Value should not be empty\");\r",
+									"    pm.expect(item.attributes.power).to.exist.and.to.have.lengthOf.at.least(1, \"Value should not be empty\");\r",
+									"    pm.expect(item.attributes.precision).to.exist.and.to.have.lengthOf.at.least(1, \"Value should not be empty\");\r",
+									"    pm.expect(item.attributes.range).to.exist.and.to.have.lengthOf.at.least(1, \"Value should not be empty\");\r",
+									"    pm.expect(item.attributes.speed).to.exist.and.to.have.lengthOf.at.least(1, \"Value should not be empty\");\r",
+									"  });\r",
+									"});\r",
+									"\r",
+									"\r",
+									"pm.test(\"Rarity is a valid and not empty value\", function () {\r",
+									"    const responseData = pm.response.json();\r",
+									"    \r",
+									"    pm.expect(responseData).to.be.an('array');\r",
+									"    \r",
+									"    responseData.forEach(function(item) {\r",
+									"        pm.expect(item).to.have.property('rarity').that.is.not.empty;\r",
+									"    });\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/gacha/list?not_owned=true",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"gacha",
+								"list"
+							],
+							"query": [
+								{
+									"key": "not_owned",
+									"value": "false",
+									"disabled": true
+								},
+								{
+									"key": "not_owned",
+									"value": "true"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Gachas list Invalid request",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response status code is 400\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/gacha/list?not_owned=ftrue",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"gacha",
+								"list"
+							],
+							"query": [
+								{
+									"key": "not_owned",
+									"value": "ftrue"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Inventory Service Tests",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/inventory/health_check",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"inventory",
+								"health_check"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Inventory (Paginated)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const getInventory = async (pageNumber = 1) => {\r",
+									"    try {\r",
+									"        const response = await fetch(`${baseUrl}?page_number=${pageNumber}`, {\r",
+									"            method: 'GET',\r",
+									"            headers: {\r",
+									"                'Content-Type': 'application/json'\r",
+									"            },\r",
+									"            credentials: 'include' // For sending cookies\r",
+									"        });\r",
+									"        return await response.json();\r",
+									"    } catch (error) {\r",
+									"        console.error('Get inventory error:', error);\r",
+									"    }\r",
+									"};"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/inventory/?page_number=1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"inventory",
+								""
+							],
+							"query": [
+								{
+									"key": "page_number",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Inventory (Paginated) Invalid page number",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Invalid input returns 400\", function() {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/inventory/?page_number=-1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"inventory",
+								""
+							],
+							"query": [
+								{
+									"key": "page_number",
+									"value": "-1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Inventory Item info",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Verifica che lo stato della risposta sia 200 OK\r",
+									"pm.test(\"La risposta ha lo stato 200 OK\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"// Verifica che il contenuto della risposta sia in formato JSON\r",
+									"pm.test(\"Il contenuto della risposta è JSON\", function () {\r",
+									"    pm.response.to.be.json;\r",
+									"});\r",
+									"\r",
+									"// Ottieni il corpo della risposta\r",
+									"var responseData = pm.response.json();\r",
+									"\r",
+									"// Verifica che l'oggetto abbia tutte le proprietà richieste\r",
+									"pm.test(\"L'oggetto ha il formato corretto\", function() {\r",
+									"    pm.expect(responseData).to.have.property(\"owner_id\");\r",
+									"    pm.expect(responseData).to.have.property(\"item_id\");\r",
+									"    pm.expect(responseData).to.have.property(\"gacha_uuid\");\r",
+									"    pm.expect(responseData).to.have.property(\"obtained_date\");\r",
+									"    pm.expect(responseData).to.have.property(\"owners_no\");\r",
+									"    pm.expect(responseData).to.have.property(\"price_paid\");\r",
+									"});\r",
+									"\r",
+									"// Verifica i tipi di dato\r",
+									"pm.test(\"I tipi di dato sono corretti\", function() {\r",
+									"    pm.expect(responseData.owner_id).to.be.a(\"string\");\r",
+									"    pm.expect(responseData.item_id).to.be.a(\"string\");\r",
+									"    pm.expect(responseData.gacha_uuid).to.be.a(\"string\");\r",
+									"    pm.expect(responseData.owners_no).to.be.a(\"number\");\r",
+									"    pm.expect(responseData.price_paid).to.be.a(\"number\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/inventory/{{item_uuid}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"inventory",
+								"{{item_uuid}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Inventory Item info Not found",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Invalid input returns 404\", function() {\r",
+									"    pm.response.to.have.status(404);\r",
+									"\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/inventory/c7b6a5d4-e3f2-1098-7654-fedcba987651",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"inventory",
+								"c7b6a5d4-e3f2-1098-7654-fedcba987651"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete item",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/inventory/?inventory_item_owner_id={{user_uuid}}&inventory_item_id={{item_uuid_to_delete}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"inventory",
+								""
+							],
+							"query": [
+								{
+									"key": "inventory_item_owner_id",
+									"value": "{{user_uuid}}"
+								},
+								{
+									"key": "inventory_item_id",
+									"value": "{{item_uuid_to_delete}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete item Invalid request",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/inventory/?inventory_item_id={{item_uuid}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"inventory",
+								""
+							],
+							"query": [
+								{
+									"key": "inventory_item_id",
+									"value": "{{item_uuid}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "PvP Service Tests",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/pvp/health_check",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"pvp",
+								"health_check"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Send PVP Request 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Send PVP Request Test\r",
+									"pm.test(\"Send PVP Request\", function () {\r",
+									"    // Check status code\r",
+									"    pm.response.to.have.status(200);\r",
+									"    \r",
+									"    // Parse response\r",
+									"    const responseData = pm.response.json();\r",
+									"    \r",
+									"    // Extract UUID using regex\r",
+									"    const uuidMatch = responseData.message.match(/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i);\r",
+									"    \r",
+									"    if (uuidMatch) {\r",
+									"        // Save UUID to environment variable\r",
+									"        pm.environment.set(\"pvp_match_uuid\", uuidMatch[0]);\r",
+									"        console.log(\"Saved PVP match UUID:\", uuidMatch[0]);\r",
+									"    } else {\r",
+									"        console.error(\"Could not extract UUID from response\");\r",
+									"    }\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "[ //item di SpeedWagon\r\n        \"{{SpeedWagon_item#1}}\", // Star Platinum\r\n        \"{{SpeedWagon_item#2}}\", // The World  \r\n        \"{{SpeedWagon_item#3}}\", // Gold Experience\r\n        \"{{SpeedWagon_item#4}}\", // Crazy Diamond\r\n        \"{{SpeedWagon_item#5}}\", // Silver Chariot\r\n        \"{{SpeedWagon_item#6}}\", // Hermit Purple\r\n        \"{{SpeedWagon_item#7}}\"  // Magicians Red\r\n]",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/pvp/sendPvPRequest/{{user_uuid2}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"pvp",
+								"sendPvPRequest",
+								"{{user_uuid2}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Send PVP Request 406",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Send PVP Request Test\r",
+									"pm.test(\"Send PVP Request\", function () {\r",
+									"    // Check status code\r",
+									"    pm.response.to.have.status(200);\r",
+									"    \r",
+									"    // Parse response\r",
+									"    const responseData = pm.response.json();\r",
+									"    \r",
+									"    // Extract UUID using regex\r",
+									"    const uuidMatch = responseData.message.match(/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i);\r",
+									"    \r",
+									"    if (uuidMatch) {\r",
+									"        // Save UUID to environment variable\r",
+									"        pm.environment.set(\"pvp_match_uuid\", uuidMatch[0]);\r",
+									"        console.log(\"Saved PVP match UUID:\", uuidMatch[0]);\r",
+									"    } else {\r",
+									"        console.error(\"Could not extract UUID from response\");\r",
+									"    }\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "[ //item di SpeedWagon\r\n        \"{{SpeedWagon_item#1}}\", // Star Platinum\r\n        \"{{SpeedWagon_item#2}}\", // The World  \r\n        \"{{SpeedWagon_item#3}}\", // Gold Experience\r\n        \"{{SpeedWagon_item#4}}\", // Crazy Diamond\r\n        \"{{SpeedWagon_item#5}}\", // Silver Chariot\r\n        \"{{SpeedWagon_item#6}}\", // Hermit Purple\r\n        \"{{SpeedWagon_item#7}}\"  // Magicians Red\r\n    ]\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/pvp/sendPvPRequest/4f2e8bb5-38e1-4537-9cfa-11425c3b4284",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"pvp",
+								"sendPvPRequest",
+								"4f2e8bb5-38e1-4537-9cfa-11425c3b4284"
+							],
+							"query": [
+								{
+									"key": "readme",
+									"value": null,
+									"description": "works as expected if logged in with SpeedwagonAdmin",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Accept PVP Request 200",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "[ //questi sono gli item di AdminUser\r\n        \"{{AdminUser_item#1}}\", // Made in Heaven\r\n        \"{{AdminUser_item#2}}\", // King Crimson\r\n        \"{{AdminUser_item#3}}\", // Killer Queen\r\n        \"{{AdminUser_item#4}}\", // Purple Haze\r\n        \"{{AdminUser_item#5}}\", // Sex Pistols\r\n        \"{{AdminUser_item#6}}\", // Beach Boy\r\n        \"{{AdminUser_item#7}}\"  // Aerosmith\r\n]\r\n\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/pvp/acceptPvPRequest/{{pvp_match_uuid_to_accept}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"pvp",
+								"acceptPvPRequest",
+								"{{pvp_match_uuid_to_accept}}"
+							],
+							"query": [
+								{
+									"key": "readme",
+									"value": null,
+									"description": "send first the request with SpeedwagonAdmin, then logout and login with AdminUser before accepting the request",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Accept PVP Request 404",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "[ //questi sono gli item di AdminUser\r\n        \"{{AdminUser_item#1}}\", // Made in Heaven\r\n        \"{{AdminUser_item#2}}\", // King Crimson\r\n        \"{{AdminUser_item#3}}\", // Killer Queen\r\n        \"{{AdminUser_item#4}}\", // Purple Haze\r\n        \"{{AdminUser_item#5}}\", // Sex Pistols\r\n        \"{{AdminUser_item#6}}\", // Beach Boy\r\n        \"{{AdminUser_item#7}}\"  // Aerosmith\r\n    ]\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/pvp/acceptPvPRequest/a1b2c3d4-0000-0000-0000-ef1234567890",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"pvp",
+								"acceptPvPRequest",
+								"a1b2c3d4-0000-0000-0000-ef1234567890"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Reject PVP Request 200",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/pvp/rejectPvPRequest/fb56cccd-4213-41f1-bd21-d6893d0fa094",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"pvp",
+								"rejectPvPRequest",
+								"fb56cccd-4213-41f1-bd21-d6893d0fa094"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Reject PVP Request 404",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/pvp/rejectPvPRequest/fb56cccd-4213-41f1-bd21-000000000000",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"pvp",
+								"rejectPvPRequest",
+								"fb56cccd-4213-41f1-bd21-000000000000"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Check Pending PVP Requests 200",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/pvp/checkPendingPvPRequests",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"pvp",
+								"checkPendingPvPRequests"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Check Pending PVP Requests 401",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/pvp/checkPendingPvPRequests",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"pvp",
+								"checkPendingPvPRequests"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get PVP Match Status 200",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/pvp/status/{{put_here_the_match_uuid_after_check_pending_pvp}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"pvp",
+								"status",
+								"{{put_here_the_match_uuid_after_check_pending_pvp}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get PVP Match Status 404",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/pvp/status/fb56cccd-4213-41f1-bd21-d6893d0fa094",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"pvp",
+								"status",
+								"fb56cccd-4213-41f1-bd21-d6893d0fa094"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Profile Service Tests",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/profile/health_check",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"profile",
+								"health_check"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Edit Profile",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Edit Profile Status Code Tests\", function () {\r",
+									"    // Test response code\r",
+									"    if (pm.response.code === 304) {\r",
+									"        pm.expect(pm.response.code).to.equal(304);\r",
+									"        pm.expect(pm.response.json()).to.have.property(\"message\", \"No changes needed\");\r",
+									"    } else if (pm.response.code === 200) {\r",
+									"        pm.expect(pm.response.code).to.equal(200);\r",
+									"    } else if (pm.response.code === 404) {\r",
+									"        pm.expect(pm.response.code).to.equal(404);\r",
+									"        pm.expect(pm.response.json()).to.have.property(\"error\", \"User not found\");\r",
+									"    } else if (pm.response.code === 403) {\r",
+									"        pm.expect(pm.response.code).to.equal(403);\r",
+									"        pm.expect(pm.response.json()).to.have.property(\"error\", \"Not logged in\");\r",
+									"    } else if (pm.response.code === 400) {\r",
+									"        pm.expect(pm.response.code).to.equal(400);\r",
+									"        pm.expect(pm.response.json()).to.have.property(\"error\", \"Invalid fields\");\r",
+									"    } else if (pm.response.code === 500) {\r",
+									"        pm.expect(pm.response.code).to.equal(500);\r",
+									"        pm.expect(pm.response.json()).to.have.property(\"error\", \"Error updating profile\");\r",
+									"    }\r",
+									"});\r",
+									"\r",
+									"// Test response headers\r",
+									"pm.test(\"Content-Type header is application/json\", () => {\r",
+									"    pm.response.to.have.header(\"Content-Type\", \"application/json\");\r",
+									"});\r",
+									"\r",
+									"// Test response structure\r",
+									"pm.test(\"Response structure is correct\", () => {\r",
+									"    const responseJson = pm.response.json();\r",
+									"    \r",
+									"    if (pm.response.code === 200 || pm.response.code === 304) {\r",
+									"        pm.expect(responseJson).to.have.property(\"message\");\r",
+									"        pm.expect(responseJson.message).to.be.a(\"string\");\r",
+									"    } else {\r",
+									"        pm.expect(responseJson).to.have.property(\"error\");\r",
+									"        pm.expect(responseJson.error).to.be.a(\"string\");\r",
+									"    }\r",
+									"});\r",
+									"\r",
+									"// Test response time\r",
+									"pm.test(\"Response time is acceptable\", () => {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(1000);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"new1231em1ail@exampole.com\",\r\n    \"username\": \"newUsern1amqe123412\",\r\n    \"password\": \"{{password}}\"  //we suppose it's done with the admin credentials, but you could use any\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/profile/edit",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"profile",
+								"edit"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Edit Profile Invalid password",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Edit Profile Status Code Tests\", function () {\r",
+									"    // Test response code\r",
+									"    if (pm.response.code === 304) {\r",
+									"        pm.expect(pm.response.code).to.equal(304);\r",
+									"        pm.expect(pm.response.json()).to.have.property(\"message\", \"No changes needed\");\r",
+									"    } else if (pm.response.code === 200) {\r",
+									"        pm.expect(pm.response.code).to.equal(200);\r",
+									"    } else if (pm.response.code === 404) {\r",
+									"        pm.expect(pm.response.code).to.equal(404);\r",
+									"        pm.expect(pm.response.json()).to.have.property(\"error\", \"User not found\");\r",
+									"    } else if (pm.response.code === 403) {\r",
+									"        pm.expect(pm.response.code).to.equal(403);\r",
+									"        pm.expect(pm.response.json()).to.have.property(\"error\", \"Not logged in\");\r",
+									"    } else if (pm.response.code === 400) {\r",
+									"        pm.expect(pm.response.code).to.equal(400);\r",
+									"        pm.expect(pm.response.json()).to.have.property(\"error\", \"Invalid fields\");\r",
+									"    } else if (pm.response.code === 500) {\r",
+									"        pm.expect(pm.response.code).to.equal(500);\r",
+									"        pm.expect(pm.response.json()).to.have.property(\"error\", \"Error updating profile\");\r",
+									"    }\r",
+									"});\r",
+									"\r",
+									"// Test response headers\r",
+									"pm.test(\"Content-Type header is application/json\", () => {\r",
+									"    pm.response.to.have.header(\"Content-Type\", \"application/json\");\r",
+									"});\r",
+									"\r",
+									"// Test response structure\r",
+									"pm.test(\"Response structure is correct\", () => {\r",
+									"    const responseJson = pm.response.json();\r",
+									"    \r",
+									"    if (pm.response.code === 200 || pm.response.code === 304) {\r",
+									"        pm.expect(responseJson).to.have.property(\"message\");\r",
+									"        pm.expect(responseJson.message).to.be.a(\"string\");\r",
+									"    } else {\r",
+									"        pm.expect(responseJson).to.have.property(\"error\");\r",
+									"        pm.expect(responseJson.error).to.be.a(\"string\");\r",
+									"    }\r",
+									"});\r",
+									"\r",
+									"// Test response time\r",
+									"pm.test(\"Response time is acceptable\", () => {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(1000);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"new1231em1ail@exampole.com\",\r\n    \"username\": \"newUsern1amqe123412\",\r\n    \"password\": \"Admin_foundation\"   \r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/profile/edit",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"profile",
+								"edit"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Info",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response status code is 200\", function () {\r",
+									"  pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"\r",
+									"pm.test(\"Response time is within an acceptable range\", function () {\r",
+									"  pm.expect(pm.response.responseTime).to.be.below(500);\r",
+									"});\r",
+									"\r",
+									"\r",
+									"pm.test(\"Response has the required fields\", function () {\r",
+									"    const responseData = pm.response.json();\r",
+									"    \r",
+									"    pm.expect(responseData).to.be.an('object');\r",
+									"    pm.expect(responseData).to.include.all.keys('currency', 'pvp_score', 'created_at', 'username');\r",
+									"});\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/profile/{{user_uuid}}/info",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"profile",
+								"{{user_uuid}}",
+								"info"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Info not found user",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response status code is 404\", function () {\r",
+									"  pm.response.to.have.status(404);\r",
+									"});\r",
+									"\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/profile/4f2e8bb5-38e1-4537-9cfa-11425c3b4281/info",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"profile",
+								"4f2e8bb5-38e1-4537-9cfa-11425c3b4281",
+								"info"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Profile invalid password",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response status code is 400\", function () {\r",
+									"    pm.expect(pm.response.code).to.equal(400);\r",
+									"});\r",
+									"\r",
+									"\r",
+									"pm.test(\"Response has the required field - error\", function () {\r",
+									"    const responseData = pm.response.json();\r",
+									"    \r",
+									"    pm.expect(responseData).to.be.an('object');\r",
+									"    pm.expect(responseData.error).to.exist;\r",
+									"});\r",
+									"\r",
+									"\r",
+									"pm.test(\"Response time is less than 500ms\", function () {\r",
+									"  pm.expect(pm.response.responseTime).to.be.below(500);\r",
+									"});\r",
+									"\r",
+									"\r",
+									"pm.test(\"Content-Type header is application/json\", function () {\r",
+									"    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");\r",
+									"});\r",
+									"\r",
+									"\r",
+									"pm.test(\"Validate the response schema\", function () {\r",
+									"  const responseData = pm.response.json();\r",
+									"  \r",
+									"  pm.expect(responseData).to.be.an('object');\r",
+									"  pm.expect(responseData.error).to.be.a('string');\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"password\": \"za_warudo\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/profile/delete",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"profile",
+								"delete"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Profile",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response status code is 200\", function () {\r",
+									"    pm.expect(pm.response.code).to.equal(200);\r",
+									"});\r",
+									"\r",
+									"\r",
+									"\r",
+									"pm.test(\"Response time is less than 500ms\", function () {\r",
+									"  pm.expect(pm.response.responseTime).to.be.below(500);\r",
+									"});\r",
+									"\r",
+									"\r",
+									"pm.test(\"Content-Type header is application/json\", function () {\r",
+									"    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");\r",
+									"});\r",
+									"\r",
+									"\r",
+									"pm.test(\"Validate the response schema\", function () {\r",
+									"  const responseData = pm.response.json();\r",
+									"  \r",
+									"  pm.expect(responseData).to.be.an('object');\r",
+									"  pm.expect(responseData.error).to.be.a('string');\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"password\": \"{{password}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/profile/delete",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"profile",
+								"delete"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Currency Service Tests",
+			"item": [
+				{
+					"name": "Buy bundle",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Invalid input returns 200\", function() {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/currency/buy/bundle_arrowEUR",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"currency",
+								"buy",
+								"bundle_arrowEUR"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Give yourself some currency",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Invalid input returns 200\", function() {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/currency/buy/add_myself_some_currency",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"currency",
+								"buy",
+								"add_myself_some_currency"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Buy bundle Not found",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Invalid input returns 404\", function() {\r",
+									"    pm.response.to.have.status(404);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/currency/buy/bundle_arrowEURO",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"currency",
+								"buy",
+								"bundle_arrowEURO"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List Bundles",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/currency/bundles",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"currency",
+								"bundles"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List Bundles Invalid request",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Invalid request returns 404\", function() {\r",
+									"    pm.response.to.have.status(404);\r",
+									"    pm.expect(pm.response.json()).to.have.property(\"message\", \"Invalid request.\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/currency/bundl3s",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"currency",
+								"bundl3s"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Health check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/currency/health_check",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"currency",
+								"health_check"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "CDN",
+			"item": [
+				{
+					"name": "Health check",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status is 200\", () => {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/cdn/health_check",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cdn",
+								"health_check"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Upload Image",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Recupera l'UUID dalla query string della richiesta attuale\r",
+									"let uuid = pm.request.url.query.get('uuid');\r",
+									"let authorization = pm.environment.get('Authorization')\r",
+									"\r",
+									"// Controlla se l'UUID è specificato\r",
+									"if (!uuid) {\r",
+									"    throw new Error(\"UUID is required in the query string for the DELETE operation.\");\r",
+									"}\r",
+									"\r",
+									"// Costruisci l'URL per la richiesta DELETE\r",
+									"let deleteUrl = pm.variables.get(\"baseUrl\") + \"/cdn/delete/\" + uuid;\r",
+									"\r",
+									"// Effettua la richiesta DELETE\r",
+									"pm.sendRequest({\r",
+									"    url: deleteUrl,\r",
+									"    method: 'DELETE',\r",
+									"    header: {\r",
+									"        'Content-Type': 'application/json',\r",
+									"        'Authorization': 'Bearer ' + authorization\r",
+									"    }\r",
+									"}, function (err, response) {\r",
+									"    if (err) {\r",
+									"        console.error(\"Error deleting the file:\", err);\r",
+									"    } else {\r",
+									"        console.log(\"Delete response:\", response.json());\r",
+									"    }\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": "postman-cloud:///1efb00d2-b000-4620-9862-dba574ca93b0"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/cdn/upload?uuid=e7f8a9b0-c1d2-3e4f-5a6b-7c8d9e0f1a2b",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cdn",
+								"upload"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "e7f8a9b0-c1d2-3e4f-5a6b-7c8d9e0f1a2b"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Upload Image (Update)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": "postman-cloud:///1efb00d2-b000-4620-9862-dba574ca93b0"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/cdn/upload?uuid=e7f8a9b0-c1d2-3e4f-5a6b-7c8d9e0f1a2b",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cdn",
+								"upload"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "e7f8a9b0-c1d2-3e4f-5a6b-7c8d9e0f1a2b"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Upload Image No Auth",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Recupera l'UUID dalla query string della richiesta attuale\r",
+									"let uuid = pm.request.url.query.get('uuid');\r",
+									"\r",
+									"// Controlla se l'UUID è specificato\r",
+									"if (!uuid) {\r",
+									"    throw new Error(\"UUID is required in the query string for the DELETE operation.\");\r",
+									"}\r",
+									"\r",
+									"// Costruisci l'URL per la richiesta DELETE\r",
+									"let deleteUrl = pm.variables.get(\"baseUrl\") + \"/cdn/delete/\" + uuid;\r",
+									"\r",
+									"// Effettua la richiesta DELETE\r",
+									"pm.sendRequest({\r",
+									"    url: deleteUrl,\r",
+									"    method: 'DELETE',\r",
+									"    header: {\r",
+									"        'Content-Type': 'application/json'\r",
+									"    }\r",
+									"}, function (err, response) {\r",
+									"    if (err) {\r",
+									"        console.error(\"Error deleting the file:\", err);\r",
+									"    } else {\r",
+									"        console.log(\"Delete response:\", response.json());\r",
+									"    }\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Invalid input returns 401\", function() {\r",
+									"    pm.response.to.have.status(401);\r",
+									"\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": "postman-cloud:///1efb00d2-b000-4620-9862-dba574ca93b0"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/cdn/upload?uuid=e7f8a9b0-c1d2-3e4f-5a6b-7c8d9e0f1a2b",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cdn",
+								"upload"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "e7f8a9b0-c1d2-3e4f-5a6b-7c8d9e0f1a2b"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Upload Image No UUID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Invalid input returns 400\", function() {\r",
+									"    pm.response.to.have.status(400);\r",
+									"\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": "postman-cloud:///1efb00d2-b000-4620-9862-dba574ca93b0"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/cdn/upload",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cdn",
+								"upload"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Upload Image Wrong UUID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Invalid input returns 400\", function() {\r",
+									"    pm.response.to.have.status(400);\r",
+									"\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": "postman-cloud:///1efb00d2-b000-4620-9862-dba574ca93b0"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/cdn/upload?uuid=questo_formato_non_è_valido",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cdn",
+								"upload"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "questo_formato_non_è_valido"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Upload Image No file",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Invalid input returns 400\", function() {\r",
+									"    pm.response.to.have.status(400);\r",
+									"\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": []
+						},
+						"url": {
+							"raw": "{{baseUrl}}/cdn/upload?uuid=e7f8a9b0-c1d2-3e4f-5a6b-7c8d9e0f1a2b",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cdn",
+								"upload"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "e7f8a9b0-c1d2-3e4f-5a6b-7c8d9e0f1a2b"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Upload Image Invalid Format",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Invalid input returns 400\", function() {\r",
+									"    pm.response.to.have.status(400);\r",
+									"    pm.expect(pm.response.json()).to.have.property(\"error\", \"Only PNG images are allowed.\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": "postman-cloud:///1efb0a2d-8aa6-4190-bc07-08f81cdd8d50"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/cdn/upload?uuid=e7f8a9b0-c1d2-3e4f-5a6b-7c8d9e0f1a2b",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cdn",
+								"upload"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "e7f8a9b0-c1d2-3e4f-5a6b-7c8d9e0f1a2b"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Image",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": []
+						},
+						"url": {
+							"raw": "{{baseUrl}}/cdn/delete/e7f8a9b0-c1d2-3e4f-5a6b-7c8d9e0f1a2b",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cdn",
+								"delete",
+								"e7f8a9b0-c1d2-3e4f-5a6b-7c8d9e0f1a2b"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Image No Auth",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Invalid input returns 401\", function() {\r",
+									"    pm.response.to.have.status(401);\r",
+									"\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": []
+						},
+						"url": {
+							"raw": "{{baseUrl}}/cdn/delete/e7f8a9b0-c1d2-3e4f-5a6b-7c8d9e0f1a2b",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cdn",
+								"delete",
+								"e7f8a9b0-c1d2-3e4f-5a6b-7c8d9e0f1a2b"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Image Wrong UUID",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Invalid input returns 400\", function() {\r",
+									"    pm.response.to.have.status(400);\r",
+									"    pm.expect(pm.response.json()).to.have.property(\"error\", \"Invalid UUID format.\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": []
+						},
+						"url": {
+							"raw": "{{baseUrl}}/cdn/delete/questo_uuid_non_è_valido",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cdn",
+								"delete",
+								"questo_uuid_non_è_valido"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Image Not Found",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Returns 404\", function() {\r",
+									"    pm.response.to.have.status(404);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": []
+						},
+						"url": {
+							"raw": "{{baseUrl}}/cdn/delete/e7f8a9b0-c1d2-3e4f-5a6b-7c8d9e0f1a39",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cdn",
+								"delete",
+								"e7f8a9b0-c1d2-3e4f-5a6b-7c8d9e0f1a39"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Image OK",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Correct Input\", function() {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": "postman-cloud:///1efb00d2-b000-4620-9862-dba574ca93b0"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/cdn/image/e7f8a9b0-c1d2-3e4f-5a6b-7c8d9e0f1a2b",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cdn",
+								"image",
+								"e7f8a9b0-c1d2-3e4f-5a6b-7c8d9e0f1a2b"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Image Not Found",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Invalid input returns 404\", function() {\r",
+									"    pm.response.to.have.status(404);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": "postman-cloud:///1efb00d2-b000-4620-9862-dba574ca93b0"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/cdn/image/e7d8a9b0-c1d2-3e4f-5a6b-7c8d9e0f1a43",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cdn",
+								"image",
+								"e7d8a9b0-c1d2-3e4f-5a6b-7c8d9e0f1a43"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"auth": {
+				"type": "bearer"
+			},
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"packages": {},
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"packages": {},
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		}
+	]
+}
