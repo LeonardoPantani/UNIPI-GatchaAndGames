@@ -1,0 +1,2857 @@
+{
+	"info": {
+		"_postman_id": "9bf32659-c0b1-403d-933f-a613e99a7c10",
+		"name": "Integration Testing (Internal requests)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "39565350",
+		"_collection_link": "https://gachaandgames.postman.co/workspace/GachaAndGames-Workspace~cb432b14-a1a2-4bdb-87b8-18f81b18016e/collection/39565350-9bf32659-c0b1-403d-933f-a613e99a7c10?action=share&source=collection_link&creator=39565350"
+	},
+	"item": [
+		{
+			"name": "Inventory",
+			"item": [
+				{
+					"name": "check owner of team",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "ent-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"team\": [\r\n        \"c7b6a5d4-e3f2-1098-7654-fedcba987654\",\r\n        \"b7a6c5d4-e3f2-1098-7654-fedcba987655\",\r\n        \"a7b6c5d4-e3f2-1098-7654-fedcba987656\",\r\n        \"97b6c5d4-e3f2-1098-7654-fedcba987657\",\r\n        \"87b6c5d4-e3f2-1098-7654-fedcba987658\",\r\n        \"77b6c5d4-e3f2-1098-7654-fedcba987659\",\r\n        \"67b6c5d4-e3f2-1098-7654-fedcba987660\"\r\n    ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/inventory/internal/check_owner_of_team?user_uuid=4f2e8bb5-38e1-4537-9cfa-11425c3b4281",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"inventory",
+								"internal",
+								"check_owner_of_team"
+							],
+							"query": [
+								{
+									"key": "user_uuid",
+									"value": "4f2e8bb5-38e1-4537-9cfa-11425c3b4284",
+									"disabled": true
+								},
+								{
+									"key": "user_uuid",
+									"value": "4f2e8bb5-38e1-4537-9cfa-11425c3b4281",
+									"description": "Not valid to cause 404"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete item by stand uuid",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/inventory/internal/delete_by_stand_uuid?uuid=1b2f7b4e-5e1f-4112-a7c5-b7559dbb8c76",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"inventory",
+								"internal",
+								"delete_by_stand_uuid"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "1b2f7b4e-5e1f-4112-a7c5-b7559dbb8c76",
+									"description": "Use it two times to cause 404 (expected)"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete user inventory",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/inventory/internal/delete_user_inventory?uuid={{user_uuid}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"inventory",
+								"internal",
+								"delete_user_inventory"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "{{user_uuid}}"
+								},
+								{
+									"key": "uuid",
+									"value": "-1",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Exists inventory",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/inventory/internal/exists?uuid={{AdminUser_item#1}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"inventory",
+								"internal",
+								"exists"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "{{AdminUser_item#1}}"
+								},
+								{
+									"key": "uuid",
+									"value": "{{SpeedWagon_item#1}}",
+									"disabled": true
+								},
+								{
+									"key": "uuid",
+									"value": "c7b6a5d4-e3f2-1098-7654-fedcba987654",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get gachas types of user",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/inventory/internal/get_gachas_types_of_user?user_uuid={{user_uuid}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"inventory",
+								"internal",
+								"get_gachas_types_of_user"
+							],
+							"query": [
+								{
+									"key": "user_uuid",
+									"value": "{{user_uuid}}"
+								},
+								{
+									"key": "user_uuid",
+									"value": "",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Inventory by owner UUID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/inventory/internal/get_items_by_owner_uuid",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"inventory",
+								"internal",
+								"get_items_by_owner_uuid"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "{{user_uuid}}",
+									"disabled": true
+								},
+								{
+									"key": "uuid",
+									"value": null,
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Inventory by owner UUID (paginated)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/inventory/internal/list_inventory_items?uuid={{user_uuid}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"inventory",
+								"internal",
+								"list_inventory_items"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "{{user_uuid}}"
+								},
+								{
+									"key": "page_number",
+									"value": "-1",
+									"disabled": true
+								},
+								{
+									"key": "page_number",
+									"value": "1",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Item by UUID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/inventory/internal/get_by_item_uuid?uuid={{item_uuid}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"inventory",
+								"internal",
+								"get_by_item_uuid"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "{{item_uuid}}"
+								},
+								{
+									"key": "uuid",
+									"value": "a",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get items by stand uuid",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/inventory/internal/get_items_by_stand_uuid?uuid=b6e7f8c9-7f28-4b4f-8fbe-523f6c8b0c85",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"inventory",
+								"internal",
+								"get_items_by_stand_uuid"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "b6e7f8c9-7f28-4b4f-8fbe-523f6c8b0c85"
+								},
+								{
+									"key": "uuid",
+									"value": "",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get stand uuid by item uuid",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/inventory/internal/get_stand_uuid_by_item_uuid",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"inventory",
+								"internal",
+								"get_stand_uuid_by_item_uuid"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "{{AdminUser_item#3}}",
+									"disabled": true
+								},
+								{
+									"key": "uuid",
+									"value": "37b6c5d4-e3f2-1098-7654-fedcba987661",
+									"description": "not found",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Insert Item",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"item_id\": \"123e4567-e89b-12d3-a456-426614174000\",\r\n    \"owner_id\": \"{{user_uuid}}\",\r\n    \"gacha_uuid\": \"123e4567-e89b-12d3-a456-426614174222\",\r\n    \"obtained_date\": \"2024-01-20 10:30:00\",\r\n    \"owners_no\": 1,\r\n    \"price_paid\": 100\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/inventory/internal/insert_item",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"inventory",
+								"internal",
+								"insert_item"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Inventory Item",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/inventory/internal/remove?item_uuid=123e4567-e89b-12d3-a456-426614174000",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"inventory",
+								"internal",
+								"remove"
+							],
+							"query": [
+								{
+									"key": "item_uuid",
+									"value": "123e4567-e89b-12d3-a456-426614174000"
+								},
+								{
+									"key": "owner_uuid",
+									"value": "{{user_uuid}}",
+									"disabled": true
+								},
+								{
+									"key": "owner_uuid",
+									"value": null,
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Item Ownership",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/inventory/internal/update_item_owner?new_owner_uuid={{user_uuid2}}&item_uuid=57b6c5d4-e3f2-1098-7654-fedcba987662",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"inventory",
+								"internal",
+								"update_item_owner"
+							],
+							"query": [
+								{
+									"key": "new_owner_uuid",
+									"value": "{{user_uuid2}}"
+								},
+								{
+									"key": "item_uuid",
+									"value": "{{AdminUser_item#1}}",
+									"disabled": true
+								},
+								{
+									"key": "item_uuid",
+									"value": "57b6c5d4-e3f2-1098-7654-fedcba987662",
+									"description": "non existent"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Currency",
+			"item": [
+				{
+					"name": "Delete transactions",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/currency/internal/delete_user_transactions?uuid",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"currency",
+								"internal",
+								"delete_user_transactions"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "87f3b5d1-5e8e-4fa4-909b-3cd29f4b1f09",
+									"disabled": true
+								},
+								{
+									"key": "uuid",
+									"value": null
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Bundle",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/currency/internal/get_bundle",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"currency",
+								"internal",
+								"get_bundle"
+							],
+							"query": [
+								{
+									"key": "codename",
+									"value": "bundle_arrowEUR",
+									"disabled": true
+								},
+								{
+									"key": "codename",
+									"value": "bundle_arrowEURO",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get user bundle transactions",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/currency/internal/get_user_history?uuid=87f3b5d1-5e8e-4fa4-909b-3cd29f4b1f09&history_type=bundle",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"currency",
+								"internal",
+								"get_user_history"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "87f3b5d1-5e8e-4fa4-909b-3cd29f4b1f09"
+								},
+								{
+									"key": "history_type",
+									"value": "bundle"
+								},
+								{
+									"key": "page_number",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "page_number",
+									"value": "-1",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get user ingame transactions",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/currency/internal/get_user_history?uuid=87f3b5d1-5e8e-4fa4-909b-3cd29f4b1f09&history_type=ingame&page_number=1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"currency",
+								"internal",
+								"get_user_history"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "87f3b5d1-5e8e-4fa4-909b-3cd29f4b1f09"
+								},
+								{
+									"key": "history_type",
+									"value": "ingame"
+								},
+								{
+									"key": "page_number",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Insert bundle transaction",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/currency/internal/insert_bundle_transaction?uuid=87f3b5d1-5e8e-4fa4-909b-3cd29f4b1f09&bundle_codename=bundle_arrowEUR",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"currency",
+								"internal",
+								"insert_bundle_transaction"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "87f3b5d1-5e8e-4fa4-909b-3cd29f4b1f09"
+								},
+								{
+									"key": "bundle_codename",
+									"value": "bundle_arrowEUR"
+								},
+								{
+									"key": "bundle_codename",
+									"value": "bundle_arrowGBP",
+									"disabled": true
+								},
+								{
+									"key": "currency_name",
+									"value": "EUR",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Insert ingame transaction",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/currency/internal/insert_ingame_transaction?uuid=87f3b5d1-5e8e-4fa4-909b-3cd29f4b1f09&current_bid=205&transaction_type=bought_market",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"currency",
+								"internal",
+								"insert_ingame_transaction"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "87f3b5d1-5e8e-4fa4-909b-3cd29f4b1f09"
+								},
+								{
+									"key": "current_bid",
+									"value": "205"
+								},
+								{
+									"key": "transaction_type",
+									"value": "bought_market"
+								},
+								{
+									"key": "transaction_type",
+									"value": "dentroalgioco",
+									"description": "sbagliata, provocherà 400",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List bundles",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/currency/internal/list_bundles",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"currency",
+								"internal",
+								"list_bundles"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Profile",
+			"item": [
+				{
+					"name": "Add Currency",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/profile/internal/add_currency?amount=3",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"profile",
+								"internal",
+								"add_currency"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "{{user_uuid}}",
+									"disabled": true
+								},
+								{
+									"key": "uuid",
+									"value": "4f2e8bb5-38e1-4537-9cfa-11425c3b4283",
+									"description": "Wrong one --> 404",
+									"disabled": true
+								},
+								{
+									"key": "amount",
+									"value": "3"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add PVP score",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/profile/internal/add_pvp_score?uuid={{user_uuid}}&points_to_add=104",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"profile",
+								"internal",
+								"add_pvp_score"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "{{user_uuid}}"
+								},
+								{
+									"key": "uuid",
+									"value": "4f2e8bb5-38e1-4537-9cfa-11425c3b4283",
+									"description": "Wrong one",
+									"disabled": true
+								},
+								{
+									"key": "points_to_add",
+									"value": "104"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Profile",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/profile/internal/delete_profile_by_uuid?uuid={{uuid_to_ban}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"profile",
+								"internal",
+								"delete_profile_by_uuid"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "{{uuid_to_ban}}"
+								},
+								{
+									"key": "uuid",
+									"value": "4f2e8bb5-38e1-4537-9cfa-11425c3b4283",
+									"description": "Wrong one",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Edit Username",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/profile/internal/edit_username",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"profile",
+								"internal",
+								"edit_username"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "{{user_uuid}}",
+									"disabled": true
+								},
+								{
+									"key": "uuid",
+									"value": "4f2e8bb5-38e1-4537-9cfa-11425c3b4283",
+									"description": "Wrong one",
+									"disabled": true
+								},
+								{
+									"key": "username",
+									"value": "RiccardaFantasio",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Check profile Exists",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/profile/internal/exists",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"profile",
+								"internal",
+								"exists"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "{{uuid_to_ban}}",
+									"disabled": true
+								},
+								{
+									"key": "uuid",
+									"value": "{{user_uuid}}",
+									"disabled": true
+								},
+								{
+									"key": "uuid",
+									"value": "4f2e8bb5-38e1-4537-9cfa-11425c3b4283",
+									"description": "Wrong one (will return 200 false)",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Currency From UUID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/profile/internal/get_currency_from_uuid?user_uuid={{user_uuid}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"profile",
+								"internal",
+								"get_currency_from_uuid"
+							],
+							"query": [
+								{
+									"key": "user_uuid",
+									"value": "{{user_uuid}}"
+								},
+								{
+									"key": "user_uuid",
+									"value": "4f2e8bb5-38e1-4537-9cfa-11425c3b4283",
+									"description": "Wrong one",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Profile",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/profile/internal/get_profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"profile",
+								"internal",
+								"get_profile"
+							],
+							"query": [
+								{
+									"key": "user_uuid",
+									"value": "{{user_uuid}}",
+									"disabled": true
+								},
+								{
+									"key": "user_uuid",
+									"value": "4f2e8bb5-38e1-4537-9cfa-11425c3b4283",
+									"description": "Wrong one",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get username from UUID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/profile/internal/get_username_from_uuid?user_uuid={{user_uuid}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"profile",
+								"internal",
+								"get_username_from_uuid"
+							],
+							"query": [
+								{
+									"key": "user_uuid",
+									"value": "{{user_uuid}}"
+								},
+								{
+									"key": "user_uuid",
+									"value": "4f2e8bb5-38e1-4537-9cfa-11425c3b4283",
+									"description": "Wrong one",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Insert Profile",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/profile/internal/insert_profile?user_uuid=4f2e8bb5-38e1-4537-9cfa-11425c3b1212&username=paita",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"profile",
+								"internal",
+								"insert_profile"
+							],
+							"query": [
+								{
+									"key": "user_uuid",
+									"value": "4f2e8bb5-38e1-4537-9cfa-11425c3b1212"
+								},
+								{
+									"key": "username",
+									"value": "paita"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Profile List",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/profile/internal/list?page_number=1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"profile",
+								"internal",
+								"list"
+							],
+							"query": [
+								{
+									"key": "page_number",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Auction",
+			"item": [
+				{
+					"name": "Auction exists",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auction/internal/exists?uuid",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auction",
+								"internal",
+								"exists"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "aabbccdd-eeff-0011-2233-445566778899",
+									"disabled": true
+								},
+								{
+									"key": "uuid",
+									"value": null
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get auction",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auction/internal/get_auction?uuid=aabbccdd-eeff-0011-2233-445566778899",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auction",
+								"internal",
+								"get_auction"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "aabbccdd-eeff-0011-2233-445566778899"
+								},
+								{
+									"key": "uuid",
+									"value": "aabbccdd-eeff-0011-2233-445566778891",
+									"description": "wrong one",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get auction list",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auction/internal/list?status=closed&page_number=1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auction",
+								"internal",
+								"list"
+							],
+							"query": [
+								{
+									"key": "status",
+									"value": "closed"
+								},
+								{
+									"key": "rarity",
+									"value": "legendary",
+									"disabled": true
+								},
+								{
+									"key": "page_number",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get user auctions",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auction/internal/get_user_auctions",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auction",
+								"internal",
+								"get_user_auctions"
+							],
+							"query": [
+								{
+									"key": "user_uuid",
+									"value": "e3b0c442-98fc-1c14-b39f-92d1282048c0",
+									"disabled": true
+								},
+								{
+									"key": "user_uuid",
+									"value": null,
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Is open by item uuid",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auction/internal/is_open_by_item_uuid?uuid=",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auction",
+								"internal",
+								"is_open_by_item_uuid"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "{{item_uuid}}",
+									"disabled": true
+								},
+								{
+									"key": "uuid",
+									"value": "",
+									"description": "expected 400"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Refund bidders",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "[\r\n  \"f7e6d5c4-b3a2-9180-7654-321098fedcba\",\r\n  \"c7b6a5d4-e3f2-1098-7654-fedcba987654\",\r\n  \"e6d5c4b3-a291-8076-5432-109876fedcba\"\r\n]",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auction/internal/refund_bidders",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auction",
+								"internal",
+								"refund_bidders"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "INTERNAL Refund Bidders 400",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auction/internal/refund_bidders",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auction",
+								"internal",
+								"refund_bidders"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Remove by item uuid",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "[\r\n    \"f7e6d5c4-b3a2-9180-7654-321098fedcba\",\r\n    \"c7b6a5d4-e3f2-1098-7654-fedcba987654\"\r\n]",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auction/internal/remove_by_item_uuid",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auction",
+								"internal",
+								"remove_by_item_uuid"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Reset current bidder",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auction/internal/reset_current_bidder",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auction",
+								"internal",
+								"reset_current_bidder"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "3fa85f64-5717-4562-b3fc-2c963466afa6",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Set bid",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auction/internal/set_bid?auction_uuid=3fa85f64-5717-4565-b3fc-2c963f66afa6&user_uuid=e3b0c442-98fc-1c14-b39f-92d1282048c0",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auction",
+								"internal",
+								"set_bid"
+							],
+							"query": [
+								{
+									"key": "auction_uuid",
+									"value": "3fa85f64-5717-4565-b3fc-2c963f66afa6"
+								},
+								{
+									"key": "user_uuid",
+									"value": "e3b0c442-98fc-1c14-b39f-92d1282048c0"
+								},
+								{
+									"key": "new_bid",
+									"value": "500",
+									"disabled": true
+								},
+								{
+									"key": "new_bid",
+									"value": "a",
+									"description": "wrong",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update bid",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"auction_uuid\": \"aabbccdd-eeff-0011-2233-445566778899\",\r\n  \"status\": \"open\",\r\n  \"inventory_item_owner_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n  \"inventory_item_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n  \"starting_price\": 0,\r\n  \"current_bid\": 0,\r\n  \"current_bidder\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n  \"end_time\": \"2025-11-29T18:00:18.236Z\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auction/internal/update",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auction",
+								"internal",
+								"update"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Auction 201",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"auction_uuid\": \"3fa85f64-5717-4565-b3fc-2c963f66afa6\",\r\n  \"status\": \"open\",\r\n  \"inventory_item_owner_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n  \"inventory_item_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n  \"starting_price\": 10,\r\n  \"current_bid\": 0,\r\n  \"current_bidder\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n  \"end_time\": \"2024-11-29T13:31:25.014Z\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auction/internal/create",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auction",
+								"internal",
+								"create"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Exists Auction",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auction/internal/exists?uuid={{auction_to_bid_to_uuid}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auction",
+								"internal",
+								"exists"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "{{auction_to_bid_to_uuid}}",
+									"description": "Add for status code 200, Remove for status code 400"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "INTERNAL Get Auction",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auction/internal/get_auction?uuid={{auction_to_bid_to_uuid}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auction",
+								"internal",
+								"get_auction"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "aabbccdd-eeff-0011-2233-000000000000",
+									"description": "Wrong value, status code 404",
+									"disabled": true
+								},
+								{
+									"key": "uuid",
+									"value": "{{auction_to_bid_to_uuid}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "INTERNAL Get Auction List",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auction/internal/list?status=closed&page_number=1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auction",
+								"internal",
+								"list"
+							],
+							"query": [
+								{
+									"key": "status",
+									"value": "open",
+									"disabled": true
+								},
+								{
+									"key": "status",
+									"value": "closed"
+								},
+								{
+									"key": "page_number",
+									"value": "1"
+								},
+								{
+									"key": "rarity",
+									"value": "legendary",
+									"disabled": true
+								},
+								{
+									"key": "status",
+									"value": "active",
+									"description": "Wrong, returns 400 status can only be open or closed",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "INTERNAL Get User Auctions",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auction/internal/get_user_auctions?user_uuid=e3b0c442-98fc-1c14-b39f-92d1282048c0",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auction",
+								"internal",
+								"get_user_auctions"
+							],
+							"query": [
+								{
+									"key": "user_uuid",
+									"value": "e3b0c442-98fc-1c14-b39f-92d1282048c0",
+									"description": "remove user_uuid for error 400"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "INTERNAL Is Open By UUID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auction/internal/is_open_by_item_uuid?uuid=c7b6a5d4-e3f2-1098-7654-fedcba987654",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auction",
+								"internal",
+								"is_open_by_item_uuid"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "c7b6a5d4-e3f2-1098-7654-fedcba987654",
+									"description": "remove uuid for error 400"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "INTERNAL Remove by item UUID 200",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "[\r\n    \"f7e6d5c4-b3a2-9180-7654-321098fedcba\",\r\n    \"c7b6a5d4-e3f2-1098-7654-fedcba987654\"\r\n]",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auction/internal/remove_by_item_uuid",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auction",
+								"internal",
+								"remove_by_item_uuid"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "INTERNAL Remove by item UUID 400",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auction/internal/remove_by_item_uuid",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auction",
+								"internal",
+								"remove_by_item_uuid"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "INTERNAL Reset Current Bidder",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auction/internal/reset_current_bidder?uuid=3fa85f64-5717-4562-b3fc-2c963466afa6",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auction",
+								"internal",
+								"reset_current_bidder"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "3fa85f64-5717-4562-b3fc-2c963466afa6",
+									"description": "Status code 304"
+								},
+								{
+									"key": "uuid",
+									"value": "e3b0c442-98fc-1c14-b39f-92d1282048c0",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "INTERNAL Update auction 200",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"auction_uuid\": \"aabbccdd-eeff-0011-2233-445566778899\",\r\n  \"status\": \"open\",\r\n  \"inventory_item_owner_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n  \"inventory_item_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n  \"starting_price\": 0,\r\n  \"current_bid\": 0,\r\n  \"current_bidder\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n  \"end_time\": \"2025-11-29T18:00:18.236Z\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auction/internal/update",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auction",
+								"internal",
+								"update"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "INTERNAL Update auction 304",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"auction_uuid\": \"aabbccdd-eeff-0011-2233-445566778899\",\r\n  \"status\": \"open\",\r\n  \"inventory_item_owner_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auction/internal/update",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auction",
+								"internal",
+								"update"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Gacha",
+			"item": [
+				{
+					"name": "Create Gacha",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"gacha_uuid\": \"123e4567-e89b-12d3-a456-426614174000\",\r\n    \"name\": \"Test1 Stand\",\r\n    \"attributes\": {\r\n        \"power\": \"A\",\r\n        \"speed\": \"B\",\r\n        \"durability\": \"A\",\r\n        \"precision\": \"C\",\r\n        \"range\": \"B\",\r\n        \"potential\": \"A\"\r\n    },\r\n    \"rarity\": \"legendary\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/gacha/internal/gacha/create",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"gacha",
+								"internal",
+								"gacha",
+								"create"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Gacha Bad Request",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/gacha/internal/gacha/create",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"gacha",
+								"internal",
+								"gacha",
+								"create"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Pool",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"codename\": \"pool_test\",\r\n    \"public_name\": \"Test Poosl\",\r\n    \"probability_common\": 0.5,\r\n    \"probability_rare\": 0.3,\r\n    \"probability_epic\": 0.15,\r\n    \"probability_legendary\": 0.05,\r\n    \"price\":1,\r\n    \"items\": [\r\n        \"9d4b9fa9-6c72-44f5-9ac6-e6b548cfc632\"\r\n    ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/gacha/internal/pool/create",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"gacha",
+								"internal",
+								"pool",
+								"create"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Pool Invalid",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"codename\": \"pool_test\",\r\n    \"public_name\": \"Test Poosl\",\r\n    \"probability_common\": 0.5,\r\n    \"probability_rare\": 0.3,\r\n    \"probability_epic\": 0.15,\r\n    \"probability_legendary\": 0.05,\r\n    \"price\":-1,\r\n    \"items\": [\r\n        \"9d4b9fa9-6c72-44f5-9ac6-e6b548cfc632\"\r\n    ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/gacha/internal/pool/create",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"gacha",
+								"internal",
+								"pool",
+								"create"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete gacha",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/gacha/internal/gacha/delete",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"gacha",
+								"internal",
+								"gacha",
+								"delete"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "1b2f7b4e-5e1f-4112-a7c5-b7559dbb8c76",
+									"disabled": true
+								},
+								{
+									"key": "uuid",
+									"value": "1b2f7b4e-5e1f-4112-a7c5-b7559dbb8c72",
+									"description": "wrong one --> 404",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete pool",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/gacha/internal/pool/delete?codename={{pool_to_delete}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"gacha",
+								"internal",
+								"pool",
+								"delete"
+							],
+							"query": [
+								{
+									"key": "codename",
+									"value": "{{pool_to_delete}}"
+								},
+								{
+									"key": "codename",
+									"value": "pool_joestar",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Exists gacha",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/gacha/internal/gacha/exists",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"gacha",
+								"internal",
+								"gacha",
+								"exists"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "8f2b9d4e-3b3e-4c5d-a1c6-b7e3a5d6c1c7",
+									"disabled": true
+								},
+								{
+									"key": "uuid",
+									"value": "8f2b9d4e-3b3e-4c5d-a1c6-b7e3a5d6a1c1",
+									"disabled": true
+								},
+								{
+									"key": "uuid",
+									"value": "1b2f7b4e-5e1f-4112-a7c5-b7559dbb8c76",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Exists pool",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/gacha/internal/pool/exists",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"gacha",
+								"internal",
+								"pool",
+								"exists"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "pool_pucci",
+									"disabled": true
+								},
+								{
+									"key": "uuid",
+									"value": "pool_test",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Gacha",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/gacha/internal/gacha/get?uuid=c1d2e3f4-5a6b-7c8d-9e0f-1a2b3c4d5e6c",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"gacha",
+								"internal",
+								"gacha",
+								"get"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "c1d2e3f4-5a6b-7c8d-9e0f-1a2b3c4d5e6c",
+									"description": "not found"
+								},
+								{
+									"key": "uuid",
+									"value": "c1d2e3f4-5a6b-7c8d-9e0f-1a2b3c4d5e6f",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get rarity by uuid",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/gacha/internal/get_rarity_by_uuid?uuid=b2c3d4e5-f6a7-8901-2345-67890abcdef1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"gacha",
+								"internal",
+								"get_rarity_by_uuid"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "b2c3d4e5-f6a7-8901-2345-67890abcdef1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get pool",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/gacha/internal/pool/get?uuid=pool_test",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"gacha",
+								"internal",
+								"pool",
+								"get"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "pool_pucci",
+									"disabled": true
+								},
+								{
+									"key": "uuid",
+									"value": "pool_test"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "list gachas",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "[\r\n  \"1b2f7b4e-5e1f-4112-a7c5-b7559dbb8c76\",\r\n  \"a1b2c3d4-e5f6-7890-1234-567890abcdef\"\r\n]",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/gacha/internal/gacha/list",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"gacha",
+								"internal",
+								"gacha",
+								"list"
+							],
+							"query": [
+								{
+									"key": "not_owned",
+									"value": "True",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "list gachas bad request",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/gacha/internal/gacha/list",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"gacha",
+								"internal",
+								"gacha",
+								"list"
+							],
+							"query": [
+								{
+									"key": "not_owned",
+									"value": "True",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "list pools",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/gacha/internal/pool/list",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"gacha",
+								"internal",
+								"pool",
+								"list"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update gacha",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"gacha_uuid\": \"e5f6a7b8-c9d0-1234-5678-90abcdef1234\",\r\n    \"name\": \"aa\",\r\n    \"rarity\": \"epic\",\r\n    \"attributes\": {\r\n        \"power\": \"A\",\r\n        \"speed\": \"A\",\r\n        \"durability\": \"A\",\r\n        \"precision\": \"A\",\r\n        \"range\": \"C\",\r\n        \"potential\": \"A\"\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/gacha/internal/gacha/update",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"gacha",
+								"internal",
+								"gacha",
+								"update"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update gacha bad request",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/gacha/internal/gacha/update",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"gacha",
+								"internal",
+								"gacha",
+								"update"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update a pool",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \r\n        \"codename\": \"pool_pucci\",\r\n        \"public_name\": \"Heaven P1ool Us\",\r\n        \"probability_common\": 0.80,\r\n        \"probability_rare\": 0.1,\r\n        \"probability_epic\": 0.05,\r\n        \"probability_legendary\": 0.05,\r\n        \"price\": 1,\r\n        \"items\": [\r\n            \"f6a7b8c9-d0e1-2345-6789-0abcdef12345\",\r\n            \"d0e1f2a3-b4c5-6789-0123-def123456789\",\r\n            \"b4c5d6e7-f8a9-0123-4567-23456789abcd\",\r\n            \"f2a3b4c5-d6e7-8901-2345-f123456789ab\"\r\n        ]\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/gacha/internal/pool/update",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"gacha",
+								"internal",
+								"pool",
+								"update"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "PvP",
+			"item": [
+				{
+					"name": "Delete match by uuid",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/pvp/internal/delete_match?uuid=a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"pvp",
+								"internal",
+								"delete_match"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+									"description": "Status code 200"
+								},
+								{
+									"key": "uuid",
+									"value": "a1b2c3d4-e5f6-7890-abcd-000000000000",
+									"description": "Status code 404",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get pending list",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/pvp/internal/get_pending_list?uuid=e3b0c442-98fc-1c14-b39f-92d1282048c0",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"pvp",
+								"internal",
+								"get_pending_list"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "e3b0c442-98fc-1c14-b39f-92d1282048c0",
+									"description": "Status code 200, Remove for status code 400"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/pvp/internal/get_status?uuid=b2c3d4e5-f6a7-8901-bcde-f12345678901",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"pvp",
+								"internal",
+								"get_status"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+									"description": "Status code 200"
+								},
+								{
+									"key": "uuid",
+									"value": "b2c3d4e5-f6a7-8901-bcde-000000000000",
+									"description": "Status code 404",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Insert match 201",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"pvp_match_uuid\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n  \"sender_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n  \"receiver_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n  \"teams\": {\r\n    \"team1\": [\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\"\r\n    ],\r\n    \"team2\": [\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\"\r\n    ]\r\n  },\r\n  \"winner_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n  \"match_log\": {\r\n    \"rounds\": [\r\n      {\r\n        \"extracted_stat\": \"power\",\r\n        \"player1\": {\r\n          \"stand_name\": \"Tower of Gray\",\r\n          \"stand_stat\": \"A\"\r\n        },\r\n        \"player2\": {\r\n          \"stand_name\": \"Tower of Gray\",\r\n          \"stand_stat\": \"A\"\r\n        },\r\n        \"round_winner\": \"Player1's Tower of Gray\"\r\n      }\r\n    ]\r\n  },\r\n  \"match_timestamp\": \"2024-11-29T21:06:31.607Z\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/pvp/internal/insert_match",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"pvp",
+								"internal",
+								"insert_match"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Insert match 400",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"pvp_match_uuid\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n  \"sender_id\": \"\",\r\n  \"receiver_id\": \"\",\r\n  \"teams\": {\r\n    \"team1\": [\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\"\r\n    ],\r\n    \"team2\": [\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\"\r\n    ]\r\n  },\r\n  \"winner_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n  \"match_log\": {\r\n    \"rounds\": [\r\n      {\r\n        \"extracted_stat\": \"power\",\r\n        \"player1\": {\r\n          \"stand_name\": \"Tower of Gray\",\r\n          \"stand_stat\": \"A\"\r\n        },\r\n        \"player2\": {\r\n          \"stand_name\": \"Tower of Gray\",\r\n          \"stand_stat\": \"A\"\r\n        },\r\n        \"round_winner\": \"Player1's Tower of Gray\"\r\n      }\r\n    ]\r\n  },\r\n  \"match_timestamp\": \"2024-11-29T21:06:31.607Z\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/pvp/internal/insert_match",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"pvp",
+								"internal",
+								"insert_match"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Remove by user uuid",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{Authorization}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/pvp/internal/remove_by_user_uuid?uuid=e3b0c442-98fc-1c14-b39f-92d1282048c0",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"pvp",
+								"internal",
+								"remove_by_user_uuid"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "e3b0c442-98fc-1c14-b39f-92d1282048c0",
+									"description": "Status code 200, Remove for status code 400"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Set results 200",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"pvp_match_uuid\": \"b2c3d4e5-f6a7-8901-bcde-f12345678901\",\r\n  \"sender_id\": \"a4f0c592-12af-4bde-aacd-94cd0f27c57e\",\r\n  \"receiver_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n  \"teams\": {\r\n    \"team1\": [\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\"\r\n    ],\r\n    \"team2\": [\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\"\r\n    ]\r\n  },\r\n  \"winner_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n  \"match_log\": {\r\n    \"rounds\": [\r\n      {\r\n        \"extracted_stat\": \"power\",\r\n        \"player1\": {\r\n          \"stand_name\": \"Tower of Gray\",\r\n          \"stand_stat\": \"A\"\r\n        },\r\n        \"player2\": {\r\n          \"stand_name\": \"Tower of Gray\",\r\n          \"stand_stat\": \"A\"\r\n        },\r\n        \"round_winner\": \"Player1's Tower of Gray\"\r\n      }\r\n    ]\r\n  },\r\n  \"match_timestamp\": \"2024-11-29T21:06:31.607Z\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/pvp/internal/set_results",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"pvp",
+								"internal",
+								"set_results"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Set results 400",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"pvp_match_uuid\": \"\",\r\n  \"sender_id\": \"a4f0c592-12af-4bde-aacd-94cd0f27c57e\",\r\n  \"receiver_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n  \"teams\": {\r\n    \"team1\": [\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\"\r\n    ],\r\n    \"team2\": [\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"3fa85f64-5717-4562-b3fc-2c963f66afa6\"\r\n    ]\r\n  },\r\n  \"winner_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n  \"match_log\": {\r\n    \"rounds\": [\r\n      {\r\n        \"extracted_stat\": \"power\",\r\n        \"player1\": {\r\n          \"stand_name\": \"Tower of Gray\",\r\n          \"stand_stat\": \"A\"\r\n        },\r\n        \"player2\": {\r\n          \"stand_name\": \"Tower of Gray\",\r\n          \"stand_stat\": \"A\"\r\n        },\r\n        \"round_winner\": \"Player1's Tower of Gray\"\r\n      }\r\n    ]\r\n  },\r\n  \"match_timestamp\": \"2024-11-29T21:06:31.607Z\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/pvp/internal/set_results",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"pvp",
+								"internal",
+								"set_results"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Feedback",
+			"item": [
+				{
+					"name": "Delete user feedbacks",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/feedback/internal/delete_user_feedbacks",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"feedback",
+								"internal",
+								"delete_user_feedbacks"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "a4f0c592-12af-4bde-aacd-94cd0f27c57d",
+									"disabled": true
+								},
+								{
+									"key": "uuid",
+									"value": "",
+									"description": "bad request",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get feedback info",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/feedback/internal/info?feedback_id=10000000000000000000000000000",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"feedback",
+								"internal",
+								"info"
+							],
+							"query": [
+								{
+									"key": "feedback_id",
+									"value": "3",
+									"disabled": true
+								},
+								{
+									"key": "feedback_id",
+									"value": "10000000000000000000000000000",
+									"description": "not found"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List feedbacks",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/feedback/internal/list",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"feedback",
+								"internal",
+								"list"
+							],
+							"query": [
+								{
+									"key": "page_number",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "page_number",
+									"value": "-1",
+									"description": "Bad request",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Submit feedback",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"content\": \"string\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/feedback/internal/submit",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"feedback",
+								"internal",
+								"submit"
+							],
+							"query": [
+								{
+									"key": "user_uuid",
+									"value": "{{user_uuid}}",
+									"description": "remove for 400",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Userinfo",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"access_token\": \"{{Authorization}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/internal/userinfo/",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"internal",
+								"userinfo",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Userinfo Bad request",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"access_token\": \"{{Authorization}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/internal/userinfo/",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"internal",
+								"userinfo",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Introspect **MUST BE LOGGED**",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"access_token\": \"{{Authorization}}\",\r\n    \"audience_required\": \"public_services\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/internal/introspect/",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"internal",
+								"introspect",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Introspect bad request",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"access_token\": \"{{Authorization}}\",\r\n    \"audience_required\": \"public_services\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/internal/introspect/",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"internal",
+								"introspect",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get role by uuid",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auth/internal/get_role_by_uuid?uuid=4f2e8bb5-38e1-4537-9cfa-11425c3b4281",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"internal",
+								"get_role_by_uuid"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "{{user_uuid}}",
+									"disabled": true
+								},
+								{
+									"key": "uuid",
+									"value": "4f2e8bb5-38e1-4537-9cfa-11425c3b4281",
+									"description": "not found 404"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete User by UUID",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auth/internal/delete_user_by_uuid?uuid={{user_uuid}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"internal",
+								"delete_user_by_uuid"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "{{user_uuid}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Invalidate Token",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auth/internal/token/invalidate?uuid={{user_uuid}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"internal",
+								"token",
+								"invalidate"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "{{user_uuid}}",
+									"description": "do it two times for 404"
+								},
+								{
+									"key": "uuid",
+									"value": null,
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Edit Email",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auth/internal/edit_email?uuid={{user_uuid2}}&email=nuovamail2@gmail.com",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"internal",
+								"edit_email"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "{{user_uuid2}}"
+								},
+								{
+									"key": "email",
+									"value": "nuovamail2@gmail.com"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auth/internal/get_user?uuid={{user_uuid}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"internal",
+								"get_user"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "{{user_uuid}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Hashed Password",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auth/internal/get_hashed_password?uuid={{user_uuid}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"internal",
+								"get_hashed_password"
+							],
+							"query": [
+								{
+									"key": "uuid",
+									"value": "{{user_uuid}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
