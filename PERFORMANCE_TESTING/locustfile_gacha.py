@@ -7,18 +7,18 @@ import numpy as np
 
 
 
-
-
+global pool_to_pull
+pool_to_pull = "pool_pucci"
 
 class GachaStats:
     def __init__(self):
         self.pull_results = defaultdict(int)
         self.total_pulls = 0
         self.expected_probabilities = {
-            "COMMON": 0.60,
-            "RARE": 0.20,
-            "EPIC": 0.15,
-            "LEGENDARY": 0.05
+            "COMMON":0.30,
+            "RARE": 0.30,
+            "EPIC": 0.30,
+            "LEGENDARY": 0.1
         }
         self.gacha_rarities = {
     "1b2f7b4e-5e1f-4112-a7c5-b7559dbb8c76": "COMMON",
@@ -175,7 +175,7 @@ class GachaTaskSequence(SequentialTaskSet):
         if self._buy_bundle():
             if self._add_currency():
                 
-                with self.client.post(f"/gacha/pull/pool_joestar", verify=False, catch_response=True, name="/gacha/pull") as response:
+                with self.client.post(f"/gacha/pull/{pool_to_pull}", verify=False, catch_response=True, name="/gacha/pull") as response:
                     if response.status_code == 200:
                         pull_data = response.json()
                         print("Pull data:",pull_data)
@@ -233,13 +233,14 @@ def on_test_stop(environment, **kwargs):
     width = 0.35
 
     plt.bar(x - width/2, actual_rates, width, label='Actual Distribution')
-    plt.bar(x + width/2, expected_rates, width, label='Expected Distribution')
+    plt.bar(x + width/2, expected_rates, width, label='Expected Distribution ({})'.format(pool_to_pull))
 
     plt.xticks(x, rarities)
-    plt.title('Overall Gacha Rarity Distribution vs. Expected')
+    plt.title('Overall Gacha Rarity Distribution vs. Expected ({})'.format(pool_to_pull))
     plt.xlabel('Rarity')
     plt.ylabel('Pull Rate (%)')
     plt.legend()
+    print("Pull results:", gacha_stats.pull_results)
 
     plt.tight_layout()
     plt.show()
