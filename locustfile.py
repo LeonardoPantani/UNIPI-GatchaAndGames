@@ -91,7 +91,6 @@ class GachaStats:
     "f7a8b9c0-1234-5ef0-0123-6789abcdef01": "LEGENDARY",
     "e9f0a1b2-b3c4-5def-6789-0abcde123456": "LEGENDARY",
     "f1a2b3c4-b4c5-6789-9abc-abcdef012345": "LEGENDARY",
-    "b0c1d2e3-a5b6-7890-1c3d-567890123456": "LEGENDARY",
 }
 
         self.pool_ids = ["bundle_heavenEUR"]
@@ -179,7 +178,7 @@ class GachaTaskSequence(SequentialTaskSet):
         if self._buy_bundle():
             if self._add_currency():
                 
-                with self.client.post(f"/gacha/pull/pool_pucci", verify=False, catch_response=True, name="/gacha/pull") as response:
+                with self.client.post(f"/gacha/pull/pool_joestar", verify=False, catch_response=True, name="/gacha/pull") as response:
                     if response.status_code == 200:
                         pull_data = response.json()
                         print("Pull data:",pull_data)
@@ -319,7 +318,7 @@ def on_test_stop(environment, **kwargs):
     plt.figure(figsize=(10, 6))  # Adjusted figure size
 
     distribution = gacha_stats.get_distribution()
-    rarities = sorted(list(set(distribution.keys()) | set(gacha_stats.expected_probabilities.keys())))
+    rarities = ["COMMON", "RARE", "EPIC", "LEGENDARY"] 
     actual_rates = [distribution.get(rarity, 0) *100 for rarity in rarities]
     expected_rates = [gacha_stats.expected_probabilities.get(rarity, 0) * 100 for rarity in rarities]
 
