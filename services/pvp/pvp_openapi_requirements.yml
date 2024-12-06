@@ -1,0 +1,482 @@
+openapi: 3.0.0
+info:
+  title: Gacha System - OpenAPI 3.0
+  description: >-
+    API for managing gacha items, auctions, PVP battles, currency, and user
+    authentication.
+
+
+    Useful links:
+
+    - [Project
+    repository](https://github.com/LeonardoPantani/UNIPI-GachaAndGames)
+  version: 2.0.0
+  license:
+    name: GPL-3.0
+    url: https://www.gnu.org/licenses/gpl-3.0.html#license-text
+  contact:
+    email: support@gachaandgames.it
+  termsOfService: https://localhost/tos
+servers:
+  - url: https://localhost
+    description: Local server
+paths:
+  ############################################
+  ################### PVP ####################
+  ############################################
+  /pvp/health_check:
+    get:
+      tags:
+      - pvp
+      description: Returns 200 if service is healthy.
+      responses:
+        '200':
+          description: Service operational.
+      summary: Gives information on service status.
+  /pvp/sendPvPRequest/{user_uuid}:
+    post:
+      tags:
+        - pvp
+      summary: Sends a PvP match request.
+      description: Sends a requests to another player to initiate a PvP battle.
+      operationId: sendPVPRequest
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: user_uuid
+          in: path
+          description: The player's UUID to send the battle request to.
+          required: true
+          schema:
+            $ref: '#/components/schemas/UserId'
+      requestBody:
+        description: Specify the team to battle the player with.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Team'
+      responses:
+        '200':
+          description: Match request sent successfully.
+        '400':
+          description: Player's UUID not found.
+        '401':
+          description: Gacha items do not belong to you.
+        '403':
+          description: Not logged in.
+        '406':
+          description: You cannot start a match with yourself.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /pvp/checkPendingPvPRequests:
+    get:
+      tags:
+        - pvp
+      summary: Returns a list of pending PvP requests.
+      description: >-
+        If the current user has one or more pending requests, a list will be
+        returned. The current user's UUID is obtained via session cookie.
+      operationId: checkPendingPVPRequests
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The list containing requests for current user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PendingPvPRequests'
+        '403':
+          description: Not logged in.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /pvp/acceptPvPRequest/{pvp_match_uuid}:
+    post:
+      tags:
+        - pvp
+      summary: Accept a pending PvP request.
+      description: Allows a player to accept a PvP battle with another user.
+      operationId: acceptPVPRequest
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: pvp_match_uuid
+          in: path
+          description: The pending pvp request's match id.
+          required: true
+          schema:
+            $ref: '#/components/schemas/PvPMatchId'
+      requestBody:
+        description: Specify the team to battle the player with.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Team'
+      responses:
+        '200':
+          description: Match accepted and performed successfully.
+        '400':
+          description: Invalid pvp match id or team data.
+        '401':
+          description: This request is not for you.
+        '403':
+          description: Not logged in.
+        '404':
+          description: User not found.
+        '406':
+          description: Match already ended.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /pvp/rejectPvPRequest/{pvp_match_uuid}:
+    post:
+      tags:
+        - pvp
+      summary: Rejects a pending PvP request.
+      description: Allows a player to reject a PvP battle with another user.
+      operationId: rejectPVPrequest
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: pvp_match_uuid
+          in: path
+          description: The pending pvp request's match id.
+          required: true
+          schema:
+            $ref: '#/components/schemas/PvPMatchId'
+      responses:
+        '200':
+          description: Battle rejected successfully.
+        '400':
+          description: Invalid pvp match id.
+        '401':
+          description: Cannot reject this PvP request.
+        '403':
+          description: Not logged in.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /pvp/status/{pvp_match_uuid}:
+    get:
+      tags:
+        - pvp
+      summary: Returns the results of a PvP match.
+      description: Allows a player to view the results of the match.
+      operationId: getPVPStatus
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: pvp_match_uuid
+          in: path
+          description: The pending pvp request's match id.
+          required: true
+          schema:
+            $ref: '#/components/schemas/PvPMatchId'
+      responses:
+        '200':
+          description: Match results found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PvPRequest'
+        '403':
+          description: Not logged in.
+        '404':
+          description: Match not found.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /pvp/internal/remove_by_user_uuid:
+    delete:
+      tags:
+        - pvp_internal
+      description: Deletes matches where user with UUID as requested appears.
+      operationId: remove_by_user_uuid
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+        - name: uuid
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/UserId'
+      responses:
+        '200':
+          description: Matches deleted.
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /pvp/internal/get_pending_list:
+    get:
+      tags:
+        - pvp_internal
+      description: Returns the list of pending pvp requests for the user.
+      operationId: get_pending_list
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+        - name: uuid
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/UserId'
+      responses:
+        '200':
+          description: Matches.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PendingPvPRequests'
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /pvp/internal/insert_match:
+    post:
+      tags:
+        - pvp_internal
+      description: Inserts a match into the database.
+      operationId: insert_match
+      parameters:
+      - name: session
+        in: cookie
+        required: false
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PvPRequest'
+      responses:
+        '201':
+          description: Match inserted.
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /pvp/internal/get_status:
+    get:
+      tags:
+        - pvp_internal
+      description: Returns info on a pvp match.
+      operationId: get_status
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+        - name: uuid
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/PvPMatchId'
+      responses:
+        '200':
+          description: Match info.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PvPRequest'
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '404':
+          description: Match not found.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /pvp/internal/delete_match:
+    delete:
+      tags:
+        - pvp_internal
+      description: Deletes a pvp match.
+      operationId: delete_match
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+        - name: uuid
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/PvPMatchId'
+      responses:
+        '200':
+          description: Match deleted.
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '404':
+          description: Match not found.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /pvp/internal/set_results:
+    post:
+      tags:
+        - pvp_internal
+      description: Inserts match results into the database.
+      operationId: set_results
+      parameters:
+      - name: session
+        in: cookie
+        required: false
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PvPRequest'
+      responses:
+        '201':
+          description: Match inserted.
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+
+
+
+components:
+  schemas:
+    GachaStat:
+      type: string
+      example: A
+      pattern: ^[A-Ea-e]$
+      description: Stat of a gacha.
+    UserId:
+      type: string
+      format: uuid
+      description: UUID of user.
+    PvPMatchId:
+      type: string
+      format: uuid
+      description: UUID of the PvP match.
+    MatchPairing:
+      type: object
+      properties:
+        extracted_stat:
+          enum:
+            - power
+            - speed
+            - durability
+            - precision
+            - range
+        player1:
+          type: object
+          properties:
+            stand_name:
+              type: string
+              description: Name of the gacha
+              example: Tower of Gray
+            stand_stat:
+              $ref: '#/components/schemas/GachaStat' 
+        player2:
+          type: object
+          properties:
+            stand_name:
+              type: string
+              description: Name of the gacha
+              example: Tower of Gray
+            stand_stat:
+              $ref: '#/components/schemas/GachaStat' 
+        round_winner:
+          type: string
+          example: Player1's Tower of Gray
+    MatchLog:
+      type: object
+      description: Infos on a specific match
+      properties:
+        rounds:
+          type: array
+          minimum: 7
+          maximum: 7
+          items:
+            $ref: "#/components/schemas/MatchPairing"
+    PvPRequest:
+      type: object
+      properties:
+        pvp_match_uuid:
+          $ref: '#/components/schemas/PvPMatchId'
+        sender_id:
+          $ref: '#/components/schemas/UserId'
+        receiver_id:
+          $ref: '#/components/schemas/UserId'
+        teams:
+          type: object
+          properties:
+            team1:
+              $ref: '#/components/schemas/Team'
+            team2:
+              $ref: '#/components/schemas/Team'
+        winner_id:
+          $ref: '#/components/schemas/UserId'
+        match_log:
+          $ref: '#/components/schemas/MatchLog'
+        match_timestamp:
+          type: string
+          format: date-time
+          description: Match timestamp.
+      description: Request of a PvP match sent by a player.
+    PendingPvPRequests:
+      type: array
+      minItems: 0
+      maxItems: 100
+      items:
+        type: object
+        properties:
+          "pvp_match_id":
+            $ref: '#/components/schemas/PvPMatchId'
+          "from":
+            $ref: '#/components/schemas/UserId'
+      description: List of pending pvp requests.
+    Team:
+      type: array
+      minItems: 7
+      maxItems: 7
+      items:
+        $ref: '#/components/schemas/ItemId'
+      description: Team used by players to battle each others.
+    ItemId:
+      type: string
+      format: uuid
+      description: UUID of single item.

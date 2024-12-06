@@ -1,0 +1,843 @@
+openapi: 3.0.0
+info:
+  title: Gacha System - OpenAPI 3.0
+  description: >-
+    API for managing gacha items, auctions, PVP battles, currency, and user
+    authentication.
+
+
+    Useful links:
+
+    - [Project
+    repository](https://github.com/LeonardoPantani/UNIPI-GachaAndGames)
+  version: 2.0.0
+  license:
+    name: GPL-3.0
+    url: https://www.gnu.org/licenses/gpl-3.0.html#license-text
+  contact:
+    email: support@gachaandgames.it
+  termsOfService: https://localhost/tos
+servers:
+  - url: https://localhost
+    description: Local server
+paths:
+  ############################################
+  ################### ADMIN ##################
+  ############################################
+  /admin/health_check:
+    get:
+      tags:
+      - admin
+      description: Returns 200 if service is healthy.
+      responses:
+        '200':
+          description: Service operational.
+      summary: Gives information on service status.
+  /admin/profile/list:
+    get:
+      tags:
+        - admin
+      summary: Returns all profiles.
+      description: Allows to retrieve all profiles, paginated.
+      operationId: getAllProfiles
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: page_number
+          in: query
+          description: Page number of the list.
+          required: false
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+      responses:
+        '200':
+          description: User profile.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserFull'
+        '403':
+          description: This account is not authorized to perform this action.
+        '503':
+          description: Service unavailable. Please try again later.
+  /admin/profile/{user_uuid}/edit:
+    put:
+      tags:
+        - admin
+      summary: Edits properties of a profile.
+      description: Allows an admin to edit a user's profile.
+      operationId: editUserProfile
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: user_uuid
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UserId'
+        - name: email
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Email'
+        - name: username
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Username'
+      responses:
+        '200':
+          description: Profile successfully updated.
+        '304':
+          description: No changes to profile applied.
+        '401':
+          description: This account is not authorized to perform this action.
+        '403':
+          description: Not authorized to perform this action.
+        '404':
+          description: User not found.
+        '503':
+          description: Service unavailable. Please try again later.
+  /admin/profile/{user_uuid}/ban:
+    delete:
+      tags:
+        - admin
+      summary: Deletes a profile.
+      description: Allows an admin to delete a user's profile.
+      operationId: banProfile
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: user_uuid
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UserId'
+      responses:
+        '200':
+          description: Profile deleted.
+        '400':
+          description: Invalid fields.
+        '404':
+          description: User not found.
+        '403':
+          description: This account is not authorized to perform this action.
+        '406':
+          description: You cannot delete your account like this.
+        '409':
+          description: Cannot ban a user with the ADMIN role.
+        '503':
+          description: Service unavailable. Please try again later.
+  /admin/profile/{user_uuid}/history:
+    get:
+      tags:
+        - admin
+      summary: Returns history of a user.
+      description: Allows to retrieve history of a user.
+      operationId: getUserHistory
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: user_uuid
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UserId'
+        - name: history_type
+          in: query
+          description: Type of history to show.
+          required: true
+          schema:
+            enum:
+              - bundle
+              - ingame
+        - name: page_number
+          in: query
+          description: Page number of the list.
+          required: false
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+      responses:
+        '200':
+          description: User transaction history.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/HistoryListINGAME"
+                  - $ref: "#/components/schemas/HistoryListBUNDLE"
+        '400':
+          description: Invalid history type.
+        '403':
+          description: This account is not authorized to perform this action.
+        '404':
+          description: User not found.
+        '503':
+          description: Service unavailable. Please try again later.
+  /admin/gacha/create:
+    post:
+      tags:
+        - admin
+      summary: Creates a gacha.
+      description: Allows the creation of a gacha.
+      operationId: createGacha
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Gacha'
+      responses:
+        '201':
+          description: Gacha created.
+        '400':
+          description: Invalid request.
+        '403':
+          description: This account is not authorized to perform this action.
+        '409':
+          description: The provided gacha uuid is already in use.
+        '503':
+          description: Service unavailable. Please try again later.
+  /admin/gacha/{gacha_uuid}/update:
+    put:
+      tags:
+        - admin
+      summary: Updates a gacha.
+      description: Allows the update of a gacha.
+      operationId: updateGacha
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: gacha_uuid
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/GachaId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Gacha'
+      responses:
+        '200':
+          description: Gacha updated.
+        '400':
+          description: Invalid request.
+        '403':
+          description: This account is not authorized to perform this action.
+        '404':
+          description: Gacha not found.
+        '406':
+          description: Gacha UUID in request is different from the one inside the gacha object.
+        '503':
+          description: Service unavailable. Please try again later.
+  /admin/gacha/{gacha_uuid}/delete:
+    delete:
+      tags:
+        - admin
+      summary: Deletes a gacha.
+      description: Allows the deletion of a gacha.
+      operationId: deleteGacha
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: gacha_uuid
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/GachaId'
+      responses:
+        '200':
+          description: Gacha deleted.
+        '400':
+          description: Invalid request.
+        '403':
+          description: This account is not authorized to perform this action.
+        '404':
+          description: Gacha not found.
+        '503':
+          description: Service unavailable. Please try again later.
+  /admin/pool/create:
+    post:
+      tags:
+        - admin
+      summary: Creates a pool.
+      description: Allows the creation of a pool.
+      operationId: createPool
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Pool'
+      responses:
+        '201':
+          description: Pool created.
+        '400':
+          description: Invalid request.
+        '403':
+          description: This account is not authorized to perform this action.
+        '404':
+          description: Item UUID not found in database.
+        '409':
+          description: The provided pool id is already in use.
+        '412':
+          description: Invalid probabilities.
+        '416':
+          description: Price should be a positive number.
+        '503':
+          description: Service unavailable. Please try again later.
+  /admin/pool/{pool_id}/update:
+    put:
+      tags:
+        - admin
+      summary: Updates a pool.
+      description: Allows the update of a pool.
+      operationId: updatePool
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: pool_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/PoolId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Pool'
+      responses:
+        '200':
+          description: Pool updated.
+        '400':
+          description: Invalid request.
+        '403':
+          description: This account is not authorized to perform this action.
+        '404':
+          description: Pool not found.
+        '406':
+          description: ool UUID in request is different from the one inside the pool object.
+        '412':
+          description: Invalid probabilities.
+        '416':
+          description: Price should be a positive number.
+        '503':
+          description: Service unavailable. Please try again later.
+  /admin/pool/{pool_id}/delete:
+    delete:
+      tags:
+        - admin
+      summary: Deletes a pool.
+      description: Allows the deletion of a pool.
+      operationId: deletePool
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: pool_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/PoolId'
+      responses:
+        '200':
+          description: Pool deleted.
+        '400':
+          description: Invalid fields.
+        '403':
+          description: This account is not authorized to perform this action.
+        '404':
+          description: Pool not found.
+        '503':
+          description: Service unavailable. Please try again later.
+  /admin/auction/{auction_uuid}/update:
+    put:
+      tags:
+        - admin
+      summary: Updates an auction.
+      description: Allows the update of an auction.
+      operationId: updateAuction
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: auction_uuid
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/AuctionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Auction'
+      responses:
+        '200':
+          description: Auction updated.
+        '400':
+          description: Invalid request.
+        '401':
+          description: Current bid cannot be lower than starting price.
+        '403':
+          description: This account is not authorized to perform this action.
+        '404':
+          description: Auction not found.
+        '412':
+          description: Starting price cannot be lower or equal to 0.
+        '416':
+          description: Current bid cannot be lower than 0.
+        '417':
+          description: Invalid date format.
+        '503':
+          description: Service unavailable. Please try again later.
+  /admin/logs/:
+    get:
+      tags:
+        - admin
+      summary: Returns the system logs.
+      description: Allows to retrieve logs of the system.
+      operationId: getSystemLogs
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: service_type
+          in: query
+          description: Name of the service whose logs are requested.
+          required: false
+          schema:
+            type: string
+        - name: endpoint
+          in: query
+          description: Name of the endpoint whose logs are requested
+          required: false
+          schema:
+            type: string
+        - name: level
+          in: query
+          description: Level of criticality
+          schema:
+            type: string
+            enum:
+              - general
+              - info
+              - warning
+              - error
+            default: info
+        - name: interval
+          in: query 
+          description: Number of seconds of the interval to look in
+          schema:
+            type: integer
+            default: 3600
+        - name: start_time
+          in: query
+          description: Interval starting time in Unix time (seconds since January 1, 1970).
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Latest system logs.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Log'
+        '403':
+          description: This account is not authorized to perform this action.
+        '503':
+          description: Service unavailable. Please try again later.
+  /admin/feedback/list:
+    get:
+      tags:
+      - admin
+      summary: Returns all feedbacks.
+      description: Allows to retrieve all feedbacks, paginated.
+      operationId: get_all_feedbacks
+      parameters:
+      - name: session
+        in: cookie
+        required: true
+        schema:
+          type: string
+      - name: page_number
+        in: query
+        description: Page number of the list.
+        required: false
+        schema:
+          default: 1
+          minimum: 1
+          type: integer
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/FeedbackPreview'
+                type: array
+          description: Feedback Ids.
+        '400':
+          description: Invalid request.
+        '403':
+          description: This account is not authorized to perform this action.
+        '503':
+          description: Service unavailable. Please try again later.
+  /admin/feedback/{feedback_id}:
+    get:
+      tags:
+      - admin
+      summary: Shows infos on a feedback.
+      description: Returns infos on a feedback.
+      operationId: get_feedback_info
+      parameters:
+      - name: session
+        in: cookie
+        required: true
+        schema:
+          type: string
+      - name: feedback_id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/FeedbackId'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeedbackWithUsername'
+          description: Successful operation.
+        '400':
+          description: Invalid request.
+        '403':
+          description: This account is not authorized to perform this action.
+        '404':
+          description: Feedback not found.
+        '503':
+          description: Service unavailable. Please try again later.
+          
+components:
+  schemas:
+    Log:
+      type: object
+      properties:
+        timestamp:
+          description: Unix time in seconds since January 1, 1970.
+          type: integer
+          format: int64
+          example: 1325203200
+        message:
+          description: Content of the log
+          type: string
+          example: User 'SpeedwagonAdmin' logged out.
+        service_type:
+          description: Name of the service 
+          type: string
+          example: auth
+        endpoint: 
+          description: Name of the endpoint
+          type: string
+          example: logout
+        level:
+          description: Level of criticality
+          type: string
+          enum:
+          - general
+          - info
+          - warning
+          - error
+    UserFull:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/UserId'
+        username:
+          $ref: '#/components/schemas/Username'
+        email:
+          $ref: '#/components/schemas/Email'
+        joindate:
+          type: string
+          format: date-time
+          description: Timestamp when user created their account
+        currency:
+          type: integer
+          description: In-game currency of the user.
+          example: 100
+        pvp_score:
+          type: integer
+          description: PvP score of the user.
+          example: 5
+        role:
+          $ref: "#/components/schemas/Roles"
+    Roles:
+      type: string
+      enum:
+        - USER
+        - ADMIN
+      description: User's role in the system.
+    GachaStat:
+      type: string
+      example: A
+      pattern: ^[A-Ea-e]$
+      description: Stat of a gacha.
+    CurrencyName:
+      type: string
+      description: Currency code-name
+      pattern: ^[A-Z]{3}$
+      example: EUR
+    PoolId:
+      type: string
+      example: pool_starter
+      pattern: ^[a-zA-Z0-9_]+$
+      description: Internal code-name for the pool.
+    Pool:
+      type: object
+      properties:
+        codename:
+          $ref: '#/components/schemas/PoolId'
+        public_name:
+          type: string
+          example: Starter Pool
+          description: Visible name of the pool.
+        price:
+          type: integer
+          example: 15
+          minimum: 1
+          description: In-game price to pull a gacha from this pool
+        probability_common:
+          type: number
+          format: float
+          default: 0.5
+        probability_rare:
+          type: number
+          format: float
+          default: 0.3
+        probability_epic:
+          type: number
+          format: float
+          default: 0.15
+        probability_legendary:
+          type: number
+          format: float
+          default: 0.05
+        items:
+          type: array
+          description: List of gacha items in the pool.
+          items:
+            $ref: '#/components/schemas/GachaId'
+    GachaRarity:
+      type: string
+      enum:
+        - common
+        - rare
+        - epic
+        - legendary
+      example: rare
+      description: Rarity level of the gacha.
+    UserId:
+      type: string
+      format: uuid
+      description: UUID of user.
+    Username:
+      type: string
+      minLength: 5
+      pattern: ^[a-zA-Z0-9_]+$
+      example: LeoPanta01_
+      description: The user's username. Must be at least 5 characters long and contain only letters, numbers, and underscores.
+    Email:
+      type: string
+      description: The user's email.
+      example: l.pantani5@studenti.unipi.it
+    AuctionStatus:
+      type: string
+      default: open
+      enum:
+        - open
+        - closed
+    ItemId:
+      type: string
+      format: uuid
+      description: UUID of single item.
+    AuctionId:
+      type: string
+      format: uuid
+      description: UUID of the auction.
+    Auction:
+      type: object
+      properties:
+        auction_uuid:
+          $ref: '#/components/schemas/AuctionId'
+        status:
+          $ref: '#/components/schemas/AuctionStatus'
+        inventory_item_owner_id:
+          $ref: '#/components/schemas/UserId'
+        inventory_item_id:
+          $ref: '#/components/schemas/ItemId'
+        starting_price:
+          type: number
+          format: float
+          description: Initial price set for the auction
+        current_bid:
+          type: number
+          format: float
+          description: Current highest bid
+        current_bidder:
+          $ref: '#/components/schemas/UserId'
+        end_time:
+          type: string
+          format: date-time
+          description: When the auction ends, in UTC timestamp
+    GachaId:
+      type: string
+      format: uuid
+      description: UUID of the gacha
+    Gacha:
+      type: object
+      properties:
+        gacha_uuid:
+          $ref: '#/components/schemas/GachaId'
+        name:
+          type: string
+          description: Name of the gacha
+          example: Tower of Gray
+        rarity:
+          $ref: '#/components/schemas/GachaRarity'
+        attributes:
+          type: object
+          properties:
+            power:
+              $ref: '#/components/schemas/GachaStat'
+            speed:
+              $ref: '#/components/schemas/GachaStat'
+            durability:
+              $ref: '#/components/schemas/GachaStat'
+            precision:
+              $ref: '#/components/schemas/GachaStat'
+            range:
+              $ref: '#/components/schemas/GachaStat'
+            potential:
+              $ref: '#/components/schemas/GachaStat'
+          required:
+            - power
+            - speed
+            - durability
+            - precision
+            - range
+            - potential
+    FeedbackPreview:
+      properties:
+        id:
+          $ref: '#/components/schemas/FeedbackId'
+        user_uuid:
+          $ref: '#/components/schemas/UserId'
+        timestamp:
+          description: Timestamp when user created feedback
+          format: date-time
+          type: string
+      type: object
+    FeedbackId:
+      description: Id of feedback.
+      type: integer
+      example: 7
+    FeedbackWithUsername:
+      properties:
+        id:
+          $ref: '#/components/schemas/FeedbackId'
+        user_uuid:
+          $ref: '#/components/schemas/UserId'
+        username:
+          $ref: '#/components/schemas/Username'
+        content:
+          description: Actual feedback content.
+          example: I love this game11!
+          type: string
+        timestamp:
+          description: Timestamp when user created feedback
+          format: date-time
+          type: string
+      type: object
+    HistoryListINGAME:
+      type: array
+      items:
+        type: object
+        properties:
+          user_uuid:
+            $ref: "#/components/schemas/UserId"
+          timestamp:
+            description: Timestamp when user created feedback
+            format: date-time
+            type: string
+          credits:
+            type: integer
+            description: No. of credits.
+            example: 5000
+          transaction_type:
+            type: string
+            example: 'bought_bundle'
+    HistoryListBUNDLE:
+      type: array
+      items:
+        type: object
+        properties:
+          user_uuid:
+            $ref: "#/components/schemas/UserId"
+          timestamp:
+            description: Timestamp when user created feedback
+            format: date-time
+            type: string
+          codename:
+            type: string
+          currency_name:
+            $ref: '#/components/schemas/CurrencyName'

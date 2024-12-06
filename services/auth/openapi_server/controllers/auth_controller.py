@@ -1,151 +1,326 @@
+import datetime
 import uuid
-import re
-from datetime import datetime
 import bcrypt
 import connexion
+import jwt
 import requests
-from typing import Dict
-from typing import Tuple
-from typing import Union
-
-from openapi_server.models.login_request import LoginRequest  # noqa: E501
-from openapi_server.models.register_request import RegisterRequest  # noqa: E501
-from openapi_server import util
-from flask import jsonify, session, request
+from flask import current_app, jsonify, request
+from mysql.connector.errors import (
+    DatabaseError,
+    DataError,
+    IntegrityError,
+    InterfaceError,
+    InternalError,
+    OperationalError,
+    ProgrammingError,
+)
 from pybreaker import CircuitBreaker, CircuitBreakerError
 
+import redis
+from openapi_server.helpers.authorization import verify_login
+from openapi_server.helpers.db import get_db
+from openapi_server.helpers.input_checks import sanitize_email_input
+from openapi_server.helpers.logging import send_log
+from openapi_server.models.login_request import LoginRequest
+from openapi_server.models.register_request import RegisterRequest
+from __main__ import CONFIG
 
-circuit_breaker = CircuitBreaker(fail_max=5, reset_timeout=5, exclude=[requests.HTTPError])
+SERVICE_TYPE = "auth"
+circuit_breaker = CircuitBreaker(
+    fail_max=CONFIG["circuit_breaker_fails"],
+    reset_timeout=CONFIG["requests_timeout"],
+    exclude=[
+        requests.HTTPError,
+        OperationalError,
+        DataError,
+        DatabaseError,
+        IntegrityError,
+        InterfaceError,
+        InternalError,
+        ProgrammingError,
+    ],
+)
+redis_client = redis.Redis(host="redis", port=6379, db=0, ssl=True, ssl_certfile="/usr/src/app/ssl/auth.crt", ssl_keyfile="/usr/src/app/ssl/auth.key", ssl_ca_certs="/usr/src/app/ssl/ca.crt", ssl_cert_reqs="none")
 
 
+""" Returns 200 if service is healthy. """
 
 
 def auth_health_check_get():
     return jsonify({"message": "Service operational."}), 200
 
 
-def login():  # noqa: E501
-    if "username" in session:
-        return jsonify({"error": "You are already logged in."}), 409
-
+def login(login_request=None):
+    """Logs a user into the game. Accepts username and password. This acts as token endpoint."""
     if not connexion.request.is_json:
         return jsonify({"message": "Invalid request."}), 400
 
-    # valid json request
     login_request = LoginRequest.from_dict(connexion.request.get_json())
     username_to_login = login_request.username
     password_to_login = login_request.password
 
+    # /profile/internal/get_uuid_from_username
+    # obtaining UUID from username
     try:
 
         @circuit_breaker
-        def make_request_to_dbmanager():
-            payload = {"username": username_to_login}
-            url = "http://db_manager:8080/db_manager/auth/login"
-            response = requests.post(url, json=payload)
-            response.raise_for_status()  # if response is obtained correctly
+        def request_to_profile_service():
+            params = {"username": username_to_login}
+            url = "https://service_profile/profile/internal/get_uuid_from_username"
+            response = requests.get(url, params=params, verify=False, timeout=current_app.config["requests_timeout"])
+            response.raise_for_status()
             return response.json()
 
-        response_data = make_request_to_dbmanager()
-
-        if bcrypt.checkpw(password_to_login.encode("utf-8"), response_data["password"].encode("utf-8")):  # wrong password
-            session["uuid"] = response_data["uuid"]
-            session["uuid_hex"] = response_data["uuid_hex"]
-            session["email"] = response_data["email"]
-            session["username"] = response_data["username"]
-            session["role"] = response_data["role"]
-            session["login_date"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-            return jsonify({"message": "Login successful."}), 200
+        uuid = request_to_profile_service()
+    except requests.HTTPError as e:
+        if e.response.status_code == 404:  # user not found, hiding as 401
+            return jsonify({"error": "Invalid credentials."}), 401
         else:
-            return jsonify({"error": "Invalid credentials."}), 401
+            send_log("HTTP Error", level="error", service_type=SERVICE_TYPE)
+            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+    except requests.RequestException:
+        send_log("Request Exception", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+    except CircuitBreakerError:
+        send_log("CircuitBreaker Error: request_to_profile_service", level="warning", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
 
-    except requests.HTTPError as e:  # if request is sent to dbmanager correctly and it answers an application error (to be managed here) [error expected by us]
-        if e.response.status_code == 404:  # username not found
-            return jsonify({"error": "Invalid credentials."}), 401
-        elif e.response.status_code == 400:  # programming error, we mask as invalid credentials to users
-            return jsonify({"error": "Invalid credentials."}), 401
-        else:  # other errors
-            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
-    except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
-        return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
-    except CircuitBreakerError:  # if request already failed multiple times, the circuit breaker is open and this code gets executed
-        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
+    # query to database
+    try:
+
+        @circuit_breaker
+        def request_to_db():
+            connection = get_db()
+            cursor = connection.cursor()
+            query = """
+                SELECT BIN_TO_UUID(uuid) as uuid, uuid as uuid_hex, email, role, password
+                FROM users
+                WHERE uuid = UUID_TO_BIN(%s)
+            """
+            cursor.execute(query, (uuid,))
+            return cursor.fetchone()
+
+        result = request_to_db()
+    except (
+        OperationalError,
+        DataError,
+        ProgrammingError,
+        IntegrityError,
+        InternalError,
+        InterfaceError,
+        DatabaseError,
+    ) as e:
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+    except CircuitBreakerError:
+        send_log("CircuitBreaker Error: request_to_db", level="warning", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+
+    # invalid credentials
+    if not result:
+        return jsonify({"error": "Invalid credentials."}), 401
+
+    user_uuid_str, user_uuid_hex, user_email, user_role, user_password = result
+    result = {
+        "uuid": user_uuid_str,
+        "uuid_hex": str(user_uuid_hex),
+        "email": user_email,
+        "username": username_to_login,
+        "role": user_role,
+        "password": user_password,
+    }
+
+    # password check
+    if not bcrypt.checkpw(password_to_login.encode("utf-8"), result["password"].encode("utf-8")):
+        send_log(f"User '{username_to_login}' used invalid credentials.", level="info", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Invalid credentials."}), 401
+
+    # REDIS
+    try:
+        if redis_client.exists(result["uuid"]):
+            redis_client.delete(
+                result["uuid"]
+            )  # if the user is already logged in, we disconnect him and give him an error, but then he can log in again correctly
+            return jsonify({"message": "Already logged in."}), 409
+    except redis.RedisError as e:
+        send_log(f"Login: Redis error {e}", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+
+    try:
+        token = complete_access(result["uuid"], result["uuid_hex"], result["email"], result["username"], result["role"])
+    except redis.RedisError as e:
+        send_log(f"Login: Redis error {e}", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+
+    send_log(f"User '{result["username"]}' logged in.", level="general", service_type=SERVICE_TYPE)
+    response = jsonify({"message": "Login successful.", "uuid": user_uuid_str})
+    response.headers["Authorization"] = token
+    return response, 200
 
 
 def logout():
-    # check if user is logged in
-    if "username" not in session:
-        return jsonify({"error": "Not logged in."}), 403
+    """Allows an account to log out."""
+    response = verify_login(connexion.request.headers.get("Authorization"), service_type=SERVICE_TYPE)
+    if response[1] != 200:
+        return response
+    else:
+        session = response[0]
+    #### END AUTH CHECK
 
-    # remove session cookie to log out
-    session.clear()
+    user_id = session["uuid"]
+    username = session["username"]
 
-    # send response to user
+    # REDIS
+    try:
+        if not redis_client.exists(user_id):
+            return jsonify({"error": "Not logged in."}), 403
+
+        if redis_client.delete(user_id) == 0:
+            return jsonify({"error": "Not logged in."}), 403
+    except redis.RedisError as e:
+        send_log(f"Logout: Redis error {e}", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service unavailable. Please try again later."}), 503
+
+    # logout OK
+    send_log(f"User '{username}' logged out.", level="general", service_type=SERVICE_TYPE)
     return jsonify({"message": "Logout successful."}), 200
 
 
-def register():
-    if "username" in session:
-        return jsonify({"error": "You are already logged in."}), 401
-
+def register(register_request=None):
+    """Registers a new user account with username, email, and password."""
     if not connexion.request.is_json:
         return jsonify({"message": "Invalid request."}), 400
 
-    source_gateway = request.headers.get('X-Source-Gateway', 'Unknown')
-    if source_gateway == "Gateway-Private":
-        role = "ADMIN"
-    else:
-        role = "USER"
+    # authentication check
+    response = verify_login(connexion.request.headers.get("Authorization"), service_type=SERVICE_TYPE)
+    if response[1] == 200:  # is logged
+        return jsonify({"message": "You are already logged in."}), 401
 
-    # valid json request
+    # defines role for registration based on source gateway header
+    source_gateway = request.headers.get("X-Source-Gateway", "Unknown")
+    role = "ADMIN" if source_gateway == "Gateway-Private" else "USER"
+
+    # obtaining dict of request
     register_request = RegisterRequest.from_dict(connexion.request.get_json())
-    if not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', register_request.email):
-        return jsonify({"error": "The specified email is not valid."}), 406
-    username_to_register = register_request.username
-    email_to_register = register_request.email
-    password_to_hash = register_request.password
+    # verifying mail
+    valid, email = sanitize_email_input(register_request.email)
+    if not valid:
+        return jsonify({"message": "Invalid input."}), 400
 
     # hashing
-    password_hashed = bcrypt.hashpw(password_to_hash.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+    password_hashed = bcrypt.hashpw(register_request.password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
     # generating UUID
     uuid_hex_to_register = uuid.uuid4().bytes
     uuid_to_register = str(uuid.UUID(bytes=uuid_hex_to_register))
 
+    # query to database
+    connection = get_db()
     try:
+
         @circuit_breaker
-        def make_request_to_dbmanager():
-            payload = {
-                "uuid": uuid_to_register,
-                "username": username_to_register,
-                "email": email_to_register,
-                "password": password_hashed,
-                "role": role
-            }
-            url = "http://db_manager:8080/db_manager/auth/register"
-            response = requests.post(url, json=payload)
-            response.raise_for_status()  # if response is obtained correctly
+        def request_to_db():
+            cursor = connection.cursor()
+            connection.start_transaction()
+            cursor.execute(
+                "INSERT INTO users (uuid, email, password, role) VALUES (UUID_TO_BIN(%s), %s, %s, %s)",
+                (uuid_to_register, email, password_hashed, role),
+            )
             return
 
-        make_request_to_dbmanager()
-
-        #  since we want the user to self-login when registering we check for successful registration here
-
-        session["uuid"] = uuid_to_register
-        session["uuid_hex"] = uuid_hex_to_register
-        session["email"] = email_to_register
-        session["username"] = username_to_register
-        session["role"] = "USER"
-        session["login_date"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-        return jsonify({"message": "Registration successful."}), 201
-    except requests.HTTPError as e:
-        if e.response.status_code == 409:  # username / email already in use
-            return jsonify({"error": "The provided username / email is already in use."}), 409
-        else:  # other errors
-            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
-    except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
-        return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
+        request_to_db()
+    except IntegrityError:  # email already in use
+        send_log(
+            f"For username '{register_request.username}', email chosen '{email}' already exists.",
+            level="info",
+            service_type=SERVICE_TYPE,
+        )
+        return jsonify({"error": "The provided username / email is already in use."}), 503
+    except (OperationalError, DataError, ProgrammingError, InternalError, InterfaceError, DatabaseError) as e:
+        send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
-        return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503
+        send_log("CircuitBreaker Error: request_to_db", level="warning", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+
+    # /profile/internal/insert_profile
+    # creates a profile.
+    try:
+
+        @circuit_breaker
+        def request_to_profile_service():
+            params = {"user_uuid": uuid_to_register, "username": register_request.username}
+            url = "https://service_profile/profile/internal/insert_profile"
+            response = requests.post(url, params=params, verify=False, timeout=current_app.config["requests_timeout"])
+            response.raise_for_status()
+            return response.json()
+
+        request_to_profile_service()
+    except requests.HTTPError as e:
+        connection.rollback()
+        if e.response.status_code == 409:  # username already exists
+            send_log(
+                f"For email '{register_request.email}', username chosen '{register_request.username}' already exists.",
+                level="info",
+                service_type=SERVICE_TYPE,
+            )
+            return jsonify({"error": "The provided username / email is already in use."}), 409
+        else:
+            send_log("HTTP Error", level="error", service_type=SERVICE_TYPE)
+            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+    except requests.RequestException:
+        connection.rollback()
+        send_log("Request Exception", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+    except CircuitBreakerError:
+        connection.rollback()
+        send_log("CircuitBreaker Error: request_to_profile_service", level="warning", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+
+    connection.commit()
+
+    # auto login
+    try:
+        token = complete_access(uuid_to_register, uuid_hex_to_register, email, register_request.username, role)
+    except redis.RedisError as e:
+        send_log(f"Login: Redis error {e}", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service unavailable. Please try again later."}), 503
+
+    send_log(
+        "Registration of user '" + register_request.username + "' completed.",
+        level="general",
+        service_type=SERVICE_TYPE,
+    )
+    response = jsonify({"message": "Registration successful.", "uuid": uuid_to_register})
+    response.headers["Authorization"] = token
+    return response, 201
+
+
+def complete_access(uuid, uuid_hex, email, username, role):
+    """Receives: uuid, uuid_hex, email, username, role
+    Throws: redis.RedisError"""
+    aud = ["public_services"]
+    if role == "ADMIN":
+        aud.append("private_services")
+
+    # creating JWT token
+    access_token_payload = {
+        "iss": "https://service_" + SERVICE_TYPE,
+        "sub": uuid,
+        "email": email,
+        "username": username,
+        "uuid": uuid,
+        "uuidhex": str(uuid_hex),
+        "role": role,
+        "logindate": datetime.datetime.today().strftime("%Y-%m-%d %H:%M:%S"),
+        "aud": aud,
+        "iat": datetime.datetime.now(datetime.timezone.utc),
+        "exp": (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=24 * 60 * 60)),  # 1 day
+    }
+    access_token = jwt.encode(access_token_payload, current_app.config["jwt_secret_key"], algorithm="HS256")
+
+    # adding token to REDIS
+    redis_client.set(uuid, access_token, ex=24 * 60 * 60)  # 1 day
+
+    # returning token
+    return f"Bearer {access_token}"

@@ -3,19 +3,19 @@ info:
   contact:
     email: support@gachaandgames.it
   description: |-
-    API for Authentication Service.
+    API for managing authentication.
 
     Useful links:
-    - [Project repository](https://github.com/LeonardoPantani/UNIPI-GachaAndGames)
+    - [Project repository](https://github.com/LeonardoPantani/UNIPI-GatchaAndGames)
   license:
     name: GPL-3.0
     url: https://www.gnu.org/licenses/gpl-3.0.html#license-text
-  termsOfService: http://localhost:8080/tos
-  title: Gacha System - OpenAPI 3.0
-  version: 1.0.0
+  termsOfService: https://localhost/tos
+  title: Gacha System - Auth Service - OpenAPI 3.0
+  version: 2.0.0
 servers:
 - description: Local server
-  url: http://localhost:8080
+  url: https://localhost
 paths:
   /auth/health_check:
     get:
@@ -28,9 +28,288 @@ paths:
       tags:
       - auth
       x-openapi-router-controller: openapi_server.controllers.auth_controller
+  /auth/internal/delete_user_by_uuid:
+    delete:
+      description: Deletes a user.
+      operationId: delete_user_by_uuid
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/UserId'
+        style: form
+      responses:
+        "200":
+          description: User deleted.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "404":
+          description: User not found.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - auth_internal
+      x-openapi-router-controller: openapi_server.controllers.auth_internal_controller
+  /auth/internal/edit_email:
+    post:
+      description: Updates a user's email.
+      operationId: edit_email
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/UserId'
+        style: form
+      - explode: true
+        in: query
+        name: email
+        required: false
+        schema:
+          $ref: '#/components/schemas/Email'
+        style: form
+      responses:
+        "200":
+          description: Email updated.
+        "304":
+          description: No changes applied.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "404":
+          description: User not found.
+        "409":
+          description: Email already in use.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - auth_internal
+      x-openapi-router-controller: openapi_server.controllers.auth_internal_controller
+  /auth/internal/get_hashed_password:
+    get:
+      description: Returns user hashed password.
+      operationId: get_hashed_password
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/UserId'
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/get_hashed_password_200_response'
+          description: Hashed user's password.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "404":
+          description: User not found.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - auth_internal
+      x-openapi-router-controller: openapi_server.controllers.auth_internal_controller
+  /auth/internal/get_role_by_uuid:
+    get:
+      description: "Returns role of the user by UUID, if exists."
+      operationId: get_role_by_uuid
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/UserId'
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/get_role_by_uuid_200_response'
+          description: User role.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "404":
+          description: User not found.
+        "503":
+          description: Service unavailable. Please try again later.
+      tags:
+      - auth_internal
+      x-openapi-router-controller: openapi_server.controllers.auth_internal_controller
+  /auth/internal/get_user:
+    get:
+      description: Returns user info.
+      operationId: get_user
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: uuid
+        required: false
+        schema:
+          $ref: '#/components/schemas/UserId'
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/get_user_200_response'
+          description: User info.
+        "400":
+          description: Invalid request.
+        "403":
+          description: Not authorized.
+        "404":
+          description: User not found.
+        "503":
+          description: Service temporarily unavailable. Please try again later.
+      tags:
+      - auth_internal
+      x-openapi-router-controller: openapi_server.controllers.auth_internal_controller
+  /auth/internal/introspect/:
+    post:
+      description: This endpoint validates the Access Token received by another service
+        from the client.
+      operationId: introspect
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/introspect_request'
+        required: true
+      responses:
+        "200":
+          description: Valid Token.
+        "400":
+          description: Invalid request.
+        "401":
+          description: Unauthorized.
+        "402":
+          description: Token expired.
+        "503":
+          description: Service unavailable. Please try again later.
+      summary: Validates a Token.
+      tags:
+      - auth_internal
+      x-openapi-router-controller: openapi_server.controllers.auth_internal_controller
+  /auth/internal/token/invalidate:
+    delete:
+      description: This endpoint receives a UUID and removes the JWT Token assigned
+        to them on Redis.
+      operationId: token_invalidate
+      parameters:
+      - explode: true
+        in: cookie
+        name: session
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: User whom JWT token will be invalidated.
+        explode: true
+        in: query
+        name: uuid
+        required: true
+        schema:
+          $ref: '#/components/schemas/UserId'
+        style: form
+      responses:
+        "200":
+          description: Token invalidated.
+        "400":
+          description: Invalid request.
+        "401":
+          description: Unauthorized.
+        "404":
+          description: Unable to find token.
+        "503":
+          description: Service unavailable. Please try again later.
+      summary: Invalidates and removes a JWT token.
+      tags:
+      - auth_internal
+      x-openapi-router-controller: openapi_server.controllers.auth_internal_controller
+  /auth/internal/userinfo/:
+    post:
+      description: This endpoint receives an Access Token from another service and
+        returns information regarding that user.
+      operationId: userinfo
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/userinfo_request'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: User Info.
+        "400":
+          description: Invalid request.
+        "401":
+          description: Unauthorized.
+        "503":
+          description: Service unavailable. Please try again later.
+      summary: Returns User Info.
+      tags:
+      - auth_internal
+      x-openapi-router-controller: openapi_server.controllers.auth_internal_controller
   /auth/login:
     post:
-      description: Logs a user into the game. Accepts username and password.
+      description: Logs a user into the game. Accepts username and password. This
+        acts as token endpoint.
       operationId: login
       requestBody:
         content:
@@ -47,8 +326,6 @@ paths:
           description: Invalid credentials.
         "409":
           description: You are already logged in.
-        "500":
-          description: Internal server error.
         "503":
           description: Service unavailable. Please try again later.
       summary: Log in into an account.
@@ -72,8 +349,8 @@ paths:
           description: Logout successful.
         "403":
           description: Not logged in.
-        "500":
-          description: Internal server error.
+        "503":
+          description: Service unavailable. Please try again later.
       summary: Logs out from an account.
       tags:
       - auth
@@ -99,8 +376,6 @@ paths:
           description: The specified email is not valid.
         "409":
           description: The provided username / email is already in use.
-        "500":
-          description: Internal server error.
         "503":
           description: Service unavailable. Please try again later.
       summary: Registers a new account.
@@ -109,6 +384,11 @@ paths:
       x-openapi-router-controller: openapi_server.controllers.auth_controller
 components:
   schemas:
+    UserId:
+      description: UUID of user.
+      format: uuid
+      title: uuid
+      type: string
     Username:
       description: "The user's username. Must be at least 5 characters long and contain\
         \ only letters, numbers, and underscores."
@@ -129,6 +409,55 @@ components:
       minLength: 8
       title: password
       type: string
+    Roles:
+      description: User's role in the system.
+      enum:
+      - USER
+      - ADMIN
+      title: Roles
+      type: string
+    User:
+      example:
+        joindate: 2000-01-23T04:56:07.000+00:00
+        pvp_score: 6
+        currency: 0
+        uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        email: l.pantani5@studenti.unipi.it
+        username: LeoPanta01_
+      properties:
+        uuid:
+          description: UUID of user.
+          format: uuid
+          title: uuid
+          type: string
+        username:
+          description: "The user's username. Must be at least 5 characters long and\
+            \ contain only letters, numbers, and underscores."
+          example: LeoPanta01_
+          minLength: 5
+          pattern: "^[a-zA-Z0-9_]+$"
+          title: username
+          type: string
+        email:
+          description: The user's email.
+          example: l.pantani5@studenti.unipi.it
+          title: email
+          type: string
+        joindate:
+          description: Timestamp when user created their account
+          format: date-time
+          title: joindate
+          type: string
+        currency:
+          description: Ingame currency of the user
+          title: currency
+          type: integer
+        pvp_score:
+          description: Pvp score of the user
+          title: pvp_score
+          type: integer
+      title: User
+      type: object
     login_request:
       properties:
         username:
@@ -178,4 +507,58 @@ components:
       - password
       - username
       title: register_request
+      type: object
+    userinfo_request:
+      properties:
+        access_token:
+          title: access_token
+          type: string
+      title: userinfo_request
+      type: object
+    introspect_request:
+      properties:
+        access_token:
+          title: access_token
+          type: string
+        audience_required:
+          title: audience_required
+          type: string
+      title: introspect_request
+      type: object
+    get_role_by_uuid_200_response:
+      example:
+        role: USER
+      properties:
+        role:
+          $ref: '#/components/schemas/Roles'
+      title: get_role_by_uuid_200_response
+      type: object
+    get_user_200_response:
+      example:
+        role: USER
+        uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        email: l.pantani5@studenti.unipi.it
+      properties:
+        uuid:
+          description: UUID of user.
+          format: uuid
+          title: uuid
+          type: string
+        email:
+          description: The user's email.
+          example: l.pantani5@studenti.unipi.it
+          title: email
+          type: string
+        role:
+          $ref: '#/components/schemas/Roles'
+      title: get_user_200_response
+      type: object
+    get_hashed_password_200_response:
+      example:
+        password: password
+      properties:
+        password:
+          title: password
+          type: string
+      title: get_hashed_password_200_response
       type: object

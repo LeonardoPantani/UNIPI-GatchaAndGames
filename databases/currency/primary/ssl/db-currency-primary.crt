@@ -1,0 +1,126 @@
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number: 7 (0x7)
+        Signature Algorithm: sha256WithRSAEncryption
+        Issuer: C=IT, ST=Tuscany, L=Pisa, O=GachaAndGames, OU=DbCA, CN=Db CA
+        Validity
+            Not Before: Dec  5 15:07:29 2024 GMT
+            Not After : Dec  5 15:07:29 2027 GMT
+        Subject: C=IT, ST=Tuscany, L=Pisa, O=GachaAndGames, OU=Develop, CN=service_currency_db_primary
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+                Public-Key: (4096 bit)
+                Modulus:
+                    00:f8:d5:0c:84:50:ed:60:40:a8:ba:6b:33:78:dc:
+                    0d:6c:fb:93:cd:ae:2b:4d:9e:19:02:96:8a:1e:e7:
+                    48:12:ef:28:15:a6:d4:d0:3f:f3:1e:08:2a:ba:34:
+                    15:15:b5:25:c0:99:13:c9:73:21:56:14:0f:22:a1:
+                    42:7f:44:1a:8d:20:ae:e6:6d:8b:f7:bc:e0:21:f4:
+                    af:b1:a2:83:25:44:40:1b:b2:b7:c0:80:69:ba:a4:
+                    30:bc:fd:b1:71:f3:2a:28:b1:51:09:31:b1:cc:3e:
+                    97:8e:a5:cb:db:ff:51:1c:ce:93:be:fa:f2:b1:62:
+                    9a:68:3b:a7:e3:61:c7:b1:54:36:cb:68:b7:f1:30:
+                    1d:13:3e:98:7e:1a:55:30:19:e6:28:d7:59:a1:90:
+                    3a:bd:58:7c:63:0c:65:79:d2:20:35:27:ce:2c:4a:
+                    53:ce:3e:86:88:43:d3:c5:6f:b4:9d:ef:b0:26:24:
+                    97:8d:9c:b6:5a:df:a3:eb:e3:e1:b5:4a:61:1b:8a:
+                    dc:cd:cb:22:eb:d8:97:9f:04:b9:d9:64:f2:e0:8d:
+                    ea:c9:71:34:d6:ff:a4:ad:68:b1:d0:38:17:5f:53:
+                    bf:e8:e4:bc:4c:fe:fb:06:63:86:2b:b7:a1:95:5b:
+                    8b:4a:28:36:75:65:2c:fc:a1:65:e8:f0:46:2d:53:
+                    66:8f:eb:dd:82:62:8f:b7:c8:bf:e3:a2:e7:9f:cd:
+                    c4:e0:94:92:1d:78:cf:94:48:49:bc:d0:c3:c4:83:
+                    76:1b:f9:07:30:a7:ec:cf:25:4e:24:f5:f3:90:7a:
+                    0a:86:e8:e3:5d:50:c2:9f:f5:ec:00:29:89:3c:c9:
+                    9f:21:25:f3:7d:07:e1:14:bd:ca:77:55:1f:1d:d5:
+                    be:64:07:a1:5a:7d:6d:75:19:41:c4:df:71:75:59:
+                    c9:be:2a:6e:82:42:28:d9:b7:38:d6:33:f9:36:a1:
+                    79:6f:b2:9d:a2:0b:ba:f9:b6:8d:87:73:78:63:aa:
+                    5a:d2:17:1b:9a:a5:9b:7d:5d:76:b2:93:68:1e:8b:
+                    73:a6:0b:e1:66:54:64:5e:66:6b:f0:5e:53:ba:ff:
+                    f8:55:3f:f8:79:a5:54:b4:6d:73:60:0f:14:40:65:
+                    54:d9:a9:bc:73:ff:0f:5c:0c:ea:1b:da:61:25:32:
+                    ec:a8:bd:36:ec:87:14:de:a1:65:87:67:3e:40:ba:
+                    c1:99:14:3d:7e:1a:d3:c5:4e:b2:a5:d8:89:fe:83:
+                    04:29:07:8c:48:6f:e2:a5:7d:81:fb:9e:da:9a:46:
+                    8f:67:b0:da:05:bb:1f:5d:e1:7b:69:20:4b:af:6c:
+                    77:aa:dc:77:21:80:2a:a7:2f:ac:db:e5:2e:9f:ac:
+                    12:31:2f
+                Exponent: 65537 (0x10001)
+        X509v3 extensions:
+            X509v3 Basic Constraints: 
+                CA:FALSE
+            X509v3 Key Usage: 
+                Digital Signature, Key Encipherment
+            X509v3 Subject Alternative Name: 
+                DNS:localhost
+            X509v3 Subject Key Identifier: 
+                AC:42:C5:00:B2:40:32:48:16:D3:33:8B:FE:F5:63:88:D8:6C:3A:F2
+            X509v3 Authority Key Identifier: 
+                3F:87:19:0A:2D:03:0B:BD:2A:F1:04:90:64:5E:31:7C:1E:5D:93:80
+    Signature Algorithm: sha256WithRSAEncryption
+    Signature Value:
+        33:8f:73:6e:fe:4d:20:d6:14:c9:0a:e6:ac:bf:f7:88:bd:3b:
+        d2:2f:50:d7:03:77:4f:50:ba:66:60:7a:a1:b9:46:cd:40:dc:
+        33:51:e6:cd:d1:6c:ee:22:13:fb:29:09:95:04:9f:ab:e8:29:
+        18:16:02:9c:d8:c4:e8:60:c3:f7:7f:bd:6a:5e:c2:e1:16:57:
+        64:30:df:b3:9c:1a:ee:4a:48:98:0e:5d:3f:ca:2e:48:7d:52:
+        2e:3c:9a:b4:5b:f6:fc:77:6e:83:37:00:ab:3f:45:b7:12:33:
+        99:de:80:d3:9f:29:d8:7f:4d:be:44:15:ea:a9:9a:d2:8b:ac:
+        3e:aa:d6:a6:47:3f:16:1d:c4:0e:13:6a:0c:90:87:64:c9:b5:
+        6f:25:5f:ce:2e:9a:99:b7:22:2f:aa:bd:a7:2d:23:9e:81:eb:
+        8e:ab:8e:96:00:7f:8a:a2:ae:fa:94:d0:c8:40:d5:45:c8:23:
+        34:f4:ee:bc:ea:79:81:c3:26:66:3b:9f:8e:74:22:3e:23:58:
+        de:16:d2:ba:6d:32:3c:10:55:24:4c:72:cf:02:fc:58:fc:13:
+        6e:ba:e9:f8:ab:9f:d5:c9:20:86:50:6b:d7:97:64:01:47:0a:
+        6e:29:39:18:a5:31:c9:51:83:35:8c:1f:80:ee:1b:f4:5a:b6:
+        94:0e:d4:cb:44:11:a3:d8:66:93:4a:d7:25:cb:8f:b1:07:6a:
+        c5:1c:fd:86:91:87:b5:28:66:28:b2:9b:ab:82:ae:bd:88:3c:
+        08:90:83:ab:18:ad:8d:df:56:6f:d3:60:6f:80:5c:59:9d:ed:
+        27:df:00:52:62:bb:a9:dd:db:41:9f:48:c2:dd:cf:ed:34:53:
+        c2:40:f2:df:1b:96:7d:10:8f:64:cf:53:cb:a7:29:bc:94:da:
+        39:b9:4f:31:0d:68:c7:5c:af:f1:1f:3c:cd:7e:52:e4:b2:9c:
+        50:24:f9:b3:17:44:92:87:fc:b9:a0:39:dc:11:ff:8a:ea:42:
+        10:7b:9b:f1:93:bf:5d:66:03:70:9b:24:d9:76:45:89:9f:d4:
+        6f:20:53:35:70:65:d3:13:1a:15:5a:68:d5:ae:57:13:a2:08:
+        89:d0:9b:93:ed:e4:46:62:33:80:4a:71:c4:14:5e:99:75:6d:
+        aa:9e:45:b7:7a:ac:4b:fd:e7:7f:ea:3b:c5:b4:89:50:36:44:
+        46:b4:af:96:53:96:62:4c:ee:f8:24:39:1f:7a:61:8d:66:e4:
+        11:14:a9:9e:19:e5:df:ad:4b:c2:a9:b7:b6:bf:30:90:3a:8a:
+        4c:5e:23:9f:fa:49:ca:34:20:90:52:5e:4b:6c:c0:c4:47:82:
+        1e:08:b5:eb:25:af:4e:5c
+-----BEGIN CERTIFICATE-----
+MIIFzjCCA7agAwIBAgIBBzANBgkqhkiG9w0BAQsFADBlMQswCQYDVQQGEwJJVDEQ
+MA4GA1UECAwHVHVzY2FueTENMAsGA1UEBwwEUGlzYTEWMBQGA1UECgwNR2FjaGFB
+bmRHYW1lczENMAsGA1UECwwERGJDQTEOMAwGA1UEAwwFRGIgQ0EwHhcNMjQxMjA1
+MTUwNzI5WhcNMjcxMjA1MTUwNzI5WjB+MQswCQYDVQQGEwJJVDEQMA4GA1UECAwH
+VHVzY2FueTENMAsGA1UEBwwEUGlzYTEWMBQGA1UECgwNR2FjaGFBbmRHYW1lczEQ
+MA4GA1UECwwHRGV2ZWxvcDEkMCIGA1UEAwwbc2VydmljZV9jdXJyZW5jeV9kYl9w
+cmltYXJ5MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA+NUMhFDtYECo
+umszeNwNbPuTza4rTZ4ZApaKHudIEu8oFabU0D/zHggqujQVFbUlwJkTyXMhVhQP
+IqFCf0QajSCu5m2L97zgIfSvsaKDJURAG7K3wIBpuqQwvP2xcfMqKLFRCTGxzD6X
+jqXL2/9RHM6TvvrysWKaaDun42HHsVQ2y2i38TAdEz6YfhpVMBnmKNdZoZA6vVh8
+YwxledIgNSfOLEpTzj6GiEPTxW+0ne+wJiSXjZy2Wt+j6+PhtUphG4rczcsi69iX
+nwS52WTy4I3qyXE01v+krWix0DgXX1O/6OS8TP77BmOGK7ehlVuLSig2dWUs/KFl
+6PBGLVNmj+vdgmKPt8i/46Lnn83E4JSSHXjPlEhJvNDDxIN2G/kHMKfszyVOJPXz
+kHoKhujjXVDCn/XsACmJPMmfISXzfQfhFL3Kd1UfHdW+ZAehWn1tdRlBxN9xdVnJ
+vipugkIo2bc41jP5NqF5b7Kdogu6+baNh3N4Y6pa0hcbmqWbfV12spNoHotzpgvh
+ZlRkXmZr8F5Tuv/4VT/4eaVUtG1zYA8UQGVU2am8c/8PXAzqG9phJTLsqL027IcU
+3qFlh2c+QLrBmRQ9fhrTxU6ypdiJ/oMEKQeMSG/ipX2B+57amkaPZ7DaBbsfXeF7
+aSBLr2x3qtx3IYAqpy+s2+Uun6wSMS8CAwEAAaNwMG4wCQYDVR0TBAIwADALBgNV
+HQ8EBAMCBaAwFAYDVR0RBA0wC4IJbG9jYWxob3N0MB0GA1UdDgQWBBSsQsUAskAy
+SBbTM4v+9WOI2Gw68jAfBgNVHSMEGDAWgBQ/hxkKLQMLvSrxBJBkXjF8Hl2TgDAN
+BgkqhkiG9w0BAQsFAAOCAgEAM49zbv5NINYUyQrmrL/3iL070i9Q1wN3T1C6ZmB6
+oblGzUDcM1HmzdFs7iIT+ykJlQSfq+gpGBYCnNjE6GDD93+9al7C4RZXZDDfs5wa
+7kpImA5dP8ouSH1SLjyatFv2/HdugzcAqz9FtxIzmd6A058p2H9NvkQV6qma0ous
+PqrWpkc/Fh3EDhNqDJCHZMm1byVfzi6ambciL6q9py0jnoHrjquOlgB/iqKu+pTQ
+yEDVRcgjNPTuvOp5gcMmZjufjnQiPiNY3hbSum0yPBBVJExyzwL8WPwTbrrp+Kuf
+1ckghlBr15dkAUcKbik5GKUxyVGDNYwfgO4b9Fq2lA7Uy0QRo9hmk0rXJcuPsQdq
+xRz9hpGHtShmKLKbq4KuvYg8CJCDqxitjd9Wb9Ngb4BcWZ3tJ98AUmK7qd3bQZ9I
+wt3P7TRTwkDy3xuWfRCPZM9Ty6cpvJTaOblPMQ1ox1yv8R88zX5S5LKcUCT5sxdE
+kof8uaA53BH/iupCEHub8ZO/XWYDcJsk2XZFiZ/UbyBTNXBl0xMaFVpo1a5XE6II
+idCbk+3kRmIzgEpxxBRemXVtqp5Ft3qsS/3nf+o7xbSJUDZERrSvllOWYkzu+CQ5
+H3phjWbkERSpnhnl361Lwqm3tr8wkDqKTF4jn/pJyjQgkFJeS2zAxEeCHgi16yWv
+Tlw=
+-----END CERTIFICATE-----

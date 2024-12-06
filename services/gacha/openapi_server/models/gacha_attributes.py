@@ -89,7 +89,7 @@ class GachaAttributes(Model):
         if power is None:
             raise ValueError("Invalid value for `power`, must not be `None`")  # noqa: E501
         if power is not None and not re.search(r'^[A-Ea-e]$', power):  # noqa: E501
-            raise ValueError("Invalid value for `power`, must be a follow pattern or equal to `/^[A-Ea-e]$/`")  # noqa: E501
+            raise ValueError(r"Invalid value for `power`, must be a follow pattern or equal to `/^[A-Ea-e]$/`")  # noqa: E501
 
         self._power = power
 
@@ -116,7 +116,7 @@ class GachaAttributes(Model):
         if speed is None:
             raise ValueError("Invalid value for `speed`, must not be `None`")  # noqa: E501
         if speed is not None and not re.search(r'^[A-Ea-e]$', speed):  # noqa: E501
-            raise ValueError("Invalid value for `speed`, must be a follow pattern or equal to `/^[A-Ea-e]$/`")  # noqa: E501
+            raise ValueError(r"Invalid value for `speed`, must be a follow pattern or equal to `/^[A-Ea-e]$/`")  # noqa: E501
 
         self._speed = speed
 
@@ -143,7 +143,7 @@ class GachaAttributes(Model):
         if durability is None:
             raise ValueError("Invalid value for `durability`, must not be `None`")  # noqa: E501
         if durability is not None and not re.search(r'^[A-Ea-e]$', durability):  # noqa: E501
-            raise ValueError("Invalid value for `durability`, must be a follow pattern or equal to `/^[A-Ea-e]$/`")  # noqa: E501
+            raise ValueError(r"Invalid value for `durability`, must be a follow pattern or equal to `/^[A-Ea-e]$/`")  # noqa: E501
 
         self._durability = durability
 
@@ -170,7 +170,7 @@ class GachaAttributes(Model):
         if precision is None:
             raise ValueError("Invalid value for `precision`, must not be `None`")  # noqa: E501
         if precision is not None and not re.search(r'^[A-Ea-e]$', precision):  # noqa: E501
-            raise ValueError("Invalid value for `precision`, must be a follow pattern or equal to `/^[A-Ea-e]$/`")  # noqa: E501
+            raise ValueError(r"Invalid value for `precision`, must be a follow pattern or equal to `/^[A-Ea-e]$/`")  # noqa: E501
 
         self._precision = precision
 
@@ -197,7 +197,7 @@ class GachaAttributes(Model):
         if range is None:
             raise ValueError("Invalid value for `range`, must not be `None`")  # noqa: E501
         if range is not None and not re.search(r'^[A-Ea-e]$', range):  # noqa: E501
-            raise ValueError("Invalid value for `range`, must be a follow pattern or equal to `/^[A-Ea-e]$/`")  # noqa: E501
+            raise ValueError(r"Invalid value for `range`, must be a follow pattern or equal to `/^[A-Ea-e]$/`")  # noqa: E501
 
         self._range = range
 
@@ -224,6 +224,6 @@ class GachaAttributes(Model):
         if potential is None:
             raise ValueError("Invalid value for `potential`, must not be `None`")  # noqa: E501
         if potential is not None and not re.search(r'^[A-Ea-e]$', potential):  # noqa: E501
-            raise ValueError("Invalid value for `potential`, must be a follow pattern or equal to `/^[A-Ea-e]$/`")  # noqa: E501
+            raise ValueError(r"Invalid value for `potential`, must be a follow pattern or equal to `/^[A-Ea-e]$/`")  # noqa: E501
 
         self._potential = potential

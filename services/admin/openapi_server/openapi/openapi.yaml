@@ -10,14 +10,14 @@ info:
   license:
     name: GPL-3.0
     url: https://www.gnu.org/licenses/gpl-3.0.html#license-text
-  termsOfService: http://localhost:8080/tos
+  termsOfService: https://localhost/tos
   title: Gacha System - OpenAPI 3.0
-  version: 1.0.0
+  version: 2.0.0
 servers:
 - description: Local server
-  url: http://localhost:8080
+  url: https://localhost
 paths:
-  /admin/auctions/{auction_uuid}/update:
+  /admin/auction/{auction_uuid}/update:
     put:
       description: Allows the update of an auction.
       operationId: update_auction
@@ -46,13 +46,21 @@ paths:
         "200":
           description: Auction updated.
         "400":
-          description: Invalid fields.
+          description: Invalid request.
         "401":
-          description: This account is not authorized to perform this action.
+          description: Current bid cannot be lower than starting price.
         "403":
-          description: Not logged in.
-        "500":
-          description: Internal server error.
+          description: This account is not authorized to perform this action.
+        "404":
+          description: Auction not found.
+        "412":
+          description: Starting price cannot be lower or equal to 0.
+        "416":
+          description: Current bid cannot be lower than 0.
+        "417":
+          description: Invalid date format.
+        "503":
+          description: Service unavailable. Please try again later.
       summary: Updates an auction.
       tags:
       - admin
@@ -65,7 +73,7 @@ paths:
       - explode: true
         in: cookie
         name: session
-        required: true
+        required: false
         schema:
           type: string
         style: form
@@ -85,17 +93,15 @@ paths:
             application/json:
               schema:
                 items:
-                  $ref: '#/components/schemas/FeedbackId'
+                  $ref: '#/components/schemas/FeedbackPreview'
                 type: array
           description: Feedback Ids.
         "400":
-          description: Invalid username.
-        "401":
+          description: Invalid request.
+        "403":
           description: This account is not authorized to perform this action.
-        "404":
-          description: Feedbacks not found.
-        "500":
-          description: Internal server error.
+        "503":
+          description: Service unavailable. Please try again later.
       summary: Returns all feedbacks.
       tags:
       - admin
@@ -108,7 +114,7 @@ paths:
       - explode: true
         in: cookie
         name: session
-        required: true
+        required: false
         schema:
           type: string
         style: form
@@ -124,12 +130,16 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Feedback'
-          description: Successful operation
+                $ref: '#/components/schemas/FeedbackWithUsername'
+          description: Successful operation.
+        "400":
+          description: Invalid request.
+        "403":
+          description: This account is not authorized to perform this action.
         "404":
-          description: Feedback not found
-        "500":
-          description: Internal server error
+          description: Feedback not found.
+        "503":
+          description: Service unavailable. Please try again later.
       summary: Shows infos on a feedback.
       tags:
       - admin
@@ -153,16 +163,16 @@ paths:
               $ref: '#/components/schemas/Gacha'
         required: true
       responses:
-        "200":
+        "201":
           description: Gacha created.
         "400":
-          description: Invalid fields.
-        "401":
-          description: This account is not authorized to perform this action.
+          description: Invalid request.
         "403":
-          description: Not logged in.
-        "500":
-          description: Internal server error.
+          description: This account is not authorized to perform this action.
+        "409":
+          description: The provided gacha uuid is already in use.
+        "503":
+          description: Service unavailable. Please try again later.
       summary: Creates a gacha.
       tags:
       - admin
@@ -190,13 +200,13 @@ paths:
         "200":
           description: Gacha deleted.
         "400":
-          description: Invalid fields.
-        "401":
-          description: This account is not authorized to perform this action.
+          description: Invalid request.
         "403":
-          description: Not logged in.
-        "500":
-          description: Internal server error.
+          description: This account is not authorized to perform this action.
+        "404":
+          description: Gacha not found.
+        "503":
+          description: Service unavailable. Please try again later.
       summary: Deletes a gacha.
       tags:
       - admin
@@ -230,13 +240,16 @@ paths:
         "200":
           description: Gacha updated.
         "400":
-          description: Invalid fields.
-        "401":
-          description: This account is not authorized to perform this action.
+          description: Invalid request.
         "403":
-          description: Not logged in.
-        "500":
-          description: Internal server error.
+          description: This account is not authorized to perform this action.
+        "404":
+          description: Gacha not found.
+        "406":
+          description: Gacha UUID in request is different from the one inside the
+            gacha object.
+        "503":
+          description: Service unavailable. Please try again later.
       summary: Updates a gacha.
       tags:
       - admin
@@ -264,19 +277,68 @@ paths:
         schema:
           type: string
         style: form
+      - description: Name of the service whose logs are requested.
+        explode: true
+        in: query
+        name: service_type
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: Name of the endpoint whose logs are requested
+        explode: true
+        in: query
+        name: endpoint
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: Level of criticality
+        explode: true
+        in: query
+        name: level
+        required: false
+        schema:
+          default: info
+          enum:
+          - general
+          - info
+          - warning
+          - error
+          type: string
+        style: form
+      - description: Number of seconds of the interval to look in
+        explode: true
+        in: query
+        name: interval
+        required: false
+        schema:
+          default: 3600
+          type: integer
+        style: form
+      - description: "Interval starting time in Unix time (seconds since January 1,\
+          \ 1970)."
+        explode: true
+        in: query
+        name: start_time
+        required: false
+        schema:
+          format: int64
+          type: integer
+        style: form
       responses:
         "200":
           content:
             application/json:
               schema:
                 items:
-                  type: string
+                  $ref: '#/components/schemas/Log'
                 type: array
           description: Latest system logs.
-        "401":
+        "403":
           description: This account is not authorized to perform this action.
-        "500":
-          description: Internal server error.
+        "503":
+          description: Service unavailable. Please try again later.
       summary: Returns the system logs.
       tags:
       - admin
@@ -300,16 +362,22 @@ paths:
               $ref: '#/components/schemas/Pool'
         required: true
       responses:
-        "200":
+        "201":
           description: Pool created.
         "400":
-          description: Invalid fields.
-        "401":
-          description: This account is not authorized to perform this action.
+          description: Invalid request.
         "403":
-          description: Not logged in.
-        "500":
-          description: Internal server error.
+          description: This account is not authorized to perform this action.
+        "404":
+          description: Item UUID not found in database.
+        "409":
+          description: The provided pool id is already in use.
+        "412":
+          description: Invalid probabilities.
+        "416":
+          description: Price should be a positive number.
+        "503":
+          description: Service unavailable. Please try again later.
       summary: Creates a pool.
       tags:
       - admin
@@ -338,12 +406,12 @@ paths:
           description: Pool deleted.
         "400":
           description: Invalid fields.
-        "401":
-          description: This account is not authorized to perform this action.
         "403":
-          description: Not logged in.
-        "500":
-          description: Internal server error.
+          description: This account is not authorized to perform this action.
+        "404":
+          description: Pool not found.
+        "503":
+          description: Service unavailable. Please try again later.
       summary: Deletes a pool.
       tags:
       - admin
@@ -377,13 +445,20 @@ paths:
         "200":
           description: Pool updated.
         "400":
-          description: Invalid fields.
-        "401":
-          description: This account is not authorized to perform this action.
+          description: Invalid request.
         "403":
-          description: Not logged in.
-        "500":
-          description: Internal server error.
+          description: This account is not authorized to perform this action.
+        "404":
+          description: Pool not found.
+        "406":
+          description: ool UUID in request is different from the one inside the pool
+            object.
+        "412":
+          description: Invalid probabilities.
+        "416":
+          description: Price should be a positive number.
+        "503":
+          description: Service unavailable. Please try again later.
       summary: Updates a pool.
       tags:
       - admin
@@ -416,17 +491,13 @@ paths:
             application/json:
               schema:
                 items:
-                  $ref: '#/components/schemas/User'
+                  $ref: '#/components/schemas/UserFull'
                 type: array
           description: User profile.
-        "400":
-          description: Invalid username.
-        "401":
+        "403":
           description: This account is not authorized to perform this action.
-        "404":
-          description: Username not found.
-        "500":
-          description: Internal server error.
+        "503":
+          description: Service unavailable. Please try again later.
       summary: Returns all profiles.
       tags:
       - admin
@@ -455,12 +526,16 @@ paths:
           description: Profile deleted.
         "400":
           description: Invalid fields.
-        "401":
-          description: This account is not authorized to perform this action.
+        "404":
+          description: User not found.
         "403":
-          description: Not logged in.
-        "500":
-          description: Internal server error.
+          description: This account is not authorized to perform this action.
+        "406":
+          description: You cannot delete your account like this.
+        "409":
+          description: Cannot ban a user with the ADMIN role.
+        "503":
+          description: Service unavailable. Please try again later.
       summary: Deletes a profile.
       tags:
       - admin
@@ -500,15 +575,17 @@ paths:
         style: form
       responses:
         "200":
-          description: Profile updated.
-        "400":
-          description: Invalid fields.
+          description: Profile successfully updated.
+        "304":
+          description: No changes to profile applied.
         "401":
           description: This account is not authorized to perform this action.
         "403":
-          description: Not logged in.
-        "500":
-          description: Internal server error.
+          description: Not authorized to perform this action.
+        "404":
+          description: User not found.
+        "503":
+          description: Service unavailable. Please try again later.
       summary: Edits properties of a profile.
       tags:
       - admin
@@ -555,88 +632,160 @@ paths:
         style: form
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/getUserHistory_200_response'
           description: User transaction history.
         "400":
-          description: Invalid username.
-        "401":
+          description: Invalid history type.
+        "403":
           description: This account is not authorized to perform this action.
         "404":
-          description: Username not found.
-        "500":
-          description: Internal server error.
+          description: User not found.
+        "503":
+          description: Service unavailable. Please try again later.
       summary: Returns history of a user.
       tags:
       - admin
       x-openapi-router-controller: openapi_server.controllers.admin_controller
 components:
   schemas:
-    FeedbackId:
-      description: Id of feedback.
-      title: id
-      type: integer
-    Feedback:
+    Log:
       example:
-        user_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
-        id: 0
-        content: I love this game11!
-        timestamp: 2000-01-23T04:56:07.000+00:00
+        service_type: auth
+        endpoint: logout
+        level: general
+        message: User 'SpeedwagonAdmin' logged out.
+        timestamp: 1325203200
+      properties:
+        timestamp:
+          description: "Unix time in seconds since January 1, 1970."
+          example: 1325203200
+          format: int64
+          title: timestamp
+          type: integer
+        message:
+          description: Content of the log
+          example: User 'SpeedwagonAdmin' logged out.
+          title: message
+          type: string
+        service_type:
+          description: Name of the service
+          example: auth
+          title: service_type
+          type: string
+        endpoint:
+          description: Name of the endpoint
+          example: logout
+          title: endpoint
+          type: string
+        level:
+          description: Level of criticality
+          enum:
+          - general
+          - info
+          - warning
+          - error
+          title: level
+          type: string
+      title: Log
+      type: object
+    UserFull:
+      example:
+        joindate: 2000-01-23T04:56:07.000+00:00
+        role: USER
+        pvp_score: 5
+        currency: 100
+        id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        email: l.pantani5@studenti.unipi.it
+        username: LeoPanta01_
       properties:
         id:
-          description: Id of feedback.
-          title: id
-          type: integer
-        user_uuid:
           description: UUID of user.
           format: uuid
-          title: inventory_item_owner_id
+          title: UserId
           type: string
-        content:
-          description: Actual feedback content.
-          example: I love this game11!
-          title: content
+        username:
+          description: "The user's username. Must be at least 5 characters long and\
+            \ contain only letters, numbers, and underscores."
+          example: LeoPanta01_
+          minLength: 5
+          pattern: "^[a-zA-Z0-9_]+$"
+          title: username
           type: string
-        timestamp:
-          description: Timestamp when user created feedback
+        email:
+          description: The user's email.
+          example: l.pantani5@studenti.unipi.it
+          title: email
+          type: string
+        joindate:
+          description: Timestamp when user created their account
           format: date-time
-          title: timestamp
+          title: joindate
           type: string
-      title: Feedback
+        currency:
+          description: In-game currency of the user.
+          example: 100
+          title: currency
+          type: integer
+        pvp_score:
+          description: PvP score of the user.
+          example: 5
+          title: pvp_score
+          type: integer
+        role:
+          $ref: '#/components/schemas/Roles'
+      title: UserFull
       type: object
+    Roles:
+      description: User's role in the system.
+      enum:
+      - USER
+      - ADMIN
+      title: Roles
+      type: string
     GachaStat:
       description: Stat of a gacha.
       example: A
       pattern: "^[A-Ea-e]$"
+      title: GachaStat
+      type: string
+    CurrencyName:
+      description: Currency code-name
+      example: EUR
+      pattern: "^[A-Z]{3}$"
+      title: CurrencyName
       type: string
     PoolId:
       description: Internal code-name for the pool.
       example: pool_starter
       pattern: "^[a-zA-Z0-9_]+$"
-      title: id
+      title: codename
       type: string
     Pool:
       example:
+        probability_rare: 6.0274563
         price: 15
-        name: Starter Pool
-        id: pool_starter
-        probabilities:
-          legendaryProbability: 5.962134
-          epicProbability: 1.4658129
-          commonProbability: 0.8008282
-          rareProbability: 6.0274563
+        codename: pool_starter
+        probability_epic: 1.4658129
+        probability_common: 0.8008282
+        probability_legendary: 5.962134
+        public_name: Starter Pool
         items:
         - null
         - null
       properties:
-        id:
+        codename:
           description: Internal code-name for the pool.
           example: pool_starter
           pattern: "^[a-zA-Z0-9_]+$"
-          title: id
+          title: codename
           type: string
-        name:
+        public_name:
           description: Visible name of the pool.
           example: Starter Pool
-          title: name
+          title: public_name
           type: string
         price:
           description: In-game price to pull a gacha from this pool
@@ -644,8 +793,26 @@ components:
           minimum: 1
           title: price
           type: integer
-        probabilities:
-          $ref: '#/components/schemas/RarityProbability'
+        probability_common:
+          default: 0.5
+          format: float
+          title: probability_common
+          type: number
+        probability_rare:
+          default: 0.3
+          format: float
+          title: probability_rare
+          type: number
+        probability_epic:
+          default: 0.15
+          format: float
+          title: probability_epic
+          type: number
+        probability_legendary:
+          default: 0.05
+          format: float
+          title: probability_legendary
+          type: number
         items:
           description: List of gacha items in the pool.
           items:
@@ -654,37 +821,8 @@ components:
           type: array
       title: Pool
       type: object
-    RarityProbability:
-      example:
-        legendaryProbability: 5.962134
-        epicProbability: 1.4658129
-        commonProbability: 0.8008282
-        rareProbability: 6.0274563
-      properties:
-        commonProbability:
-          default: 0.5
-          format: float
-          title: commonProbability
-          type: number
-        rareProbability:
-          default: 0.3
-          format: float
-          title: rareProbability
-          type: number
-        epicProbability:
-          default: 0.15
-          format: float
-          title: epicProbability
-          type: number
-        legendaryProbability:
-          default: 0.05
-          format: float
-          title: legendaryProbability
-          type: number
-      title: RarityProbability
-      type: object
     GachaRarity:
-      description: Rarity level of the gacha
+      description: Rarity level of the gacha.
       enum:
       - common
       - rare
@@ -696,7 +834,7 @@ components:
     UserId:
       description: UUID of user.
       format: uuid
-      title: inventory_item_owner_id
+      title: UserId
       type: string
     Username:
       description: "The user's username. Must be at least 5 characters long and contain\
@@ -709,7 +847,6 @@ components:
     Email:
       description: The user's email.
       example: l.pantani5@studenti.unipi.it
-      format: email
       title: email
       type: string
     AuctionStatus:
@@ -750,7 +887,7 @@ components:
         inventory_item_owner_id:
           description: UUID of user.
           format: uuid
-          title: inventory_item_owner_id
+          title: UserId
           type: string
         inventory_item_id:
           description: UUID of single item.
@@ -770,7 +907,7 @@ components:
         current_bidder:
           description: UUID of user.
           format: uuid
-          title: inventory_item_owner_id
+          title: UserId
           type: string
         end_time:
           description: "When the auction ends, in UTC timestamp"
@@ -778,39 +915,6 @@ components:
           title: end_time
           type: string
       title: Auction
-      type: object
-    User:
-      example:
-        joindate: 2000-01-23T04:56:07.000+00:00
-        id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
-        email: l.pantani5@studenti.unipi.it
-        username: LeoPanta01_
-      properties:
-        id:
-          description: UUID of user.
-          format: uuid
-          title: inventory_item_owner_id
-          type: string
-        username:
-          description: "The user's username. Must be at least 5 characters long and\
-            \ contain only letters, numbers, and underscores."
-          example: LeoPanta01_
-          minLength: 5
-          pattern: "^[a-zA-Z0-9_]+$"
-          title: username
-          type: string
-        email:
-          description: The user's email.
-          example: l.pantani5@studenti.unipi.it
-          format: email
-          title: email
-          type: string
-        joindate:
-          description: Timestamp when user created their account
-          format: date-time
-          title: joindate
-          type: string
-      title: User
       type: object
     GachaId:
       description: UUID of the gacha
@@ -846,9 +950,88 @@ components:
           $ref: '#/components/schemas/Gacha_attributes'
       title: Gacha
       type: object
+    FeedbackPreview:
+      example:
+        user_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        id: 7
+        timestamp: 2000-01-23T04:56:07.000+00:00
+      properties:
+        id:
+          description: Id of feedback.
+          example: 7
+          title: id
+          type: integer
+        user_uuid:
+          description: UUID of user.
+          format: uuid
+          title: UserId
+          type: string
+        timestamp:
+          description: Timestamp when user created feedback
+          format: date-time
+          title: timestamp
+          type: string
+      title: FeedbackPreview
+      type: object
+    FeedbackId:
+      description: Id of feedback.
+      example: 7
+      title: id
+      type: integer
+    FeedbackWithUsername:
+      example:
+        user_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        id: 7
+        content: I love this game11!
+        username: LeoPanta01_
+        timestamp: 2000-01-23T04:56:07.000+00:00
+      properties:
+        id:
+          description: Id of feedback.
+          example: 7
+          title: id
+          type: integer
+        user_uuid:
+          description: UUID of user.
+          format: uuid
+          title: UserId
+          type: string
+        username:
+          description: "The user's username. Must be at least 5 characters long and\
+            \ contain only letters, numbers, and underscores."
+          example: LeoPanta01_
+          minLength: 5
+          pattern: "^[a-zA-Z0-9_]+$"
+          title: username
+          type: string
+        content:
+          description: Actual feedback content.
+          example: I love this game11!
+          title: content
+          type: string
+        timestamp:
+          description: Timestamp when user created feedback
+          format: date-time
+          title: timestamp
+          type: string
+      title: FeedbackWithUsername
+      type: object
+    HistoryListINGAME:
+      items:
+        $ref: '#/components/schemas/HistoryListINGAME_inner'
+      title: HistoryListINGAME
+      type: array
+    HistoryListBUNDLE:
+      items:
+        $ref: '#/components/schemas/HistoryListBUNDLE_inner'
+      title: HistoryListBUNDLE
+      type: array
+    getUserHistory_200_response:
+      oneOf:
+      - $ref: '#/components/schemas/HistoryListINGAME'
+      - $ref: '#/components/schemas/HistoryListBUNDLE'
+      title: getUserHistory_200_response
     Gacha_attributes:
-      additionalProperties:
-        type: string
       example:
         durability: A
         precision: A
@@ -861,31 +1044,37 @@ components:
           description: Stat of a gacha.
           example: A
           pattern: "^[A-Ea-e]$"
+          title: GachaStat
           type: string
         speed:
           description: Stat of a gacha.
           example: A
           pattern: "^[A-Ea-e]$"
+          title: GachaStat
           type: string
         durability:
           description: Stat of a gacha.
           example: A
           pattern: "^[A-Ea-e]$"
+          title: GachaStat
           type: string
         precision:
           description: Stat of a gacha.
           example: A
           pattern: "^[A-Ea-e]$"
+          title: GachaStat
           type: string
         range:
           description: Stat of a gacha.
           example: A
           pattern: "^[A-Ea-e]$"
+          title: GachaStat
           type: string
         potential:
           description: Stat of a gacha.
           example: A
           pattern: "^[A-Ea-e]$"
+          title: GachaStat
           type: string
       required:
       - durability
@@ -895,4 +1084,55 @@ components:
       - range
       - speed
       title: Gacha_attributes
+      type: object
+    HistoryListINGAME_inner:
+      example:
+        user_uuid: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        credits: 5000
+        transaction_type: bought_bundle
+        timestamp: 2000-01-23T04:56:07.000+00:00
+      properties:
+        user_uuid:
+          description: UUID of user.
+          format: uuid
+          title: UserId
+          type: string
+        timestamp:
+          description: Timestamp when user created feedback
+          format: date-time
+          title: timestamp
+          type: string
+        credits:
+          description: No. of credits.
+          example: 5000
+          title: credits
+          type: integer
+        transaction_type:
+          example: bought_bundle
+          title: transaction_type
+          type: string
+      title: HistoryListINGAME_inner
+      type: object
+    HistoryListBUNDLE_inner:
+      properties:
+        user_uuid:
+          description: UUID of user.
+          format: uuid
+          title: UserId
+          type: string
+        timestamp:
+          description: Timestamp when user created feedback
+          format: date-time
+          title: timestamp
+          type: string
+        codename:
+          title: codename
+          type: string
+        currency_name:
+          description: Currency code-name
+          example: EUR
+          pattern: "^[A-Z]{3}$"
+          title: CurrencyName
+          type: string
+      title: HistoryListBUNDLE_inner
       type: object

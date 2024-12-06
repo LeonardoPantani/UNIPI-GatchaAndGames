@@ -1,0 +1,433 @@
+openapi: 3.0.0
+info:
+  title: Gacha System - Auth Service - OpenAPI 3.0
+  description: >-
+    API for managing authentication.
+
+
+    Useful links:
+
+    - [Project
+    repository](https://github.com/LeonardoPantani/UNIPI-GatchaAndGames)
+  version: 2.0.0
+  license:
+    name: GPL-3.0
+    url: https://www.gnu.org/licenses/gpl-3.0.html#license-text
+  contact:
+    email: support@gachaandgames.it
+  termsOfService: https://localhost/tos
+servers:
+  - url: https://localhost
+    description: Local server
+paths:
+  ############################################
+  ################### AUTH ###################
+  ############################################
+  /auth/health_check:
+    get:
+      tags:
+      - auth
+      description: Returns 200 if service is healthy.
+      summary: Gives information on service status.
+      responses:
+        '200':
+          description: Service operational.
+  /auth/login:
+    post:
+      tags:
+        - auth
+      summary: Log in into an account.
+      description: Logs a user into the game. Accepts username and password. This acts as token endpoint.
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  $ref: '#/components/schemas/Username'
+                password:
+                  $ref: "#/components/schemas/Password"
+              required:
+                - username
+                - password
+      responses:
+        '200':
+          description: Login successful.
+        '400':
+          description: Invalid request.
+        '401':
+          description: Invalid credentials.
+        '409':
+          description: You are already logged in.
+        '503':
+          description: Service unavailable. Please try again later.
+  /auth/logout:
+    delete:
+      tags:
+        - auth
+      summary: Logs out from an account.
+      description: Allows an account to log out.
+      operationId: logout
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Logout successful.
+        '403':
+          description: Not logged in.
+        '503':
+          description: Service unavailable. Please try again later.
+  /auth/register:
+    post:
+      tags:
+        - auth
+      summary: Registers a new account.
+      description: Registers a new user account with username, email, and password.
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  $ref: '#/components/schemas/Username'
+                email:
+                  $ref: '#/components/schemas/Email'
+                password:
+                  $ref: "#/components/schemas/Password"
+              required:
+                - username
+                - email
+                - password
+      responses:
+        '201':
+          description: Registration successful.
+        '400':
+          description: Invalid request.
+        '401':
+          description: You are already logged in.
+        '406':
+          description: The specified email is not valid.
+        '409':
+          description: The provided username / email is already in use.
+        '503':
+          description: Service unavailable. Please try again later.
+  /auth/internal/token/invalidate:
+    delete:
+      tags:
+        - auth_internal
+      summary: Invalidates and removes a JWT token.
+      description: This endpoint receives a UUID and removes the JWT Token assigned to them on Redis.
+      operationId: token_invalidate
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+        - name: uuid
+          in: query
+          description: User whom JWT token will be invalidated.
+          required: true
+          schema:
+            $ref: "#/components/schemas/UserId"
+      responses:
+        '200':
+          description: Token invalidated.
+        '400':
+          description: Invalid request.
+        '401':
+          description: Unauthorized.
+        '404':
+          description: Unable to find token.
+        '503':
+          description: Service unavailable. Please try again later.
+  /auth/internal/userinfo/:
+    post:
+      tags:
+        - auth_internal
+      summary: Returns User Info.
+      description: This endpoint receives an Access Token from another service and returns information regarding that user.
+      operationId: userinfo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                access_token:
+                  type: string
+      responses:
+        '200':
+          description: User Info.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid request.
+        '401':
+          description: Unauthorized.
+        '503':
+          description: Service unavailable. Please try again later.
+  /auth/internal/introspect/:
+    post:
+      tags:
+        - auth_internal
+      summary: Validates a Token.
+      description: This endpoint validates the Access Token received by another service from the client.
+      operationId: introspect
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                access_token:
+                  type: string
+                audience_required:
+                  type: string
+      responses:
+        '200':
+          description: Valid Token.
+        '400':
+          description: Invalid request.
+        '401':
+          description: Unauthorized.
+        '402':
+          description: Token expired.
+        '503':
+          description: Service unavailable. Please try again later.
+  /auth/internal/get_role_by_uuid:
+    get:
+      tags:
+        - auth_internal
+      description: Returns role of the user by UUID, if exists.
+      operationId: get_role_by_uuid
+      parameters:
+      - name: session
+        in: cookie
+        required: false
+        schema:
+          type: string
+      - name: uuid
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/UserId'
+      responses:
+        '200':
+          description: User role.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  role:
+                    $ref: '#/components/schemas/Roles'
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '404':
+          description: User not found.
+        '503':
+          description: Service unavailable. Please try again later.
+  /auth/internal/delete_user_by_uuid:
+    delete:
+      tags:
+        - auth_internal
+      description: Deletes a user.
+      operationId: delete_user_by_uuid
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+        - name: uuid
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/UserId'
+      responses:
+        '200':
+          description: User deleted.
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '404':
+          description: User not found.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /auth/internal/edit_email:
+    post:
+      tags:
+        - auth_internal
+      description: Updates a user's email.
+      operationId: edit_email
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+        - name: uuid
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/UserId'
+        - name: email
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Email'
+      responses:
+        '200':
+          description: Email updated.
+        '304':
+          description: No changes applied.
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '404':
+          description: User not found.
+        '409':
+          description: Email already in use.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /auth/internal/get_user:
+    get:
+      tags:
+        - auth_internal
+      description: Returns user info.
+      operationId: get_user
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+        - name: uuid
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/UserId'
+      responses:
+        '200':
+          description: User info.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  uuid:
+                    $ref: '#/components/schemas/UserId'
+                  email:
+                    $ref: '#/components/schemas/Email'
+                  role:
+                    $ref: '#/components/schemas/Roles'
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '404':
+          description: User not found.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /auth/internal/get_hashed_password:
+    get:
+      tags:
+        - auth_internal
+      description: Returns user hashed password.
+      operationId: get_hashed_password
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+        - name: uuid
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/UserId'
+      responses:
+        '200':
+          description: Hashed user's password.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  password:
+                    type: string
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '404':
+          description: User not found.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+
+
+components:
+  schemas:
+    UserId:
+      type: string
+      format: uuid
+      description: UUID of user.
+    Username:
+      type: string
+      minLength: 5
+      pattern: ^[a-zA-Z0-9_]+$
+      example: LeoPanta01_
+      description: The user's username. Must be at least 5 characters long and contain only letters, numbers, and underscores.
+    Email:
+      type: string
+      description: The user's email.
+      example: l.pantani5@studenti.unipi.it
+    Password:
+      type: string
+      minLength: 8
+      example: Th1s_c4n_b3_a_good_passw0rd...maybe
+      description: The user's password must be at least 8 characters and can accept all characters.
+    Roles:
+      type: string
+      enum:
+        - USER
+        - ADMIN
+      description: User's role in the system.
+    User:
+      type: object
+      properties:
+        uuid:
+          $ref: '#/components/schemas/UserId'
+        username:
+          $ref: '#/components/schemas/Username'
+        email:
+          $ref: '#/components/schemas/Email'
+        joindate:
+          type: string
+          format: date-time
+          description: Timestamp when user created their account
+        currency:
+          type: integer
+          description: Ingame currency of the user
+        pvp_score:
+          type: integer
+          description: Pvp score of the user

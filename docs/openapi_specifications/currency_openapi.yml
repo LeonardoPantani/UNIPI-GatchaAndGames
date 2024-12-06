@@ -1,0 +1,372 @@
+openapi: 3.0.0
+info:
+  title: Gacha System - OpenAPI 3.0
+  description: >-
+    API for managing gacha items, auctions, PVP battles, currency, and user
+    authentication.
+
+
+    Useful links:
+
+    - [Project
+    repository](https://github.com/LeonardoPantani/UNIPI-GachaAndGames)
+  version: 2.0.0
+  license:
+    name: GPL-3.0
+    url: https://www.gnu.org/licenses/gpl-3.0.html#license-text
+  contact:
+    email: support@gachaandgames.it
+  termsOfService: https://localhost/tos
+servers:
+  - url: https://localhost
+    description: Local server
+paths:
+  ############################################
+  ################# CURRENCY #################
+  ############################################
+  /currency/health_check:
+    get:
+      tags:
+      - currency
+      description: Returns 200 if service is healthy.
+      responses:
+        '200':
+          description: Service operational.
+      summary: Gives information on service status.
+  /currency/bundles:
+    get:
+      tags:
+        - currency
+      summary: Lists available bundles to buy currency.
+      description: Returns a list of available bundles
+      operationId: getBundles
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Bundle'
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /currency/buy/{bundle_id}:
+    post:
+      tags:
+        - currency
+      summary: Buy in-game credits
+      description: Allows a player to purchase in-game credits using real-world currency.
+      operationId: buyCurrency
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: bundle_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/BundleId'
+      responses:
+        '200':
+          description: Purchase successful.
+        '403':
+          description: Not logged in.
+        '404':
+          description: Bundle not found.
+        '412':
+          description: You cannot afford this bundle.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /currency/internal/delete_user_transactions:
+    delete:
+      tags:
+        - currency_internal
+      description: Deletes transaction made by the user by UUID, if exist.
+      operationId: delete_user_transactions
+      parameters:
+      - name: session
+        in: cookie
+        required: false
+        schema:
+          type: string
+      - name: uuid
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/UserId'
+      responses:
+        '200':
+          description: Transactions deleted.
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '503':
+          description: Service unavailable. Please try again later.
+  /currency/internal/get_user_history:
+    get:
+      tags:
+        - currency_internal
+      summary: Returns history of a user.
+      description: Allows to retrieve history of a user.
+      operationId: get_user_history
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+        - name: uuid
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/UserId'
+        - name: history_type
+          in: query
+          description: Type of history to show.
+          required: false
+          schema:
+            enum:
+              - bundle
+              - ingame
+        - name: page_number
+          in: query
+          description: Page number of the list.
+          required: false
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+      responses:
+        '200':
+          description: User transaction history.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/HistoryListINGAME"
+                  - $ref: "#/components/schemas/HistoryListBUNDLE"
+        '400':
+          description: Invalid history type.
+        '403':
+          description: Not authorized.
+        '404':
+          description: User not found.
+        '503':
+          description: Service unavailable. Please try again later.
+  /currency/internal/insert_ingame_transaction:
+    post:
+      tags:
+        - currency_internal
+      description: Inserts transaction of ingame currency.
+      operationId: insert_ingame_transaction
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+        - name: uuid
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/UserId'
+        - name: current_bid
+          in: query
+          description: Amount of currency spent.
+          required: false
+          schema:
+            type: integer
+        - name: transaction_type
+          in: query
+          description: Type of transaction.
+          required: false
+          schema:
+            enum:
+              - bought_bundle
+              - bought_market
+              - sold_market
+              - gacha_pull
+      responses:
+        '200':
+          description: Transactions inserted.
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '503':
+          description: Service unavailable. Please try again later.
+  /currency/internal/get_bundle:
+    get:
+      tags:
+        - currency_internal
+      description: Returns requested bundle info.
+      operationId: get_bundle
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+        - name: codename
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/BundleId'
+      responses:
+        '200':
+          description: Bundle object.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bundle'
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '404':
+          description: Bundle not found.
+        '503':
+          description: Service unavailable. Please try again later. 
+  /currency/internal/list_bundles:
+    get:
+      tags:
+        - currency_internal
+      description: Returns bundle list.
+      operationId: list_bundles
+      parameters:
+      - name: session
+        in: cookie
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Bundles list.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Bundle'
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '404':
+          description: Bundle not found.
+        '503':
+          description: Service unavailable. Please try again later. 
+  /currency/internal/insert_bundle_transaction:
+    post:
+      tags:
+        - currency_internal
+      description: Inserts transaction of ingame currency.
+      operationId: insert_bundle_transaction
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+        - name: uuid
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/UserId'
+        - name: bundle_codename
+          in: query
+          description: Codename of the bundle.
+          required: false
+          schema:
+            $ref: '#/components/schemas/BundleId'
+        - name: currency_name
+          in: query
+          description: Type of transaction.
+          required: false
+          schema:
+            $ref: '#/components/schemas/CurrencyName'
+      responses:
+        '200':
+          description: Transactions inserted.
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '503':
+          description: Service unavailable. Please try again later.
+
+components:
+  schemas:
+    BundleId:
+      type: string
+      example: bundle_amazing
+      pattern: ^[a-zA-Z0-9_]+$
+      description: Internal code-name for the bundle.
+    CurrencyName:
+      type: string
+      description: Currency code-name
+      pattern: ^[A-Z]{3}$
+      example: EUR
+    Bundle:
+      type: object
+      properties:
+        codename:
+          $ref: '#/components/schemas/BundleId'
+        public_name:
+          type: string
+          example: Amazing Bundle
+          description: Visible name of the bundle.
+        amount:
+          type: integer
+          description: No. of credits.
+          example: 5000
+        currency:
+          $ref: '#/components/schemas/CurrencyName'
+        value:
+          type: integer
+          default: 10
+          example: 10
+          description: Amount of real currency.
+          minimum: 0
+          maximum: 999
+    UserId:
+      type: string
+      format: uuid
+      description: UUID of user.
+    HistoryListINGAME:
+      type: array
+      items:
+        type: object
+        properties:
+          user_uuid:
+            $ref: "#/components/schemas/UserId"
+          timestamp:
+            description: Timestamp when user created feedback
+            format: date-time
+            type: string
+          credits:
+            type: integer
+            description: No. of credits.
+            example: 5000
+          transaction_type:
+            type: string
+            example: 'bought_bundle'
+    HistoryListBUNDLE:
+      type: array
+      items:
+        type: object
+        properties:
+          user_uuid:
+            $ref: "#/components/schemas/UserId"
+          timestamp:
+            description: Timestamp when user created feedback
+            format: date-time
+            type: string
+          codename:
+            type: string
+          currency_name:
+            $ref: '#/components/schemas/CurrencyName'

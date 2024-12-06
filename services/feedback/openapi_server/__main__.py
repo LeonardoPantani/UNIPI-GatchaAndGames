@@ -1,60 +1,81 @@
 #!/usr/bin/env python3
 
-import connexion
 import os
-import time
+import connexion
+import urllib3
+from flask import g
+from flask.json.provider import DefaultJSONProvider
+from urllib3.exceptions import InsecureRequestWarning
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from openapi_server import encoder
 
-from flaskext.mysql import MySQL
-from flask import current_app, Flask
-from werkzeug.middleware.proxy_fix import ProxyFix
+# these config variables can be used everywhere, even without context
+CONFIG = {
+    "service_type": os.environ.get("SERVICE_TYPE"),
+    "circuit_breaker_fails": int(os.environ.get("CIRCUIT_BREAKER_FAILS")),
+    "requests_timeout": int(os.environ.get("REQUESTS_TIMEOUT")),
+}
+
+
+# this must be here to avoid a DeprecationWarning
+class CustomJSONProvider(DefaultJSONProvider):
+    def dumps(self, obj, **kwargs):
+        return encoder.JSONEncoder().encode(obj)
+
+    def loads(self, s, **kwargs):
+        return super().loads(s, **kwargs)
 
 
 def main():
-    connexion_app = connexion.App(__name__, specification_dir='./openapi/')
-    connexion_app.app.json_encoder = encoder.JSONEncoder
-    connexion_app.app.wsgi_app = ProxyFix(connexion_app.app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+    urllib3.disable_warnings(InsecureRequestWarning)
+    connexion_app = connexion.App(__name__, specification_dir="./openapi/")
+    app = connexion_app.app
+    app.json = CustomJSONProvider(app)
+    app.wsgi_app = ProxyFix(connexion_app.app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
-    # Initialize MySQL
-    mysql = MySQL()
-    
-    # Flask app configuration (db values + secret key)
-    connexion_app.app.config["MYSQL_DATABASE_USER"] = os.environ.get('MYSQL_USER')
-    connexion_app.app.config["MYSQL_DATABASE_PASSWORD"] = os.environ.get('MYSQL_PASSWORD')
-    connexion_app.app.config["MYSQL_DATABASE_DB"] = os.environ.get('MYSQL_DB')
-    connexion_app.app.config["MYSQL_DATABASE_HOST"] = os.environ.get('MYSQL_HOST')
-    connexion_app.app.secret_key = os.environ.get('FLASK_SECRET_KEY')
-    
-    mysql.init_app(connexion_app.app)
+    app.secret_key = os.environ.get("FLASK_SECRET_KEY")
+    app.config["jwt_secret_key"] = os.environ.get("JWT_SECRET_KEY")
+    app.config["requests_timeout"] = int(os.environ.get("REQUESTS_TIMEOUT"))
+    app.config["database_timeout"] = int(os.environ.get("DATABASE_TIMEOUT"))
 
-    # Tentativi per connettersi al database
-    for attempt in range(1, 21):
-        try:
-            # Prova a ottenere il cursore
-            connection = mysql.connect()
-            cursor = connection.cursor()
-            cursor.close()
-            connection.close()
-            break
-        except Exception as e:
-            print(f"Attempt {attempt}: error while connecting to db: {e}")
-            if attempt == 20:
-                print("Unable to connect. Not retrying anymore.")
-                return
-            time.sleep(1)
+    # these certificates must be stored in the ssl folder for the DB connection to work:
+    # <service_type>.crt
+    # <service_type>.key
+    app.config["db_config"] = {
+        "host": os.environ.get("MYSQL_HOST"),
+        "user": os.environ.get("MYSQL_USER"),
+        "password": os.environ.get("MYSQL_PASSWORD"),
+        "database": os.environ.get("MYSQL_DB"),
+        "port": os.environ.get("MYSQL_PORT"),
+        "ssl_ca": "/usr/src/app/ssl/ca.crt",
+        "ssl_cert": "/usr/src/app/ssl/" + CONFIG["service_type"] + ".crt",
+        "ssl_key": "/usr/src/app/ssl/" + CONFIG["service_type"] + ".key",
+    }
 
-    connexion_app.app.extensions['mysql'] = mysql
-    
-    # Adding api
-    connexion_app.add_api('openapi.yaml',
-        arguments={'title': 'Gacha System - OpenAPI 3.0'},
-        pythonic_params=True
+    # close db after request
+    @app.teardown_appcontext
+    def close_db(error):
+        db = g.pop("db", None)
+        if db is not None:
+            db.close()
+
+    # adding api
+    connexion_app.add_api("openapi.yaml", arguments={"title": "Gacha System - OpenAPI 3.0"}, pythonic_params=True)
+
+    # starting flask
+    # these certificates must be stored in the ssl folder to activate HTTPS for this service:
+    # <service_type>.crt
+    # <service_type>.key
+    connexion_app.run(
+        host="0.0.0.0",
+        port=443,
+        ssl_context=(
+            "/usr/src/app/ssl/" + CONFIG["service_type"] + ".crt",
+            "/usr/src/app/ssl/" + CONFIG["service_type"] + ".key",
+        ),
     )
 
-    # Starting Connexion Flask app
-    connexion_app.run(host='0.0.0.0', port=8080, debug=True)
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

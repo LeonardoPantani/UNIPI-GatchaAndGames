@@ -1,182 +1,153 @@
 import requests
+import connexion
+
+from openapi_server.models.bundle import Bundle
+from openapi_server import util
+
 from flask import jsonify, session
 from pybreaker import CircuitBreaker, CircuitBreakerError
+from openapi_server.helpers.logging import send_log
+
+from openapi_server.helpers.authorization import verify_login
+
+from openapi_server.helpers.input_checks import sanitize_string_input
+
+from openapi_server.controllers.currency_internal_controller import get_bundle, insert_bundle_transaction, insert_ingame_transaction, list_bundles
 
 circuit_breaker = CircuitBreaker(
     fail_max=5, reset_timeout=5, exclude=[requests.HTTPError]
 )
 
+SERVICE_TYPE="currency"
 TRANSACTION_TYPE_BUNDLE_CODE = "bought_bundle"
-global_mock_accounts = {
-    "87f3b5d1-5e8e-4fa4-909b-3cd29f4b1f09": {
-        "username": "user1",
+global_mock_accounts= {
+    "4f2e8bb5-38e1-4537-9cfa-11425c3b4284":{
+        "username": "SpeedwagonAdmin",
         "accounts": [
             {
                 "currency": "EUR",
                 "amount": 100
-            },
-            {
-                "currency": "USD",
-                "amount": 300
-            }
-        ]
-    },
-    "4f2e8bb5-38e1-4537-9cfa-11425c3b4284": {
-        "username": "user1",
-        "accounts": [
-            {
-                "currency": "EUR",
-                "amount": 10000
-            },
-            {
-                "currency": "PLN",
-                "amount": 300
-            }
-        ]
-    },
-    "e3b0c442-98fc-1c14-b39f-92d1282048c0": {
-        "username": "user2",
-        "accounts": [
-            {
-                "currency": "USD",
-                "amount": 50
-            }
-        ]
-    },
-    "16ca8be1-8497-4957-ad5c-ad0bbe2a2863": {
-        "username": "user3",
-        "accounts": [
-            {
-                "currency": "EUR",
-                "amount": 200
             }
         ]
     }
 }
 
 
-def health_check():
+def currency_health_check_get():
     return jsonify({"message": "Service operational."}), 200
 
 
 def buy_currency(bundle_id):
-    if 'username' not in session:
-        return jsonify({"error": "Not logged in."}), 403
+    response = verify_login(connexion.request.headers.get("Authorization"), service_type=SERVICE_TYPE)
+    if response[1] != 200:
+        return response
+    else:
+        session = response[0]
+    #### END AUTH CHECK
 
-    # /db_manager/currency/get_bundle_info
-    # Returns information about a bundle given its codename.
-    try:
-        @circuit_breaker
-        def make_request_to_dbmanager():
-            payload = {
-                "bundle_id": bundle_id
-            }
-            url = "http://db_manager:8080/db_manager/currency/get_bundle_info"
-            response = requests.post(url, json=payload)
-            response.raise_for_status()  # if response is obtained correctly
-            return response.json()
+    bundle_id = sanitize_string_input(bundle_id)
+
+    if bundle_id == "add_myself_some_currency":
+        if session['uuid'] not in global_mock_accounts:
+            send_log(f"add_myself_some_currency: User {session['username']} not found in mock account data.", level="error", service_type=SERVICE_TYPE)
+            return jsonify({"error":"No user account found, try buying a bundle first."}), 404
+        else:
+            for account in global_mock_accounts[session['uuid']]["accounts"]:
+                account['amount'] += 100000
         
-        bundle = make_request_to_dbmanager()
-    except requests.HTTPError as e:
-        if e.response.status_code == 404:
-            return jsonify({"error": "Bundle not found."}), 404
-        else:  # other errors
-            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
-    except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
-        return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
-    except CircuitBreakerError:
-        return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503
+        send_log(f"add_myself_some_currency: User {session['username']} has successfully added currency to his balance.", level="general", service_type=SERVICE_TYPE)
+        return jsonify({"message":"Balance added"}), 200        
 
-    codename = bundle["codename"]
-    currency_name = bundle["currency_name"]
-    public_name = bundle["public_name"]
-    credits_obtained = bundle["credits_obtained"]
-    price = bundle["price"]
+    response = get_bundle(None, bundle_id)
+    if response[1] == 404:
+        send_log(f"get_bundle: No bundle found with codename {bundle_id} by user {session['username']}.", level="info", service_type=SERVICE_TYPE)
+        return response
+    elif response[1] == 503 or response[1] == 400:
+        send_log(f"get_bundle: HttpError {response} for user {session['username']}.", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service unavailable. Please try again later."}), 503
+    
+    response_data = response[0].get_json()
+
+    codename = response_data["codename"]
+    currency_name = response_data["currency"]
+    public_name = response_data["public_name"]
+    credits_obtained = response_data["amount"]
+    price = response_data["value"]
 
     candidate_user_account_no = -1
     user_accounts = global_mock_accounts.get(session['uuid'])
 
-    if user_accounts:  # Ensure the user exists
-        accounts_list = user_accounts.get("accounts")  # Access the 'accounts' list
-        for index, element in enumerate(accounts_list):
-            if element["currency"] == currency_name:
-                candidate_user_account_no = index
+    if not user_accounts: #simplification of contacting a bank, we generate an account binded to the user if it's not present in global mock data
+        global_mock_accounts[session['uuid']] = {
+            "username": session['username'],
+            "accounts": [
+                {
+                    "currency": currency_name,
+                    "amount": (3 * price) + 1
+                }
+            ]
+        }
+        user_accounts = global_mock_accounts[session['uuid']]
+
+    accounts_list = user_accounts.get("accounts")  # Access the 'accounts' list
+    for index, element in enumerate(accounts_list):
+        if element["currency"] == currency_name:
+            candidate_user_account_no = index
 
     if user_accounts["accounts"][candidate_user_account_no]["currency"] != currency_name:
-        return jsonify({"error": "Different currency needed, contact your bank."}), 400
+        send_log(f"buy_currency: Wrong currency for user {session['username']} to buy {bundle_id}.", level="info", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Different currency needed, contact your bank."}), 406
     
     if user_accounts["accounts"][candidate_user_account_no]["amount"] < price:
+        send_log(f"buy_currency: Not enough money for user {session['username']} to buy {bundle_id}.", level="info", service_type=SERVICE_TYPE)
         return jsonify({"error": "You cannot afford this bundle."}), 412
     
     user_accounts["accounts"][candidate_user_account_no]["amount"] -= price
-
     
-    # /db_manager/currency/purchase_bundle
-    # Processes the purchase of a bundle by updating user credits and logging transactions in appropriate tables.
+    response = insert_bundle_transaction(None, session['uuid'], codename, currency_name)
+    if response[1] != 200:
+        send_log(f"insert_bundle_transaction: HttpError {response} for user {session['username']} with bundle {codename}.", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+
+    response = insert_ingame_transaction(None, session['uuid'], credits_obtained, TRANSACTION_TYPE_BUNDLE_CODE)
+    if response[1] != 200:
+        send_log(f"insert_ingame_transaction: HttpError {response} for user {session['username']}.", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+
     try:
         @circuit_breaker
-        def make_request_to_dbmanager():
-            payload = {
-                "user_uuid": session["uuid"],
-                "bundle_codename": codename,
-                "currency_name": currency_name,
-                "credits_obtained": credits_obtained,
-                "transaction_type_bundle_code": TRANSACTION_TYPE_BUNDLE_CODE
-            }
-            url = "http://db_manager:8080/db_manager/currency/purchase_bundle"
-            response = requests.post(url, json=payload)
-            response.raise_for_status()  # if response is obtained correctly
-            return
-
-        make_request_to_dbmanager()
-        return jsonify({"message": "Bundle " + public_name + " successfully bought."}), 200
-    except requests.HTTPError as e:
-        if e.response.status_code == 404:
-            return jsonify({"error": "Bundle not found."}), 404
-        else:  # other errors
-            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
-    except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
-        return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
-    except CircuitBreakerError:
-        return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503
-
-
-def get_bundles():
-    # /db_manager/currency/list_bundles
-    # Returns a list of all available bundles with their details.
-    try:
-        @circuit_breaker
-        def make_request_to_dbmanager():
-            url = "http://db_manager:8080/db_manager/currency/list_bundles"
-            response = requests.post(url)
-            response.raise_for_status()  # if response is obtained correctly
+        def make_request_to_profile_service():
+            params = {"uuid": session['uuid'], "amount":credits_obtained}
+            url = "https://service_profile/profile/internal/add_currency"
+            response = requests.post(url, params=params, verify=False)
+            response.raise_for_status()
             return response.json()
         
-        bundles = make_request_to_dbmanager()
-        
-        if not bundles:
-            return jsonify({"error": "No bundles found."}), 404
-
-        # Format the bundles data to match the API response structure
-        bundles_list = []
-        for bundle in bundles:
-            codename, currency_name, public_name, credits_obtained, price = bundle
-            bundles_list.append({
-                "id": codename,
-                "name": public_name,
-                "amount": credits_obtained,
-                "prices": [
-                    {"name": currency_name, "value": price}
-                ]
-            })
-        
-        return bundles_list, 200
+        make_request_to_profile_service()
     except requests.HTTPError as e:
-        if e.response.status_code == 404:
-            return jsonify({"error": "No bundles found."}), 404
-        else:  # other errors
-            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
-    except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
-        return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
+        if e.response.status_code == 404: 
+            send_log(f"make_request_to_profile_service: No user found with uuid {session['uuid']}.", level="info", service_type=SERVICE_TYPE)
+            return jsonify({"error": "User not found."}), 404
+        else:
+            send_log(f"make_request_to_profile_service: HttpError {e} for user {session['username']}.", level="error", service_type=SERVICE_TYPE)
+            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+    except requests.RequestException as e:
+        send_log(f"make_request_to_profile_service: RequestException {e} for user {session['username']}.", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
-        return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503
+        send_log(f"make_request_to_profile_service: Circuit breaker is open for user {session['username']}.", level="warning", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503  
+
+    send_log(f"buy_currency: User {session['username']} has successfully bought bundle {bundle_id}.", level="general", service_type=SERVICE_TYPE)
+    return jsonify({"message":"Purchase of "+public_name+" successful."}), 200
+
+@circuit_breaker
+def get_bundles():
+    response = list_bundles(None)
+    
+    if response[1] != 200:
+        send_log(f"list_bundles: HttpError {response} for uuid.", level="error", service_type=SERVICE_TYPE)
+        jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+
+    send_log("get_bundles: User has successfully gotten bundles info.", level="general", service_type=SERVICE_TYPE)
+    return response

@@ -1,51 +1,45 @@
+
 import connexion
 import requests
-
 from flask import jsonify, session
-
 from pybreaker import CircuitBreaker, CircuitBreakerError
 
-# Circuit breaker instance
-circuit_breaker = CircuitBreaker(fail_max=3, reset_timeout=30)
+from openapi_server import util
+from openapi_server.controllers.feedback_internal_controller import submit_feedback
+from openapi_server.helpers.authorization import verify_login
+from openapi_server.helpers.input_checks import sanitize_string_input
+from openapi_server.helpers.logging import send_log
+
+SERVICE_TYPE = "admin"
+circuit_breaker = CircuitBreaker(fail_max=5, reset_timeout=5)
 
 
-def health_check():
+def feedback_health_check_get():
     return jsonify({"message": "Service operational."}), 200
 
 
-@circuit_breaker
-def post_feedback():
-    if 'username' not in session:
-        return jsonify({"error": "Not logged in."}), 403
-
-    if not connexion.request.is_json:
-        return jsonify({"message": "Invalid request."}), 400
+def post_feedback(string=None, session=None):
+    response = verify_login(connexion.request.headers.get("Authorization"), service_type=SERVICE_TYPE)
+    if response[1] != 200:
+        return response
+    else:
+        session = response[0]
+    #### END AUTH CHECK
 
     # valid json request
-    feedback_request = connexion.request.get_json()["string"]
+    feedback_request = connexion.request.args.get("string")
     if len(feedback_request) == 0:
         return jsonify({"message": "Invalid request."}), 400
 
-    try:
+    feedback_request = sanitize_string_input(feedback_request)
 
-        @circuit_breaker
-        def make_request_to_dbmanager():
-            payload = {
-                "user_uuid": session["uuid"],
-                "string": feedback_request
-            }
-            url = "http://db_manager:8080/db_manager/feedback/submit"
-            response = requests.post(url, json=payload)
-            response.raise_for_status()  # if response is obtained correctly
-            return
+    feedback = {"content": feedback_request}
 
-        make_request_to_dbmanager()
+    response = submit_feedback(feedback, None, session["uuid"])
+    
+    if response[1] != 201:
+        send_log(f"submit_feedback: HttpError {response} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service unavailable. Please try again later."}), 503
 
-        return jsonify({"message": "Feedback successfully submitted."}), 201
-    except requests.HTTPError as e:
-        if e.response.status_code == 400:  # programming error
-            return jsonify({"error": "Service temporarily unavailable. Please try again later. [HTTPError]"}), 503
-    except requests.RequestException:  # if request is NOT sent to dbmanager correctly (is down) [error not expected]
-        return jsonify({"error": "Service unavailable. Please try again later. [RequestError]"}), 503
-    except CircuitBreakerError:
-        return jsonify({"error": "Service unavailable. Please try again later. [CircuitBreaker]"}), 503
+    send_log(f"post_feedback: User {session['username']} has successfully submitted a feedback.", level="general", service_type=SERVICE_TYPE)
+    return jsonify({"message": "Feedback successfully submitted."}), 201

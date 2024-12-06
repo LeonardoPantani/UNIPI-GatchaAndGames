@@ -1,127 +1,124 @@
 services:
+  ########################## CDN FOR IMAGES
+  cdn:
+    build: ./cdn/
+    container_name: unipi-gatchaandgames-cdn
+    env_file: ./cdn/.env
+    volumes:
+      - ./cdn:/usr/src/app/
+      - ./image_storage/:/usr/src/app/openapi_server/storage/
+      - ./common/:/usr/src/app/openapi_server/helpers/
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "--cert", "/usr/src/app/ssl/cdn.crt", "--key", "/usr/src/app/ssl/cdn.key", "--cacert", "/usr/src/app/ssl/ca.crt", "https://cdn/health_check"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    networks:
+      - public_gachaandgames_network
+
+  ########################## API GATEWAYS
   api_gateway_public:
     image: nginx:alpine
-    container_name: api_gateway_public_gachaandgames
+    container_name: unipi-gatchaandgames-api_gateway_public
     ports:
-      - "8080:8080"
+      - "443:443"
     volumes:
-      - ./api_gateway_public/api_gateway.conf:/etc/nginx/nginx.conf:ro
-      - ./favicon.ico:/usr/share/nginx/html/favicon.ico:ro
+      - ./api_gateway_public/ssl/:/etc/nginx/ssl/
+      - ./api_gateway_public/api_gateway.conf:/etc/nginx/nginx.conf
+      - ./favicon.ico:/usr/share/nginx/html/favicon.ico
     depends_on:
       - service_admin
-      - service_auctions
+      - service_auction
       - service_auth
       - service_currency
       - service_feedback
       - service_gacha
       - service_inventory
       - service_profile
-    #  - service_pvp
+      - service_pvp
+      - cdn
     restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "-k", "https://localhost/health_check"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
     networks:
       - public_gachaandgames_network
 
   api_gateway_private:
     image: nginx:alpine
-    container_name: api_gateway_private_gachaandgames
+    container_name: unipi-gatchaandgames-api_gateway_private
     ports:
-      - "8081:8081"
+      - "444:444"
     volumes:
-      - ./api_gateway_private/api_gateway.conf:/etc/nginx/nginx.conf:ro
-      - ./favicon.ico:/usr/share/nginx/html/favicon.ico:ro
+      - ./api_gateway_private/ssl/:/etc/nginx/ssl/
+      - ./api_gateway_private/api_gateway.conf:/etc/nginx/nginx.conf
+      - ./favicon.ico:/usr/share/nginx/html/favicon.ico
     depends_on:
       - service_admin
-      - service_auctions
       - service_auth
-      - service_currency
-      - service_feedback
-      - service_gacha
-      - service_inventory
-      - service_profile
-    #  - service_pvp
     restart: always
-    networks:
-      - private_gachaandgames_network
-
-  db:
-    image: db_gachaandgames
-    container_name: unipi-gatchaandgames-database
-    build: ./database/
-    ports:
-      - "3306"
-    env_file: "database/db.env"
-    volumes:
-      - mysql_gatchaandgames_db:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      start_period: 35s
-      interval: 5s
-      timeout: 3s
-      retries: 3
-    restart: always
-    networks:
-      - private_gachaandgames_network
-      - public_gachaandgames_network # to remove
-
-  db_manager:
-    image: db_manager_gachaandgames
-    build: ./db_manager/
-    ports:
-      - "8080"
-    env_file: ./db_manager/.env
-    volumes:
-      - ./db_manager:/usr/src/app/
-    depends_on:
-      db:
-        condition: service_healthy
-    tty: true
-    restart: always
-    networks:
-      - private_gachaandgames_network
-      - public_gachaandgames_network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/db_manager/health_check"]
-      start_period: 5s
+      test: ["CMD", "curl", "-f", "-k", "https://localhost:444/health_check"]
       interval: 15s
       timeout: 3s
       retries: 3
-    deploy:
-      replicas: 1
+      start_period: 5s
+    networks:
+      - private_gachaandgames_network
 
+  ########################## REDIS
+  redis:
+    build: ./redis/
+    container_name: unipi-gatchaandgames-redis
+    volumes:
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
+      - ./redis/ssl:/usr/local/etc/redis/ssl
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "-h", "redis", "-p", "6380", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - private_gachaandgames_network
+      - public_gachaandgames_network
+
+  ########################## ADMIN
   service_admin:
     image: service_admin
     build: ./services/admin/
-    ports:
-      - "8080"
     env_file: ./services/admin/.env
     volumes:
       - ./services/admin:/usr/src/app/
-    depends_on:
-      db_manager:
-        condition: service_healthy
+      - ./common/:/usr/src/app/openapi_server/helpers/
     tty: true
     restart: always
     networks:
       - private_gachaandgames_network
+      - public_gachaandgames_network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/admin/health_check"]
+      test: ["CMD", "curl", "-f", "--cert", "/usr/src/app/ssl/admin.crt", "--key", "/usr/src/app/ssl/admin.key", "--cacert", "/usr/src/app/ssl/ca.crt", "https://service_admin/admin/health_check"]
       start_period: 10s
       interval: 1m
-      timeout: 3s
+      timeout: 2s
       retries: 3
-    deploy:
-      replicas: 1
 
+  ########################## AUTH
   service_auth:
     image: service_auth
     build: ./services/auth/
-    ports:
-      - "8080"
     env_file: ./services/auth/.env
     volumes:
       - ./services/auth:/usr/src/app/
+      - ./common/:/usr/src/app/openapi_server/helpers/
     depends_on:
-      db_manager:
+      service_auth_db_proxy:
         condition: service_healthy
     tty: true
     restart: always
@@ -129,185 +126,662 @@ services:
       - public_gachaandgames_network
       - private_gachaandgames_network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/auth/health_check"]
+      test: ["CMD", "curl", "-f", "--cert", "/usr/src/app/ssl/auth.crt", "--key", "/usr/src/app/ssl/auth.key", "--cacert", "/usr/src/app/ssl/ca.crt", "https://service_auth/auth/health_check"]
       start_period: 10s
       interval: 1m
-      timeout: 3s
+      timeout: 2s
       retries: 3
-    deploy:
-      replicas: 1
-  
-  service_auctions:
-    image: service_auctions
-    build: ./services/auctions/
-    ports:
-      - "8080"
-    env_file: ./services/auctions/.env
+
+  service_auth_db_primary:
+    build: ./databases/auth/primary/
+    container_name: unipi-gatchaandgames-service_auth_db_primary
+    env_file: ./databases/auth/primary/primary.env
     volumes:
-      - ./services/auctions:/usr/src/app/
+      - ./databases/auth/primary/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./databases/auth/primary/mock_data.sql:/docker-entrypoint-initdb.d/mock_data.sql
+    networks:
+      - public_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      start_period: 10s
+      interval: 3s
+      timeout: 2s
+      retries: 20
+    restart: always
+  
+  service_auth_db_replica:
+    build: ./databases/auth/replica/
+    container_name: unipi-gatchaandgames-service_auth_db_replica
+    env_file: ./databases/auth/replica/replica.env
+    volumes:
+      - ./databases/auth/replica/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - public_gachaandgames_network
     depends_on:
-      db_manager:
+      service_auth_db_primary:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      start_period: 5s
+      interval: 3s
+      timeout: 2s
+      retries: 20
+    restart: always
+  
+  service_auth_db_proxy:
+    image: proxysql/proxysql:2.7.1
+    container_name: unipi-gatchaandgames-service_auth_db_proxy
+    volumes:
+      - ./databases/auth/proxy/config.cnf:/etc/proxysql.cnf
+      - ./databases/auth/proxy/ssl:/var/lib/proxysql
+    networks:
+      - public_gachaandgames_network
+    depends_on:
+      service_auth_db_primary:
+        condition: service_healthy
+      service_auth_db_replica:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-P", "6032", "-uradmin", "-pradmin"]
+      start_period: 5s
+      interval: 3s
+      timeout: 2s
+      retries: 20
+    restart: always
+  
+  ########################## AUCTION
+  service_auction:
+    image: service_auction
+    build: ./services/auction/
+    env_file: ./services/auction/.env
+    volumes:
+      - ./services/auction:/usr/src/app/
+      - ./common/:/usr/src/app/openapi_server/helpers/
     tty: true
     restart: always
     networks:
       - public_gachaandgames_network
+    depends_on:
+      service_auction_db_proxy:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/auctions/health_check"]
+      test: ["CMD", "curl", "-f", "--cert", "/usr/src/app/ssl/auction.crt", "--key", "/usr/src/app/ssl/auction.key", "--cacert", "/usr/src/app/ssl/ca.crt", "https://service_auction/auction/health_check"]
       start_period: 10s
       interval: 1m
-      timeout: 3s
+      timeout: 2s
       retries: 3
-    deploy:
-      replicas: 1
+
+  service_auction_db_primary:
+    build: ./databases/auction/primary/
+    container_name: unipi-gatchaandgames-service_auction_db_primary
+    env_file: ./databases/auction/primary/primary.env
+    volumes:
+    - ./databases/auction/primary/init.sql:/docker-entrypoint-initdb.d/init.sql
+    - ./databases/auction/primary/mock_data.sql:/docker-entrypoint-initdb.d/mock_data.sql
+    networks:
+    - public_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      start_period: 10s
+      interval: 3s
+      timeout: 2s
+      retries: 15
+    restart: always
   
+  # service_auction_db_replica:
+  #   build: ./databases/auction/replica/
+  #   container_name: unipi-gatchaandgames-service_auction_db_replica
+  #   env_file: ./databases/auction/replica/replica.env
+  #   volumes:
+  #   - ./databases/auction/replica/init.sql:/docker-entrypoint-initdb.d/init.sql
+  #   networks:
+  #   - public_gachaandgames_network
+  #   depends_on:
+  #     service_auction_db_primary:
+  #       condition: service_healthy
+  #   healthcheck:
+  #     test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+  #     start_period: 5s
+  #     interval: 3s
+  #     timeout: 2s
+  #     retries: 20
+  #   restart: always
+  
+  service_auction_db_proxy:
+    image: proxysql/proxysql:2.7.1
+    container_name: unipi-gatchaandgames-service_auction_db_proxy
+    volumes:
+      - ./databases/auction/proxy/config.cnf:/etc/proxysql.cnf
+      - ./databases/auction/proxy/ssl:/var/lib/proxysql
+    networks:
+    - public_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-P", "6032", "-uradmin", "-pradmin"]
+      start_period: 5s
+      interval: 3s
+      timeout: 2s
+      retries: 20
+    depends_on:
+      service_auction_db_primary:
+        condition: service_healthy
+      # service_auction_db_replica:
+      #   condition: service_healthy
+    restart: always
+
+  ########################## CURRENCY
   service_currency:
     image: service_currency
     build: ./services/currency/
-    ports:
-      - "8080"
     env_file: ./services/currency/.env
     volumes:
       - ./services/currency:/usr/src/app/
-    depends_on:
-      db_manager:
-        condition: service_healthy
+      - ./common/:/usr/src/app/openapi_server/helpers/
     tty: true
     restart: always
     networks:
       - public_gachaandgames_network
+    depends_on:
+      service_currency_db_proxy:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/currency/health_check"]
+      test: ["CMD", "curl", "-f", "--cert", "/usr/src/app/ssl/currency.crt", "--key", "/usr/src/app/ssl/currency.key", "--cacert", "/usr/src/app/ssl/ca.crt", "https://service_currency/currency/health_check"]
       start_period: 10s
       interval: 1m
-      timeout: 3s
+      timeout: 2s
       retries: 3
-    deploy:
-      replicas: 1
 
+  service_currency_db_primary:
+    build: ./databases/currency/primary/
+    container_name: unipi-gatchaandgames-service_currency_db_primary
+    env_file: ./databases/currency/primary/primary.env
+    volumes:
+    - ./databases/currency/primary/init.sql:/docker-entrypoint-initdb.d/init.sql
+    - ./databases/currency/primary/mock_data.sql:/docker-entrypoint-initdb.d/mock_data.sql
+    networks:
+    - public_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      start_period: 10s
+      interval: 3s
+      timeout: 2s
+      retries: 15
+    restart: always
+  
+  # service_currency_db_replica:
+  #   build: ./databases/currency/replica/
+  #   container_name: unipi-gatchaandgames-service_currency_db_replica
+  #   env_file: ./databases/currency/replica/replica.env
+  #   volumes:
+  #   - ./databases/currency/replica/init.sql:/docker-entrypoint-initdb.d/init.sql
+  #   networks:
+  #   - public_gachaandgames_network
+  #   depends_on:
+  #     service_currency_db_primary:
+  #       condition: service_healthy
+  #   healthcheck:
+  #     test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+  #     start_period: 5s
+  #     interval: 3s
+  #     timeout: 2s
+  #     retries: 20
+  #   restart: always
+  
+  service_currency_db_proxy:
+    image: proxysql/proxysql:2.7.1
+    container_name: unipi-gatchaandgames-service_currency_db_proxy
+    volumes:
+      - ./databases/currency/proxy/config.cnf:/etc/proxysql.cnf
+      - ./databases/currency/proxy/ssl:/var/lib/proxysql
+    networks:
+    - public_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-P", "6032", "-uradmin", "-pradmin"]
+      start_period: 5s
+      interval: 3s
+      timeout: 2s
+      retries: 20
+    depends_on:
+      service_currency_db_primary:
+        condition: service_healthy
+      # service_currency_db_replica:
+      #   condition: service_healthy
+    restart: always
+
+  ########################## FEEDBACK
   service_feedback:
     image: service_feedback
     build: ./services/feedback/
-    ports:
-      - "8080"
     env_file: ./services/feedback/.env
     volumes:
       - ./services/feedback:/usr/src/app/
-    depends_on:
-      db_manager:
-        condition: service_healthy
+      - ./common/:/usr/src/app/openapi_server/helpers/
     tty: true
     restart: always
     networks:
       - public_gachaandgames_network
+    depends_on:
+      service_feedback_db_proxy:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/feedback/health_check"]
+      test: ["CMD", "curl", "-f", "--cert", "/usr/src/app/ssl/feedback.crt", "--key", "/usr/src/app/ssl/feedback.key", "--cacert", "/usr/src/app/ssl/ca.crt", "https://service_feedback/feedback/health_check"]
       start_period: 10s
       interval: 1m
-      timeout: 3s
+      timeout: 2s
       retries: 3
-    deploy:
-      replicas: 1
 
+  service_feedback_db_primary:
+    build: ./databases/feedback/primary/
+    container_name: unipi-gatchaandgames-service_feedback_db_primary
+    env_file: ./databases/feedback/primary/primary.env
+    volumes:
+    - ./databases/feedback/primary/init.sql:/docker-entrypoint-initdb.d/init.sql
+    - ./databases/feedback/primary/mock_data.sql:/docker-entrypoint-initdb.d/mock_data.sql
+    networks:
+    - public_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      start_period: 10s
+      interval: 3s
+      timeout: 2s
+      retries: 15
+    restart: always
+
+  # service_feedback_db_replica:
+  #   build: ./databases/feedback/replica/
+  #   container_name: unipi-gatchaandgames-service_feedback_db_replica
+  #   env_file: ./databases/feedback/replica/replica.env
+  #   volumes:
+  #   - ./databases/feedback/replica/init.sql:/docker-entrypoint-initdb.d/init.sql
+  #   networks:
+  #   - public_gachaandgames_network
+  #   depends_on:
+  #     service_feedback_db_primary:
+  #       condition: service_healthy
+  #   healthcheck:
+  #     test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+  #     start_period: 5s
+  #     interval: 3s
+  #     timeout: 2s
+  #     retries: 20
+  #   restart: always
+  
+  service_feedback_db_proxy:
+    image: proxysql/proxysql:2.7.1
+    container_name: unipi-gatchaandgames-service_feedback_db_proxy
+    volumes:
+      - ./databases/feedback/proxy/config.cnf:/etc/proxysql.cnf
+      - ./databases/feedback/proxy/ssl:/var/lib/proxysql
+    networks:
+    - public_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-P", "6032", "-uradmin", "-pradmin"]
+      start_period: 5s
+      interval: 3s
+      timeout: 2s
+      retries: 20
+    depends_on:
+      service_feedback_db_primary:
+        condition: service_healthy
+      # service_feedback_db_replica:
+      #   condition: service_healthy
+    restart: always
+
+  ########################## GACHA
   service_gacha:
     image: service_gacha
     build: ./services/gacha/
-    ports:
-      - "8080"
     env_file: ./services/gacha/.env
     volumes:
       - ./services/gacha:/usr/src/app/
-    depends_on:
-      db_manager:
-        condition: service_healthy
+      - ./common/:/usr/src/app/openapi_server/helpers/
     tty: true
     restart: always
     networks:
       - public_gachaandgames_network
+    depends_on:
+      service_gacha_db_proxy:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/gacha/health_check"]
+      test: ["CMD", "curl", "-f", "--cert", "/usr/src/app/ssl/gacha.crt", "--key", "/usr/src/app/ssl/gacha.key", "--cacert", "/usr/src/app/ssl/ca.crt", "https://service_gacha/gacha/health_check"]
       start_period: 10s
       interval: 1m
-      timeout: 3s
+      timeout: 2s
       retries: 3
-    deploy:
-      replicas: 1
 
+  service_gacha_db_primary:
+    build: ./databases/gacha/primary/
+    container_name: unipi-gatchaandgames-service_gacha_db_primary
+    env_file: ./databases/gacha/primary/primary.env
+    volumes:
+      - ./databases/gacha/primary/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./databases/gacha/primary/mock_data.sql:/docker-entrypoint-initdb.d/mock_data.sql
+    networks:
+      - public_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      start_period: 10s
+      interval: 3s
+      timeout: 2s
+      retries: 20
+    restart: always
+  
+  # service_gacha_db_replica:
+  #   build: ./databases/gacha/replica/
+  #   container_name: unipi-gatchaandgames-service_gacha_db_replica
+  #   env_file: ./databases/gacha/replica/replica.env
+  #   volumes:
+  #     - ./databases/gacha/replica/init.sql:/docker-entrypoint-initdb.d/init.sql
+  #   networks:
+  #     - public_gachaandgames_network
+  #   depends_on:
+  #     service_gacha_db_primary:
+  #       condition: service_healthy
+  #   healthcheck:
+  #     test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+  #     start_period: 5s
+  #     interval: 3s
+  #     timeout: 2s
+  #     retries: 20
+  #   restart: always
+  
+  service_gacha_db_proxy:
+    image: proxysql/proxysql:2.7.1
+    container_name: unipi-gatchaandgames-service_gacha_db_proxy
+    volumes:
+      - ./databases/gacha/proxy/config.cnf:/etc/proxysql.cnf
+      - ./databases/gacha/proxy/ssl:/var/lib/proxysql
+    networks:
+      - public_gachaandgames_network
+    depends_on:
+      service_gacha_db_primary:
+        condition: service_healthy
+      # service_gacha_db_replica:
+      #   condition: service_healthy
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-P", "6032", "-uradmin", "-pradmin"]
+      start_period: 5s
+      interval: 3s
+      timeout: 2s
+      retries: 20
+    restart: always
+
+  ########################## INVENTORY
   service_inventory:
     image: service_inventory
     build: ./services/inventory/
-    ports:
-      - "8080"
     env_file: ./services/inventory/.env
     volumes:
       - ./services/inventory:/usr/src/app/
-    depends_on:
-      db_manager:
-        condition: service_healthy
+      - ./common/:/usr/src/app/openapi_server/helpers/
     tty: true
     restart: always
     networks:
       - public_gachaandgames_network
+    depends_on:
+      service_inventory_db_proxy:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/inventory/health_check"]
+      test: ["CMD", "curl", "-f", "--cert", "/usr/src/app/ssl/inventory.crt", "--key", "/usr/src/app/ssl/inventory.key", "--cacert", "/usr/src/app/ssl/ca.crt", "https://service_inventory/inventory/health_check"]
       start_period: 10s
       interval: 1m
-      timeout: 3s
+      timeout: 2s
       retries: 3
-    deploy:
-      replicas: 1
 
+  service_inventory_db_primary:
+    build: ./databases/inventory/primary/
+    container_name: unipi-gatchaandgames-service_inventory_db_primary
+    env_file: ./databases/inventory/primary/primary.env
+    volumes:
+      - ./databases/inventory/primary/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./databases/inventory/primary/mock_data.sql:/docker-entrypoint-initdb.d/mock_data.sql
+    networks:
+      - public_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      start_period: 10s
+      interval: 3s
+      timeout: 2s
+      retries: 20
+    restart: always
+  
+  # service_inventory_db_replica:
+  #   build: ./databases/inventory/replica/
+  #   container_name: unipi-gatchaandgames-service_inventory_db_replica
+  #   env_file: ./databases/inventory/replica/replica.env
+  #   volumes:
+  #     - ./databases/inventory/replica/init.sql:/docker-entrypoint-initdb.d/init.sql
+  #   networks:
+  #     - public_gachaandgames_network
+  #   depends_on:
+  #     service_inventory_db_primary:
+  #       condition: service_healthy
+  #   healthcheck:
+  #     test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+  #     start_period: 5s
+  #     interval: 3s
+  #     timeout: 2s
+  #     retries: 20
+  #   restart: always
+  
+  service_inventory_db_proxy:
+    image: proxysql/proxysql:2.7.1
+    container_name: unipi-gatchaandgames-service_inventory_db_proxy
+    volumes:
+      - ./databases/inventory/proxy/config.cnf:/etc/proxysql.cnf
+      - ./databases/inventory/proxy/ssl:/var/lib/proxysql
+    networks:
+      - public_gachaandgames_network
+    depends_on:
+      service_inventory_db_primary:
+        condition: service_healthy
+      # service_inventory_db_replica:
+      #   condition: service_healthy
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-P", "6032", "-uradmin", "-pradmin"]
+      start_period: 5s
+      interval: 3s
+      timeout: 2s
+      retries: 20
+    restart: always
+
+  ########################## PROFILE
   service_profile:
     image: service_profile
     build: ./services/profile/
-    ports:
-      - "8080"
     env_file: ./services/profile/.env
     volumes:
       - ./services/profile:/usr/src/app/
-    depends_on:
-      db_manager:
-        condition: service_healthy
+      - ./common/:/usr/src/app/openapi_server/helpers/
     tty: true
     restart: always
     networks:
       - public_gachaandgames_network
+    depends_on:
+      service_profile_db_proxy:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/profile/health_check"]
+      test: ["CMD", "curl", "-f", "--cert", "/usr/src/app/ssl/profile.crt", "--key", "/usr/src/app/ssl/profile.key", "--cacert", "/usr/src/app/ssl/ca.crt", "https://service_profile/profile/health_check"]
       start_period: 10s
       interval: 1m
-      timeout: 3s
+      timeout: 2s
       retries: 3
-    deploy:
-      replicas: 1
 
-  # 22/11/2024: Suspended because still WIP
-  # service_pvp:
-  #   image: service_pvp
-  #   build: ./services/pvp/
-  #   ports:
-  #     - "8080"
-  #   env_file: ./services/pvp/.env
+  service_profile_db_primary:
+    build: ./databases/profile/primary/
+    container_name: unipi-gatchaandgames-service_profile_db_primary
+    env_file: ./databases/profile/primary/primary.env
+    volumes:
+      - ./databases/profile/primary/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./databases/profile/primary/mock_data.sql:/docker-entrypoint-initdb.d/mock_data.sql
+    networks:
+      - public_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      start_period: 10s
+      interval: 3s
+      timeout: 2s
+      retries: 20
+    restart: always
+  
+  # service_profile_db_replica:
+  #   build: ./databases/profile/replica/
+  #   container_name: unipi-gatchaandgames-service_profile_db_replica
+  #   env_file: ./databases/profile/replica/replica.env
   #   volumes:
-  #     - ./services/pvp:/usr/src/app/
-  #   depends_on:
-  #     db_manager:
-  #       condition: service_healthy
-  #   tty: true
-  #   restart: always
+  #     - ./databases/profile/replica/init.sql:/docker-entrypoint-initdb.d/init.sql
   #   networks:
   #     - public_gachaandgames_network
+  #   depends_on:
+  #     service_profile_db_primary:
+  #       condition: service_healthy
   #   healthcheck:
-  #     test: ["CMD", "curl", "-f", "http://localhost:8080/pvp/health_check"]
-  #     start_period: 10s
-  #     interval: 1m
-  #     timeout: 3s
-  #     retries: 3
-  #   deploy:
-  #     replicas: 1
+  #     test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+  #     start_period: 5s
+  #     interval: 3s
+  #     timeout: 2s
+  #     retries: 20
+  #   restart: always
+  
+  service_profile_db_proxy:
+    image: proxysql/proxysql:2.7.1
+    container_name: unipi-gatchaandgames-service_profile_db_proxy
+    volumes:
+      - ./databases/profile/proxy/config.cnf:/etc/proxysql.cnf
+      - ./databases/profile/proxy/ssl:/var/lib/proxysql
+    networks:
+      - public_gachaandgames_network
+    depends_on:
+      service_profile_db_primary:
+        condition: service_healthy
+      # service_profile_db_replica:
+      #   condition: service_healthy
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-P", "6032", "-uradmin", "-pradmin"]
+      start_period: 5s
+      interval: 3s
+      timeout: 2s
+      retries: 20
+    restart: always
+
+  ########################## PVP
+  service_pvp:
+    image: service_pvp
+    build: ./services/pvp/
+    env_file: ./services/pvp/.env
+    volumes:
+      - ./services/pvp:/usr/src/app/
+      - ./common/:/usr/src/app/openapi_server/helpers/
+    tty: true
+    restart: always
+    networks:
+      - public_gachaandgames_network
+    depends_on:
+      service_pvp_db_proxy:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "--cert", "/usr/src/app/ssl/pvp.crt", "--key", "/usr/src/app/ssl/pvp.key", "--cacert", "/usr/src/app/ssl/ca.crt", "https://service_pvp/pvp/health_check"]
+      start_period: 10s
+      interval: 1m
+      timeout: 2s
+      retries: 3
+
+  service_pvp_db_primary:
+    build: ./databases/pvp/primary/
+    container_name: unipi-gatchaandgames-service_pvp_db_primary
+    env_file: ./databases/pvp/primary/primary.env
+    volumes:
+      - ./databases/pvp/primary/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./databases/pvp/primary/mock_data.sql:/docker-entrypoint-initdb.d/mock_data.sql
+    networks:
+      - public_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      start_period: 10s
+      interval: 3s
+      timeout: 2s
+      retries: 20
+    restart: always
+  
+  # service_pvp_db_replica:
+  #   build: ./databases/pvp/replica/
+  #   container_name: unipi-gatchaandgames-service_pvp_db_replica
+  #   env_file: ./databases/pvp/replica/replica.env
+  #   volumes:
+  #     - ./databases/pvp/replica/init.sql:/docker-entrypoint-initdb.d/init.sql
+  #   networks:
+  #     - public_gachaandgames_network
+  #   depends_on:
+  #     service_pvp_db_primary:
+  #       condition: service_healthy
+  #   healthcheck:
+  #     test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+  #     start_period: 5s
+  #     interval: 3s
+  #     timeout: 2s
+  #     retries: 20
+  #   restart: always
+  
+  service_pvp_db_proxy:
+    image: proxysql/proxysql:2.7.1
+    container_name: unipi-gatchaandgames-service_pvp_db_proxy
+    volumes:
+      - ./databases/pvp/proxy/config.cnf:/etc/proxysql.cnf
+      - ./databases/pvp/proxy/ssl:/var/lib/proxysql
+    networks:
+      - public_gachaandgames_network
+    depends_on:
+      service_pvp_db_primary:
+        condition: service_healthy
+      # service_pvp_db_replica:
+      #   condition: service_healthy
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-P", "6032", "-uradmin", "-pradmin"]
+      start_period: 5s
+      interval: 3s
+      timeout: 2s
+      retries: 20
+    restart: always
+
+  ######### STACK ELK
+  logging_loki:
+    image: grafana/loki:latest
+    container_name: unipi-gatchaandgames-logging_loki
+    volumes:
+      - loki_data:/loki
+    restart: always
+    networks:
+      - public_gachaandgames_network
+      - private_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3100/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  logging_grafana:
+    image: grafana/grafana-oss:10.1.2
+    container_name: unipi-gatchaandgames-logging_grafana
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./logs/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./logs/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+      - ./logs/grafana/dashboards:/var/lib/grafana/dashboards
+      - ./logs/grafana/grafana.ini:/etc/grafana/grafana.ini
+    env_file: ./logs/grafana/.env
+    depends_on:
+      - logging_loki
+    restart: always
+    networks:
+      - private_gachaandgames_network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/login"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
 networks:
   private_gachaandgames_network:
   public_gachaandgames_network:
 volumes:
-  mysql_gatchaandgames_db:
+  loki_data:
+  grafana_data:

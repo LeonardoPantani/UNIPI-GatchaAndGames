@@ -1,0 +1,532 @@
+openapi: 3.0.0
+info:
+  title: Gacha System - OpenAPI 3.0
+  description: >-
+    API for managing gacha items, auctions, PVP battles, currency, and user
+    authentication.
+
+
+    Useful links:
+
+    - [Project
+    repository](https://github.com/LeonardoPantani/UNIPI-GachaAndGames)
+  version: 2.0.0
+  license:
+    name: GPL-3.0
+    url: https://www.gnu.org/licenses/gpl-3.0.html#license-text
+  contact:
+    email: support@gachaandgames.it
+  termsOfService: https://localhost/tos
+servers:
+  - url: https://localhost
+    description: Local server
+paths:
+  ############################################
+  ################# PROFILE ##################
+  ############################################
+  /profile/health_check:
+    get:
+      tags:
+      - profile
+      description: Returns 200 if service is healthy.
+      responses:
+        '200':
+          description: Service operational.
+      summary: Gives information on service status.
+  /profile/{uuid}/info:
+    get:
+      tags:
+        - profile
+      summary: Returns infos about a UUID.
+      description: Allows to retrieve the profile of a user by UUID.
+      operationId: getUserInfo
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UserId'
+      responses:
+        '200':
+          description: User profile.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid username.
+        '403':
+          description: Not logged in.
+        '404':
+          description: User not found.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /profile/delete:
+    post:
+      tags:
+        - profile
+      summary: Deletes this account.
+      description: Allows a user to delete their account.
+      operationId: deleteProfile
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                password:
+                  $ref: "#/components/schemas/Password"
+      responses:
+        '200':
+          description: Profile deleted successfully.
+        '401':
+          description: Invalid password.
+        '403':
+          description: Not logged in.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /profile/edit:
+    put:
+      tags:
+        - profile
+      summary: Edits properties of the profile.
+      description: Allows a user to edit their profile.
+      operationId: editProfile
+      parameters:
+        - name: session
+          in: cookie
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  $ref: "#/components/schemas/Email"
+                username:
+                  $ref: '#/components/schemas/Username'
+                password:
+                  $ref: "#/components/schemas/Password"
+      responses:
+        '200':
+          description: Profile updated.
+        '304':
+          description: No changes needed.
+        '400':
+          description: Invalid request.
+        '401':
+          description: Invalid password.
+        '403':
+          description: Not logged in.
+        '404':
+          description: User not found.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /profile/internal/add_currency:
+    post:
+      tags:
+        - profile_internal
+      description: Adds amount to user currency field by uuid.
+      operationId: add_currency
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+        - name: uuid
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/UserId'
+        - name: amount
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Currency changed.
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '404':
+          description: User not found.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /profile/internal/add_pvp_score:
+    post:
+      tags:
+        - profile_internal
+      description: Increases pvp score by points value.
+      operationId: add_pvp_score
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+        - name: uuid
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/UserId'
+        - name: points_to_add
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: PvP score changed.
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '404':
+          description: User not found.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /profile/internal/delete_profile_by_uuid:
+    delete:
+      tags:
+        - profile_internal
+      description: Deletes a user's profile.
+      operationId: delete_profile_by_uuid
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+        - name: uuid
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/UserId'
+      responses:
+        '200':
+          description: Profile deleted.
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /profile/internal/exists:
+    get:
+      tags:
+        - profile_internal
+      description: Returns true if a profile exists, false otherwise.
+      operationId: exists_profile
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string 
+        - name: uuid
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/UserId'
+      responses:
+        '200':
+          description: Result of search.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exists: 
+                    type: boolean
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /profile/internal/edit_username:
+    post:
+      tags:
+        - profile_internal
+      description: Edits the username.
+      operationId: edit_username
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+        - name: uuid
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/UserId'
+        - name: username
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Username'
+      responses:
+        '200':
+          description: Username updated.
+        '304':
+          description: No changes applied.
+        '400':
+          description: Invalid request.
+        '404':
+          description: User not found.
+        '403':
+          description: Not authorized.
+        '503':
+          description: Service temporarily unavailable. Please try again later.
+  /profile/internal/list:
+    get:
+      tags:
+        - profile_internal
+      description: Returns list of profiles based on pagenumber.
+      operationId: profile_list
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+        - name: page_number
+          in: query
+          description: Page number of the list.
+          required: false
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+      responses:
+        '200':
+          description: Profile list.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserFull'
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '503':
+          description: Service unavailable. Please try again later.
+  /profile/internal/get_profile:
+    get:
+      tags:
+        - profile_internal
+      description: Returns profile info.
+      operationId: get_profile
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+        - name: user_uuid
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/UserId'
+      responses:
+        '200':
+          description: Profile info.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '404':
+          description: Item not found.
+        '503':
+          description: Service temporarily unavailable. Please try again later.  
+  /profile/internal/get_username_from_uuid:
+    get:
+      tags:
+        - profile_internal
+      description: Returns username of the requested user.
+      operationId: get_username_from_uuid
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+        - name: user_uuid
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/UserId'
+      responses:
+        '200':
+          description: Username.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  username:
+                    $ref: '#/components/schemas/Username'
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '404':
+          description: User not found.
+        '503':
+          description: Service temporarily unavailable. Please try again later. 
+  /profile/internal/insert_profile:
+    post:
+      tags:
+        - profile_internal
+      description: Creates a profile.
+      operationId: insert_profile
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string 
+        - name: user_uuid
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/UserId'
+        - name: username
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Username'
+      responses:
+        '201':
+          description: Profile created.
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '503':
+          description: Service temporarily unavailable. Please try again later. 
+  /profile/internal/get_currency_from_uuid:
+    get:
+      tags:
+        - profile_internal
+      description: Returns currency of the requested user.
+      operationId: get_currency_from_uuid
+      parameters:
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string 
+        - name: user_uuid
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/UserId'
+      responses:
+        '200':
+          description: Currency field.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  currency:
+                    type: integer
+        '400':
+          description: Invalid request.
+        '403':
+          description: Not authorized.
+        '404':
+          description: User not found.
+        '503':
+          description: Service temporarily unavailable. Please try again later. 
+components:
+  schemas:
+    UserFull:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/UserId'
+        username:
+          $ref: '#/components/schemas/Username'
+        email:
+          $ref: '#/components/schemas/Email'
+        joindate:
+          type: string
+          format: date-time
+          description: Timestamp when user created their account
+        currency:
+          type: integer
+          description: In-game currency of the user.
+          example: 100
+        pvp_score:
+          type: integer
+          description: PvP score of the user.
+          example: 5
+        role:
+          $ref: "#/components/schemas/Roles"
+    Roles:
+      type: string
+      enum:
+        - USER
+        - ADMIN
+      description: User's role in the system.
+    UserId:
+      type: string
+      format: uuid
+      description: UUID of user.
+    Username:
+      type: string
+      minLength: 5
+      pattern: ^[a-zA-Z0-9_]+$
+      example: LeoPanta01_
+      description: The user's username. Must be at least 5 characters long and contain only letters, numbers, and underscores.
+    Email:
+      type: string
+      description: The user's email.
+      example: l.pantani5@studenti.unipi.it
+    Password:
+      type: string
+      minLength: 8
+      example: Th1s_c4n_b3_a_good_passw0rd...maybe
+      description: The user's password must be at least 8 characters and can accept all characters.
+    User:
+      type: object
+      properties:
+        uuid:
+          $ref: '#/components/schemas/UserId'
+        username:
+          $ref: '#/components/schemas/Username'
+        email:
+          $ref: '#/components/schemas/Email'
+        joindate:
+          type: string
+          format: date-time
+          description: Timestamp when user created their account
+        currency:
+          type: integer
+          description: Ingame currency of the user
+        pvp_score:
+          type: integer
+          description: Pvp score of the user
