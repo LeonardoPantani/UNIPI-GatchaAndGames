@@ -92,6 +92,7 @@ def create_auction(auction=None, session=None):
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
+        send_log(f"Auction_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -142,6 +143,7 @@ def exists_auctions(session=None, uuid=None):
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
+        send_log(f"Auction_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -190,12 +192,16 @@ def get_auction(session=None, uuid=None):
             item = make_request_to_inventory_service()
         except requests.HTTPError as e:
             if e.response.status_code == 404:
+                send_log(f"make_request_to_inventory_service: No item found with uuid: {auction[1]} by user {session['username']}", level="info", service_type=SERVICE_TYPE)
                 return jsonify({"error": "Item not found."}), 404
             else:
+                send_log(f"make_request_to_inventory_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
                 return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
         except requests.RequestException:
+            send_log(f"make_request_to_inventory_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
         except CircuitBreakerError:
+            send_log(f"make_request_to_inventory_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
         owner_uuid = item["owner_id"]
@@ -227,6 +233,7 @@ def get_auction(session=None, uuid=None):
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
+        send_log(f"Auction_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -295,15 +302,19 @@ def get_auction_list(session=None, status=None, rarity=None, page_number=None):
 
                 item = make_request_to_inventory_service()
             except requests.HTTPError as e:
-                if e.response.status_code == 404:  # user not found, hiding as 401
+                if e.response.status_code == 404: 
+                    send_log(f"make_request_to_inventory_service: No item found with uuid: {auction[1]} by user {session['username']}", level="info", service_type=SERVICE_TYPE)
                     return jsonify({"error": "Item not found."}), 404
                 else:
+                    send_log(f"make_request_to_inventory_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
                     return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-            except requests.RequestException:
+            except requests.RequestException as e:
+                send_log(f"make_request_to_inventory_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
                 return jsonify(
                     {"error": "Service temporarily unavailable. Please try again later. [RequestError]"}
                 ), 503
             except CircuitBreakerError:
+                send_log(f"make_request_to_inventory_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
                 return jsonify(
                     {"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}
                 ), 503
@@ -323,15 +334,19 @@ def get_auction_list(session=None, status=None, rarity=None, page_number=None):
 
                     obtained_rarity = make_request_to_gacha_service()
                 except requests.HTTPError as e:
-                    if e.response.status_code == 404:  # user not found, hiding as 401
-                        return jsonify({"error": "Item not found."}), 404
+                    if e.response.status_code == 404: 
+                        send_log(f"make_request_to_gacha_service: No item found with uuid: {item["gacha_uuid"]} by user {session['username']}", level="info", service_type=SERVICE_TYPE)
+                        return jsonify({"error": "Gacha not found."}), 404
                     else:
+                        send_log(f"make_request_to_gacha_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
                         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-                except requests.RequestException:
+                except requests.RequestException as e:
+                    send_log(f"make_request_to_gacha_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
                     return jsonify(
                         {"error": "Service temporarily unavailable. Please try again later. [RequestError]"}
                     ), 503
                 except CircuitBreakerError:
+                    send_log(f"make_request_to_gacha_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
                     return jsonify(
                         {"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}
                     ), 503
@@ -374,6 +389,7 @@ def get_auction_list(session=None, status=None, rarity=None, page_number=None):
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
+        send_log(f"Auction_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -393,13 +409,13 @@ def get_user_auctions(session=None, user_uuid=None):
 
         item_list = make_request_to_inventory_service()
     except requests.HTTPError as e:
-        if e.response.status_code == 404:
-            return jsonify({"error": "User not found."}), 404
-        else:
-            return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
-    except requests.RequestException:
+        send_log(f"make_request_to_inventory_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
+        return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+    except requests.RequestException as e:
+        send_log(f"make_request_to_inventory_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
+        send_log(f"make_request_to_inventory_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
     try:
@@ -463,13 +479,13 @@ def get_user_auctions(session=None, user_uuid=None):
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
+        send_log(f"Auction_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
 def is_open_by_item_uuid(session=None, uuid=None):
     if not uuid:
         return "", 400
-    print(uuid)
     try:
 
         @circuit_breaker
@@ -492,7 +508,6 @@ def is_open_by_item_uuid(session=None, uuid=None):
             return result
 
         auction_data = search_auction()
-        print(auction_data)
         if not auction_data or auction_data[5] < datetime.now():
             return jsonify({"found": False}), 200
 
@@ -510,6 +525,7 @@ def is_open_by_item_uuid(session=None, uuid=None):
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
+        send_log(f"Auction_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -562,16 +578,19 @@ def refund_bidders(request_body=None, session=None):
 
                     make_request_to_profile_service()
                 except requests.HTTPError as e:
-                    print(e)
                     if e.response.status_code == 404:
+                        send_log(f"make_request_to_profile_service: No user found with uuid: {auction[4]}", level="info", service_type=SERVICE_TYPE)
                         return jsonify({"error": "User not found."}), 404
                     else:
+                        send_log(f"make_request_to_profile_service: HttpError {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
                         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
                 except requests.RequestException:
+                    send_log(f"make_request_to_profile_service: RequestException {e} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
                     return jsonify(
                         {"error": "Service temporarily unavailable. Please try again later. [RequestError]"}
                     ), 503
                 except CircuitBreakerError:
+                    send_log(f"make_request_to_profile_service: Circuit breaker is open for uuid {session['username']}.", level="warning", service_type=SERVICE_TYPE)
                     return jsonify(
                         {"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}
                     ), 503
@@ -590,6 +609,7 @@ def refund_bidders(request_body=None, session=None):
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
+        send_log(f"Auction_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -636,6 +656,7 @@ def remove_by_item_uuid(request_body=None, session=None):
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
+        send_log(f"Auction_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -684,6 +705,7 @@ def reset_current_bidder(session=None, uuid=None):
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
+        send_log(f"Auction_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -748,6 +770,7 @@ def set_bid(session=None, auction_uuid=None, user_uuid=None, new_bid=None):
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
+        send_log(f"Auction_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -850,4 +873,5 @@ def update_auction(session=None, auction=None):
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
+        send_log(f"Auction_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503

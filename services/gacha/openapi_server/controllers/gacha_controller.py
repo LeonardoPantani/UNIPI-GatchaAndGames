@@ -232,7 +232,7 @@ def pull_gacha(pool_id):
     response_data = response[0].get_json()
     image_url = f"https://localhost/cdn/image/{response_data["gacha_uuid"]}"
     
-    send_log(f"pull_gacha: User {session['username']} has successfully pulled gacha {response_data["gacha_uuid"]}, added as item {new_item_uuid}.", level="general", service_type=SERVICE_TYPE)
+    send_log(f"pull_gacha: User {session['username']} has successfully pulled gacha {response_data["gacha_uuid"]}, added as item {new_item_uuid}, roll = {roll}.", level="general", service_type=SERVICE_TYPE)
     return jsonify({"gacha": response_data, "image": image_url})
 
 def get_pool_info():
