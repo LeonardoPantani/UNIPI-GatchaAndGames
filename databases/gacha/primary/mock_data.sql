@@ -205,83 +205,82 @@ INSERT INTO gacha_pools_items (codename, gacha_uuid) VALUES
 
 
 INSERT INTO gacha_pools_items (codename, gacha_uuid) VALUES
-
 -- Common (9 items)
-('pool_pucci', UNHEX(REPLACE('1b2f7b4e5e1f4112a7c5b7559dbb8c76', '-', ''))), -- Hermit Purple
-('pool_pucci', UNHEX(REPLACE('9d4b9fa96c7244f59ac6e6b548cfc632', '-', ''))), -- The Fool
-('pool_pucci', UNHEX(REPLACE('b6e7f8c97f284b4f8fbe523f6c8b0c85', '-', ''))), -- Tower of Gray
-('pool_pucci', UNHEX(REPLACE('8f2b9d4e3b3e4c5da1c6b7e3a5d6c1c7', '-', ''))), -- Strength
-('pool_pucci', UNHEX(REPLACE('c1d2e3f45a6b7c8d9e0f1a2b3c4d5e6f', '-', ''))), -- Emperor
-('pool_pucci', UNHEX(REPLACE('d4e5f6a7b8c90d1e2f3a4b5c6d7e8f9a', '-', ''))), -- Lovers
-('pool_pucci', UNHEX(REPLACE('e7f8a9b0c1d23e4f5a6b7c8d9e0f1a2b', '-', ''))), -- Yellow Temperance
-('pool_pucci', UNHEX(REPLACE('f1a2b3c4d5e6f7a8b9c01d2e3f4a5b6c', '-', ''))), -- Dark Blue Moon
-('pool_pucci', UNHEX(REPLACE('a1b2c3d4e5f678901234567890abcdef', '-', ''))), -- Sun
+('pool_pucci', UNHEX(REPLACE('1b2f7b4e-5e1f-4112-a7c5-b7559dbb8c76', '-', ''))), -- Hermit Purple
+('pool_pucci', UNHEX(REPLACE('9d4b9fa9-6c72-44f5-9ac6-e6b548cfc632', '-', ''))), -- The Fool
+('pool_pucci', UNHEX(REPLACE('b6e7f8c9-7f28-4b4f-8fbe-523f6c8b0c85', '-', ''))), -- Tower of Gray
+('pool_pucci', UNHEX(REPLACE('8f2b9d4e-3b3e-4c5d-a1c6-b7e3a5d6c1c7', '-', ''))), -- Strength
+('pool_pucci', UNHEX(REPLACE('c1d2e3f4-5a6b-7c8d-9e0f-1a2b3c4d5e6f', '-', ''))), -- Emperor
+('pool_pucci', UNHEX(REPLACE('d4e5f6a7-b8c9-0d1e-2f3a-4b5c6d7e8f9a', '-', ''))), -- Lovers
+('pool_pucci', UNHEX(REPLACE('e7f8a9b0-c1d2-3e4f-5a6b-7c8d9e0f1a2b', '-', ''))), -- Yellow Temperance
+('pool_pucci', UNHEX(REPLACE('f1a2b3c4-d5e6-f7a8-b9c0-1d2e3f4a5b6c', '-', ''))), -- Dark Blue Moon
+('pool_pucci', UNHEX(REPLACE('a1b2c3d4-e5f6-7890-1234-567890abcdef', '-', ''))), -- Sun
 
 -- Rare (9 items)
-('pool_pucci', UNHEX(REPLACE('a3b4c5d6e7f890123456123456789abc', '-', ''))), -- Magicians Red
-('pool_pucci', UNHEX(REPLACE('b4c5d6e7f8a90123456723456789abcd', '-', ''))), -- Silver Chariot
-('pool_pucci', UNHEX(REPLACE('c5d6e7f8a9b0123456783456789abcde', '-', ''))), -- Hierophant Green
-('pool_pucci', UNHEX(REPLACE('d5e6f7a8b9c01234567890abcdef1234', '-', ''))), -- The Hanged Man
-('pool_pucci', UNHEX(REPLACE('e6f7a8b9c0d1234567890abcdef12345', '-', ''))), -- Judgment
-('pool_pucci', UNHEX(REPLACE('f7a8b9c0d1e234567890abcdef123456', '-', ''))), -- Osiris
-('pool_pucci', UNHEX(REPLACE('a8b9c0d1e2f345678901123456789abc', '-', ''))), -- Sethan
-('pool_pucci', UNHEX(REPLACE('b9c0d1e2f3a45678901223456789abcd', '-', ''))), -- Geb
-('pool_pucci', UNHEX(REPLACE('c0d1e2f3a4b5678901233456789abcde', '-', ''))), -- The Lock
+('pool_pucci', UNHEX(REPLACE('a3b4c5d6-e7f8-9012-3456-123456789abc', '-', ''))), -- Magicians Red
+('pool_pucci', UNHEX(REPLACE('b4c5d6e7-f8a9-0123-4567-23456789abcd', '-', ''))), -- Silver Chariot
+('pool_pucci', UNHEX(REPLACE('c5d6e7f8-a9b0-1234-5678-3456789abcde', '-', ''))), -- Hierophant Green
+('pool_pucci', UNHEX(REPLACE('d5e6f7a8-b9c0-1234-5678-90abcdef1234', '-', ''))), -- The Hanged Man
+('pool_pucci', UNHEX(REPLACE('e6f7a8b9-c0d1-2345-6789-0abcdef12345', '-', ''))), -- Judgment
+('pool_pucci', UNHEX(REPLACE('f7a8b9c0-d1e2-3456-7890-abcdef123456', '-', ''))), -- Osiris
+('pool_pucci', UNHEX(REPLACE('a8b9c0d1-e2f3-4567-8901-123456789abc', '-', ''))), -- Sethan
+('pool_pucci', UNHEX(REPLACE('b9c0d1e2-f3a4-5678-9012-23456789abcd', '-', ''))), -- Geb
+('pool_pucci', UNHEX(REPLACE('c0d1e2f3-a4b5-6789-0123-3456789abcde', '-', ''))), -- The Lock
 
 -- Epic (9 items)
-('pool_pucci', UNHEX(REPLACE('e8f9a0b1c2d3456789abcdef12345678', '-', ''))), -- Star Platinum
-('pool_pucci', UNHEX(REPLACE('f9a0b1c2d3e4567890abcdef123456789', '-', ''))), -- Crazy Diamond
-('pool_pucci', UNHEX(REPLACE('a0b1c2d3e4f567890abcdef123456789a', '-', ''))), -- Killer Queen
-('pool_pucci', UNHEX(REPLACE('b1c2d3e4f5a678901abc0123456789ac', '-', ''))), -- King Crimson
-('pool_pucci', UNHEX(REPLACE('c2d3e4f5a6b789012bcd0123456789abcd', '-', ''))), -- Gold Experience
-('pool_pucci', UNHEX(REPLACE('d3e4f5a6b7c890123cde23456789abcd', '-', ''))), -- Stone Free
-('pool_pucci', UNHEX(REPLACE('e4f5a6b7c8d901234def3456789abcde', '-', ''))), -- Tusk
-('pool_pucci', UNHEX(REPLACE('f5a6b7c8d9e012345f01456789abcdef', '-', ''))), -- Weather Report
-('pool_pucci', UNHEX(REPLACE('a6b7c8d9e0f12345601256789abcdef1', '-', ''))), -- D4C
+('pool_pucci', UNHEX(REPLACE('e8f9a0b1-c2d3-4567-89ab-cdef12345678', '-', ''))), -- Star Platinum
+('pool_pucci', UNHEX(REPLACE('f9a0b1c2-d3e4-5678-90ab-def123456789', '-', ''))), -- Crazy Diamond
+('pool_pucci', UNHEX(REPLACE('a0b1c2d3-e4f5-6789-0abc-ef123456789a', '-', ''))), -- Killer Queen
+('pool_pucci', UNHEX(REPLACE('b1c2d3e4-f5a6-7890-1abc-f0123456789b', '-', ''))), -- King Crimson
+('pool_pucci', UNHEX(REPLACE('c2d3e4f5-a6b7-8901-2bcd-0123456789ac', '-', ''))), -- Gold Experience
+('pool_pucci', UNHEX(REPLACE('d3e4f5a6-b7c8-9012-3cde-23456789abcd', '-', ''))), -- Stone Free
+('pool_pucci', UNHEX(REPLACE('e4f5a6b7-c8d9-0123-4def-3456789abcde', '-', ''))), -- Tusk
+('pool_pucci', UNHEX(REPLACE('f5a6b7c8-d9e0-1234-5f01-456789abcdef', '-', ''))), -- Weather Report
+('pool_pucci', UNHEX(REPLACE('a6b7c8d9-e0f1-2345-6012-56789abcdef1', '-', ''))), -- D4C
 
 -- Legendary (3 items)
-('pool_pucci', UNHEX(REPLACE('f1a2b3c456789abcb4560123456789ef', '-', ''))), -- Star Platinum: The World
+('pool_pucci', UNHEX(REPLACE('f1a2b3c4-5678-9abc-b456-0123456789ef', '-', ''))), -- Star Platinum: The World
 ('pool_pucci', UNHEX(REPLACE('c4d5e6f7-8901-2bcd-e789-3456789abcef', '-', ''))), -- C-Moon
-('pool_pucci', UNHEX(REPLACE('b3c4d5e678901abcd67823456789abef', '-', ''))); -- Made in Heaven
+('pool_pucci', UNHEX(REPLACE('b3c4d5e6-7890-1abc-d678-23456789abef', '-', ''))); -- Made in Heaven
 
 
 -- Insert into gacha_pool_contents table for 'Patriot Pool'
 INSERT INTO gacha_pools_items (codename, gacha_uuid) VALUES
 
 -- Common (40%, 12 gachas)
-('pool_valentine', UNHEX(REPLACE('1b2f7b4e5e1f4112a7c5b7559dbb8c76', '-', ''))), -- Hermit Purple
-('pool_valentine', UNHEX(REPLACE('9d4b9fa96c7244f59ac6e6b548cfc632', '-', ''))), -- The Fool
-('pool_valentine', UNHEX(REPLACE('b6e7f8c97f284b4f8fbe523f6c8b0c85', '-', ''))), -- Tower of Gray
-('pool_valentine', UNHEX(REPLACE('8f2b9d4e3b3e4c5da1c6b7e3a5d6c1c7', '-', ''))), -- Strength
-('pool_valentine', UNHEX(REPLACE('c1d2e3f45a6b7c8d9e0f1a2b3c4d5e6f', '-', ''))), -- Emperor
-('pool_valentine', UNHEX(REPLACE('d4e5f6a7b8c90d1e2f3a4b5c6d7e8f9a', '-', ''))), -- Lovers
-('pool_valentine', UNHEX(REPLACE('e7f8a9b0c1d23e4f5a6b7c8d9e0f1a2b', '-', ''))), -- Yellow Temperance
-('pool_valentine', UNHEX(REPLACE('f1a2b3c4d5e6f7a8b9c01d2e3f4a5b6c', '-', ''))), -- Dark Blue Moon
-('pool_valentine', UNHEX(REPLACE('a1b2c3d4e5f678901234567890abcdef', '-', ''))), -- Sun
-('pool_valentine', UNHEX(REPLACE('b2c3d4e5f6a78901234567890abcdef1', '-', ''))), -- Justice
-('pool_valentine', UNHEX(REPLACE('c3d4e5f6a7b8901234567890abcdef12', '-', ''))), -- Wheel of Fortune
-('pool_valentine', UNHEX(REPLACE('d4e5f6a7b8c901234567890abcdef123', '-', ''))), -- Khnum
+('pool_valentine', UNHEX(REPLACE('1b2f7b4e-5e1f-4112-a7c5-b7559dbb8c76', '-', ''))), -- Hermit Purple
+('pool_valentine', UNHEX(REPLACE('9d4b9fa9-6c72-44f5-9ac6-e6b548cfc632', '-', ''))), -- The Fool
+('pool_valentine', UNHEX(REPLACE('b6e7f8c9-7f28-4b4f-8fbe-523f6c8b0c85', '-', ''))), -- Tower of Gray
+('pool_valentine', UNHEX(REPLACE('8f2b9d4e-3b3e-4c5d-a1c6-b7e3a5d6c1c7', '-', ''))), -- Strength
+('pool_valentine', UNHEX(REPLACE('c1d2e3f4-5a6b-7c8d-9e0f-1a2b3c4d5e6f', '-', ''))), -- Emperor
+('pool_valentine', UNHEX(REPLACE('d4e5f6a7-b8c9-0d1e-2f3a-4b5c6d7e8f9a', '-', ''))), -- Lovers
+('pool_valentine', UNHEX(REPLACE('e7f8a9b0-c1d2-3e4f-5a6b-7c8d9e0f1a2b', '-', ''))), -- Yellow Temperance
+('pool_valentine', UNHEX(REPLACE('f1a2b3c4-d5e6-f7a8-b9c0-1d2e3f4a5b6c', '-', ''))), -- Dark Blue Moon
+('pool_valentine', UNHEX(REPLACE('a1b2c3d4-e5f6-7890-1234-567890abcdef', '-', ''))), -- Sun
+('pool_valentine', UNHEX(REPLACE('b2c3d4e5-f6a7-8901-2345-67890abcdef1', '-', ''))), -- Justice
+('pool_valentine', UNHEX(REPLACE('c3d4e5f6-a7b8-9012-3456-7890abcdef12', '-', ''))), -- Wheel of Fortune
+('pool_valentine', UNHEX(REPLACE('d4e5f6a7-b8c9-0123-4567-890abcdef123', '-', ''))), -- Khnum
 
 -- Rare (30%, 9 gachas)
-('pool_valentine', UNHEX(REPLACE('a3b4c5d6e7f890123456123456789abc', '-', ''))), -- Magicians Red
-('pool_valentine', UNHEX(REPLACE('b4c5d6e7f8a90123456723456789abcd', '-', ''))), -- Silver Chariot
-('pool_valentine', UNHEX(REPLACE('c5d6e7f8a9b0123456783456789abcde', '-', ''))), -- Hierophant Green
-('pool_valentine', UNHEX(REPLACE('d5e6f7a8b9c01234567890abcdef1234', '-', ''))), -- The Hanged Man
-('pool_valentine', UNHEX(REPLACE('e6f7a8b9c0d1234567890abcdef12345', '-', ''))), -- Judgment
-('pool_valentine', UNHEX(REPLACE('f7a8b9c0d1e234567890abcdef123456', '-', ''))), -- Osiris
-('pool_valentine', UNHEX(REPLACE('a8b9c0d1e2f345678901123456789abc', '-', ''))), -- Sethan
-('pool_valentine', UNHEX(REPLACE('b9c0d1e2f3a45678901223456789abcd', '-', ''))), -- Geb
-('pool_valentine', UNHEX(REPLACE('c0d1e2f3a4b5678901233456789abcde', '-', ''))), -- The Lock
+('pool_valentine', UNHEX(REPLACE('a3b4c5d6-e7f8-9012-3456-123456789abc', '-', ''))), -- Magicians Red
+('pool_valentine', UNHEX(REPLACE('b4c5d6e7-f8a9-0123-4567-23456789abcd', '-', ''))), -- Silver Chariot
+('pool_valentine', UNHEX(REPLACE('c5d6e7f8-a9b0-1234-5678-3456789abcde', '-', ''))), -- Hierophant Green
+('pool_valentine', UNHEX(REPLACE('d5e6f7a8-b9c0-1234-5678-90abcdef1234', '-', ''))), -- The Hanged Man
+('pool_valentine', UNHEX(REPLACE('e6f7a8b9-c0d1-2345-6789-0abcdef12345', '-', ''))), -- Judgment
+('pool_valentine', UNHEX(REPLACE('f7a8b9c0-d1e2-3456-7890-abcdef123456', '-', ''))), -- Osiris
+('pool_valentine', UNHEX(REPLACE('a8b9c0d1-e2f3-4567-8901-123456789abc', '-', ''))), -- Sethan
+('pool_valentine', UNHEX(REPLACE('b9c0d1e2-f3a4-5678-9012-23456789abcd', '-', ''))), -- Geb
+('pool_valentine', UNHEX(REPLACE('c0d1e2f3-a4b5-6789-0123-3456789abcde', '-', ''))), -- The Lock
 
 -- Epic (20%, 6 gachas)
-('pool_valentine', UNHEX(REPLACE('e8f9a0b1c2d3456789abcdef12345678', '-', ''))), -- Star Platinum
-('pool_valentine', UNHEX(REPLACE('f9a0b1c2d3e4567890abcdef123456789', '-', ''))), -- Crazy Diamond
-('pool_valentine', UNHEX(REPLACE('a0b1c2d3e4f567890abcde123456789a', '-', ''))), -- Killer Queen
-('pool_valentine', UNHEX(REPLACE('b1c2d3e4f5a678901abc0123456789b', '-', ''))), -- King Crimson
-('pool_valentine', UNHEX(REPLACE('c2d3e4f5a6b789012bcd0123456789ac', '-', ''))), -- Gold Experience
-('pool_valentine', UNHEX(REPLACE('d3e4f5a6b7c890123cde23456789abcd', '-', ''))), -- Stone Free
+('pool_valentine', UNHEX(REPLACE('e8f9a0b1-c2d3-4567-89ab-cdef12345678', '-', ''))), -- Star Platinum
+('pool_valentine', UNHEX(REPLACE('f9a0b1c2-d3e4-5678-90ab-def123456789', '-', ''))), -- Crazy Diamond
+('pool_valentine', UNHEX(REPLACE('a0b1c2d3-e4f5-6789-0abc-ef123456789a', '-', ''))), -- Killer Queen
+('pool_valentine', UNHEX(REPLACE('b1c2d3e4-f5a6-7890-1abc-f0123456789b', '-', ''))), -- King Crimson
+('pool_valentine', UNHEX(REPLACE('c2d3e4f5-a6b7-8901-2bcd-0123456789ac', '-', ''))), -- Gold Experience
+('pool_valentine', UNHEX(REPLACE('d3e4f5a6-b7c8-9012-3cde-23456789abcd', '-', ''))), -- Stone Free
 
 -- Legendary (10%, 3 gachas)
-('pool_valentine', UNHEX(REPLACE('f1a2b3c456789abcb4560123456789ef', '-', ''))), -- Star Platinum: The World
-('pool_valentine', UNHEX(REPLACE('a2b3c4d567890abcc567123456789aef', '-', ''))), -- Gold Experience Requiem
-('pool_valentine', UNHEX(REPLACE('b3c4d5e678901abcd67823456789abef', '-', ''))); -- Made in Heaven
+('pool_valentine', UNHEX(REPLACE('f1a2b3c4-5678-9abc-b456-0123456789ef', '-', ''))), -- Star Platinum: The World
+('pool_valentine', UNHEX(REPLACE('a2b3c4d5-6789-0abc-c567-123456789aef', '-', ''))), -- Gold Experience Requiem
+('pool_valentine', UNHEX(REPLACE('b3c4d5e6-7890-1abc-d678-23456789abef', '-', ''))); -- Made in Heaven

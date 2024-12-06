@@ -49,17 +49,21 @@ def buy_currency(bundle_id):
 
     if bundle_id == "add_myself_some_currency":
         if session['uuid'] not in global_mock_accounts:
+            send_log(f"add_myself_some_currency: User {session['username']} not found in mock account data.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error":"No user account found, try buying a bundle first."}), 404
         else:
             for account in global_mock_accounts[session['uuid']]["accounts"]:
                 account['amount'] += 100000
         
+        send_log(f"add_myself_some_currency: User {session['username']} has successfully added currency to his balance.", level="general", service_type=SERVICE_TYPE)
         return jsonify({"message":"Balance added"}), 200        
 
     response = get_bundle(None, bundle_id)
     if response[1] == 404:
+        send_log(f"get_bundle: No bundle found with codename {bundle_id} by user {session['username']}.", level="info", service_type=SERVICE_TYPE)
         return response
     elif response[1] == 503 or response[1] == 400:
+        send_log(f"get_bundle: HttpError {response} for user {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service unavailable. Please try again later."}), 503
     
     response_data = response[0].get_json()
@@ -91,19 +95,23 @@ def buy_currency(bundle_id):
             candidate_user_account_no = index
 
     if user_accounts["accounts"][candidate_user_account_no]["currency"] != currency_name:
+        send_log(f"buy_currency: Wrong currency for user {session['username']} to buy {bundle_id}.", level="info", service_type=SERVICE_TYPE)
         return jsonify({"error": "Different currency needed, contact your bank."}), 406
     
     if user_accounts["accounts"][candidate_user_account_no]["amount"] < price:
+        send_log(f"buy_currency: Not enough money for user {session['username']} to buy {bundle_id}.", level="info", service_type=SERVICE_TYPE)
         return jsonify({"error": "You cannot afford this bundle."}), 412
     
     user_accounts["accounts"][candidate_user_account_no]["amount"] -= price
     
     response = insert_bundle_transaction(None, session['uuid'], codename, currency_name)
     if response[1] != 200:
+        send_log(f"insert_bundle_transaction: HttpError {response} for user {session['username']} with bundle {codename}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
 
     response = insert_ingame_transaction(None, session['uuid'], credits_obtained, TRANSACTION_TYPE_BUNDLE_CODE)
     if response[1] != 200:
+        send_log(f"insert_ingame_transaction: HttpError {response} for user {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
 
     try:
@@ -118,14 +126,19 @@ def buy_currency(bundle_id):
         make_request_to_profile_service()
     except requests.HTTPError as e:
         if e.response.status_code == 404: 
+            send_log(f"make_request_to_profile_service: No user found with uuid {session['uuid']}.", level="info", service_type=SERVICE_TYPE)
             return jsonify({"error": "User not found."}), 404
         else:
+            send_log(f"make_request_to_profile_service: HttpError {e} for user {session['username']}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
+        send_log(f"make_request_to_profile_service: RequestException {e} for user {session['username']}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
+        send_log(f"make_request_to_profile_service: Circuit breaker is open for user {session['username']}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503  
 
+    send_log(f"buy_currency: User {session['username']} has successfully bought bundle {bundle_id}.", level="general", service_type=SERVICE_TYPE)
     return jsonify({"message":"Purchase of "+public_name+" successful."}), 200
 
 @circuit_breaker
@@ -133,5 +146,8 @@ def get_bundles():
     response = list_bundles(None)
     
     if response[1] != 200:
+        send_log(f"list_bundles: HttpError {response} for uuid {session['username']}.", level="error", service_type=SERVICE_TYPE)
         jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
+
+    send_log(f"get_bundles: User {session['username']} has successfully gotten bundles info.", level="general", service_type=SERVICE_TYPE)
     return response

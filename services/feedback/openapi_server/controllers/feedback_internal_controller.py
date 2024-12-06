@@ -78,6 +78,7 @@ def delete_user_feedbacks(session=None, uuid=None):
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
+        send_log(f"Feedback_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
 
@@ -120,6 +121,7 @@ def feedback_info(session=None, feedback_id=None):
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
+        send_log(f"Feedback_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
     if not feedback:
@@ -139,12 +141,16 @@ def feedback_info(session=None, feedback_id=None):
 
     except requests.HTTPError as e:
         if e.response.status_code == 404:
+            send_log(f"make_request_to_profile_service: No user found with uuid: {feedback[1]}.", level="info", service_type=SERVICE_TYPE)
             return jsonify({"error": "User not found."}), 404
         else:
+            send_log(f"make_request_to_profile_service: HttpError {e} for uuid {feedback[1]}.", level="error", service_type=SERVICE_TYPE)
             return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except requests.RequestException:
+        send_log(f"make_request_to_profile_service: RequestException {e} for uuid {feedback[1]}.", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [RequestError]"}), 503
     except CircuitBreakerError:
+        send_log(f"make_request_to_profile_service: Circuit breaker is open for uuid {feedback[1]}.", level="warning", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later. [CircuitBreaker]"}), 503
 
     username = username_data["username"]
@@ -203,6 +209,7 @@ def feedback_list(session=None, page_number=None):
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
+        send_log(f"Feedback_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
 
     response = []
@@ -263,4 +270,5 @@ def submit_feedback(submit_feedback_request=None, session=None, user_uuid=None):
         send_log(f"Query: {type(e).__name__} ({e})", level="error", service_type=SERVICE_TYPE)
         return jsonify({"error": "Service temporarily unavailable. Please try again later."}), 503
     except CircuitBreakerError:
+        send_log(f"Feedback_Internal: Circuit breaker is open.", level="warning", service_type=SERVICE_TYPE)
         return "", 503
