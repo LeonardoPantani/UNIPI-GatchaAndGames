@@ -107,7 +107,7 @@ just ps
 
 *Execution of `locust`*
 1. Follow the [Installation and Execution](#installation-and-execution) steps.
-2. From the `UNIPI-GatchaAndGames/PERFORMANCE_TESTING` folder, run **locust**.
+2. From the `UNIPI-GatchaAndGames/docs/PERFORMANCE_TESTING` folder, run **locust**.
 3. Select the desired Performance Test to execute.
 
 ---
